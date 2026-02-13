@@ -52,13 +52,15 @@ def fetch_stock_name(symbol):
 @st.cache_data(ttl=60)
 def get_analysis_data(ticker):
     try:
+        # 데이터를 넉넉히 가져와야 지표 계산 에러가 안 납니다.
         data = yf.download(ticker, period="1y", interval="1d", multi_level_index=False)
-        if data.empty: return None
-        data.columns = [c.lower() for c in data.columns]
+        if data is None or data.empty: return None
+        # 컬럼명을 소문자로 통일
+        data.columns = [str(c).lower() for c in data.columns]
         return data
-    except: return None
+    except Exception as e:
+        return None
 
-# 앱 시작
 st.title("👨‍💻 이수할아버지의 주식분석기")
 st.write("---")
 
@@ -80,60 +82,62 @@ elif selected_name:
 
 if target_ticker:
     df = get_analysis_data(target_ticker)
-    if df is not None:
-        close = df['close']; high = df['high']; low = df['low']
+    
+    # 한국 주식 코스피/코스닥 재시도 로직
+    if (df is None or df.empty) and ".KS" in target_ticker:
+        target_ticker = target_ticker.replace(".KS", ".KQ")
+        df = get_analysis_data(target_ticker)
+
+    if df is not None and not df.empty and len(df) > 20:
+        close = df['close']
+        high = df['high']
+        low = df['low']
         
         # 지표 계산
-        rsi = 100 - (100 / (1 + (close.diff().where(close.diff() > 0, 0).rolling(14).mean() / -close.diff().where(close.diff() < 0, 0).rolling(14).mean())))
-        w_r = (high.rolling(14).max() - close) / (high.rolling(14).max() - low.rolling(14).min()) * -100
+        diff = close.diff()
+        gain = diff.where(diff > 0, 0).rolling(14).mean()
+        loss = -diff.where(diff < 0, 0).rolling(14).mean()
+        # 분모가 0이 되는 것 방지
+        rsi = 100 - (100 / (1 + (gain / loss.replace(0, 0.001))))
+        
+        w_r = (high.rolling(14).max() - close) / (high.rolling(14).max() - low.rolling(14).min()).replace(0, 0.001) * -100
+        
         macd = close.ewm(span=12, adjust=False).mean() - close.ewm(span=26, adjust=False).mean()
         sig = macd.ewm(span=9, adjust=False).mean()
         ma20 = close.rolling(20).mean(); std20 = close.rolling(20).std()
         upper = ma20 + (std20 * 2); lower = ma20 - (std20 * 2)
 
-        # [수정] 신고가 판단 로직 강화 (최근 5일간의 최고가를 1년 최고가와 비교)
-        year_high = close.iloc[:-1].max() # 오늘을 제외한 1년 최고가
+        # 신고가 분석 (안정성 강화)
+        year_high = close.max()
         curr_price = close.iloc[-1]
-        # 현재가가 1년 최고가의 97% 이상이거나, 이미 뚫었을 때 신고가로 인정
         is_new_high = curr_price >= (year_high * 0.97)
 
         st.markdown(f"<p class='big-font'>{target_name} 지표 분석</p>", unsafe_allow_html=True)
         
-        # [신고가 안내창] 어떤 종목이든 조건만 맞으면 즉시 노출
         if is_new_high:
-            st.markdown(f"""
-            <div class='info-box'>
-                <h3 style='margin-top:0; color:#1565C0;'>🚀 {target_name} 신고가 영역 진입!</h3>
-                현재 주가가 전고점 근처이거나 이미 돌파한 <strong>'달리는 말'</strong> 구간입니다. <br>
-                RSI 수치가 높아도 기세가 워낙 강해 추가 상승이 빈번한 자리입니다. <br>
-                <strong>매도 전략:</strong> MACD 파란선이 주황선 밑으로 꺾일 때까지 수익을 즐기세요. <br>
-                <strong>신규 매수:</strong> 지금 따라가기보다는 볼린저 밴드 빨간선(중심선) 터치 시 진입이 안전합니다.
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"<div class='info-box'>🚀 <strong>신고가 영역 진입!</strong> 현재 주가가 전고점 근처인 '달리는 말' 구간입니다.</div>", unsafe_allow_html=True)
 
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("현재가", f"{curr_price:,.2f}")
         c2.metric("RSI", f"{rsi.iloc[-1]:.1f}")
         c3.metric("윌리엄 %R", f"{w_r.iloc[-1]:.1f}")
-        c4.metric("전고점(1년)", f"{year_high:,.2f}")
+        c4.metric("전고점", f"{year_high:,.2f}")
 
-        # 신호등 로직
+        # 신호등
         st.write("---")
         last_rsi = rsi.iloc[-1]
         macd_up = macd.iloc[-1] > macd.iloc[-2]
         
         if is_new_high and macd_up:
-            st.markdown("<div style='background-color:#E8F5E9; color:#2E7D32; border-color:#2E7D32;' class='status-box'>📈 추세 상승 (수익 극대화 구간) 📈</div>", unsafe_allow_html=True)
-        elif last_rsi <= 35 or w_r.iloc[-1] <= -80:
-            if macd_up: st.markdown("<div style='background-color:#FFEEEE; color:#FF4B4B; border-color:#FF4B4B;' class='status-box'>🚨 강력 매수 (바닥 탈출) 🚨</div>", unsafe_allow_html=True)
-            else: st.markdown("<div style='background-color:#FFF4E5; color:#FFA000; border-color:#FFA000;' class='status-box'>✋ 싸지만 대기 (하강 중)</div>", unsafe_allow_html=True)
-        elif last_rsi >= 75:
-            st.markdown("<div style='background-color:#E1F5FE; color:#0288D1; border-color:#0288D1;' class='status-box'>💰 과열 주의 (분할 익절 고려) 💰</div>", unsafe_allow_html=True)
+            st.markdown("<div style='background-color:#E8F5E9; color:#2E7D32; border-color:#2E7D32;' class='status-box'>📈 추세 상승 구간 📈</div>", unsafe_allow_html=True)
+        elif last_rsi <= 35:
+            if macd_up: st.markdown("<div style='background-color:#FFEEEE; color:#FF4B4B; border-color:#FF4B4B;' class='status-box'>🚨 강력 매수 🚨</div>", unsafe_allow_html=True)
+            else: st.markdown("<div style='background-color:#FFF4E5; color:#FFA000; border-color:#FFA000;' class='status-box'>✋ 싸지만 대기</div>", unsafe_allow_html=True)
         else:
-            st.markdown("<div style='background-color:#F5F5F5; color:#616161; border-color:#9E9E9E;' class='status-box'>🟡 관망 및 관찰 구간 🟡</div>", unsafe_allow_html=True)
+            st.markdown("<div style='background-color:#F5F5F5; color:#616161; border-color:#9E9E9E;' class='status-box'>🟡 관망 구간 🟡</div>", unsafe_allow_html=True)
 
-        # 차트
-        st.write("### 📊 볼린저 밴드 (중심선 터치 시 매수 고려)")
+        # 차트 출력
+        st.write("### 📊 볼린저 밴드")
         bb_df = pd.DataFrame({'Price': close, 'Upper': upper, 'Lower': lower, 'MA20': ma20}).tail(80).reset_index()
         bb_df.columns = ['Date', 'Price', 'Upper', 'Lower', 'MA20']
         base = alt.Chart(bb_df).encode(x=alt.X('Date:T', axis=alt.Axis(title=None)))
@@ -143,10 +147,16 @@ if target_ticker:
         b_ma = base.mark_line(color='#EF5350', strokeWidth=1.5).encode(y='MA20:Q')
         st.altair_chart(alt.layer(b_up, b_low, b_ma, line).properties(height=350), use_container_width=True)
 
-        st.write("### 📉 MACD 추세선 (파란선이 주황선 위에 있으면 보유)")
+        st.write("### 📉 MACD 추세")
         macd_df = pd.DataFrame({'MACD': macd, 'Signal': sig}).tail(80).reset_index()
         macd_df.columns = ['Date', 'MACD', 'Signal']
         base_m = alt.Chart(macd_df).encode(x=alt.X('Date:T', axis=alt.Axis(title=None)))
         l_macd = base_m.mark_line(color='#0059FF', strokeWidth=2).encode(y=alt.Y('MACD:Q'))
         l_sig = base_m.mark_line(color='#FF8000', strokeWidth=2).encode(y='Signal:Q')
         st.altair_chart(alt.layer(l_macd, l_sig).properties(height=250), use_container_width=True)
+    else:
+        st.warning("데이터를 불러오고 있습니다. 잠시만 기다려주시거나 종목을 다시 선택해주세요.")
+
+if st.sidebar.button("🗑️ 수첩 초기화"):
+    st.session_state.name_map = {"삼성전자": "005930.KS", "아이온큐": "IONQ", "엔비디아": "NVDA"}
+    st.rerun()
