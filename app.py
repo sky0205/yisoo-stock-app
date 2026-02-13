@@ -80,10 +80,6 @@ elif selected_name:
 
 if target_ticker:
     df = get_analysis_data(target_ticker)
-    if df is None and ".KS" in target_ticker:
-        target_ticker = target_ticker.replace(".KS", ".KQ")
-        df = get_analysis_data(target_ticker)
-
     if df is not None:
         close = df['close']; high = df['high']; low = df['low']
         
@@ -95,36 +91,37 @@ if target_ticker:
         ma20 = close.rolling(20).mean(); std20 = close.rolling(20).std()
         upper = ma20 + (std20 * 2); lower = ma20 - (std20 * 2)
 
-        # [신규] 신고가 분석 로직
+        # 신고가 분석
         year_high = close.max()
         curr_price = close.iloc[-1]
-        is_new_high = curr_price >= year_high * 0.98 # 1년 신고가의 98% 수준이면 신고가권으로 판단
+        is_new_high = curr_price >= year_high * 0.98
 
         st.markdown(f"<p class='big-font'>{target_name} 지표 분석</p>", unsafe_allow_html=True)
         
-        # 신고가 전용 안내창
         if is_new_high:
             st.markdown(f"""
             <div class='info-box'>
-                <strong>🚀 신고가 영역 분석:</strong> 현재 주가가 1년 최고가 근처입니다. 
-                이 구간에서는 RSI가 높아도 기세가 강하면 계속 갑니다. 
-                <strong>매수 타점:</strong> 주가가 볼린저 밴드 '중심선(빨간선)'까지 눌릴 때를 기다리세요.
+                <strong>🚀 신고가 영역 분석:</strong> 현재 주가가 1년 최고가 근처입니다. 추세가 강하니 매도는 신중히!
+                <br><strong>매수 고려:</strong> 새로 진입하시려면 볼린저 밴드 '중심선(빨간선)'까지 눌릴 때가 안전합니다.
             </div>
             """, unsafe_allow_html=True)
 
-        c1, c2, c3 = st.columns(3)
+        # [수정] 4개 컬럼으로 윌리엄 지수 복구
+        c1, c2, c3, c4 = st.columns(4)
         c1.metric("현재가", f"{curr_price:,.2f}")
         c2.metric("RSI (과열도)", f"{rsi.iloc[-1]:.1f}")
-        c3.metric("1년 최고가", f"{year_high:,.2f}")
+        c3.metric("윌리엄 %R", f"{w_r.iloc[-1]:.1f}")
+        c4.metric("1년 최고가", f"{year_high:,.2f}")
 
-        # 신호등 로직 (신고가 대응 추가)
+        # 신호등 로직
         st.write("---")
         last_rsi = rsi.iloc[-1]
+        last_wr = w_r.iloc[-1]
         macd_up = macd.iloc[-1] > macd.iloc[-2]
         
         if is_new_high and macd_up:
             st.markdown("<div style='background-color:#E8F5E9; color:#2E7D32; border-color:#2E7D32;' class='status-box'>📈 추세 상승 (수익 극대화 구간) 📈</div>", unsafe_allow_html=True)
-        elif last_rsi <= 35 or w_r.iloc[-1] <= -80:
+        elif last_rsi <= 35 or last_wr <= -80:
             if macd_up: st.markdown("<div style='background-color:#FFEEEE; color:#FF4B4B; border-color:#FF4B4B;' class='status-box'>🚨 강력 매수 (바닥 탈출) 🚨</div>", unsafe_allow_html=True)
             else: st.markdown("<div style='background-color:#FFF4E5; color:#FFA000; border-color:#FFA000;' class='status-box'>✋ 싸지만 대기 (하락 중)</div>", unsafe_allow_html=True)
         elif last_rsi >= 75:
@@ -132,16 +129,15 @@ if target_ticker:
         else:
             st.markdown("<div style='background-color:#F5F5F5; color:#616161; border-color:#9E9E9E;' class='status-box'>🟡 관망 및 관찰 구간 🟡</div>", unsafe_allow_html=True)
 
+        # 차트 부분은 동일
         st.write("### 📊 볼린저 밴드 (중심선 터치 시 매수 고려)")
         bb_df = pd.DataFrame({'Price': close, 'Upper': upper, 'Lower': lower, 'MA20': ma20}).tail(80).reset_index()
         bb_df.columns = ['Date', 'Price', 'Upper', 'Lower', 'MA20']
-        
         base = alt.Chart(bb_df).encode(x=alt.X('Date:T', axis=alt.Axis(title=None)))
         line = base.mark_line(color='#1E1E1E', strokeWidth=2).encode(y=alt.Y('Price:Q', scale=alt.Scale(zero=False)))
         b_up = base.mark_line(color='#B0BEC5', strokeDash=[5,5]).encode(y='Upper:Q')
         b_low = base.mark_line(color='#B0BEC5', strokeDash=[5,5]).encode(y='Lower:Q')
-        b_ma = base.mark_line(color='#EF5350', strokeWidth=1.5).encode(y='MA20:Q') # 빨간색 중심선
-        
+        b_ma = base.mark_line(color='#EF5350', strokeWidth=1.5).encode(y='MA20:Q')
         st.altair_chart(alt.layer(b_up, b_low, b_ma, line).properties(height=350), use_container_width=True)
 
         st.write("### 📉 MACD 추세선 (파란선이 주황선 위에 있으면 보유)")
@@ -151,7 +147,3 @@ if target_ticker:
         l_macd = base_m.mark_line(color='#0059FF', strokeWidth=2).encode(y=alt.Y('MACD:Q'))
         l_sig = base_m.mark_line(color='#FF8000', strokeWidth=2).encode(y='Signal:Q')
         st.altair_chart(alt.layer(l_macd, l_sig).properties(height=250), use_container_width=True)
-
-if st.sidebar.button("🗑️ 수첩 초기화"):
-    st.session_state.name_map = {"삼성전자": "005930.KS", "아이온큐": "IONQ", "엔비디아": "NVDA"}
-    st.rerun()
