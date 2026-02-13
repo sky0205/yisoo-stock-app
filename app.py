@@ -3,7 +3,7 @@ import yfinance as yf
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-import altair as alt # [중요] 전문 차트 도구 추가
+import altair as alt
 
 # 1. 화면 및 간판(제목) 고정 설정
 st.set_page_config(page_title="이수할아버지의 주식분석기", layout="wide")
@@ -54,11 +54,10 @@ def fetch_stock_name(symbol):
 @st.cache_data(ttl=60)
 def get_analysis_data(ticker):
     try:
-        data = yf.download(ticker, period="2y", interval="1d", multi_level_index=False) # 기간을 좀 더 늘려서 데이터 확보
+        # 데이터 기간을 충분히 확보하여 계산 오류 방지
+        data = yf.download(ticker, period="1y", interval="1d", multi_level_index=False)
         if data.empty: return None
         data.columns = [c.lower() for c in data.columns]
-        # [중요] 그래프 사라짐 방지: 빈 데이터 제거
-        data = data.dropna()
         return data
     except: return None
 
@@ -95,19 +94,23 @@ if target_ticker:
         target_ticker = target_ticker.replace(".KS", ".KQ")
         df = get_analysis_data(target_ticker)
 
-    if df is not None and len(df) > 30: # 데이터가 충분한지 확인
+    if df is not None:
         close = df['close']; high = df['high']; low = df['low']
         
         # 지표 계산
         diff = close.diff(); gain = diff.where(diff > 0, 0).rolling(14).mean(); loss = -diff.where(diff < 0, 0).rolling(14).mean()
         rsi = 100 - (100 / (1 + (gain / loss)))
         w_r = (high.rolling(14).max() - close) / (high.rolling(14).max() - low.rolling(14).min()) * -100
-        macd = close.ewm(span=12, adjust=False).mean() - close.ewm(span=26, adjust=False).mean()
+        
+        # MACD 공식: $$MACD = EMA_{12} - EMA_{26}$$
+        ema12 = close.ewm(span=12, adjust=False).mean()
+        ema26 = close.ewm(span=26, adjust=False).mean()
+        macd = ema12 - ema26
         sig = macd.ewm(span=9, adjust=False).mean()
+        
         ma20 = close.rolling(20).mean(); std20 = close.rolling(20).std()
         upper = ma20 + (std20 * 2); lower = ma20 - (std20 * 2)
 
-        # 결과 출력
         st.markdown(f"<p class='big-font'>{target_name} 지표 분석</p>", unsafe_allow_html=True)
         
         c1, c2, c3 = st.columns(3)
@@ -126,10 +129,37 @@ if target_ticker:
         elif rsi.iloc[-1] >= 70: st.markdown("<div style='background-color:#EEFFEE; color:#2E7D32; border-color:#2E7D32;' class='status-box'>💰 익절 권장 구간 💰</div>", unsafe_allow_html=True)
         else: st.markdown("<div style='background-color:#F0F2F6; color:#31333F; border-color:#D1D5DB;' class='status-box'>🟡 관망 및 관찰 구간 🟡</div>", unsafe_allow_html=True)
 
-        # [수정] 차트 그리기 (Altair 사용 - 박스 제거 및 색상 지정)
+        # [수정] 볼린저 밴드 차트
         st.write("### 📊 볼린저 밴드 흐름")
-        # 차트용 데이터 준비 (최근 80일, 빈값 제거)
-        chart_data = pd.DataFrame({'Close': close, 'Upper': upper, 'Middle': ma20, 'Lower': lower}).dropna().tail(80).reset_index()
-        date_col = chart_data.columns[0] # 날짜 컬럼명 자동 인식
+        bb_df = pd.DataFrame({'Price': close, 'Upper': upper, 'Lower': lower, 'MA20': ma20}).tail(80).reset_index()
+        bb_df.columns = ['Date', 'Price', 'Upper', 'Lower', 'MA20'] # 컬럼명 명시
+        
+        base = alt.Chart(bb_df).encode(x=alt.X('Date:T', axis=alt.Axis(title=None)))
+        line = base.mark_line(color='#1E1E1E', strokeWidth=2).encode(y=alt.Y('Price:Q', axis=alt.Axis(title='주가')))
+        b_up = base.mark_line(color='#B0BEC5', strokeDash=[5,5]).encode(y='Upper:Q')
+        b_low = base.mark_line(color='#B0BEC5', strokeDash=[5,5]).encode(y='Lower:Q')
+        b_ma = base.mark_line(color='#EF5350', strokeWidth=1).encode(y='MA20:Q')
+        
+        st.altair_chart(alt.layer(line, b_up, b_low, b_ma).properties(height=350), use_container_width=True)
 
-        #
+        # [복구 및 수정] MACD 차트 (주황색 시그널 선 + 박스 제거)
+        st.write("### 📉 MACD 추세선 (파란선이 주황선을 뚫고 올라와야 합니다)")
+        macd_df = pd.DataFrame({'MACD': macd, 'Signal': sig}).tail(80).reset_index()
+        macd_df.columns = ['Date', 'MACD', 'Signal']
+        
+        base_m = alt.Chart(macd_df).encode(x=alt.X('Date:T', axis=alt.Axis(title=None)))
+        # 파란색 MACD 선
+        line_macd = base_m.mark_line(color='#0059FF', strokeWidth=2).encode(y=alt.Y('MACD:Q', axis=alt.Axis(title='강도')))
+        # 주황색 Signal 선
+        line_sig = base_m.mark_line(color='#FF8000', strokeWidth=2).encode(y='Signal:Q')
+        
+        # 
+        st.altair_chart(alt.layer(line_macd, line_sig).properties(height=250), use_container_width=True)
+
+    else:
+        st.error("데이터를 가져오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.")
+
+# 초기화 버튼
+if st.sidebar.button("🗑️ 수첩 초기화"):
+    st.session_state.name_map = {"삼성전자": "005930.KS", "아이온큐": "IONQ", "엔비디아": "NVDA"}
+    st.rerun()
