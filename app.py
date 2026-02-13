@@ -26,7 +26,7 @@ st.markdown("""
     .stMetric { background-color: #F8F9FA; padding: 15px; border-radius: 10px; border: 1px solid #DEE2E6; }
     .big-font { font-size:45px !important; font-weight: bold; color: #1E1E1E; }
     .status-box { padding: 25px; border-radius: 15px; text-align: center; font-size: 40px; font-weight: bold; margin: 15px 0; border: 5px solid; }
-    .info-box { background-color: #E3F2FD; padding: 15px; border-radius: 10px; border-left: 5px solid #2196F3; margin-bottom: 20px; }
+    .info-box { background-color: #E3F2FD; padding: 20px; border-radius: 10px; border-left: 10px solid #2196F3; margin-bottom: 25px; line-height: 1.6; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -66,7 +66,7 @@ col_input, _ = st.columns([4, 1])
 with col_input:
     history_list = list(st.session_state.name_map.keys())
     selected_name = st.selectbox("📋 나의 종목 수첩", options=history_list, index=None, placeholder="보관된 종목을 선택하세요")
-    new_symbol = st.text_input("➕ 새 종목 추가", value="", placeholder="예: 000660 또는 TSLA")
+    new_symbol = st.text_input("➕ 새 종목 추가", value="", placeholder="번호 6자리 또는 영어 티커")
 
 target_name = ""; target_ticker = ""
 if new_symbol:
@@ -91,45 +91,48 @@ if target_ticker:
         ma20 = close.rolling(20).mean(); std20 = close.rolling(20).std()
         upper = ma20 + (std20 * 2); lower = ma20 - (std20 * 2)
 
-        # 신고가 분석
-        year_high = close.max()
+        # [수정] 신고가 판단 로직 강화 (최근 5일간의 최고가를 1년 최고가와 비교)
+        year_high = close.iloc[:-1].max() # 오늘을 제외한 1년 최고가
         curr_price = close.iloc[-1]
-        is_new_high = curr_price >= year_high * 0.98
+        # 현재가가 1년 최고가의 97% 이상이거나, 이미 뚫었을 때 신고가로 인정
+        is_new_high = curr_price >= (year_high * 0.97)
 
         st.markdown(f"<p class='big-font'>{target_name} 지표 분석</p>", unsafe_allow_html=True)
         
+        # [신고가 안내창] 어떤 종목이든 조건만 맞으면 즉시 노출
         if is_new_high:
             st.markdown(f"""
             <div class='info-box'>
-                <strong>🚀 신고가 영역 분석:</strong> 현재 주가가 1년 최고가 근처입니다. 추세가 강하니 매도는 신중히!
-                <br><strong>매수 고려:</strong> 새로 진입하시려면 볼린저 밴드 '중심선(빨간선)'까지 눌릴 때가 안전합니다.
+                <h3 style='margin-top:0; color:#1565C0;'>🚀 {target_name} 신고가 영역 진입!</h3>
+                현재 주가가 전고점 근처이거나 이미 돌파한 <strong>'달리는 말'</strong> 구간입니다. <br>
+                RSI 수치가 높아도 기세가 워낙 강해 추가 상승이 빈번한 자리입니다. <br>
+                <strong>매도 전략:</strong> MACD 파란선이 주황선 밑으로 꺾일 때까지 수익을 즐기세요. <br>
+                <strong>신규 매수:</strong> 지금 따라가기보다는 볼린저 밴드 빨간선(중심선) 터치 시 진입이 안전합니다.
             </div>
             """, unsafe_allow_html=True)
 
-        # [수정] 4개 컬럼으로 윌리엄 지수 복구
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("현재가", f"{curr_price:,.2f}")
-        c2.metric("RSI (과열도)", f"{rsi.iloc[-1]:.1f}")
+        c2.metric("RSI", f"{rsi.iloc[-1]:.1f}")
         c3.metric("윌리엄 %R", f"{w_r.iloc[-1]:.1f}")
-        c4.metric("1년 최고가", f"{year_high:,.2f}")
+        c4.metric("전고점(1년)", f"{year_high:,.2f}")
 
         # 신호등 로직
         st.write("---")
         last_rsi = rsi.iloc[-1]
-        last_wr = w_r.iloc[-1]
         macd_up = macd.iloc[-1] > macd.iloc[-2]
         
         if is_new_high and macd_up:
             st.markdown("<div style='background-color:#E8F5E9; color:#2E7D32; border-color:#2E7D32;' class='status-box'>📈 추세 상승 (수익 극대화 구간) 📈</div>", unsafe_allow_html=True)
-        elif last_rsi <= 35 or last_wr <= -80:
+        elif last_rsi <= 35 or w_r.iloc[-1] <= -80:
             if macd_up: st.markdown("<div style='background-color:#FFEEEE; color:#FF4B4B; border-color:#FF4B4B;' class='status-box'>🚨 강력 매수 (바닥 탈출) 🚨</div>", unsafe_allow_html=True)
-            else: st.markdown("<div style='background-color:#FFF4E5; color:#FFA000; border-color:#FFA000;' class='status-box'>✋ 싸지만 대기 (하락 중)</div>", unsafe_allow_html=True)
+            else: st.markdown("<div style='background-color:#FFF4E5; color:#FFA000; border-color:#FFA000;' class='status-box'>✋ 싸지만 대기 (하강 중)</div>", unsafe_allow_html=True)
         elif last_rsi >= 75:
-            st.markdown("<div style='background-color:#E1F5FE; color:#0288D1; border-color:#0288D1;' class='status-box'>💰 과열 주의 (일부 익절 고려) 💰</div>", unsafe_allow_html=True)
+            st.markdown("<div style='background-color:#E1F5FE; color:#0288D1; border-color:#0288D1;' class='status-box'>💰 과열 주의 (분할 익절 고려) 💰</div>", unsafe_allow_html=True)
         else:
             st.markdown("<div style='background-color:#F5F5F5; color:#616161; border-color:#9E9E9E;' class='status-box'>🟡 관망 및 관찰 구간 🟡</div>", unsafe_allow_html=True)
 
-        # 차트 부분은 동일
+        # 차트
         st.write("### 📊 볼린저 밴드 (중심선 터치 시 매수 고려)")
         bb_df = pd.DataFrame({'Price': close, 'Upper': upper, 'Lower': lower, 'MA20': ma20}).tail(80).reset_index()
         bb_df.columns = ['Date', 'Price', 'Upper', 'Lower', 'MA20']
