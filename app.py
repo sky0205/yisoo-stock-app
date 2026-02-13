@@ -47,22 +47,22 @@ elif sel_name:
 if t_ticker:
     try:
         # Get Data
-        df = yf.download(t_ticker, period="1y", interval="1d", auto_adjust=True, multi_level_index=False)
+        df = yf.download(t_ticker, period="1y", interval="1d", auto_adjust=True)
         if (df is None or df.empty) and ".KS" in t_ticker:
-            df = yf.download(t_ticker.replace(".KS", ".KQ"), period="1y", interval="1d", auto_adjust=True, multi_level_index=False)
+            df = yf.download(t_ticker.replace(".KS", ".KQ"), period="1y", interval="1d", auto_adjust=True)
         
         if df is not None and not df.empty:
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
             df.columns = [str(c).lower() for c in df.columns]
+            
             close = df['close']; high = df['high']; low = df['low']
             
-            # Indicators (LaTeX for formula)
-            # $RSI = 100 - \frac{100}{1 + RS}$
+            # Indicators
             diff = close.diff()
             gain = diff.where(diff > 0, 0).rolling(14).mean()
             loss = -diff.where(diff < 0, 0).rolling(14).mean().replace(0, 0.001)
             rsi = 100 - (100 / (1 + (gain / loss)))
-            
-            # $MACD = EMA_{12} - EMA_{26}$
             macd = close.ewm(span=12, adjust=False).mean() - close.ewm(span=26, adjust=False).mean()
             sig = macd.ewm(span=9, adjust=False).mean()
             ma20 = close.rolling(20).mean()
@@ -71,26 +71,20 @@ if t_ticker:
             st.subheader(f"📈 {t_name} 분석 결과")
             c1, c2, c3 = st.columns(3)
             c1.metric("현재가", f"{close.iloc[-1]:,.2f}")
-            c2.metric("RSI (과열도)", f"{rsi.iloc[-1]:.1f}")
+            c2.metric("RSI", f"{rsi.iloc[-1]:.1f}")
             c3.metric("최고가 (1년)", f"{close.max():,.2f}")
             
-            # High Price Check
-            if close.iloc[-1] >= close.max() * 0.97:
-                st.info("🚀 현재 신고가 근처입니다! 기세가 강합니다.")
-
             # Charts
-            st.write("### 주가 및 중심선 (빨간선)")
-            c_df = pd.DataFrame({'Price': close, 'MA20': ma20}).tail(80)
-            st.line_chart(c_df)
+            st.write("### 주가 흐름")
+            st.line_chart(pd.DataFrame({'Price': close, 'MA20': ma20}).tail(80))
             
-            st.write("### MACD 추세 (파란선이 주황선 위에 있어야 함)")
-            m_df = pd.DataFrame({'MACD': macd, 'Signal': sig}).tail(80)
-            st.line_chart(m_df)
+            st.write("### MACD 추세")
+            st.line_chart(pd.DataFrame({'MACD': macd, 'Signal': sig}).tail(80))
             
         else:
-            st.error("데이터를 불러오지 못했습니다.")
+            st.error("Data loading failed.")
     except Exception as e:
-        st.error("오류가 발생했습니다. 브라우저 번역 기능을 끄고 다시 시도해 주세요.")
+        st.error(f"Error: {e}")
 
 if st.sidebar.button("🗑️ 초기화"):
     st.session_state.name_map = {"삼성전자": "005930.KS", "아이온큐": "IONQ", "엔비디아": "NVDA"}
