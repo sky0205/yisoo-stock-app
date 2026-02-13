@@ -5,18 +5,16 @@ import requests
 from bs4 import BeautifulSoup
 import altair as alt
 
-# 1. 화면 및 간판(제목) 고정 설정
+# 1. 화면 및 간판 고정
 st.set_page_config(page_title="이수할아버지의 주식분석기", layout="wide")
 
-# 미장 한글 이름 사전
+# 미장 한글 사전
 US_KR_MAP = {
     "AAPL": "애플", "TSLA": "테슬라", "NVDA": "엔비디아", "IONQ": "아이온큐",
     "MSFT": "마이크로소프트", "GOOGL": "구글", "AMZN": "아마존", "META": "메타",
-    "NFLX": "넷플릭스", "TSM": "TSMC", "AVGO": "브로드컴", "ASML": "ASML",
-    "INTC": "인텔", "AMD": "AMD", "PLTR": "팔란티어", "SMCI": "슈퍼마이크로"
+    "NFLX": "넷플릭스", "TSM": "TSMC", "PLTR": "팔란티어"
 }
 
-# 메모리 설정 (종목 수첩)
 if 'name_map' not in st.session_state:
     st.session_state.name_map = {
         "삼성전자": "005930.KS", "아이온큐": "IONQ", "엔비디아": "NVDA", 
@@ -25,13 +23,13 @@ if 'name_map' not in st.session_state:
 
 st.markdown("""
     <style>
-    .stMetric { background-color: #F0F2F6; padding: 15px; border-radius: 10px; border: 1px solid #D1D5DB; }
+    .stMetric { background-color: #F8F9FA; padding: 15px; border-radius: 10px; border: 1px solid #DEE2E6; }
     .big-font { font-size:45px !important; font-weight: bold; color: #1E1E1E; }
-    .status-box { padding: 25px; border-radius: 15px; text-align: center; font-size: 45px; font-weight: bold; margin: 15px 0; border: 5px solid; }
+    .status-box { padding: 25px; border-radius: 15px; text-align: center; font-size: 40px; font-weight: bold; margin: 15px 0; border: 5px solid; }
+    .info-box { background-color: #E3F2FD; padding: 15px; border-radius: 10px; border-left: 5px solid #2196F3; margin-bottom: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-# 종목 이름 찾아오기 함수
 def fetch_stock_name(symbol):
     symbol = symbol.upper().strip()
     if symbol.isdigit() and len(symbol) == 6:
@@ -54,40 +52,32 @@ def fetch_stock_name(symbol):
 @st.cache_data(ttl=60)
 def get_analysis_data(ticker):
     try:
-        # 데이터 기간을 충분히 확보하여 계산 오류 방지
         data = yf.download(ticker, period="1y", interval="1d", multi_level_index=False)
         if data.empty: return None
         data.columns = [c.lower() for c in data.columns]
         return data
     except: return None
 
-# ---------------------------------------------------------
-# 앱 화면 시작
-# ---------------------------------------------------------
+# 앱 시작
 st.title("👨‍💻 이수할아버지의 주식분석기")
 st.write("---")
 
-# [1구역] 검색 및 입력
-col_input, col_btn = st.columns([4, 1])
-
+col_input, _ = st.columns([4, 1])
 with col_input:
     history_list = list(st.session_state.name_map.keys())
     selected_name = st.selectbox("📋 나의 종목 수첩", options=history_list, index=None, placeholder="보관된 종목을 선택하세요")
-    new_symbol = st.text_input("➕ 새 종목 추가 (번호 또는 영어 티커)", value="", placeholder="예: 000660 또는 TSLA")
+    new_symbol = st.text_input("➕ 새 종목 추가", value="", placeholder="예: 000660 또는 TSLA")
 
 target_name = ""; target_ticker = ""
-
 if new_symbol:
     name, ticker = fetch_stock_name(new_symbol)
     if name not in st.session_state.name_map:
         st.session_state.name_map[name] = ticker
-        st.success(f"✅ '{name}' 종목이 수첩에 등록되었습니다!")
         st.rerun()
     target_name = name; target_ticker = ticker
 elif selected_name:
     target_name = selected_name; target_ticker = st.session_state.name_map[selected_name]
 
-# [2구역] 분석 결과
 if target_ticker:
     df = get_analysis_data(target_ticker)
     if df is None and ".KS" in target_ticker:
@@ -98,68 +88,70 @@ if target_ticker:
         close = df['close']; high = df['high']; low = df['low']
         
         # 지표 계산
-        diff = close.diff(); gain = diff.where(diff > 0, 0).rolling(14).mean(); loss = -diff.where(diff < 0, 0).rolling(14).mean()
-        rsi = 100 - (100 / (1 + (gain / loss)))
+        rsi = 100 - (100 / (1 + (close.diff().where(close.diff() > 0, 0).rolling(14).mean() / -close.diff().where(close.diff() < 0, 0).rolling(14).mean())))
         w_r = (high.rolling(14).max() - close) / (high.rolling(14).max() - low.rolling(14).min()) * -100
-        
-        # MACD 공식: $$MACD = EMA_{12} - EMA_{26}$$
-        ema12 = close.ewm(span=12, adjust=False).mean()
-        ema26 = close.ewm(span=26, adjust=False).mean()
-        macd = ema12 - ema26
+        macd = close.ewm(span=12, adjust=False).mean() - close.ewm(span=26, adjust=False).mean()
         sig = macd.ewm(span=9, adjust=False).mean()
-        
         ma20 = close.rolling(20).mean(); std20 = close.rolling(20).std()
         upper = ma20 + (std20 * 2); lower = ma20 - (std20 * 2)
 
+        # [신규] 신고가 분석 로직
+        year_high = close.max()
+        curr_price = close.iloc[-1]
+        is_new_high = curr_price >= year_high * 0.98 # 1년 신고가의 98% 수준이면 신고가권으로 판단
+
         st.markdown(f"<p class='big-font'>{target_name} 지표 분석</p>", unsafe_allow_html=True)
         
-        c1, c2, c3 = st.columns(3)
-        c1.metric("현재가", f"{close.iloc[-1]:,.2f}")
-        c2.metric("RSI (강도)", f"{rsi.iloc[-1]:.1f}")
-        c3.metric("윌리엄 %R", f"{w_r.iloc[-1]:.1f}")
+        # 신고가 전용 안내창
+        if is_new_high:
+            st.markdown(f"""
+            <div class='info-box'>
+                <strong>🚀 신고가 영역 분석:</strong> 현재 주가가 1년 최고가 근처입니다. 
+                이 구간에서는 RSI가 높아도 기세가 강하면 계속 갑니다. 
+                <strong>매수 타점:</strong> 주가가 볼린저 밴드 '중심선(빨간선)'까지 눌릴 때를 기다리세요.
+            </div>
+            """, unsafe_allow_html=True)
 
-        # 신호등 로직
+        c1, c2, c3 = st.columns(3)
+        c1.metric("현재가", f"{curr_price:,.2f}")
+        c2.metric("RSI (과열도)", f"{rsi.iloc[-1]:.1f}")
+        c3.metric("1년 최고가", f"{year_high:,.2f}")
+
+        # 신호등 로직 (신고가 대응 추가)
         st.write("---")
-        is_cheap = rsi.iloc[-1] <= 35 or w_r.iloc[-1] <= -80
+        last_rsi = rsi.iloc[-1]
         macd_up = macd.iloc[-1] > macd.iloc[-2]
         
-        if is_cheap:
-            if macd_up: st.markdown("<div style='background-color:#FFEEEE; color:#FF4B4B; border-color:#FF4B4B;' class='status-box'>🚨 지금입니다! 강력 매수 🚨</div>", unsafe_allow_html=True)
+        if is_new_high and macd_up:
+            st.markdown("<div style='background-color:#E8F5E9; color:#2E7D32; border-color:#2E7D32;' class='status-box'>📈 추세 상승 (수익 극대화 구간) 📈</div>", unsafe_allow_html=True)
+        elif last_rsi <= 35 or w_r.iloc[-1] <= -80:
+            if macd_up: st.markdown("<div style='background-color:#FFEEEE; color:#FF4B4B; border-color:#FF4B4B;' class='status-box'>🚨 강력 매수 (바닥 탈출) 🚨</div>", unsafe_allow_html=True)
             else: st.markdown("<div style='background-color:#FFF4E5; color:#FFA000; border-color:#FFA000;' class='status-box'>✋ 싸지만 대기 (하락 중)</div>", unsafe_allow_html=True)
-        elif rsi.iloc[-1] >= 70: st.markdown("<div style='background-color:#EEFFEE; color:#2E7D32; border-color:#2E7D32;' class='status-box'>💰 익절 권장 구간 💰</div>", unsafe_allow_html=True)
-        else: st.markdown("<div style='background-color:#F0F2F6; color:#31333F; border-color:#D1D5DB;' class='status-box'>🟡 관망 및 관찰 구간 🟡</div>", unsafe_allow_html=True)
+        elif last_rsi >= 75:
+            st.markdown("<div style='background-color:#E1F5FE; color:#0288D1; border-color:#0288D1;' class='status-box'>💰 과열 주의 (일부 익절 고려) 💰</div>", unsafe_allow_html=True)
+        else:
+            st.markdown("<div style='background-color:#F5F5F5; color:#616161; border-color:#9E9E9E;' class='status-box'>🟡 관망 및 관찰 구간 🟡</div>", unsafe_allow_html=True)
 
-        # [수정] 볼린저 밴드 차트
-        st.write("### 📊 볼린저 밴드 흐름")
+        st.write("### 📊 볼린저 밴드 (중심선 터치 시 매수 고려)")
         bb_df = pd.DataFrame({'Price': close, 'Upper': upper, 'Lower': lower, 'MA20': ma20}).tail(80).reset_index()
-        bb_df.columns = ['Date', 'Price', 'Upper', 'Lower', 'MA20'] # 컬럼명 명시
+        bb_df.columns = ['Date', 'Price', 'Upper', 'Lower', 'MA20']
         
         base = alt.Chart(bb_df).encode(x=alt.X('Date:T', axis=alt.Axis(title=None)))
-        line = base.mark_line(color='#1E1E1E', strokeWidth=2).encode(y=alt.Y('Price:Q', axis=alt.Axis(title='주가')))
+        line = base.mark_line(color='#1E1E1E', strokeWidth=2).encode(y=alt.Y('Price:Q', scale=alt.Scale(zero=False)))
         b_up = base.mark_line(color='#B0BEC5', strokeDash=[5,5]).encode(y='Upper:Q')
         b_low = base.mark_line(color='#B0BEC5', strokeDash=[5,5]).encode(y='Lower:Q')
-        b_ma = base.mark_line(color='#EF5350', strokeWidth=1).encode(y='MA20:Q')
+        b_ma = base.mark_line(color='#EF5350', strokeWidth=1.5).encode(y='MA20:Q') # 빨간색 중심선
         
-        st.altair_chart(alt.layer(line, b_up, b_low, b_ma).properties(height=350), use_container_width=True)
+        st.altair_chart(alt.layer(b_up, b_low, b_ma, line).properties(height=350), use_container_width=True)
 
-        # [복구 및 수정] MACD 차트 (주황색 시그널 선 + 박스 제거)
-        st.write("### 📉 MACD 추세선 (파란선이 주황선을 뚫고 올라와야 합니다)")
+        st.write("### 📉 MACD 추세선 (파란선이 주황선 위에 있으면 보유)")
         macd_df = pd.DataFrame({'MACD': macd, 'Signal': sig}).tail(80).reset_index()
         macd_df.columns = ['Date', 'MACD', 'Signal']
-        
         base_m = alt.Chart(macd_df).encode(x=alt.X('Date:T', axis=alt.Axis(title=None)))
-        # 파란색 MACD 선
-        line_macd = base_m.mark_line(color='#0059FF', strokeWidth=2).encode(y=alt.Y('MACD:Q', axis=alt.Axis(title='강도')))
-        # 주황색 Signal 선
-        line_sig = base_m.mark_line(color='#FF8000', strokeWidth=2).encode(y='Signal:Q')
-        
-        # 
-        st.altair_chart(alt.layer(line_macd, line_sig).properties(height=250), use_container_width=True)
+        l_macd = base_m.mark_line(color='#0059FF', strokeWidth=2).encode(y=alt.Y('MACD:Q'))
+        l_sig = base_m.mark_line(color='#FF8000', strokeWidth=2).encode(y='Signal:Q')
+        st.altair_chart(alt.layer(l_macd, l_sig).properties(height=250), use_container_width=True)
 
-    else:
-        st.error("데이터를 가져오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.")
-
-# 초기화 버튼
 if st.sidebar.button("🗑️ 수첩 초기화"):
     st.session_state.name_map = {"삼성전자": "005930.KS", "아이온큐": "IONQ", "엔비디아": "NVDA"}
     st.rerun()
