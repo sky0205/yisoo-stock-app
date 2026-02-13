@@ -6,27 +6,25 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 # 1. 화면 스타일 설정
-st.set_page_config(page_title="이수 투자비책", layout="wide")
+st.set_page_config(page_title="이수 투자비책 V2", layout="wide")
 
 st.markdown("""
     <style>
     .stButton > button {
-        width: 100% !important; background-color: #FF8C00 !important; color: white !important;
+        width: 100% !important; background-color: #4B89FF !important; color: white !important;
         font-size: 26px !important; font-weight: bold !important; height: 60px !important;
-        border-radius: 15px !important; border: none !important; margin-top: 5px !important;
+        border-radius: 15px !important; border: none !important;
     }
     .big-font { font-size:32px !important; font-weight: bold; }
-    .realtime-font { font-size:20px !important; color: #00AD21; font-weight: bold; } /* 네이버 초록색 강조 */
+    .realtime-font { font-size:20px !important; color: #00AD21; font-weight: bold; }
     .index-font { font-size:28px !important; font-weight: bold; color: #007BFF; }
-    .buy-signal { font-size:55px !important; color: #FF4B4B; font-weight: bold; text-align: center; background-color: #FFEEEE; padding: 25px; border-radius: 15px; border: 3px solid #FF4B4B; }
-    .sell-signal { font-size:55px !important; color: #2E7D32; font-weight: bold; text-align: center; background-color: #EEFFEE; padding: 25px; border-radius: 15px; border: 3px solid #2E7D32; }
-    .wait-signal { font-size:55px !important; color: #FFA000; font-weight: bold; text-align: center; background-color: #FFF9EE; padding: 25px; border-radius: 15px; border: 3px solid #FFA000; }
+    .signal-box { padding: 25px; border-radius: 15px; border: 3px solid; text-align: center; font-size: 50px !important; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📈 이수 할아버지의 실시간 투자 비책")
+st.title("📈 이수 할아버지의 실시간 분석기 (MACD 강화판)")
 
-# [보강] 네이버에서 1초 만에 현재가 가져오는 함수
+# 네이버 실시간 가격 함수
 def get_naver_realtime_price(code):
     try:
         url = f"https://finance.naver.com/item/main.naver?code={code}"
@@ -34,31 +32,27 @@ def get_naver_realtime_price(code):
         res = requests.get(url, headers=headers)
         soup = BeautifulSoup(res.text, 'html.parser')
         price_tag = soup.select_one(".today .no_today .blind")
-        if price_tag:
-            return float(price_tag.text.replace(',', ''))
-        return None
-    except:
-        return None
+        return float(price_tag.text.replace(',', '')) if price_tag else None
+    except: return None
 
-@st.cache_data(ttl=20) # 20초마다 새 데이터 허용
+@st.cache_data(ttl=30)
 def get_analysis_data(ticker):
     try:
         df = yf.download(ticker, period="1y", interval="1d", multi_level_index=False)
         if df.empty: return None
         df.columns = [str(col).lower() for col in df.columns]
         return df
-    except:
-        return None
+    except: return None
 
-# 종목 사전
+# 종목 리스트
 stock_dict = {
     "에스피지": "058610.KQ", "삼성전자": "005930.KS", "유한양행": "000100.KS", 
     "삼성E&A": "028050.KS", "실리콘투": "247020.KQ", "아이온큐": "IONQ",
     "엔비디아": "NVDA", "넷플릭스": "NFLX"
 }
 
-user_input = st.text_input("종목을 입력하세요", value="유한양행").strip()
-analyze_btn = st.button("🔍 실시간 분석 시작!")
+user_input = st.text_input("종목명을 입력하세요", value="아이온큐").strip()
+analyze_btn = st.button("🚀 실시간 추세 분석!")
 
 ticker = stock_dict.get(user_input, user_input).upper()
 if user_input.isdigit() and len(user_input) == 6:
@@ -66,57 +60,72 @@ if user_input.isdigit() and len(user_input) == 6:
 
 if ticker:
     df = get_analysis_data(ticker)
-    
     if df is not None:
-        # 한국 주식일 경우 네이버 실시간 가격 합병
-        realtime_p = None
-        if ".KS" in ticker or ".KQ" in ticker:
-            pure_code = ticker.split('.')[0]
-            realtime_p = get_naver_realtime_price(pure_code)
-        
-        # 지표 계산용 종가 데이터 준비
+        # 실시간 가격 연동
+        realtime_p = get_naver_realtime_price(ticker.split('.')[0]) if ".K" in ticker else None
         close_series = df['close'].copy()
         if realtime_p:
-            # 마지막 데이터를 실시간 가격으로 교체하여 지표를 더 정확하게 계산
             close_series.iloc[-1] = realtime_p
-            curr_p = realtime_p
-            status_text = "🟢 네이버 실시간"
+            curr_p, status_text = realtime_p, "🟢 실시간(네이버)"
         else:
-            curr_p = close_series.iloc[-1]
-            status_text = "📅 지연 데이터(20분)"
+            curr_p, status_text = close_series.iloc[-1], "📅 지연 데이터(20분)"
 
-        # 3대 지표 계산
+        # 지표 계산
+        # 1. RSI
         delta = close_series.diff()
         rsi = 100 - (100 / (1 + (delta.where(delta > 0, 0).rolling(14).mean() / -delta.where(delta < 0, 0).rolling(14).mean())))
-        willr = -100 * (df['high'].rolling(14).max() - close_series) / (df['high'].rolling(14).max() - df['low'].rolling(14).min())
+        # 2. 볼린저 밴드
         sma20 = close_series.rolling(20).mean()
         std20 = close_series.rolling(20).std()
         upper_bb, lower_bb = sma20 + (std20 * 2), sma20 - (std20 * 2)
-
-        is_korea = ".KS" in ticker or ".KQ" in ticker
+        # 3. MACD (신규 추가!)
+        exp1 = close_series.ewm(span=12, adjust=False).mean()
+        exp2 = close_series.ewm(span=26, adjust=False).mean()
+        macd_line = exp1 - exp2
+        signal_line = macd_line.ewm(span=9, adjust=False).mean()
+        
+        # 화면 표시
+        is_korea = ".K" in ticker
         unit, fmt = ("원", "{:,.0f}") if is_korea else ("달러($)", "{:,.2f}")
         
         st.write(f"### 🔍 {user_input} ({ticker})")
         st.markdown(f"<p class='big-font'>현재가: {fmt.format(curr_p)} {unit}</p>", unsafe_allow_html=True)
-        st.markdown(f"<p class='realtime-font'>{status_text} 기준: {datetime.now().strftime('%H:%M:%S')}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p class='realtime-font'>{status_text}</p>", unsafe_allow_html=True)
+
+        st.write("---")
+        col1, col2, col3 = st.columns(3)
         
-        c_rsi, c_will = rsi.iloc[-1], willr.iloc[-1]
-        st.write("---")
-        col1, col2 = st.columns(2)
-        col1.markdown(f"**RSI (강도)**: <span class='index-font'>{c_rsi:.1f}</span>", unsafe_allow_html=True)
-        col2.markdown(f"**윌리엄 지수**: <span class='index-font'>{c_will:.1f}</span>", unsafe_allow_html=True)
+        # 지표별 요약
+        c_rsi = rsi.iloc[-1]
+        c_macd, c_sig = macd_line.iloc[-1], signal_line.iloc[-1]
+        p_macd, p_sig = macd_line.iloc[-2], signal_line.iloc[-2]
+        
+        col1.metric("RSI (강도)", f"{c_rsi:.1f}")
+        
+        # MACD 상태 판정
+        macd_status = "상승 추세" if c_macd > c_sig else "하락 추세"
+        if p_macd < p_sig and c_macd > c_sig: macd_status = "⭐ 골든크로스"
+        elif p_macd > p_sig and c_macd < c_sig: macd_status = "💀 데드크로스"
+        col2.metric("MACD 상태", macd_status)
+        
+        bb_pos = "하단 근접" if curr_p <= lower_bb.iloc[-1] else "상단 근접" if curr_p >= upper_bb.iloc[-1] else "중심선"
+        col3.metric("볼린저 밴드", bb_pos)
 
+        # 종합 판정 로직 강화
         st.write("---")
-        c_up, c_low = upper_bb.iloc[-1], lower_bb.iloc[-1]
-        if curr_p <= c_low and c_rsi <= 35 and c_will <= -80:
-            st.markdown("<div class='buy-signal'>🚨 강력 매수 🚨</div>", unsafe_allow_html=True)
-        elif curr_p >= c_up and c_rsi >= 65 and c_will >= -20:
-            st.markdown("<div class='sell-signal'>💰 매도 권장 💰</div>", unsafe_allow_html=True)
+        if (curr_p <= lower_bb.iloc[-1] and c_rsi <= 35) or (p_macd < p_sig and c_macd > c_sig):
+            st.markdown("<div class='signal-box' style='background-color:#FFEEEE; color:#FF4B4B; border-color:#FF4B4B;'>🚨 강력 매수 🚨</div>", unsafe_allow_html=True)
+            st.info("RSI가 낮거나 MACD 골든크로스가 발생했습니다. 매수하기 좋은 타이밍입니다!")
+        elif (curr_p >= upper_bb.iloc[-1] and c_rsi >= 65) or (p_macd > p_sig and c_macd < c_sig):
+            st.markdown("<div class='signal-box' style='background-color:#EEFFEE; color:#2E7D32; border-color:#2E7D32;'>💰 매도 권장 💰</div>", unsafe_allow_html=True)
+            st.info("RSI가 높거나 MACD 데드크로스가 발생했습니다. 수익을 실현할 때입니다!")
         else:
-            st.markdown("<div class='wait-signal'>🟡 신호 대기 🟡</div>", unsafe_allow_html=True)
+            st.markdown("<div class='signal-box' style='background-color:#FFF9EE; color:#FFA000; border-color:#FFA000;'>🟡 신호 대기 🟡</div>", unsafe_allow_html=True)
 
+        # 차트 (MACD 추가)
         st.write("---")
-        chart_data = pd.DataFrame({'현재가': close_series, '상단': upper_bb, '하단': lower_bb}).tail(100)
-        st.line_chart(chart_data)
+        st.line_chart(pd.DataFrame({'가격': close_series, '상단밴드': upper_bb, '하단밴드': lower_bb}).tail(60))
+        st.write("**[MACD 추세 차트]**")
+        st.line_chart(pd.DataFrame({'MACD선': macd_line, '시그널선': signal_line}).tail(60))
     else:
-        st.error("데이터를 가져오지 못했습니다. 종목 코드를 확인하세요.")
+        st.error("데이터를 가져올 수 없습니다.")
