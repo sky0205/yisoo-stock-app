@@ -1,3 +1,4 @@
-streamlit
 yfinance
+FinanceDataReader
 pandas
+altair
