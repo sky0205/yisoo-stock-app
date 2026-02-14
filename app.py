@@ -1,4 +1,3 @@
-
 import streamlit as st
 import subprocess
 import sys
@@ -102,4 +101,3 @@ with st.sidebar:
     if st.button("🗑️ 모든 기록 리셋"):
         st.session_state.clear()
         st.rerun()
-        
