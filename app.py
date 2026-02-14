@@ -1,12 +1,12 @@
 import streamlit as st
-import FinanceDataReader as fdr
 import yfinance as yf
+import FinanceDataReader as fdr
 import pandas as pd
 import altair as alt
-import requests
+import time
 
 # 1. 화면 설정
-st.set_page_config(page_title="Stock Analyzer v134", layout="wide")
+st.set_page_config(page_title="Stock Analyzer v135", layout="wide")
 
 st.markdown("""
     <style>
@@ -16,22 +16,22 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. 상단: 종목 입력
-st.title("👨‍💻 이수할아버지의 주식분석기 v134")
+# 2. 메인 화면 상단
+st.title("👨‍💻 주식 분석기 v135 (데이터 수신 최종 보강판)")
 
-# [필살기] 데이터 기억 초기화
-if st.button("🔄 [긴급] 데이터 기억 싹 지우고 다시 부르기"):
+# [필살기] 데이터 기억 초기화 버튼
+if st.button("🔄 [필살기] 데이터 기억 싹 지우고 다시 부르기"):
     st.cache_data.clear()
     st.rerun()
 
 st.write("---")
-u_input = st.text_input("🔍 종목 번호(6자리)나 티커 입력 후 엔터", value="005930")
+u_input = st.text_input("🔍 종목 번호(6자리)나 티커 입력 후 엔터 (예: 005930)", value="005930")
 ticker = u_input.strip()
 
-# 3. 데이터 엔진 (IP 차단을 피하기 위한 위장 장치)
+# 3. 데이터 엔진 (3단계 우회로 확보)
 @st.cache_data(ttl=60)
-def fetch_iron_v134(t):
-    # 길 1: 한국 전용 서버(FinanceDataReader) 시도
+def fetch_iron_v135(t):
+    # 길 1: 한국 전용 서버(FinanceDataReader)
     try:
         df = fdr.DataReader(t, '2024')
         if df is not None and not df.empty:
@@ -40,15 +40,10 @@ def fetch_iron_v134(t):
             return df, "국내 서버 직통 성공"
     except: pass
 
-    # 길 2: 야후 서버 우회 (사람인 척 위장하는 기능 추가)
+    # 길 2: 야후 서버 (다중 인덱스 방지 모드)
     try:
         yt = t + ".KS" if t.isdigit() else t
-        # 서버에게 브라우저인 척 속이는 헤더 정보
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-        session = requests.Session()
-        session.headers.update(headers)
-        
-        df = yf.download(yt, period="1y", interval="1d", auto_adjust=True, multi_level_index=False, session=session)
+        df = yf.download(yt, period="1y", interval="1d", auto_adjust=True, multi_level_index=False, threads=False)
         if df is not None and not df.empty:
             df.columns = [str(c).lower().strip() for c in df.columns]
             df = df.reset_index()
@@ -56,44 +51,53 @@ def fetch_iron_v134(t):
             return df, "해외 서버 우회 성공"
     except: pass
     
-    return None, "현재 IP가 차단되어 모든 서버가 응답하지 않습니다."
+    return None, "모든 통로가 차단되었습니다. 잠시 후 시도하거나 핫스팟을 연결해 보세요."
 
 if ticker:
     with st.spinner('서버의 문지기를 통과하는 중...'):
-        df, msg = fetch_iron_v134(ticker)
+        df, msg = fetch_iron_v135(ticker)
         
     if isinstance(df, pd.DataFrame):
         close = df['close']
-        ma20 = close.rolling(20).mean()
-        curr_p = close.iloc[-1]
-        
-        # 지표 계산
+        # 지표 계산 ($RSI$, $MACD$)
         diff = close.diff(); gain = diff.where(diff > 0, 0).rolling(14).mean(); loss = -diff.where(diff < 0, 0).rolling(14).mean().replace(0, 0.001)
-        rsi = (100 - (100 / (1 + (gain / loss)))).iloc[-1]
+        rsi_val = (100 - (100 / (1 + (gain / loss)))).iloc[-1]
+        
+        macd = close.ewm(span=12, adjust=False).mean() - close.ewm(span=26, adjust=False).mean()
+        sig = macd.ewm(span=9, adjust=False).mean()
+        ma20 = close.rolling(20).mean(); std20 = close.rolling(20).std()
+        up_b, lo_b = ma20 + (std20 * 2), ma20 - (std20 * 2)
 
+        # [A] 결론 신호등
         st.write("---")
-        if rsi <= 35:
+        if rsi_val <= 35:
             st.markdown(f"<div class='buy-box'>🚨 {ticker}: 강력 매수 구간 🚨</div>", unsafe_allow_html=True)
         else:
             st.markdown(f"<div class='wait-box'>🟡 {ticker}: 관망 및 추세 대기 🟡</div>", unsafe_allow_html=True)
 
+        # [B] 투자 지침
+        m_up = macd.iloc[-1] > sig.iloc[-1]; a_up = close.iloc[-1] > ma20.iloc[-1]
         memo = f"🚩 **{ticker} 투자 대응 지침** ({msg})<br>"
-        if curr_p > ma20.iloc[-1]: memo += "✅ **이평선**: 주가가 빨간 20일선 위에 있어 기세가 좋습니다.<br>"
-        else: memo += "❌ **이평선**: 아직 20일선 아래에 있습니다. 반등을 더 기다리세요."
+        if a_up: memo += "✅ **이평선**: 주가가 빨간 20일선 위에 있어 기세가 좋습니다.<br>"
+        else: memo += "❌ **이평선**: 아직 20일선 아래에 있습니다. 반등을 더 기다리세요.<br>"
+        if m_up: memo += "✅ **기세**: 상승 동력이 살아있습니다."
         st.markdown(f"<div class='memo-box'>{memo}</div>", unsafe_allow_html=True)
 
-        # 차트 출력
-        chart = alt.Chart(df.tail(100)).mark_line(color='#111827', strokeWidth=3).encode(
-            x=alt.X(df.columns[0]+':T', title='날짜'), 
-            y=alt.Y('close:Q', scale=alt.Scale(zero=False), title='주가')
-        )
-        st.altair_chart(chart.properties(height=400), use_container_width=True)
+        # [C] 차트 출력
+        st.metric("현재가", f"{close.iloc[-1]:,.0f}원" if ticker.isdigit() else f"${close.iloc[-1]:,.2f}")
+        
+        
+        
+        c_df = df.tail(100).reset_index(); c_df['MA20'] = ma20.tail(100).values; c_df['Upper'] = up_b.tail(100).values; c_df['Lower'] = lo_b.tail(100).values
+        base = alt.Chart(c_df).encode(x=alt.X(df.columns[0]+':T', title='날짜'))
+        line = base.mark_line(color='#111827', strokeWidth=3).encode(y=alt.Y('close:Q', scale=alt.Scale(zero=False)))
+        ma_line = base.mark_line(color='#EF4444', strokeWidth=2).encode(y='MA20:Q') # 빨간 20일선
+        st.altair_chart((line + ma_line).properties(height=500), use_container_width=True)
     else:
         st.error(f"⚠️ {msg}")
         st.info("💡 **IP 차단 해결법**: 휴대폰 핫스팟을 연결하시거나, 30분 뒤에 다시 시도해 보세요.")
 
 with st.sidebar:
-    st.write("### 🛠️ 도구함")
     if st.button("🗑️ 모든 기록 리셋"):
         st.session_state.clear()
         st.rerun()
