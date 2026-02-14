@@ -1,4 +1,4 @@
 yfinance
-FinanceDataReader
+finance-datareader
 pandas
 altair
