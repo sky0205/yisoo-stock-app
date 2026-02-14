@@ -1,10 +1,10 @@
 import streamlit as st
-import pandas as pd
 import yfinance as yf
+import pandas as pd
 import altair as alt
 
 # 1. 화면 설정
-st.set_page_config(page_title="이수 주식분석기 v73", layout="wide")
+st.set_page_config(page_title="이수 주식분석기 v75", layout="wide")
 
 if 'name_map' not in st.session_state:
     st.session_state.name_map = {
@@ -12,9 +12,17 @@ if 'name_map' not in st.session_state:
         "엔비디아": "NVDA", "아이온큐": "IONQ", "쿠팡": "CPNG", "넷플릭스": "NFLX"
     }
 
-# 2. 데이터 가져오기 (그래프 전용 날짜 수리 로직)
+st.markdown("""
+    <style>
+    .stMetric { background-color: #F0F2F6; padding: 20px; border-radius: 12px; border: 1px solid #D1D5DB; }
+    .big-font { font-size:38px !important; font-weight: bold; color: #111827; margin-bottom: 20px; }
+    .signal-box { padding: 30px; border-radius: 15px; text-align: center; font-size: 32px; font-weight: bold; margin: 20px 0; border: 4px solid; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# 2. 데이터 가져오기 (가장 강력한 수리 로직 포함)
 @st.cache_data(ttl=60)
-def get_graph_fixed_data(ticker):
+def get_grand_data_v75(ticker):
     try:
         df = yf.download(ticker, period="1y", interval="1d", auto_adjust=True, multi_level_index=False)
         if df is None or df.empty: return None
@@ -24,72 +32,102 @@ def get_graph_fixed_data(ticker):
             df.columns = df.columns.get_level_values(-1)
         df.columns = [str(c).lower().replace(" ", "").strip() for c in df.columns]
         
-        # [핵심 수리] 날짜 형식을 그래프가 그리기 가장 쉬운 상태로 만듭니다.
+        # 날짜 정렬 및 인덱스 초기화
         df = df.reset_index()
         df.rename(columns={df.columns[0]: 'Date'}, inplace=True)
-        df['Date'] = pd.to_datetime(df['Date']).dt.tz_localize(None) # 시간대 제거 (에러 방지)
+        df['Date'] = pd.to_datetime(df['Date']).dt.tz_localize(None)
         
         if 'close' not in df.columns:
-            df['close'] = df.iloc[:, 1] # 종가가 없으면 첫 번째 숫자열 사용
+            df['close'] = df.iloc[:, 1]
             
         return df.sort_values('Date').ffill().dropna()
     except:
         return None
 
 # UI 시작
-st.title("👨‍💻 이수할아버지의 주식분석기 v73")
+st.title("👨‍💻 이수할아버지의 주식분석기 v75 (v20 복원판)")
 st.write("---")
 
-sel_name = st.selectbox("📋 분석할 종목 선택", options=list(st.session_state.name_map.keys()))
+sel_name = st.selectbox("📋 종목을 선택하세요", options=list(st.session_state.name_map.keys()), index=0)
 t_ticker = st.session_state.name_map[sel_name]
 
-if st.button("🚀 분석 및 그래프 그리기"):
-    with st.spinner('차트를 정밀하게 그리는 중입니다...'):
-        df = get_graph_fixed_data(t_ticker)
-        
-        # 한국 주식 재시도
-        if (df is None or df.empty) and ".KS" in t_ticker:
-            df = get_graph_fixed_data(t_ticker.replace(".KS", ".KQ"))
+if t_ticker:
+    df = get_grand_data_v75(t_ticker)
+    if (df is None or df.empty) and ".KS" in t_ticker:
+        df = get_grand_data_v75(t_ticker.replace(".KS", ".KQ"))
 
     if df is not None and not df.empty:
         # 지표 계산
         close = df['close']
         high = df.get('high', close); low = df.get('low', close)
         
-        # RSI, 윌리엄 %R
+        # 1. RSI
         diff = close.diff()
         gain = diff.where(diff > 0, 0).rolling(14).mean()
         loss = -diff.where(diff < 0, 0).rolling(14).mean().replace(0, 0.001)
         rsi_val = 100 - (100 / (1 + (gain / loss)))
+        
+        # 2. Williams %R
         w_r = (high.rolling(14).max() - close) / (high.rolling(14).max() - low.rolling(14).min()).replace(0, 0.001) * -100
         
-        # 1. 숫자 보고서 (이건 어제 보였던 부분)
-        st.subheader(f"📈 {sel_name} 분석 지표")
-        m1, m2, m3 = st.columns(3)
-        m1.metric("현재가", f"{close.iloc[-1]:,.0f}" if ".K" in t_ticker else f"{close.iloc[-1]:,.2f}")
+        # 3. MACD
+        exp1 = close.ewm(span=12, adjust=False).mean()
+        exp2 = close.ewm(span=26, adjust=False).mean()
+        macd_line = exp1 - exp2
+        signal_line = macd_line.ewm(span=9, adjust=False).mean()
+        
+        # 4. Bollinger Bands
+        ma20 = close.rolling(20).mean()
+        std20 = close.rolling(20).std()
+        upper_bb = ma20 + (std20 * 2)
+        lower_bb = ma20 - (std20 * 2)
+        
+        curr_p = close.iloc[-1]; y_high = close.max()
+
+        # 보고서 상단 지표
+        st.markdown(f"<p class='big-font'>{sel_name} 프리미엄 분석 보고서</p>", unsafe_allow_html=True)
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("현재가", f"{curr_p:,.0f}" if ".K" in t_ticker else f"{curr_p:,.2f}")
         m2.metric("RSI (과열도)", f"{rsi_val.iloc[-1]:.1f}")
         m3.metric("윌리엄 %R", f"{w_r.iloc[-1]:.1f}")
+        m4.metric("1년 최고가", f"{y_high:,.0f}" if ".K" in t_ticker else f"{y_high:,.2f}")
 
-        # 2. [오늘의 핵심] 그래프 강제 출력
+        # 신호등 박스
         st.write("---")
-        st.subheader("📊 최근 주가 흐름 (그래프)")
-        
-        # 그래프 데이터 준비 (최근 100일)
-        chart_data = df[['Date', 'close']].tail(100)
-        
-        # Streamlit 기본 차트로 안정성 강화
-        st.line_chart(chart_data.set_index('Date'))
-        
-        # 보너스: 바닥 신호등
         if rsi_val.iloc[-1] <= 35 or w_r.iloc[-1] <= -80:
-            st.error("🚨 지금은 '바닥권'입니다. 매수 관점으로 보세요!")
-        elif rsi_val.iloc[-1] >= 70:
-            st.warning("⚠️ 지금은 '과열권'입니다. 조심하세요!")
+            st.markdown("<div style='background-color:#FFEEEE; color:#CC0000; border-color:#CC0000;' class='signal-box'>🚨 강력 매수 (바닥 탈출 신호) 🚨</div>", unsafe_allow_html=True)
+        elif curr_p >= y_high * 0.97:
+            st.markdown("<div style='background-color:#E8F5E9; color:#2E7D32; border-color:#2E7D32;' class='signal-box'>📈 신고가 돌파 (추세 상승 중) 📈</div>", unsafe_allow_html=True)
         else:
-            st.success("🟢 현재 안정적인 흐름입니다.")
-            
+            st.markdown("<div style='background-color:#F9FAFB; color:#4B5563; border-color:#D1D5DB;' class='signal-box'>🟡 관망 및 대기 (추세 주시) 🟡</div>", unsafe_allow_html=True)
+
+        # 그래프 섹션 1: 주가 및 볼린저 밴드
+        st.write("### 📊 주가 추세 및 볼린저 밴드 (회색: 주가 통로)")
+        chart_df = df[['Date', 'close']].tail(120).copy()
+        chart_df['Upper'] = upper_bb.tail(120)
+        chart_df['Lower'] = lower_bb.tail(120)
+        chart_df['MA20'] = ma20.tail(120)
+        
+        base = alt.Chart(chart_df).encode(x=alt.X('Date:T', axis=alt.Axis(title=None)))
+        band = base.mark_area(opacity=0.1, color='gray').encode(y='Lower:Q', y2='Upper:Q')
+        line = base.mark_line(color='#111827', strokeWidth=3).encode(y=alt.Y('close:Q', scale=alt.Scale(zero=False)))
+        ma_line = base.mark_line(color='#EF4444', strokeWidth=2).encode(y='MA20:Q')
+        st.altair_chart((band + line + ma_line).properties(height=450), use_container_width=True)
+
+        # 그래프 섹션 2: MACD
+        st.write("### 📉 MACD 추세선 (파란선이 주황선 위에 있어야 상승세)")
+        macd_df = pd.DataFrame({
+            'Date': chart_df['Date'],
+            'MACD': macd_line.tail(120),
+            'Signal': signal_line.tail(120)
+        })
+        m_base = alt.Chart(macd_df).encode(x=alt.X('Date:T', axis=alt.Axis(title=None)))
+        m_line = m_base.mark_line(color='#2563EB', strokeWidth=2).encode(y='MACD:Q')
+        s_line = m_base.mark_line(color='#F59E0B', strokeWidth=2).encode(y='Signal:Q')
+        st.altair_chart((m_line + s_line).properties(height=250), use_container_width=True)
+        
     else:
-        st.error("❌ 데이터 수신은 성공했으나 그래프를 그리는 데 실패했습니다. 잠시 후 새로고침(F5) 해주세요.")
+        st.error("데이터를 불러오는 중입니다. 잠시만 기다려 주세요.")
 
 if st.sidebar.button("🗑️ 초기화"):
     st.session_state.clear()
