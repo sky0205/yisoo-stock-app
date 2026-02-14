@@ -3,14 +3,14 @@ import yfinance as yf
 import pandas as pd
 import altair as alt
 
-# 1. 화면 설정
-st.set_page_config(page_title="이수 주식분석기 v105", layout="wide")
+# 1. 화면 설정 및 종목 기억장치
+st.set_page_config(page_title="이수 주식분석기 v106", layout="wide")
 
 # 오늘 본 종목들을 기억하는 바구니
-if 'my_stocks' not in st.session_state:
-    st.session_state.my_stocks = {"삼성전자": "005930.KS", "아이온큐": "IONQ", "엔비디아": "NVDA"}
-if 'now_view' not in st.session_state:
-    st.session_state.now_view = "005930.KS"
+if 'my_list' not in st.session_state:
+    st.session_state.my_list = {"삼성전자": "005930.KS", "아이온큐": "IONQ", "엔비디아": "NVDA"}
+if 'target' not in st.session_state:
+    st.session_state.target = "005930.KS"
 
 st.markdown("""
     <style>
@@ -20,40 +20,36 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. 메인 화면 구성
-st.title("👨‍💻 이수할아버지의 주식분석기 v105")
+# 2. 메인 화면 상단: 검색창 (이곳은 절대 안 사라집니다)
+st.title("👨‍💻 이수할아버지의 주식분석기 v106")
 st.write("---")
 
-# 검색창 영역
+# 검색 영역
 st.subheader("🔍 종목 번호(6자리)나 티커를 입력하세요")
-col_in, col_btn = st.columns([3, 1])
+u_input = st.text_input("숫자만 입력하고 엔터 (예: 000660)", key="search_bar")
 
-with col_in:
-    user_input = st.text_input("숫자만 입력해도 됩니다 (예: 000660)", key="search_bar")
-
-if user_input:
-    code = user_input.upper().strip()
-    # 한국 주식 번호 6자리 자동 완성
+if u_input:
+    code = u_input.upper().strip()
+    # 숫자 6자리면 코스피(.KS)로 자동 완성
     full_code = code + ".KS" if (code.isdigit() and len(code) == 6) else code
-    # 일단 리스트에 넣고 화면 전환
-    st.session_state.my_stocks[full_code] = full_code
-    st.session_state.now_view = full_code
+    st.session_state.my_list[full_code] = full_code
+    st.session_state.target = full_code
     st.rerun()
 
+# 3. 리스트 선택 영역
 st.write("---")
+options = list(st.session_state.my_list.keys())
+sel_ticker = st.selectbox("📋 오늘 분석 중인 리스트", 
+                          options=options, 
+                          index=options.index(st.session_state.target) if st.session_state.target in options else 0)
+st.session_state.target = sel_ticker
 
-# 3. 리스트에서 고르기
-opts = list(st.session_state.my_stocks.keys())
-sel_ticker = st.selectbox("📋 오늘 분석 중인 리스트 (방금 검색한 것도 여기 들어있습니다)", 
-                          options=opts, 
-                          index=opts.index(st.session_state.now_view) if st.session_view in opts else 0)
-st.session_state.now_view = sel_ticker
-
-# 4. 데이터 로드 및 분석
+# 4. 데이터 로드 및 분석 (이 부분에서 에러가 나도 상단은 살아있습니다)
 @st.cache_data(ttl=60)
-def load_data_final(ticker):
+def get_data_v106(ticker):
     try:
-        df = yf.download(ticker, period="1y", interval="1d", auto_adjust=True)
+        # 야후 서버 응답 속도를 위해 threads=False 설정
+        df = yf.download(ticker, period="1y", interval="1d", auto_adjust=True, threads=False)
         if df is None or df.empty: return None
         if isinstance(df.columns, pd.MultiIndex): df.columns = df.columns.get_level_values(-1)
         df.columns = [str(c).lower().replace(" ", "") for c in df.columns]
@@ -64,19 +60,18 @@ def load_data_final(ticker):
     except: return None
 
 if sel_ticker:
-    df = load_data_final(sel_ticker)
+    df = get_data_v106(sel_ticker)
     if df is not None:
         close = df['close']; high = df['high']; low = df['low']
-        # RSI 계산
+        # 지표 계산 ($RSI$, $MACD$)
         diff = close.diff()
         rsi = 100 - (100 / (1 + (diff.where(diff > 0, 0).rolling(14).mean() / -diff.where(diff < 0, 0).rolling(14).mean().replace(0, 0.001))))
-        # MACD 및 이평선
         macd = close.ewm(span=12).mean() - close.ewm(span=26).mean()
         signal = macd.ewm(span=9).mean()
         ma20 = close.rolling(20).mean()
-        std20 = close.rolling(20).std()
         
-        last_rsi = rsi.iloc[-1]; curr_p = close.iloc[-1]; macd_up = macd.iloc[-1] > signal.iloc[-1]; ma20_up = curr_p > ma20.iloc[-1]
+        last_rsi = rsi.iloc[-1]; curr_p = close.iloc[-1]
+        macd_up = macd.iloc[-1] > signal.iloc[-1]; ma20_up = curr_p > ma20.iloc[-1]
 
         # 결론 출력
         if last_rsi <= 35:
@@ -85,17 +80,13 @@ if sel_ticker:
             st.markdown(f"<div class='wait-box'>🟡 {sel_ticker}: 관망 및 추세 대기 🟡</div>", unsafe_allow_html=True)
 
         memo = f"🚩 **투자 지침**: "
-        memo += "주가가 20일선 위로 올라와 안정적입니다. " if ma20_up else "아직 20일선 아래이니 조심하세요. "
-        memo += "MACD 기세가 상승 중입니다." if macd_up else "기세가 아직 하락 중입니다."
+        memo += "주가가 20일선 위로 올라왔습니다. 매수 시점입니다! " if ma20_up else "아직 20일선 아래이니 좀 더 기다리세요. "
+        memo += "기세(MACD)가 상승 중이라 보유가 유리합니다." if macd_up else "기세가 아직 하락세입니다."
         st.markdown(f"<div class='memo-box'>{memo}</div>", unsafe_allow_html=True)
 
-        # 지표 칸
-        m1, m2, m3 = st.columns(3)
-        m1.metric("현재가", f"{curr_p:,.0f}" if ".K" in sel_ticker else f"{curr_p:,.2f}")
-        m2.metric("RSI (바닥여부)", f"{last_rsi:.1f}")
-        m3.metric("MACD 기세", "상승 중" if macd_up else "하락 중")
-
-        # 그래프
+        # 지표와 그래프
+        st.metric("현재가", f"{curr_p:,.0f}" if ".K" in sel_ticker else f"{curr_p:,.2f}")
+        
         chart_df = df.tail(100).reset_index()
         chart_df['MA20'] = ma20.tail(100).values
         base = alt.Chart(chart_df).encode(x='Date:T')
@@ -103,4 +94,9 @@ if sel_ticker:
         ma_line = base.mark_line(color='#EF4444', strokeWidth=2).encode(y='MA20:Q')
         st.altair_chart((line + ma_line).properties(height=400), use_container_width=True)
     else:
-        st.error("데이터를 불러올 수 없습니다. 번호를 다시 확인해주세요.")
+        st.warning("⚠️ 데이터를 가져오지 못했습니다. 번호를 다시 확인하시거나 잠시 후 F5(새로고침)를 눌러주세요.")
+
+with st.sidebar:
+    if st.button("🗑️ 전체 초기화"):
+        st.session_state.clear()
+        st.rerun()
