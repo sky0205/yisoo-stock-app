@@ -3,14 +3,17 @@ import yfinance as yf
 import pandas as pd
 import altair as alt
 
-# 1. 화면 설정 및 초기 상태 저장
-st.set_page_config(page_title="이수 Stock Analyzer v95", layout="wide")
+# 1. 화면 설정 및 종목 기억장치 (세션 유지)
+st.set_page_config(page_title="이수 Stock Analyzer v96", layout="wide")
 
-# 오늘 본 종목을 기억하는 바구니
-if 'current_ticker' not in st.session_state:
-    st.session_state.current_ticker = "005930.KS" # 기본값: 삼성전자
-if 'search_history' not in st.session_state:
-    st.session_state.search_history = ["005930.KS", "IONQ", "NVDA"]
+# [기억 바구니] 오늘 검색한 종목명과 코드를 쌍으로 저장합니다.
+if 'stock_memory' not in st.session_state:
+    st.session_state.stock_memory = {
+        "삼성전자": "005930.KS", "현대차": "005380.KS", "유한양행": "000100.KS",
+        "아이온큐": "IONQ", "엔비디아": "NVDA"
+    }
+if 'current_sel' not in st.session_state:
+    st.session_state.current_sel = "삼성전자"
 
 st.markdown("""
     <style>
@@ -21,50 +24,73 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. 상단 검색창 (입력 즉시 작동)
-st.title("👨‍💻 이수할아버지의 주식분석기 v95")
+# 2. 지능형 종목 이름 찾기 함수
+def fetch_stock_name(input_code):
+    code = input_code.upper().strip()
+    # 한국 주식 번호 6자리 처리
+    if code.isdigit() and len(code) == 6:
+        for suffix in [".KS", ".KQ"]:
+            t = yf.Ticker(code + suffix)
+            try:
+                # 이름을 가져오되, 못 찾으면 코드를 이름으로 씁니다.
+                name = t.info.get('shortName') or t.info.get('longName') or code
+                return name, code + suffix
+            except: continue
+    else:
+        # 미국 주식 등 티커 처리
+        t = yf.Ticker(code)
+        try:
+            name = t.info.get('shortName') or t.info.get('longName') or code
+            return name, code
+        except: return code, code
+    return None, None
+
+# 3. 상단: 종목 검색 및 즉시 전환
+st.title("👨‍💻 이수할아버지의 주식분석기 v96")
 st.write("---")
 
-col1, col2 = st.columns([3, 1])
-with col1:
-    # [핵심] 여기에 입력하고 엔터를 치면 즉시 분석 시작
-    user_input = st.text_input("🔍 종목 번호(6자리)나 티커를 입력하세요", placeholder="예: 000660 또는 TSLA", key="search_input")
-with col2:
-    # 그동안 검색한 리스트에서 골라보기
-    selected_hist = st.selectbox("📋 오늘 본 종목 다시보기", options=st.session_state.search_history)
+col_search, col_list = st.columns([2, 2])
 
-# 입력값 처리 로직
-final_ticker = st.session_state.current_ticker
-if user_input:
-    temp_ticker = user_input.upper().strip()
-    if temp_ticker.isdigit() and len(temp_ticker) == 6:
-        temp_ticker += ".KS" # 한국 주식 자동 완성
-    final_ticker = temp_ticker
-    # 히스토리에 추가
-    if final_ticker not in st.session_state.search_history:
-        st.session_state.search_history.insert(0, final_ticker)
-    st.session_state.current_ticker = final_ticker
-elif selected_hist:
-    final_ticker = selected_hist
+with col_search:
+    st.subheader("🔍 새로운 종목 검색 (번호만 치세요)")
+    user_input = st.text_input("종목 코드 입력 (예: 000660 또는 TSLA)", key="search_bar")
+    
+    if user_input:
+        name, full_code = fetch_stock_name(user_input)
+        if full_code:
+            st.session_state.stock_memory[name] = full_code
+            st.session_state.current_sel = name
+            st.rerun()
 
-# 3. 데이터 엔진
-@st.cache_data(ttl=60)
-def fetch_data_v95(ticker):
+with col_list:
+    st.subheader("📋 오늘 기억된 종목 리스트")
+    options = list(st.session_state.stock_memory.keys())
     try:
-        data = yf.download(ticker, period="1y", interval="1d", auto_adjust=True, multi_level_index=False)
-        if data is None or data.empty: return None
-        data.columns = [str(c).lower().replace(" ", "").strip() for c in data.columns]
-        data = data.reset_index()
-        data.rename(columns={data.columns[0]: 'Date'}, inplace=True)
-        data['Date'] = pd.to_datetime(data['Date']).dt.tz_localize(None)
-        return data.sort_values('Date').ffill().dropna()
+        def_idx = options.index(st.session_state.current_sel)
+    except:
+        def_idx = 0
+    sel_name = st.selectbox("다시 볼 종목을 고르세요", options=options, index=def_idx)
+    st.session_state.current_sel = sel_name
+
+# 4. 데이터 엔진 및 지표 계산
+target_ticker = st.session_state.stock_memory[sel_name]
+
+@st.cache_data(ttl=60)
+def get_data_v96(ticker):
+    try:
+        df = yf.download(ticker, period="1y", interval="1d", auto_adjust=True, multi_level_index=False)
+        if df is None or df.empty: return None
+        df.columns = [str(c).lower().replace(" ", "").strip() for c in df.columns]
+        df = df.reset_index()
+        df.rename(columns={df.columns[0]: 'Date'}, inplace=True)
+        df['Date'] = pd.to_datetime(df['Date']).dt.tz_localize(None)
+        return df.sort_values('Date').ffill().dropna()
     except: return None
 
-# 4. 분석 결과 출력
-if final_ticker:
-    df = fetch_data_v95(final_ticker)
+if target_ticker:
+    df = get_data_v96(target_ticker)
     if df is not None and not df.empty:
-        # 지표 계산 ($RSI$, $W\%R$, $MACD$)
+        # 지표 계산 ($RSI$, $Williams \%R$, $MACD$)
         close = df['close']; high = df.get('high', close); low = df.get('low', close)
         diff = close.diff(); gain = diff.where(diff > 0, 0).rolling(14).mean(); loss = -diff.where(diff < 0, 0).rolling(14).mean().replace(0, 0.001)
         rsi = 100 - (100 / (1 + (gain / loss))); last_rsi = rsi.iloc[-1]
@@ -75,47 +101,46 @@ if final_ticker:
         curr_p = close.iloc[-1]; y_high = close.max()
         macd_up = macd.iloc[-1] > signal.iloc[-1]; ma20_up = curr_p > ma20.iloc[-1]
 
-        # [1] 결론 신호등
+        # [A] 결론 신호등
+        st.write("---")
         if last_rsi <= 35 or last_wr <= -80:
             st.markdown("<div class='buy-box'>🚨 강력 매수 (바닥권 진입) 🚨</div>", unsafe_allow_html=True)
         else:
             st.markdown("<div class='wait-box'>🟡 관망 및 추세 대기 🟡</div>", unsafe_allow_html=True)
 
-        # [2] 투자 지침 메모
-        memo = f"🚩 **{final_ticker} 분석 및 대응 전략**<br>"
-        if ma20_up: memo += "✅ **이동평균**: 주가가 빨간 중간선(20일선) 위로 올라와 안정적입니다.<br>"
-        else: memo += "❌ **이동평균**: 아직 중간선 아래에 있으니 반등을 더 확인하세요.<br>"
+        # [B] 투자 지침 메모
+        memo = f"🚩 **{sel_name} ({target_ticker}) 투자 대응 지침**<br>"
+        if ma20_up: memo += "✅ **20일선**: 주가가 빨간 중간선 위로 올라와 안정적입니다.<br>"
+        else: memo += "❌ **20일선**: 아직 중간선 아래에 있으니 반등을 확인하세요.<br>"
         if macd_up: memo += "✅ **기세**: 파란선(MACD)이 주황선 위에 있어 보유가 유리합니다.<br>"
         else: memo += "⚠️ **주의**: 기세가 아직 하락 중입니다. 바닥 신호가 나와도 조금 더 기다리세요.<br>"
-        if curr_p >= y_high * 0.98: memo += "🔥 **신고가**: 전고점 돌파 임박! 돌파 시 추가 매수 자립입니다."
+        if curr_p >= y_high * 0.98: memo += "🔥 **신고가**: 전고점 돌파 임박! 돌파 시 추가 매수 자리입니다."
         st.markdown(f"<div class='memo-box'>{memo}</div>", unsafe_allow_html=True)
 
-        # [3] 상세 보고서
+        # [C] 수치 보고서
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("현재가", f"{curr_p:,.0f}" if ".K" in final_ticker else f"{curr_p:,.2f}")
+        m1.metric("현재가", f"{curr_p:,.0f}원" if ".K" in target_ticker else f"${curr_p:,.2f}")
         m2.metric("RSI (바닥)", f"{last_rsi:.1f}")
         m3.metric("MACD 기세", "상승 중" if macd_up else "하락 중")
-        m4.metric("1년 최고가", f"{y_high:,.0f}" if ".K" in final_ticker else f"{y_high:,.2f}")
+        m4.metric("1년 최고가", f"{y_high:,.0f}" if ".K" in target_ticker else f"${y_high:,.2f}")
 
-        # [4] 주가 차트 (볼린저 밴드)
+        # [D] 그래프
         st.write("---")
         chart_df = df.tail(100).reset_index()
         chart_df['MA20'] = ma20.tail(100).values; chart_df['Upper'] = upper.tail(100).values; chart_df['Lower'] = lower.tail(100).values
         base = alt.Chart(chart_df).encode(x='Date:T')
         band = base.mark_area(opacity=0.1, color='gray').encode(y='Lower:Q', y2='Upper:Q')
         line = base.mark_line(color='#111827', strokeWidth=3).encode(y=alt.Y('close:Q', scale=alt.Scale(zero=False)))
-        ma_line = base.mark_line(color='#EF4444', strokeWidth=2).encode(y='MA20:Q') # 빨간 중간선
+        ma_line = base.mark_line(color='#EF4444', strokeWidth=2).encode(y='MA20:Q')
         st.altair_chart((band + line + ma_line).properties(height=500), use_container_width=True)
 
-        # [5] MACD 차트
-        st.write("### 📉 MACD 추세 (파란선이 주황선 위에 있어야 보유!)")
         m_df = pd.DataFrame({'Date': chart_df['Date'], 'MACD': macd.tail(100).values, 'Signal': signal.tail(100).values})
         m_base = alt.Chart(m_df).encode(x='Date:T')
         st.altair_chart((m_base.mark_line(color='#2563EB').encode(y='MACD:Q') + m_base.mark_line(color='#F59E0B').encode(y='Signal:Q')).properties(height=200), use_container_width=True)
     else:
-        st.error(f"⚠️ '{final_ticker}' 데이터를 가져올 수 없습니다. 인터넷 연결이나 코드를 확인해 주세요.")
+        st.error("데이터를 가져오는 중 오류가 발생했습니다. 잠시 후 시도해 주세요.")
 
 with st.sidebar:
-    if st.button("🗑️ 전체 초기화"):
+    if st.button("🗑️ 오늘 기억 지우기"):
         st.session_state.clear()
         st.rerun()
