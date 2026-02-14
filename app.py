@@ -96,5 +96,12 @@ if sel_ticker:
         chart_df['MA20'] = ma20.tail(100).values
         base = alt.Chart(chart_df).encode(x='Date:T')
         line = base.mark_line(color='#111827', strokeWidth=3).encode(y=alt.Y('close:Q', scale=alt.Scale(zero=False)))
-        ma_line = base.mark_line(color='#EF4444', strokeWidth=2).encode(y='MA
-        
+        ma_line = base.mark_line(color='#EF4444', strokeWidth=2).encode(y='MA20:Q')
+        st.altair_chart((line + ma_line).properties(height=450), use_container_width=True)
+    else:
+        st.error(f"⚠️ 야후 서버가 {sel_ticker} 데이터를 숨겼습니다. 잠시 후 다시 시도하시거나 번역 기능을 꺼주세요.")
+
+with st.sidebar:
+    if st.button("🗑️ 전체 리셋"):
+        st.session_state.clear()
+        st.rerun()
