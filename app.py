@@ -27,12 +27,10 @@ symbol = st.text_input("📊 종목코드 입력", value=st.session_state['targe
 
 if symbol:
     try:
-        # 데이터 가져오기
         df = fdr.DataReader(symbol).tail(120)
         if not df.empty:
             if symbol not in st.session_state['history']: st.session_state['history'].insert(0, symbol)
             
-            # 종목명 찾기 로직 (에러 방지용 try-except)
             stock_name = symbol
             try:
                 krx = fdr.StockListing('KRX')
@@ -50,7 +48,6 @@ if symbol:
             macd = exp12 - exp26; signal = macd.ewm(span=9, adjust=False).mean()
             h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min(); wr = ((h14 - close) / (h14 - l14)).iloc[-1] * -100
             
-            # 3. 신호 판단
             curr_p = close.iloc[-1]
             is_buy = curr_p <= lo_b.iloc[-1] or wr < -80
             is_sell = curr_p >= up_b.iloc[-1] or wr > -20
@@ -65,7 +62,7 @@ if symbol:
             else:
                 st.markdown(f"<div class='signal-box wait'>🟡 관망 및 대기</div>", unsafe_allow_html=True)
 
-            # 4. 부드러운 추세 분석 (요청 반영)
+            # 3. 부드러운 추세 분석
             st.write("### 📉 오늘의 추세 정밀 진단")
             if is_buy:
                 if macd.iloc[-1] < signal.iloc[-1]:
@@ -79,7 +76,7 @@ if symbol:
     except Exception as e:
         st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
 
-# 5. 검색 기록 버튼
+# 4. 검색 기록 버튼
 st.write("---")
 st.subheader("📜 최근 검색 종목")
 cols = st.columns(5)
