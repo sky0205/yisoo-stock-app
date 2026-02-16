@@ -1,4 +1,4 @@
 finance-datareader
 pandas
 yfinance
-altair
+streamlit
