@@ -1,4 +1,3 @@
 finance-datareader
 pandas
-altair
 yfinance
