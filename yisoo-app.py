@@ -2,7 +2,7 @@ import streamlit as st
 import FinanceDataReader as fdr
 import pandas as pd
 
-# 1. 고대비 및 가독성 중심 스타일 설정
+# 1. 고대비 스타일 및 가독성 최적화
 st.set_page_config(layout="centered")
 st.markdown("""
     <style>
@@ -18,39 +18,40 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# [기능] 검색 기록 및 타겟 관리 (세션 상태)
+# [세션 관리] 기록 및 타겟 초기화 (페이지 새로고침 시에도 유지 시도)
 if 'history' not in st.session_state: st.session_state['history'] = []
 if 'target' not in st.session_state: st.session_state['target'] = "257720"
 
-st.title("👨‍💻 이수할아버지의 '원터치' 분석기 v21000")
+st.title("👨‍💻 이수할아버지의 '무조건 기록' 분석기 v22000")
 
-# 데이터 로드 (환율 및 종목명 리스트)
+# 기초 데이터 로드
 @st.cache_data(ttl=3600)
-def load_all_base_data():
+def load_base_data():
     try: rate = fdr.DataReader('USD/KRW').iloc[-1]['close']
     except: rate = 1350.0
     try: krx = fdr.StockListing('KRX')[['Code', 'Name']]
     except: krx = pd.DataFrame(columns=['Code', 'Name'])
     return float(rate), krx
 
-usd_krw, krx_list = load_all_base_data()
+usd_krw, krx_list = load_base_data()
 
-# [입력창] 종목코드 입력 (target 세션값을 기본값으로 사용)
+# [입력창]
 symbol = st.text_input("📊 종목코드 입력", value=st.session_state['target']).strip().upper()
 
 if symbol:
     try:
         df = fdr.DataReader(symbol).tail(120)
         if not df.empty:
-            # 검색 기록 추가 (중복 제거 및 최신순)
-            if symbol not in st.session_state['history']:
-                st.session_state['history'].insert(0, symbol)
+            # [기록 로직 강화] 중복이면 제거 후 맨 앞으로, 아니면 그냥 추가
+            if symbol in st.session_state['history']:
+                st.session_state['history'].remove(symbol)
+            st.session_state['history'].insert(0, symbol)
             
             df.columns = [str(c).lower() for c in df.columns]
             curr_p = float(df['close'].iloc[-1])
             is_us = not symbol.isdigit()
             
-            # 종목명 강제 확인
+            # [종목명 강제 확인]
             stock_name = symbol
             if not is_us and not krx_list.empty:
                 match = krx_list[krx_list['Code'] == symbol]
@@ -66,55 +67,53 @@ if symbol:
             macd = float((exp12 - exp26).iloc[-1]); sig = float((exp12 - exp26).ewm(span=9, adjust=False).mean().iloc[-1])
             h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min(); wr = float(((h14.iloc[-1] - curr_p) / (h14.iloc[-1] - l14.iloc[-1])) * -100)
 
-            # [출력 1] 종목 및 가격 정보
+            # [출력 1] 종목 및 가격
             st.header(f"🏢 {stock_name} ({symbol})")
             if is_us: st.subheader(f"현재가: ${curr_p:,.2f} (약 {curr_p * usd_krw:,.0f}원)")
             else: st.subheader(f"현재가: {curr_p:,.0f}원")
 
-            # [출력 2] 신호등 (매수/매도 시점)
+            # [출력 2] 신호등
             is_buy = curr_p <= lo_b or rsi < 35 or wr < -80
             is_sell = curr_p >= up_b or rsi > 65 or wr > -20
             
             if is_buy:
                 st.markdown("<div class='signal-box buy'>🔴 매수 사정권 (적기)</div>", unsafe_allow_html=True)
-                msg = "가격이 매력적인 바닥권입니다. 분할 매수로 비중을 늘리기 좋은 시점입니다."
+                msg = "현재 가격은 충분히 저렴합니다. 분할 매수로 대응하기 좋은 구간입니다."
             elif is_sell:
                 st.markdown("<div class='signal-box sell'>🟢 매도 검토 (수익실현)</div>", unsafe_allow_html=True)
                 msg = "단기 고점에 도달했습니다. 수익을 챙겨 현금을 확보할 시점입니다."
             else:
                 st.markdown("<div class='signal-box wait'>🟡 관망 및 보유</div>", unsafe_allow_html=True)
-                msg = "방향성을 탐색하는 구간입니다. 현재 포지션을 유지하며 지켜보세요."
+                msg = "방향성을 탐색하는 구간입니다. 현재 비중을 유지하며 지켜보세요."
 
             st.markdown(f"<div class='trend-card'><b>종합 분석:</b> {msg}</div>", unsafe_allow_html=True)
 
-            # [출력 3] 상세 수치 (요청하신 형식)
-            st.write("### 📋 핵심 지수 정밀 분석 (수치 및 현위치)")
+            # [출력 3] 상세 수치 (요청하신 형식 고수)
+            st.write("### 📋 핵심 지표 정밀 진단")
             c1, c2 = st.columns(2)
-            # 볼린저: 현위치
             bb_pos = "▲ 하단 지지선 도달" if curr_p < lo_b else "▼ 상단 저항선 도달" if curr_p > up_b else "밴드 내 안정권"
-            c1.metric("Bollinger Band", bb_pos, delta=f"하단가: {lo_b:,.0f}")
-            # RSI: 수치
-            c2.metric("RSI (심리)", f"{rsi:.2f}", delta="과매도" if rsi < 30 else "보통")
+            c1.metric("Bollinger Band (위치)", bb_pos, delta=f"하단가: {lo_b:,.0f}")
+            c2.metric("RSI (심리수치)", f"{rsi:.2f}", delta="과매도" if rsi < 30 else "보통")
             
             c3, c4 = st.columns(2)
-            # MACD: 상승/하락 추세
-            c3.metric("MACD (추세)", "▲ 상승 추세" if macd > sig else "▼ 하락 추세", delta=f"에너지: {macd:.2f}")
-            # 윌리엄: 수치
-            c4.metric("Williams %R", f"{wr:.2f}", delta="바닥권" if wr < -80 else "정상")
+            c3.metric("MACD (추세방향)", "▲ 상승 추세" if macd > sig else "▼ 하락 추세", delta=f"수치: {macd:.2f}")
+            c4.metric("Williams %R (수치)", f"{wr:.2f}", delta="바닥권" if wr < -80 else "정상")
 
         else: st.warning("데이터를 가져오는 데 실패했습니다.")
     except Exception as e:
         st.error(f"분석기 실행 중 오류 발생: {e}")
 
-# [기능] 검색 기록 버튼 (누르면 상단 타겟이 바뀌며 재실행됨)
+# [기능] 원터치 검색 기록 (무조건 하단에 노출되도록 배치)
 st.write("---")
 st.subheader("📜 오늘 검색한 종목 기록")
 if st.session_state['history']:
-    cols = st.columns(5)
-    for i, h_sym in enumerate(st.session_state['history'][:10]): # 최근 10개만 표시
-        with cols[i % 5]:
-            if st.button(f"🔍 {h_sym}", key=f"hist_{h_sym}_{i}"):
-                st.session_state['target'] = h_sym # 세션의 타겟 종목을 변경
-                st.rerun() # 화면을 다시 그려 분석 실행
+    # 최근 10개 기록을 5열로 배치
+    hist_cols = st.columns(5)
+    for idx, hist_sym in enumerate(st.session_state['history'][:10]):
+        with hist_cols[idx % 5]:
+            # 버튼 클릭 시 해당 종목을 target으로 설정하고 페이지 재실행
+            if st.button(f"🔍 {hist_sym}", key=f"h_{hist_sym}_{idx}"):
+                st.session_state['target'] = hist_sym
+                st.rerun()
 else:
-    st.write("아직 검색 기록이 없습니다.")
+    st.info("아직 검색 기록이 없습니다. 종목을 입력해 보세요.")
