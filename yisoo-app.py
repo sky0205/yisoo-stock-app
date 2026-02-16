@@ -2,7 +2,7 @@ import streamlit as st
 import FinanceDataReader as fdr
 import pandas as pd
 
-# 1. 스타일 설정 (화살표 제거 및 시인성 극대화)
+# 1. 시인성 극대화 및 화살표 강제 제거 스타일
 st.set_page_config(layout="centered")
 st.markdown("""
     <style>
@@ -14,7 +14,7 @@ st.markdown("""
     .trend-card { font-size: 22px; line-height: 1.8; color: #000000 !important; padding: 25px; background: #F1F5F9; border-left: 12px solid #1E3A8A; border-radius: 12px; margin-bottom: 25px; }
     h1, h2, h3, b, span, div { color: #1E3A8A !important; font-weight: bold !important; }
     [data-testid="stMetricValue"] { font-size: 26px !important; color: #333 !important; }
-    /* 핵심: 기계가 자동으로 붙이는 화살표 아이콘을 강제로 숨김 */
+    /* 기계가 자동으로 붙이는 모든 화살표 아이콘 숨김 */
     [data-testid="stMetricDelta"] svg { display: none !important; }
     [data-testid="stMetricDelta"] { font-size: 19px !important; font-weight: bold !important; margin-left: -20px !important; }
     </style>
@@ -24,9 +24,9 @@ st.markdown("""
 if 'history' not in st.session_state: st.session_state['history'] = []
 if 'target' not in st.session_state: st.session_state['target'] = "257720"
 
-st.title("👨‍💻 이수할아버지의 '심플 기호' 분석기 v27000")
+st.title("👨‍💻 이수할아버지의 '무결점 기호' 분석기 v28000")
 
-# 기초 데이터 로드
+# 데이터 로드
 @st.cache_data(ttl=3600)
 def load_base_data():
     try: rate = fdr.DataReader('USD/KRW').iloc[-1]['close']
@@ -69,4 +69,48 @@ if symbol:
 
             # [출력 1] 종목 및 가격
             st.header(f"🏢 {stock_name} ({symbol})")
-            if is_
+            if is_us: st.subheader(f"현재가: ${curr_p:,.2f} (약 {curr_p * usd_krw:,.0f}원)")
+            else: st.subheader(f"현재가: {curr_p:,.0f}원")
+
+            # [출력 2] 신호등
+            is_buy = curr_p <= lo_b or rsi < 35 or wr < -80
+            is_sell = curr_p >= up_b or rsi > 65 or wr > -20
+            
+            if is_buy:
+                st.markdown("<div class='signal-box buy'>🔴 매수 사정권 (적기)</div>", unsafe_allow_html=True)
+            elif is_sell:
+                st.markdown("<div class='signal-box sell'>🟢 매도 검토 (수익실현)</div>", unsafe_allow_html=True)
+            else:
+                st.markdown("<div class='signal-box wait'>🟡 관망 및 보유</div>", unsafe_allow_html=True)
+
+            # [출력 3] 상세 지수 (화살표 제거 및 기호 교체)
+            st.write("### 📋 핵심 지수 정밀 분석")
+            c1, c2 = st.columns(2)
+            # 볼린저: 현위치 설명
+            bb_pos = "🔴 하단 지지선 도달" if curr_p < lo_b else "🟢 상단 저항선 도달" if curr_p > up_b else "⚪ 밴드 내 안정권"
+            c1.metric("Bollinger Band (위치)", bb_pos, delta=f"■ 하단가: {lo_b:,.0f}")
+            # RSI: 현 수치
+            c2.metric("RSI (심리수치)", f"{rsi:.2f}", delta=f"● {'과매도' if rsi < 30 else '보통'}")
+            
+            c3, c4 = st.columns(2)
+            # MACD: 상승/하락 추세
+            macd_status = "🔴 상승 추세" if macd > sig else "🟢 하락 추세"
+            c3.metric("MACD (추세)", macd_status, delta=f"■ 수치: {macd:.2f}")
+            # 윌리엄: 현 수치
+            c4.metric("Williams %R (수치)", f"{wr:.2f}", delta=f"● {'바닥권' if wr < -80 else '정상'}")
+
+    except Exception as e:
+        st.error(f"분석 중 오류 발생: {e}")
+
+# [기능] 검색 기록 버튼
+st.write("---")
+st.subheader("📜 오늘 검색한 종목 기록")
+if st.session_state['history']:
+    h_cols = st.columns(5)
+    for idx, h_sym in enumerate(st.session_state['history'][:10]):
+        with h_cols[idx % 5]:
+            # st.rerun() 호환성 보강
+            if st.button(f"🔍 {h_sym}", key=f"h_{h_sym}_{idx}"):
+                st.session_state['target'] = h_sym
+                try: st.rerun()
+                except: st.experimental_rerun()
