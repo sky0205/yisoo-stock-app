@@ -13,26 +13,26 @@ st.markdown("""
     .sell { background-color: #ECFDF5 !important; border-color: #10B981 !important; color: #065F46 !important; }
     .trend-card { font-size: 22px; line-height: 1.8; color: #000000 !important; padding: 25px; background: #F1F5F9; border-left: 12px solid #1E3A8A; border-radius: 12px; margin-bottom: 25px; }
     h1, h2, h3, b, span, div { color: #1E3A8A !important; font-weight: bold !important; }
-    .data-row { font-size: 20px; padding: 10px; border-bottom: 1px solid #EEE; color: #333 !important; }
+    .info-row { font-size: 20px; padding: 12px; border-bottom: 1px solid #DDD; display: flex; justify-content: space-between; color: #333 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# [세션 관리]
+# [세션 관리] 오늘 검색 기록 보존
 if 'history' not in st.session_state: st.session_state['history'] = []
 if 'target' not in st.session_state: st.session_state['target'] = "257720"
 
-st.title("👨‍💻 이수할아버지의 '방탄' 분석기 v14000")
+st.title("👨‍💻 이수할아버지의 '에러 제로' 분석기 v15000")
 
-# [기능 1] 기초 데이터 로드
+# [기능] 데이터 로드
 @st.cache_data(ttl=3600)
-def load_base_info():
+def load_all_data():
     try: rate = fdr.DataReader('USD/KRW').iloc[-1]['close']
     except: rate = 1350.0
     try: krx = fdr.StockListing('KRX')[['Code', 'Name']]
     except: krx = pd.DataFrame(columns=['Code', 'Name'])
     return float(rate), krx
 
-usd_krw, krx_list = load_base_info()
+usd_krw, krx_list = load_all_data()
 
 # [입력창]
 symbol = st.text_input("📊 종목코드 입력 (예: 257720 또는 IONQ)", value=st.session_state['target']).strip().upper()
@@ -48,63 +48,16 @@ if symbol:
             curr_p = float(df['close'].iloc[-1])
             is_us = not symbol.isdigit()
             
-            # 종목명 확인
+            # 종목명 찾기 (입력 시 바로 보이게 보강)
             stock_name = symbol
             if not is_us and not krx_list.empty:
                 match = krx_list[krx_list['Code'] == symbol]
                 if not match.empty: stock_name = str(match['Name'].values[0])
 
-            # --- [4대 지표 정밀 계산] ---
+            # --- [4대 지표 계산] ---
             ma20 = df['close'].rolling(20).mean(); std20 = df['close'].rolling(20).std()
             lo_b = float(ma20.iloc[-1] - (std20.iloc[-1] * 2))
             up_b = float(ma20.iloc[-1] + (std20.iloc[-1] * 2))
             delta = df['close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean()
             loss = (-delta.where(delta < 0, 0)).rolling(14).mean(); rsi_val = float(100 - (100 / (1 + (gain / loss))).iloc[-1])
-            exp12 = df['close'].ewm(span=12, adjust=False).mean(); exp26 = df['close'].ewm(span=26, adjust=False).mean()
-            macd_val = float((exp12 - exp26).iloc[-1]); sig_val = float((exp12 - exp26).ewm(span=9, adjust=False).mean().iloc[-1])
-            h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min()
-            wr_val = float(((h14.iloc[-1] - curr_p) / (h14.iloc[-1] - l14.iloc[-1])) * -100)
-
-            # [출력 1] 종목명 및 가격
-            st.header(f"🏢 {stock_name} ({symbol})")
-            if is_us:
-                st.subheader(f"현재가: ${curr_p:,.2f} (약 {curr_p * usd_krw:,.0f}원)")
-            else:
-                st.subheader(f"현재가: {curr_p:,.0f}원")
-
-            # [출력 2] 신호등
-            is_buy = curr_p <= lo_b or rsi_val < 35 or wr_val < -80
-            is_sell = curr_p >= up_b or rsi_val > 65 or wr_val > -20
-            
-            if is_buy:
-                st.markdown("<div class='signal-box buy'>🔴 매수 사정권 (적기)</div>", unsafe_allow_html=True)
-                msg = "현재 가격은 매력적인 바닥권이며, 에너지는 **조심스럽게 바닥을 확인 중**에 있습니다."
-            elif is_sell:
-                st.markdown("<div class='signal-box sell'>🟢 매도 검토 (수익실현)</div>", unsafe_allow_html=True)
-                msg = "단기 고점에 도달했습니다. **수익을 챙길 준비**를 하세요."
-            else:
-                st.markdown("<div class='signal-box wait'>🟡 관망 및 대기 (보유)</div>", unsafe_allow_html=True)
-                msg = "추세를 탐색하며 숨을 고르는 구간입니다. 기존 추세를 유지하세요."
-
-            st.markdown(f"<div class='trend-card'><b>종합 추세 분석:</b> {msg}</div>", unsafe_allow_html=True)
-
-            # [출력 3] 상세 수치 (에러 방지를 위해 표 대신 텍스트 행으로 출력)
-            st.write("### 📋 핵심 지수 상세 수치 리포트")
-            st.markdown(f"""
-            <div class='data-row'><b>현재가 vs Bollinger:</b> {curr_p:,.2f} ({'하단 지지' if curr_p < lo_b else '밴드 내'})</div>
-            <div class='data-row'><b>RSI (투자심리):</b> {rsi_val:.2f} ({'바닥권' if rsi_val < 30 else '정상'})</div>
-            <div class='data-row'><b>MACD (추세에너지):</b> {macd_val:.2f} ({'에너지 상승' if macd_val > sig_val else '에너지 하락'})</div>
-            <div class='data-row'><b>Williams %R (바닥):</b> {wr_val:.2f} ({'단기 바닥' if wr_val < -80 else '보통'})</div>
-            """, unsafe_allow_html=True)
-
-    except Exception as e:
-        st.error(f"분석기 실행 중 오류 발생: {e}")
-
-# [기능 2] 오늘 검색 기록
-st.write("---")
-st.subheader("📜 오늘 검색한 종목 기록")
-if st.session_state['history']:
-    cols = st.columns(5)
-    for i, h_sym in enumerate(st.session_state['history'][:10]):
-        with cols[i % 5]:
-            if st.
+            exp12 = df['close'].ewm(span=12, adjust=False).mean(); exp26 = df['close'].ewm(span=26, adjust=False
