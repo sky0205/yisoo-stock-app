@@ -2,4 +2,4 @@ finance-datareader
 pandas
 yfinance
 streamlit
-altair
+altair<5
