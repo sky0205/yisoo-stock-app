@@ -2,7 +2,7 @@ import streamlit as st
 import FinanceDataReader as fdr
 import pandas as pd
 
-# 1. 시인성 극대화 스타일
+# 1. 시인성 극대화 및 고대비 스타일
 st.set_page_config(layout="centered")
 st.markdown("""
     <style>
@@ -13,9 +13,9 @@ st.markdown("""
     .sell { background-color: #ECFDF5 !important; border-color: #10B981 !important; color: #065F46 !important; }
     .trend-card { font-size: 22px; line-height: 1.8; color: #000000 !important; padding: 25px; background: #F1F5F9; border-left: 12px solid #1E3A8A; border-radius: 12px; margin-bottom: 25px; }
     h1, h2, h3, b, span, div { color: #1E3A8A !important; font-weight: bold !important; }
-    /* 메트릭 글자 및 화살표 크기 조절 */
+    /* 메트릭 글자색 및 기호 강조 */
     [data-testid="stMetricValue"] { font-size: 32px !important; color: #333 !important; }
-    [data-testid="stMetricDelta"] { font-size: 20px !important; font-weight: bold !important; }
+    [data-testid="stMetricDelta"] { font-size: 22px !important; font-weight: bold !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -23,18 +23,18 @@ st.markdown("""
 if 'history' not in st.session_state: st.session_state['history'] = []
 if 'target' not in st.session_state: st.session_state['target'] = "257720"
 
-st.title("👨‍💻 이수할아버지의 '직관 분석기' v18000")
+st.title("👨‍💻 이수할아버지의 '직관 분석기' v19000")
 
 # [데이터 로드]
 @st.cache_data(ttl=3600)
-def load_data():
+def load_all_info():
     try: rate = fdr.DataReader('USD/KRW').iloc[-1]['close']
     except: rate = 1350.0
     try: krx = fdr.StockListing('KRX')[['Code', 'Name']]
     except: krx = pd.DataFrame(columns=['Code', 'Name'])
     return float(rate), krx
 
-usd_krw, krx_list = load_data()
+usd_krw, krx_list = load_all_info()
 
 # [입력창]
 symbol = st.text_input("📊 종목코드 입력", value=st.session_state['target']).strip().upper()
@@ -50,7 +50,7 @@ if symbol:
             curr_p = float(df['close'].iloc[-1])
             is_us = not symbol.isdigit()
             
-            # 종목명 강제 표시
+            # 종목명 강제 노출
             stock_name = symbol
             if not is_us and not krx_list.empty:
                 match = krx_list[krx_list['Code'] == symbol]
@@ -90,16 +90,16 @@ if symbol:
 
             st.markdown(f"<div class='trend-card'><b>종합 추세 분석:</b> {msg}</div>", unsafe_allow_html=True)
 
-            # [출력 3] 상세 수치 (화살표 및 옆설명 포함)
-            st.write("### 📋 핵심 지수 상세 분석 (수치 및 진단)")
+            # [출력 3] 상세 수치 (기호 변경 적용)
+            st.write("### 📋 핵심 지수 정밀 분석 (수치 및 진단)")
             c1, c2 = st.columns(2)
-            c1.metric("Bollinger 하단", f"{lo_b:,.0f}", delta="하단 지지선 근처" if curr_p < lo_b else "정상 범위", delta_color="normal")
-            c2.metric("RSI (투자심리)", f"{rsi:.2f}", delta="과매도 (바닥)" if rsi < 30 else "안정 구간", delta_color="normal")
+            c1.metric("Bollinger 하단", f"{lo_b:,.0f}", delta="▲ 지입 완료" if curr_p < lo_b else "정상 범위", delta_color="normal")
+            c2.metric("RSI (심리)", f"{rsi:.2f}", delta="▼ 과매도 (바닥)" if rsi < 30 else "안정 구간", delta_color="normal")
             
             c3, c4 = st.columns(2)
-            # MACD 상승/하락 화살표 표시
-            c3.metric("MACD (추세에너지)", f"{macd:.2f}", delta="상승 ↑" if macd > sig else "하락 ↓", delta_color="normal" if macd > sig else "inverse")
-            c4.metric("Williams %R", f"{wr:.2f}", delta="단기 바닥 확인" if wr < -80 else "심리 안정", delta_color="normal")
+            # MACD 상승/하락 기호 변경 (▲/▼)
+            c3.metric("MACD (추세에너지)", f"{macd:.2f}", delta="상승 ▲" if macd > sig else "하석 ▼", delta_color="normal" if macd > sig else "inverse")
+            c4.metric("Williams %R", f"{wr:.2f}", delta="▼ 단기 바닥 확인" if wr < -80 else "심리 안정", delta_color="normal")
 
     except Exception as e:
         st.error(f"분석기 실행 중 오류 발생: {e}")
