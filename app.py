@@ -1,79 +1,76 @@
 import streamlit as st
-import FinanceDataReader as fdr
 import yfinance as yf
 import pandas as pd
 import altair as alt
+import time
 
-# 1. 시력 보호 및 고대비 설정
-st.set_page_config(page_title="이수 주식 v210", layout="wide")
+# 1. 화면 스타일 (시력 보호 및 고대비)
+st.set_page_config(page_title="이수 주식 v230", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #FFFFFF; }
-    .traffic-light { padding: 40px; border-radius: 25px; text-align: center; font-size: 50px; font-weight: bold; border: 12px solid; margin-bottom: 30px; }
-    .buy { border-color: #FF0000; background-color: #FFF5F5; color: #FF0000; } /* 매수: 빨강 */
-    .wait { border-color: #FFD700; background-color: #FFFFF0; color: #B8860B; } /* 관망: 노랑 */
-    .sell { border-color: #008000; background-color: #F0FFF0; color: #008000; } /* 매도: 초록 */
+    .traffic-light { padding: 40px; border-radius: 25px; text-align: center; font-size: 45px; font-weight: bold; border: 12px solid; margin-bottom: 25px; }
+    .buy { border-color: #E63946; background-color: #FEE2E2; color: #E63946; }
+    .wait { border-color: #F59E0B; background-color: #FEF3C7; color: #92400E; }
+    .sell { border-color: #10B981; background-color: #D1FAE5; color: #065F46; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("👨‍💻 이수할아버지의 마스터 분석기 v210")
+st.title("👨‍💻 이수할아버지의 마스터 분석기 v230")
 
-# 2. 검색 기록 (History) 저장
+# 2. 검색 기록 기능
 if 'history' not in st.session_state: st.session_state.history = []
 with st.sidebar:
     st.header("📜 검색 기록")
+    if st.button("기록 삭제"): st.session_state.history = []
     for h in reversed(st.session_state.history):
-        if st.button(f"🔍 {h}"): st.session_state.t_input = h
+        if st.button(f"🔍 {h}", use_container_width=True): st.session_state.t_input = h
 
-# 3. 종목 입력
-ticker_input = st.text_input("📊 종목 번호(6자리)나 심볼을 입력하세요", value=st.session_state.get('t_input', '005930')).strip().upper()
+# 3. 입력창 (삼성전자는 005930.KS)
+t_input = st.text_input("📊 종목코드 (삼성전자: 005930.KS, 아이온큐: IONQ)", 
+                       value=st.session_state.get('t_input', '005930.KS')).strip().upper()
 
-@st.cache_data(ttl=60)
-def fetch_data(t):
+# 4. 데이터 엔진 (차단 방지용)
+@st.cache_data(ttl=600)
+def get_stock_data(t):
     try:
-        if t.isdigit(): df = fdr.DataReader(t, '2024')
-        else: df = yf.download(t, period="1y", interval="1d", auto_adjust=True)
-        return df if (df is not None and not df.empty) else None
+        time.sleep(1) # IP 차단 방지
+        df = yf.download(t, period="1y", interval="1d", auto_adjust=True)
+        return df if not df.empty else None
     except: return None
 
-if ticker_input:
-    df = fetch_data(ticker_input)
+if t_input:
+    df = get_stock_data(t_input)
     if df is not None:
         df = df.reset_index()
         df.columns = [str(c).lower().strip() for c in df.columns]
-        if ticker_input not in st.session_state.history:
-            st.session_state.history.append(ticker_input)
+        if t_input not in st.session_state.history:
+            st.session_state.history.append(t_input)
 
-        # 4. 기술적 지표 계산 (선생님의 요청 4대 지표)
-        df['ma20'] = df['close'].rolling(20).mean()
-        df['std'] = df['close'].rolling(20).std()
-        df['lower'] = df['ma20'] - (df['std'] * 2)
-        # RSI / Williams %R / MACD 간단 계산
+        # 5. 4대 지표 계산
         diff = df['close'].diff(); g = diff.where(diff > 0, 0).rolling(14).mean(); l = -diff.where(diff < 0, 0).rolling(14).mean().replace(0, 0.001)
         rsi = (100 - (100 / (1 + (g / l)))).iloc[-1]
-        h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min(); w_r = ((h14 - df['close']) / (h14 - l14)).iloc[-1] * -100
+        h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min(); wr = ((h14 - df['close']) / (h14 - l14)).iloc[-1] * -100
+        df['e12'] = df['close'].ewm(span=12).mean(); df['e26'] = df['close'].ewm(span=26).mean()
+        macd = (df['e12'] - df['e26']).iloc[-1]; sig = (df['e12'] - df['e26']).ewm(span=9).mean().iloc[-1]
 
-        # 5. 신호등 판정 및 종목명 표시
+        # 6. 신호등 출력
         st.write("---")
-        if rsi < 35 or w_r < -80:
-            st.markdown(f"<div class='traffic-light buy'>🔴 {ticker_input} : 지금 매수 타이밍!</div>", unsafe_allow_html=True)
-        elif rsi > 70 or w_r > -20:
-            st.markdown(f"<div class='traffic-light sell'>🟢 {ticker_input} : 매도 검토 구간</div>", unsafe_allow_html=True)
+        if rsi < 35 or wr < -80:
+            st.markdown(f"<div class='traffic-light buy'>🔴 {t_input} : 적극 매수 구간</div>", unsafe_allow_html=True)
+        elif rsi > 65 or wr > -20:
+            st.markdown(f"<div class='traffic-light sell'>🟢 {t_input} : 매도 검토 구간</div>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<div class='traffic-light wait'>🟡 {ticker_input} : 관망 및 대기</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='traffic-light wait'>🟡 {t_input} : 관망 및 대기</div>", unsafe_allow_html=True)
 
-        # 6. 기술적 분석 요약 표
-        st.write("#### 📋 4대 전문 지표 요약")
+        # 7. 기술적 분석 요약 (유한양행 양식)
         summary = pd.DataFrame({
-            "지표": ["RSI", "Williams %R", "Bollinger Band", "현재가"],
-            "수치": [f"{rsi:.1f}", f"{w_r:.1f}", f"{df['lower'].iloc[-1]:,.0f}", f"{df['close'].iloc[-1]:,.0f}"],
-            "판단": ["저점" if rsi < 30 else "고점" if rsi > 70 else "보통", "매수" if w_r < -80 else "매도" if w_r > -20 else "중립", "하단근접" if df['close'].iloc[-1] < df['ma20'].iloc[-1] else "상단근접", "-"]
+            "항목": ["현재가", "RSI 지수", "Williams %R", "MACD 추세"],
+            "수치": [f"{df['close'].iloc[-1]:,.2f}", f"{rsi:.1f}", f"{wr:.1f}", "상승" if macd > sig else "하락"],
+            "진단": ["-" , "저점" if rsi < 30 else "고점" if rsi > 70 else "중립", "매수권" if wr < -80 else "보통", "골든크로스" if macd > sig else "데드크로스"]
         })
-        st.table(summary) # 탭 구분 마크다운 표 형식
-        
-        # 7. 차트
-        base = alt.Chart(df.tail(100)).encode(x='date:T')
-        line = base.mark_line(color='#1E40AF').encode(y=alt.Y('close:Q', scale=alt.Scale(zero=False)))
-        st.altair_chart(line.properties(height=400), use_container_width=True)
-    else:
-        st.error("⚠️ 데이터를 가져올 수 없습니다. 종목 번호를 확인하세요.")
+        st.table(summary)
+
+        # 8. 차트
+        chart = alt.Chart(df.tail(100)).mark_line(color='#1E40AF', strokeWidth=3).encode(x='date:T', y=alt.Y('close:Q', scale=alt.Scale(zero=False)))
+        st.altair_chart(chart, use_container_width=True)
