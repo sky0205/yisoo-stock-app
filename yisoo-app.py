@@ -2,7 +2,7 @@ import streamlit as st
 import FinanceDataReader as fdr
 import pandas as pd
 
-# 1. 시인성 극대화 및 글자색 강제 고정
+# 1. 시인성 극대화 및 고대비 스타일
 st.set_page_config(layout="centered")
 st.markdown("""
     <style>
@@ -13,7 +13,6 @@ st.markdown("""
     .sell { background-color: #ECFDF5 !important; border-color: #10B981 !important; color: #065F46 !important; }
     .trend-card { font-size: 22px; line-height: 1.8; color: #000000 !important; padding: 25px; background: #F1F5F9; border-left: 12px solid #1E3A8A; border-radius: 12px; margin-bottom: 25px; }
     h1, h2, h3, b, span, th, td, div { color: #1E3A8A !important; font-weight: bold !important; }
-    /* 표 안의 글자색을 검정으로 강제 */
     .stTable td { color: #000000 !important; font-size: 18px !important; }
     </style>
     """, unsafe_allow_html=True)
@@ -22,9 +21,9 @@ st.markdown("""
 if 'history' not in st.session_state: st.session_state['history'] = []
 if 'target' not in st.session_state: st.session_state['target'] = "257720"
 
-st.title("👨‍💻 이수할아버지의 '수치 완전 복구' 분석기 v11000")
+st.title("👨‍💻 이수할아버지의 '무결점' 분석기 v12000")
 
-# [기능 1] 환율 및 종목 리스트 로드
+# [기능 1] 환율 및 종목 데이터 준비
 @st.cache_data(ttl=3600)
 def load_all_base_data():
     try: rate = fdr.DataReader('USD/KRW').iloc[-1]['close']
@@ -35,14 +34,13 @@ def load_all_base_data():
 
 usd_krw, krx_list = load_all_base_data()
 
-# [입력창] 종목코드
-symbol = st.text_input("📊 종목코드 입력 (예: 257720 또는 NVDA)", value=st.session_state['target']).strip().upper()
+# [입력창]
+symbol = st.text_input("📊 종목코드 입력 (예: 257720 또는 IONQ)", value=st.session_state['target']).strip().upper()
 
 if symbol:
     try:
         df = fdr.DataReader(symbol).tail(120)
         if not df.empty:
-            # 검색 기록 업데이트
             if symbol not in st.session_state['history']:
                 st.session_state['history'].insert(0, symbol)
             
@@ -50,7 +48,7 @@ if symbol:
             curr_p = float(df['close'].iloc[-1])
             is_us = not symbol.isdigit()
             
-            # [기능 2] 종목명 강제 확인
+            # 종목명 확인
             stock_name = symbol
             if not is_us and not krx_list.empty:
                 match = krx_list[krx_list['Code'] == symbol]
@@ -68,5 +66,56 @@ if symbol:
             # 3. MACD
             exp12 = df['close'].ewm(span=12, adjust=False).mean(); exp26 = df['close'].ewm(span=26, adjust=False).mean()
             macd_val = float((exp12 - exp26).iloc[-1]); sig_val = float((exp12 - exp26).ewm(span=9, adjust=False).mean().iloc[-1])
-            # 4. Williams %R
-            h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min(); wr_val = float(((h14 - df['close']) / (
+            # 4. Williams %R (괄호 오류 수정 완료)
+            h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min()
+            wr_val = float(((h14.iloc[-1] - curr_p) / (h14.iloc[-1] - l14.iloc[-1])) * -100)
+
+            # [출력 1] 종목명 및 가격
+            st.header(f"🏢 {stock_name} ({symbol})")
+            if is_us:
+                st.subheader(f"현재가: ${curr_p:,.2f} (약 {curr_p * usd_krw:,.0f}원)")
+            else:
+                st.subheader(f"현재가: {curr_p:,.0f}원")
+
+            # [출력 2] 신호등
+            is_buy = curr_p <= lo_b or rsi_val < 35 or wr_val < -80
+            is_sell = curr_p >= up_b or rsi_val > 65 or wr_val > -20
+            
+            if is_buy:
+                st.markdown("<div class='signal-box buy'>🔴 매수 사정권 (적기)</div>", unsafe_allow_html=True)
+                msg = "현재 가격은 매력적인 바닥권이며, 에너지는 **조심스럽게 바닥을 확인 중**에 있습니다."
+            elif is_sell:
+                st.markdown("<div class='signal-box sell'>🟢 매도 검토 (수익실현)</div>", unsafe_allow_html=True)
+                msg = "단기 고점에 도달했습니다. **수익을 챙길 준비**를 하세요."
+            else:
+                st.markdown("<div class='signal-box wait'>🟡 관망 및 대기 (보유)</div>", unsafe_allow_html=True)
+                msg = "추세를 탐색하며 숨을 고르는 구간입니다. 기존 추세를 유지하세요."
+
+            st.markdown(f"<div class='trend-card'><b>종합 추세 분석:</b> {msg}</div>", unsafe_allow_html=True)
+
+            # [출력 3] 상세 수치 (LargeUtf8 에러 방지 위해 모든 데이터 문자열 변환)
+            st.write("### 📋 핵심 지수 상세 수치 리포트")
+            summary_table = pd.DataFrame({
+                "지수 항목": ["현재가(Bollinger)", "RSI (투자심리)", "MACD (추세에너지)", "Williams %R (바닥지표)"],
+                "정밀 수치": [f"{curr_p:,.2f}", f"{rsi_val:.2f}", f"{macd_val:.2f}", f"{wr_val:.2f}"],
+                "상태 진단": [
+                    "하단 지지선 근처" if curr_p < lo_b else "밴드 내 위치",
+                    "과매도(바닥권)" if rsi_val < 30 else "정상 범위",
+                    "상승 에너지 우세" if macd_val > sig_val else "하락 에너지 잔존",
+                    "단기 바닥 확인" if wr_val < -80 else "심리 안정"
+                ]
+            })
+            # LargeUtf8 에러 해결을 위해 astype(str) 사용
+            st.table(summary_table.astype(str))
+
+    except Exception as e:
+        st.error(f"분석기 실행 중 오류 발생: {e}")
+
+# [기능 2] 오늘 검색 기록
+st.write("---")
+st.subheader("📜 오늘 검색한 종목 기록")
+if st.session_state['history']:
+    cols = st.columns(5)
+    for i, h_sym in enumerate(st.session_state['history'][:10]):
+        with cols[i % 5]:
+            if st.button(f"🔍 {h_sym}", key=f"btn_{
