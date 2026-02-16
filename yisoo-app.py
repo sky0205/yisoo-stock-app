@@ -2,7 +2,7 @@ import streamlit as st
 import FinanceDataReader as fdr
 import pandas as pd
 
-# 1. 시인성 극대화 및 제목 굵게 강조 스타일
+# 1. 스타일 설정 (제목 굵게 및 테이버 카드 스타일)
 st.set_page_config(layout="centered")
 st.markdown("""
     <style>
@@ -14,22 +14,18 @@ st.markdown("""
     .trend-card { font-size: 22px; line-height: 1.8; color: #000000 !important; padding: 25px; background: #F1F5F9; border-left: 12px solid #1E3A8A; border-radius: 12px; margin-bottom: 10px; }
     .value-card { font-size: 24px; font-weight: bold; color: #FFFFFF !important; padding: 20px; background: #1E3A8A; border-radius: 12px; text-align: center; margin-bottom: 25px; }
     h1, h2, h3, b, span, div { color: #1E3A8A !important; font-weight: bold !important; }
-    /* 지표 제목을 아주 굵게 강조 */
     [data-testid="stMetricLabel"] { font-size: 22px !important; font-weight: 900 !important; color: #000000 !important; }
     [data-testid="stMetricValue"] { font-size: 28px !important; color: #333 !important; }
-    /* 기계가 붙이는 자동 화살표 숨김 */
     [data-testid="stMetricDelta"] svg { display: none !important; }
     [data-testid="stMetricDelta"] { font-size: 20px !important; font-weight: bold !important; margin-left: -20px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# [세션 관리] 기록 및 대상 보존
 if 'history' not in st.session_state: st.session_state['history'] = []
 if 'target' not in st.session_state: st.session_state['target'] = "257720"
 
-st.title("👨‍💻 이수할아버지의 '명품' 분석기 v35000")
+st.title("👨‍💻 이수할아버지의 '글로벌' 분석기 v36000")
 
-# 데이터 로드 (환율 및 종목 리스트)
 @st.cache_data(ttl=3600)
 def load_all_base_data():
     try: rate = fdr.DataReader('USD/KRW').iloc[-1]['close']
@@ -40,7 +36,6 @@ def load_all_base_data():
 
 usd_krw, krx_list = load_all_base_data()
 
-# [입력창]
 symbol = st.text_input("📊 종목코드 입력", value=st.session_state['target'], key="main_input").strip().upper()
 
 if symbol:
@@ -60,7 +55,7 @@ if symbol:
                 match = krx_list[krx_list['Code'] == symbol]
                 if not match.empty: stock_name = str(match['Name'].values[0])
 
-            # --- [지표 정밀 계산] ---
+            # 지표 계산
             ma20 = df['close'].rolling(20).mean(); std20 = df['close'].rolling(20).std()
             lo_b = float(ma20.iloc[-1] - (std20.iloc[-1] * 2))
             up_b = float(ma20.iloc[-1] + (std20.iloc[-1] * 2))
@@ -82,30 +77,32 @@ if symbol:
             elif is_sell: st.markdown("<div class='signal-box sell'>🟢 매도 검토 (수익실현)</div>", unsafe_allow_html=True)
             else: st.markdown("<div class='signal-box wait'>🟡 관망 및 보유</div>", unsafe_allow_html=True)
 
-            # [출력 3] 추세 분석 및 테이버 적정주가
-            msg = "가격이 매력적인 바닥권입니다. 분할 매수 시점입니다." if is_buy else "단기 고점입니다. 수익 실현을 준비하세요." if is_sell else "안정적인 추세 유지 구간입니다."
+            # [출력 3] 추세분석 & 테이버 적정주가 (단위 자동 변환)
+            msg = "가격이 매력적인 바닥권입니다." if is_buy else "단기 고점에 도달했습니다." if is_sell else "안정적인 흐름입니다."
             st.markdown(f"<div class='trend-card'><b>📋 종합 추세 분석:</b> {msg}</div>", unsafe_allow_html=True)
             
-            # 테이버 적정주가 제안
+            # 적정주가 계산 (15% 할증 예시)
             fair_v = curr_p * 1.15
-            st.markdown(f"<div class='value-card'>💎 테이버의 적정주가 제안: {fair_v:,.0f}원 기준</div>", unsafe_allow_html=True)
+            if is_us:
+                st.markdown(f"<div class='value-card'>💎 테이버의 적정주가 제안: ${fair_v:,.2f} 기준</div>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div class='value-card'>💎 테이버의 적정주가 제안: {fair_v:,.0f}원 기준</div>", unsafe_allow_html=True)
 
-            # [출력 4] 핵심 지표 (제목 굵게 + 기호 적용)
+            # [출력 4] 핵심 지표
             st.write("### 📋 핵심 지표 정밀 진단")
             c1, c2 = st.columns(2)
-            bb_pos = "🔴 하단 지지선 도달" if curr_p < lo_b else "🟢 상단 저항선 도달" if curr_p > up_b else "⚪ 밴드 내 안정"
+            bb_pos = "🔴 하단 지지" if curr_p < lo_b else "🟢 상단 저항" if curr_p > up_b else "⚪ 밴드 내"
             c1.metric("**Bollinger Band**", bb_pos, delta=f"■ 하단가: {lo_b:,.0f}")
-            c2.metric("**RSI 심리수치**", f"{rsi:.2f}", delta=f"● {'과매도(바닥)' if rsi < 35 else '정상'}")
+            c2.metric("**RSI 심리수치**", f"{rsi:.2f}", delta=f"● {'과매도' if rsi < 35 else '정상'}")
             
             c3, c4 = st.columns(2)
-            macd_status = "🔴 상승 추세 ▲" if macd > sig else "🟢 하락 추세 ▼"
-            c3.metric("**MACD 추세방향**", macd_status, delta=f"■ 수치: {macd:.2f}")
-            c4.metric("**Williams %R**", f"{wr:.2f}", delta=f"● {'단기바닥' if wr < -80 else '정상'}")
+            c3.metric("**MACD 추세방향**", "🔴 상승 추세 ▲" if macd > sig else "🟢 하락 추세 ▼", delta=f"■ 수치: {macd:.2f}")
+            c4.metric("**Williams %R**", f"{wr:.2f}", delta=f"● {'바닥권' if wr < -80 else '정상'}")
 
     except Exception as e:
-        st.error(f"분석기 실행 중 오류 발생: {e}")
+        st.error(f"분석 실행 중 오류 발생: {e}")
 
-# [기능] 검색 기록 버튼
+# 검색 기록 버튼
 st.write("---")
 st.subheader("📜 오늘 검색한 종목 기록")
 if st.session_state['history']:
