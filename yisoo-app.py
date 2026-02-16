@@ -17,11 +17,11 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# [세션 관리] 기록 및 대상 보존
+# [세션 관리]
 if 'history' not in st.session_state: st.session_state['history'] = []
 if 'target' not in st.session_state: st.session_state['target'] = "257720"
 
-st.title("👨‍💻 이수할아버지의 '정밀 지수' 분석기 v24000")
+st.title("👨‍💻 이수할아버지의 '에러 제로' 분석기 v25000")
 
 # 데이터 로드
 @st.cache_data(ttl=3600)
@@ -78,20 +78,42 @@ if symbol:
             
             if is_buy:
                 st.markdown("<div class='signal-box buy'>🔴 매수 사정권 (적기)</div>", unsafe_allow_html=True)
-                msg = "현재 가격은 매력적인 바닥권입니다. 분할 매수로 대응하기 좋은 시점입니다."
+                msg = "가격이 매력적인 바닥권입니다. 분할 매수로 대응하기 좋은 시점입니다."
             elif is_sell:
                 st.markdown("<div class='signal-box sell'>🟢 매도 검토 (수익실현)</div>", unsafe_allow_html=True)
-                msg = "단기 고점에 도달했습니다. 수익을 챙길 준비를 하세요."
+                msg = "단기 고점에 도달했습니다. 수익을 챙길 시점입니다."
             else:
                 st.markdown("<div class='signal-box wait'>🟡 관망 및 보유</div>", unsafe_allow_html=True)
                 msg = "추세를 탐색하는 구간입니다. 현재 포지션을 유지하며 지켜보세요."
 
             st.markdown(f"<div class='trend-card'><b>종합 분석:</b> {msg}</div>", unsafe_allow_html=True)
 
-            # [출력 3] 상세 지수 (선생님 요청 규칙 적용)
+            # [출력 3] 상세 지수 (선생님 요청 규칙 완벽 적용)
             st.write("### 📋 핵심 지수 정밀 분석")
             c1, c2 = st.columns(2)
             # 볼린저: 현위치 설명
             bb_pos = "▲ 하단 지지선 근처" if curr_p < lo_b else "▼ 상단 저항선 근처" if curr_p > up_b else "밴드 내 안정 구간"
             c1.metric("Bollinger Band (위치)", bb_pos, delta=f"하단가: {lo_b:,.0f}")
-            # RSI
+            # RSI: 현 수치
+            c2.metric("RSI (심리수치)", f"{rsi:.2f}", delta="과매도" if rsi < 30 else "정상")
+            
+            c3, c4 = st.columns(2)
+            # MACD: 상승/하락 여부
+            c3.metric("MACD (추세)", "▲ 상승 추세" if macd > sig else "▼ 하락 추세", delta=f"수치: {macd:.2f}")
+            # 윌리엄: 현 수치
+            c4.metric("Williams %R (수치)", f"{wr:.2f}", delta="바닥권" if wr < -80 else "보통")
+
+        else: st.warning("데이터가 없습니다.")
+    except Exception as e:
+        st.error(f"오류 발생: {e}")
+
+# [기능] 검색 기록 버튼
+st.write("---")
+st.subheader("📜 오늘 검색한 종목 기록")
+if st.session_state['history']:
+    h_cols = st.columns(5)
+    for idx, h_sym in enumerate(st.session_state['history'][:10]):
+        with h_cols[idx % 5]:
+            if st.button(f"🔍 {h_sym}", key=f"h_{h_sym}_{idx}"):
+                st.session_state['target'] = h_sym
+                st.rerun()
