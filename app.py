@@ -20,17 +20,19 @@ st.markdown("""
 if 'history' not in st.session_state: st.session_state['history'] = []
 if 'target' not in st.session_state: st.session_state['target'] = "257720"
 
-st.title("👨‍💻 이수할아버지의 '부드러운' 분석기 v2300")
+st.title("👨‍💻 이수할아버지의 '부드러운' 분석기 v2350")
 
 # 2. 종목 입력
 symbol = st.text_input("📊 종목코드 입력", value=st.session_state['target']).strip().upper()
 
 if symbol:
     try:
+        # 데이터 수집 (안정성을 위해 120일치)
         df = fdr.DataReader(symbol).tail(120)
         if not df.empty:
             if symbol not in st.session_state['history']: st.session_state['history'].insert(0, symbol)
             
+            # 종목명 찾기
             stock_name = symbol
             try:
                 krx = fdr.StockListing('KRX')
@@ -41,12 +43,13 @@ if symbol:
             df.columns = [str(c).lower() for c in df.columns]
             close = df['close']
             
-            # 지표 계산
+            # 기술 지표 계산
             ma20 = close.rolling(20).mean(); std20 = close.rolling(20).std()
             lo_b = ma20 - (std20 * 2); up_b = ma20 + (std20 * 2)
             exp12 = close.ewm(span=12, adjust=False).mean(); exp26 = close.ewm(span=26, adjust=False).mean()
             macd = exp12 - exp26; signal = macd.ewm(span=9, adjust=False).mean()
-            h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min(); wr = ((h14 - close) / (h14 - l14)).iloc[-1] * -100
+            h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min()
+            wr = ((h14 - close) / (h14 - l14)).iloc[-1] * -100
             
             curr_p = close.iloc[-1]
             is_buy = curr_p <= lo_b.iloc[-1] or wr < -80
@@ -55,6 +58,7 @@ if symbol:
             st.header(f"🏢 {stock_name} ({symbol})")
             st.write(f"### 현재가: {curr_p:,.0f}원")
 
+            # 3. 신호등 표시
             if is_buy:
                 st.markdown(f"<div class='signal-box buy'>🔴 매수 사정권 진입</div>", unsafe_allow_html=True)
             elif is_sell:
@@ -62,7 +66,7 @@ if symbol:
             else:
                 st.markdown(f"<div class='signal-box wait'>🟡 관망 및 대기</div>", unsafe_allow_html=True)
 
-            # 3. 부드러운 추세 분석
+            # 4. 부드러운 추세 분석 (요청 반영)
             st.write("### 📉 오늘의 추세 정밀 진단")
             if is_buy:
                 if macd.iloc[-1] < signal.iloc[-1]:
@@ -74,9 +78,9 @@ if symbol:
             st.markdown(f"<div class='trend-card'><b>종합 의견:</b> {trend_msg}</div>", unsafe_allow_html=True)
             
     except Exception as e:
-        st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
+        st.error(f"데이터를 불러오는 중 오류가 발생했습니다. (사유: {e})")
 
-# 4. 검색 기록 버튼
+# 5. 검색 기록 버튼 (흰바탕 파란글씨)
 st.write("---")
 st.subheader("📜 최근 검색 종목")
 cols = st.columns(5)
