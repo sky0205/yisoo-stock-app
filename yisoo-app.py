@@ -2,7 +2,7 @@ import streamlit as st
 import FinanceDataReader as fdr
 import pandas as pd
 
-# 1. 스타일 설정 (부드럽고 직관적인 고대비 스타일)
+# 1. 스타일 설정 (부드러운 디자인)
 st.set_page_config(layout="centered")
 st.markdown("""
     <style>
@@ -18,7 +18,7 @@ st.markdown("""
 
 if 'target' not in st.session_state: st.session_state['target'] = "257720"
 
-st.title("👨‍💻 이수할아버지의 '지수 복구' 분석기 v2700")
+st.title("👨‍💻 이수할아버지의 '완전 복구' 분석기 v2800")
 
 # 실시간 환율 정보 (미장 환산용)
 try:
@@ -42,28 +42,28 @@ if symbol:
             else:
                 st.subheader(f"현재가: {curr_p:,.0f}원")
 
-            # --- [핵심 지표 계산] ---
+            # 지수 계산 (MACD, Williams %R, Bollinger)
             ma20 = df['close'].rolling(20).mean(); std20 = df['close'].rolling(20).std()
             lo_b = ma20 - (std20 * 2); up_b = ma20 + (std20 * 2)
             exp12 = df['close'].ewm(span=12, adjust=False).mean(); exp26 = df['close'].ewm(span=26, adjust=False).mean()
             macd = exp12 - exp26; signal = macd.ewm(span=9, adjust=False).mean()
-            h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min(); wr = ((h14 - df['close']) / (h14 - l14)).iloc[-1] * -100
+            h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min()
+            wr = ((h14 - df['close']) / (h14 - l14)).iloc[-1] * -100
             
-            # --- [신호등 및 부드러운 진단] ---
+            # 신호등 및 부드러운 진단
             is_buy = curr_p <= lo_b.iloc[-1] or wr < -80
             if is_buy:
                 st.markdown("<div class='signal-box buy'>🔴 매수 사정권 진입</div>", unsafe_allow_html=True)
-                msg = "현재 가격은 충분히 저렴하지만, 에너지는 **조심스럽게 바닥을 확인 중**에 있습니다."
+                msg = "현재 가격은 충분히 매력적이지만, 에너지는 **조심스럽게 바닥을 확인 중**에 있습니다."
             else:
                 st.markdown("<div class='signal-box wait'>🟡 관망 및 대기</div>", unsafe_allow_html=True)
                 msg = "추세를 관망하며 숨을 고르는 중입니다."
 
-            st.markdown(f<div class='trend-card'><b>종합 의견:</b> {msg}</div>, unsafe_allow_html=True)
+            # [에러 해결된 부분] 따옴표 수정 완료
+            st.markdown(f"<div class='trend-card'><b>종합 의견:</b> {msg}</div>", unsafe_allow_html=True)
 
-            # --- [선생님이 찾으시던 지수 분석 결과 표] ---
+            # [선생님이 찾으시던 지수 분석 결과 표]
             st.write("### 📋 핵심 지수 분석 결과 (상세)")
-            
-            # 데이터를 명확하게 구성
             index_data = {
                 "지수 항목": ["MACD 에너지", "Williams %R", "Bollinger Band"],
                 "상세 수치": [
@@ -77,7 +77,7 @@ if symbol:
                     "안전 마진 확보" if curr_p < lo_b.iloc[-1] else "추세 추종 구간"
                 ]
             }
-            st.table(pd.DataFrame(index_data)) # 표를 강제로 출력
+            st.table(pd.DataFrame(index_data))
 
         else: st.warning("데이터를 가져오지 못했습니다.")
     except Exception as e:
