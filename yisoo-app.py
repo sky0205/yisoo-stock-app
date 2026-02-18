@@ -50,8 +50,8 @@ def get_tech_analysis(ticker):
 # --- [2] 사이드바 입력창 ---
 with st.sidebar:
     st.header("🔍 종목 분석 설정")
-    in_name = st.text_input("1. 종목명 입력", "삼성전자")
-    in_ticker = st.text_input("2. 코드(6자리) / 티커(영문)", "005930")
+    in_name = st.text_input("1. 종목명 입력 (예: 삼성전자)", "삼성전자")
+    in_ticker = st.text_input("2. 코드(숫자6자리) / 티커(영문)", "005930")
     in_market = st.radio("3. 시장 선택", ["국장 (KR)", "미장 (US)"])
     in_target = st.number_input("4. 나의 적정주가 (S-RIM)", value=210000.0, step=0.1)
     
@@ -63,7 +63,6 @@ with st.sidebar:
 if st.session_state.get('analyzed'):
     n, t, m, tg = st.session_state['n'], st.session_state['t'], st.session_state['m'], st.session_state['tg']
     
-    # 국장/미장 판별 및 데이터 수집
     if "KR" in m:
         tech = get_tech_analysis(t + ".KS")
         if not tech: tech = get_tech_analysis(t + ".KQ")
@@ -74,15 +73,13 @@ if st.session_state.get('analyzed'):
 
     if price and tech:
         st.markdown("---")
-        # 종목명과 코드 결합 출력 (선생님 요청 사항)
-        display_title = f"{n} ({t})"
         cur = "원" if "KR" in m else "$"
         f_p = f"{format(int(price), ',')} {cur}" if "KR" in m else f"{cur}{price:,.2f}"
         f_tg = f"{format(int(tg), ',')} {cur}" if "KR" in m else f"{cur}{tg:,.2f}"
         
-        st.markdown(f"<p class='big-price'>🔍 {display_title} 현재가: {f_p}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p class='big-price'>🔍 {n} ({t}) 현재가: {f_p}</p>", unsafe_allow_html=True)
 
-        # 🚦 2단 지능형 신호등
+        # 🚦 2단 지능형 신호등 (과열 감지 로직)
         if tech['rsi'] > 70 or price > tech['up']:
             bg, status = "#28A745", "🟢 매도 검토 (과열 구간)"
         elif price < tg * 0.95:
@@ -99,17 +96,27 @@ if st.session_state.get('analyzed'):
 
         # 📝 추세 분석 요약
         st.markdown("### 📝 추세 분석 요약")
-        sum_msg = "에너지가 위로 분출되어 밴드 상단을 뚫고 있습니다." if price > tech['up'] else "바닥에서 지지를 확인하며 반등을 준비 중입니다."
+        sum_msg = "에너지가 위로 분출되어 밴드 상단을 넘보고 있습니다." if price > tech['up'] else "바닥을 확인하며 힘을 응축하는 중입니다."
         st.markdown(f"""<div class='summary-box'>
             <b>이수할아버지 의견:</b> 현재 {n}은(는) {sum_msg}<br>
-            RSI 지수가 {round(tech['rsi'],1)}로 측정되니, {'광기에 휩쓸리지 말고 브레이크를 잡으세요' if tech['rsi']>70 else '공포에 사서 기회를 기다리세요' if tech['rsi']<35 else '안정적으로 페달을 밟으세요'}.
+            RSI 지수가 {round(tech['rsi'],1)}로 측정되니, {'광기에 휩쓸리지 말고 차분히 대응하세요' if tech['rsi']>70 else '공포에 사서 기회를 기다려보세요' if tech['rsi']<35 else '안정적으로 라이딩을 이어가세요'}.
         </div>""", unsafe_allow_html=True)
 
-        # 📊 상세 지수 분석표 (실시간 비교 진단)
-        st.markdown("### 📊 실시간 상세 지표 비교 분석")
+        # 📊 상세 지표 분석표 (실시간 비교 진단)
+        st.markdown("### 📊 실시간 지표 상세 비교 분석")
         
-        b_diag = "⚠️ 상단 돌파 (과열)" if price > tech['up'] else "✅ 하단 지지 (바닥)" if price < tech['dn'] else "밴드 내 안정적 주행"
+        b_diag = "⚠️ 상단 돌파 (매도주의)" if price > tech['up'] else "✅ 하단 지입 (매수기회)" if price < tech['dn'] else "밴드 내 안정적 주행"
         r_diag = f"심리 과열({round(tech['rsi'],1)} > 70)" if tech['rsi'] > 70 else f"심리 바닥({round(tech['rsi'],1)} < 30)" if tech['rsi'] < 30 else "투자 심리 보통"
         
+        # 수치 포맷 (미장 소수점 반영)
         f_up = f"{tech['up']:,.2f}" if "US" in m else f"{round(tech['up'],0):,.0f}"
-        f_dn = f"{tech['dn']:,.2f}" if "US" in m else f"{round(tech['
+        f_dn = f"{tech['dn']:,.2f}" if "US" in m else f"{round(tech['dn'],0):,.0f}"
+
+        idx_df = pd.DataFrame({
+            "핵심 지표": ["Bollinger Band", "RSI (심리)", "Williams %R", "MACD Osc"],
+            "실시간 수치": [f"{f_up} / {f_dn}", f"{round(tech['rsi'],1)}", f"{round(tech['wr'],1)}", f"{round(tech['macd'],3)}"],
+            "현 주가 대비 상세 진단": [b_diag, r_diag, "단기 바닥(반등임박)" if tech['wr'] < -80 else "단기 천장(조정대비)" if tech['wr'] > -20 else "보통", "상승 동력 우세" if tech['macd'] > 0 else "하락 압력 우세"]
+        })
+        st.table(idx_df)
+    else:
+        st.error(f"❌ '{t}' 데이터를 찾을 수 없습니다. 시장 선택(KR/US)을 다시 확인해 주세요!")
