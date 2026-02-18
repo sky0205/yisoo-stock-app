@@ -4,7 +4,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
-# 1. 스타일 설정 (이수할아버지 정밀 분석 테마)
+# 1. 스타일 설정
 st.set_page_config(layout="centered")
 st.markdown("""
     <style>
@@ -14,15 +14,18 @@ st.markdown("""
     .wait { background-color: #FFFBEB !important; border-color: #F59E0B !important; color: #92400E !important; }
     .sell { background-color: #ECFDF5 !important; border-color: #10B981 !important; color: #065F46 !important; }
     
-    /* 4대 지표 상세 박스 스타일 */
-    .indicator-card { background: #F8FAFC; border: 2px solid #E2E8F0; border-radius: 15px; padding: 25px; margin-bottom: 15px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); }
+    /* 지표 및 분석 카드 스타일 */
+    .indicator-card { background: #F8FAFC; border: 2px solid #E2E8F0; border-radius: 15px; padding: 25px; margin-bottom: 15px; }
     .indicator-title { font-size: 20px; color: #1E3A8A; font-weight: 900; margin-bottom: 8px; border-bottom: 2px solid #CBD5E1; padding-bottom: 5px; }
-    .indicator-value { font-size: 24px; color: #1E293B; font-weight: 800; margin-bottom: 5px; }
-    .indicator-desc { font-size: 18px; color: #475569; font-weight: 500; line-height: 1.5; }
+    .indicator-value { font-size: 24px; color: #1E293B; font-weight: 800; }
+    .indicator-desc { font-size: 18px; color: #475569; line-height: 1.5; }
     
-    .trend-card { font-size: 22px; line-height: 1.6; color: #1E293B !important; padding: 25px; background: #F1F5F9; border-left: 15px solid #1E3A8A; border-radius: 12px; margin-bottom: 20px; }
+    /* 종합 추세 분석 전용 스타일 */
+    .trend-report { background: #F1F5F9; border-left: 15px solid #1E3A8A; padding: 30px; border-radius: 15px; margin-top: 20px; margin-bottom: 20px; }
+    .trend-title { font-size: 26px; font-weight: 900; color: #1E3A8A; margin-bottom: 15px; }
+    .trend-item { font-size: 20px; color: #334155; margin-bottom: 10px; line-height: 1.6; }
+    
     .value-card { font-size: 28px; font-weight: 900; color: #FFFFFF !important; padding: 25px; background: #1E3A8A; border-radius: 15px; text-align: center; margin-bottom: 30px; }
-    
     h1, h2, h3 { color: #1E3A8A !important; font-weight: 900 !important; }
     </style>
     """, unsafe_allow_html=True)
@@ -48,10 +51,6 @@ if symbol:
         df = fdr.DataReader(symbol).tail(120)
         if not df.empty:
             stock_name = get_stock_name(symbol)
-            if symbol in st.session_state['history']: st.session_state['history'].remove(symbol)
-            st.session_state['history'].insert(0, symbol)
-            st.session_state['target'] = symbol
-            
             df.columns = [str(c).lower() for c in df.columns]
             curr_p = float(df['close'].iloc[-1])
             is_us = not symbol.isdigit()
@@ -68,48 +67,52 @@ if symbol:
             h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min()
             wr = float(((h14.iloc[-1] - curr_p) / (h14.iloc[-1] - l14.iloc[-1])) * -100)
 
-            # [1] 기본 정보
+            # [1] 기본 정보 및 신호등
             st.header(f"🏢 {stock_name} ({symbol})")
             price_txt = f"${curr_p:,.2f}" if is_us else f"{curr_p:,.0f}원"
-            st.subheader(f"현재 시세: {price_txt}")
-
-            # [2] 대형 신호등
+            
             is_buy = curr_p <= lo_b or rsi < 35 or wr < -80
             is_sell = curr_p >= up_b or rsi > 65 or wr > -20
+            
             if is_buy: st.markdown("<div class='signal-box buy'>🔴 매수 적기 (바닥권)</div>", unsafe_allow_html=True)
             elif is_sell: st.markdown("<div class='signal-box sell'>🟢 매도 검토 (고점권)</div>", unsafe_allow_html=True)
             else: st.markdown("<div class='signal-box wait'>🟡 관망 유지 (중립)</div>", unsafe_allow_html=True)
 
-            # [3] 4대 핵심 지수 상세 박스 (설명 강화)
-            st.write("### 📋 4대 핵심 지표 상세 분석")
+            # [2] 종합 추세 분석 리포트 (선생님 요청 사항)
+            st.markdown("<div class='trend-report'>", unsafe_allow_html=True)
+            st.markdown("<div class='trend-title'>🔍 이수할아버지의 종합 추세 분석</div>", unsafe_allow_html=True)
             
-            # 볼린저 밴드
-            bb_msg = "주가가 밴드 하단을 이탈했습니다. 과매도 상태로 기술적 반등이 임박했습니다." if curr_p < lo_b else \
-                     "주가가 밴드 상단을 돌파했습니다. 단기 과열로 조정 가능성이 큽니다." if curr_p > up_b else \
-                     "밴드 내에서 안정적인 흐름을 보이고 있습니다."
-            st.markdown(f"<div class='indicator-card'><div class='indicator-title'>① 볼린저 밴드 (변동성 지표)</div><div class='indicator-value'>수치: {lo_b:,.0f} ~ {up_b:,.0f}</div><div class='indicator-desc'>{bb_msg}</div></div>", unsafe_allow_html=True)
+            # 종합 분석 로직
+            trend_score = 0
+            if macd > sig: trend_score += 1
+            if curr_p > ma20.iloc[-1]: trend_score += 1
+            
+            if trend_score == 2: trend_summary = "현재 강한 상승 엔진이 가동 중입니다. 조정 시 매수 관점이 유효합니다."
+            elif trend_score == 1: trend_summary = "추세가 전환되려는 변곡점에 있습니다. 신중한 접근이 필요합니다."
+            else: trend_summary = "전반적으로 하방 압력이 강합니다. 바닥 확인 전까지는 보수적으로 대응하십시오."
+            
+            st.markdown(f"<div class='trend-item'><b>📈 추세 방향:</b> {trend_summary}</div>", unsafe_allow_html=True)
+            
+            # 보조지표 종합 코멘트
+            vol_msg = "밴드가 좁아지며 큰 변동성을 준비 중입니다." if (up_b - lo_b) / ma20.iloc[-1] < 0.1 else "현재 변동성이 충분히 확보된 상태입니다."
+            st.markdown(f"<div class='trend-item'><b>⚖️ 변동성 상태:</b> {vol_msg}</div>", unsafe_allow_html=True)
+            
+            psych_msg = "시장이 과열되어 차익 실현 매물이 나올 수 있습니다." if rsi > 65 else "공포 심리가 우세하여 저가 매수세 유입이 기대됩니다." if rsi < 35 else "투자자들의 심리가 매우 안정적입니다."
+            st.markdown(f"<div class='trend-item'><b>심리 지수:</b> {psych_msg}</div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
-            # RSI
-            rsi_msg = "RSI 35 미만: 시장이 공포에 질려 던지고 있습니다. 곧 저점이 형성됩니다." if rsi < 35 else \
-                      "RSI 65 초과: 시장이 흥분 상태입니다. 추격 매수는 위험한 구간입니다." if rsi > 65 else \
-                      "투자 심리가 치우치지 않은 평온한 상태입니다."
-            st.markdown(f"<div class='indicator-card'><div class='indicator-title'>② RSI (투자 심리도)</div><div class='indicator-value'>현재 심리: {rsi:.1f}%</div><div class='indicator-desc'>{rsi_msg}</div></div>", unsafe_allow_html=True)
+            # [3] 4대 핵심 지수 박스
+            st.write("### 📋 4대 핵심 지표 상세 수치")
+            col1, col2 = st.columns(2); col3, col4 = st.columns(2)
+            with col1: st.markdown(f"<div class='indicator-card'><div class='indicator-title'>볼린저 밴드</div><div class='indicator-value'>{lo_b:,.0f} ~ {up_b:,.0f}</div></div>", unsafe_allow_html=True)
+            with col2: st.markdown(f"<div class='indicator-card'><div class='indicator-title'>RSI 심리도</div><div class='indicator-value'>{rsi:.1f}%</div></div>", unsafe_allow_html=True)
+            with col3: st.markdown(f"<div class='indicator-card'><div class='indicator-title'>MACD 추세</div><div class='indicator-value'>{'상승 우위' if macd > sig else '하락 우위'}</div></div>", unsafe_allow_html=True)
+            with col4: st.markdown(f"<div class='indicator-card'><div class='indicator-title'>Williams %R</div><div class='indicator-value'>{wr:.1f}</div></div>", unsafe_allow_html=True)
 
-            # MACD
-            macd_msg = "상승 골든크로스: 세력의 자금이 유입되며 추세가 위로 꺾였습니다." if macd > sig else \
-                       "하락 데드크로스: 매수세가 약해지며 힘이 빠지고 있는 구간입니다."
-            st.markdown(f"<div class='indicator-card'><div class='indicator-title'>③ MACD (추세 강도)</div><div class='indicator-value'>수치: {macd:.2f} (시그널 대비 {'우위' if macd > sig else '열세'})</div><div class='indicator-desc'>{macd_msg}</div></div>", unsafe_allow_html=True)
-
-            # Williams %R
-            wr_msg = "바닥권 탈출 대기: 에너지가 응축되어 튀어오를 준비를 하고 있습니다." if wr < -80 else \
-                     "천장권 진입: 단기적으로 먹을 구간보다 떨어질 위험이 큽니다." if wr > -20 else \
-                     "적당한 에너지를 유지하며 추세를 탐색 중입니다."
-            st.markdown(f"<div class='indicator-card'><div class='indicator-title'>④ Williams %R (단기 수급)</div><div class='indicator-value'>에너지: {wr:.1f}</div><div class='indicator-desc'>{wr_msg}</div></div>", unsafe_allow_html=True)
-
-            # [4] 최종 목표가
+            # [4] 목표가
             fair_v = curr_p * 1.15
             target_txt = f"${fair_v:,.2f}" if is_us else f"{fair_v:,.0f}원"
             st.markdown(f"<div class='value-card'>💎 이수할아버지의 1차 목표가 제안: {target_txt}</div>", unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"분석 중 오류 발생! (에러: {e})")
+        st.error(f"분석 중 오류 발생! 티커를 확인해 주세요. ({e})")
