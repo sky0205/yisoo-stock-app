@@ -19,7 +19,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- [1] 지능형 AI 엔진 (9% 고정 적용) ---
+# --- [1] 지능형 AI 데이터 엔진 (9% 고정) ---
 @st.cache_data(ttl=3600)
 def fetch_ai_stock_info(user_input):
     try:
@@ -27,7 +27,7 @@ def fetch_ai_stock_info(user_input):
         y_ticker = user_input + (".KS" if is_kr else "")
         stock = yf.Ticker(y_ticker)
         
-        # 1. 이름 자동 검색
+        # 이름 자동 검색
         if is_kr:
             url = f"https://finance.naver.com/item/main.naver?code={user_input}"
             res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -36,34 +36,38 @@ def fetch_ai_stock_info(user_input):
         else:
             name = stock.info.get('shortName', user_input)
 
-        # 2. S-RIM 계산 (요구수익률 9% 고정)
+        # 재무 데이터 추출 (S-RIM 9% 기준)
         info = stock.info
-        bps = info.get('bookValue') or 0
-        roe = info.get('returnOnEquity') or 0.10
-        r = 0.09 # 선생님 요청 9% 고정
-        
-        if bps <= 0:
-            target_val = 0.0
-        else:
-            # S-RIM 공식: BPS * (ROE / r)
-            target_val = bps * (roe / r)
-            # 마이너스 방지: 최소 BPS의 50%는 보장
-            if target_val < bps * 0.5: target_val = bps * 0.5
+        # BPS: 데이터 없으면 PBR과 현재가로 역산
+        bps = info.get('bookValue')
+        if not bps or bps == 0:
+            pbr = info.get('priceToBook', 1)
+            price = info.get('currentPrice', 1)
+            bps = price / pbr if pbr != 0 else 0
             
-        return {"name": name, "target": float(target_val), "ticker": y_ticker, "is_kr": is_kr}
+        # ROE: 데이터 없으면 평균치인 10% 가정
+        roe = info.get('returnOnEquity')
+        if not roe or roe == 0: roe = 0.10
+        
+        r = 0.09 # 요구수익률 9% 고정
+        target_val = float(bps + (bps * (roe - r) / r)) if bps > 0 else 0.0
+        # 비정상 수치(마이너스 등) 보정: 최소 BPS의 70% 인정
+        if target_val < bps * 0.7: target_val = bps * 0.7
+            
+        return {"name": name, "target": target_val, "ticker": y_ticker, "is_kr": is_kr}
     except:
         return None
 
-# --- [2] 메인 화면 ---
-st.title("🏆 이수할아버지 v36000 AI 마스터 (9% 모델)")
+# --- [2] 메인 화면 및 입력창 ---
+st.title("🏆 이수할아버지 v36000 AI 마스터")
 
-t_input = st.text_input("🔢 종목코드(숫자) 또는 미장티커(영문) 입력", value="005930")
+t_input = st.text_input("🔢 종목코드(6자리) 또는 미장티커를 입력하세요", value="005930")
 ai_data = fetch_ai_stock_info(t_input)
 
 if ai_data:
     c1, c2 = st.columns(2)
     with c1: in_name = st.text_input("📍 종목명", value=ai_data['name'])
-    with c2: in_target = st.number_input("💎 AI 9% 기준 적정주가", value=ai_data['target'], step=0.1)
+    with c2: in_target = st.number_input("💎 AI 산출 적정주가 (r=9%)", value=float(ai_data['target']), step=0.1)
     
     if st.button("🚀 실시간 4대 지표 정밀 분석 시작"):
         df = yf.download(ai_data['ticker'], period="6mo", interval="1d", progress=False)
@@ -100,19 +104,24 @@ if ai_data:
             # 신호등 로직
             if rsi > 70 or price > up_band:
                 bg, status = "#28A745", "🟢 매도 검토 (과열 구간)"
-            elif price < in_target * 0.95 and in_target > 0:
+            elif price < in_target * 0.95:
                 bg, status = "#FF4B4B", "🔴 매수 사정권 (기회 구간)"
             else:
                 bg, status = "#FFC107; color: black !important;", "🟡 관망 대기 (중립 구간)"
             
             st.markdown(f"<div class='signal-box' style='background-color: {bg};'><span class='signal-content'>{status}</span></div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='target-box'>💎 AI 산출 적정주가 (9%): {f_tg}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='target-box'>💎 AI 산출 적정주가: {f_tg}</div>", unsafe_allow_html=True)
 
-            # 4대 지표 통합 표
+            # 요약
+            st.markdown("### 📝 AI 추세 분석 요약")
+            sum_msg = "상승 에너지가 강해 밴드 상단을 넘보고 있습니다." if price > up_band else "바닥 지지력을 테스트 중입니다."
+            st.markdown(f"<div class='summary-box'><b>이수할아버지 의견:</b> 현재 {in_name}은(는) {sum_msg}<br>RSI {round(rsi,1)}는 {'과열 상태' if rsi>70 else '바닥 구간' if rsi<35 else '안정권'}입니다.</div>", unsafe_allow_html=True)
+
+            # 4대 지표 표
             st.table(pd.DataFrame({
                 "4대 핵심 지표": ["볼린저 밴드", "RSI (심리)", "Williams %R", "MACD Osc"],
                 "실시간 수치": [f"{round(up_band,2)} / {round(dn_band,2)}", f"{round(rsi,1)}", f"{round(wr,1)}", f"{round(macd_val,3)}"],
-                "진단": ["상단 돌파" if price > up_band else "하단 지지" if price < dn_band else "정상", "과열" if rsi>70 else "바닥" if rsi<30 else "보통", "단기천장" if wr>-20 else "단기바닥" if wr<-80 else "보통", "상승세" if macd_val>0 else "하락세"]
+                "상세 진단": ["상단 돌파(주의)" if price > up_band else "하단 지입(기회)" if price < dn_band else "정상", "과열" if rsi>70 else "바닥" if rsi<30 else "보통", "단기천장" if wr>-20 else "단기바닥" if wr<-80 else "보통", "상승세" if macd_val>0 else "하락세"]
             }))
         else:
             st.error("데이터 로딩 실패! 코드 확인 요망")
