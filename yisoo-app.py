@@ -22,7 +22,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- [1] 종목 DB (2026년 타겟가 업데이트) ---
+# --- [1] 종목 DB ---
 stock_db = {
     "삼성전자": {"ticker": "005930", "market": "KR", "target": 210000},
     "유한양행": {"ticker": "000100", "market": "KR", "target": 135000},
@@ -73,43 +73,44 @@ if st.session_state['analyzed']:
         unit = "원" if info["market"] == "KR" else "$"
         fmt_p = f"{format(int(price), ',')} {unit}" if info["market"] == "KR" else f"{unit}{price}"
         
-        # 1. 현주가
         st.markdown(f"<p class='big-price'>🔍 {name} 현재가: {fmt_p}</p>", unsafe_allow_html=True)
 
-        # 2. 두 줄 신호등 박스
-        if price < info["target"] * 0.9: bg, status = "#FF4B4B", "🔴 매수 사정권"
-        elif price > info["target"] or price > tech['up']: bg, status = "#28A745", "🟢 매도 검토"
-        else: bg, status = "#FFC107; color: black;", "🟡 관망 대기"
+        # 🚦 [보강된 지능형 신호등 논리]
+        # 가격이 타겟보다 낮더라도 과열지표(RSI 70이상 또는 볼린저 상단돌파)가 뜨면 '매도' 혹은 '관망'
+        if price > tech['up'] or tech['rsi'] > 70:
+            bg, status = "#28A745", "🟢 매도 검토 (과열)"
+        elif price < info["target"] * 0.9 and tech['rsi'] < 40:
+            bg, status = "#FF4B4B", "🔴 매수 사정권 (바닥)"
+        else:
+            bg, status = "#FFC107; color: black;", "🟡 관망 대기"
         
         st.markdown(f"""<div class='signal-box' style='background-color: {bg};'>
             <span class='signal-title'>🚦 신호등 상태</span><br>
             <span class='signal-content'>{status}</span>
         </div>""", unsafe_allow_html=True)
 
-        # 3. 적정주가
+        # 적정주가 표시
         fmt_t = f"{format(int(info['target']), ',')} {unit}" if info["market"] == "KR" else f"{unit}{info['target']}"
         st.markdown(f"<div class='target-box'>💎 테이버 적정주가: {fmt_t}</div>", unsafe_allow_html=True)
 
-        # 4. 추세 분석 요약
+        # 추세 요약 (실시간 비교 진단 포함)
         st.markdown("### 📝 추세 분석 요약")
-        trend_msg = "에너지가 폭발적인 상승세에 있습니다." if tech['macd'] > 0 else "단기 과열 이후 조정을 준비 중입니다."
+        sum_msg = "상단선을 뚫고 신고가를 달리는 중입니다. 브레이크가 필요합니다." if price > tech['up'] else "바닥에서 에너지를 응축하고 있습니다."
         st.markdown(f"""<div class='summary-box'>
-            <b>이수할아버지 의견:</b> {name}은(는) 현재 {trend_msg}<br>
-            RSI {round(tech['rsi'],1)}는 강력한 {'매수세' if tech['rsi']>70 else '관망세'}를 뜻하니, 과열 구간에서는 브레이크를 잊지 마세요.
+            <b>이수할아버지 의견:</b> 현재 {name}은(는) {sum_msg}<br>
+            RSI {round(tech['rsi'],1)}는 강력한 과열 신호입니다. 적정주가까지 공간이 남았어도 지표가 꺾일 때를 조심하세요.
         </div>""", unsafe_allow_html=True)
 
-        # 5. 실시간 비교 지수 분석표 (선생님 요청 핵심!)
-        st.markdown("### 📊 실시간 지표 비교 진단표")
-        
-        # 실시간 비교 로직
-        b_diag = "⚠️ 상단 돌파 (과열 매도)" if price > tech['up'] else "✅ 하단 지지 (저점 매수)" if price < tech['dn'] else "밴드 내 안정적 주행"
-        r_diag = f"🚨 과열 ({round(tech['rsi'],1)} > 70)" if tech['rsi'] > 70 else f"💎 바닥 ({round(tech['rsi'],1)} < 30)" if tech['rsi'] < 30 else "심리적 중립 상태"
-        w_diag = "🔥 천장권 (조정주의)" if tech['wr'] > -20 else "❄️ 바닥권 (반등임박)" if tech['wr'] < -80 else "에너지 응축 중"
-        m_diag = "▲ 전진 (상승 가속)" if tech['macd'] > 0 else "▼ 후진 (하락 우세)"
-
+        # 지수 분석표 (실시간 비교)
+        st.markdown("### 📊 실시간 지수 비교 분석")
         idx_df = pd.DataFrame({
             "핵심 지표": ["Bollinger Band", "RSI (심리)", "Williams %R", "MACD Osc"],
             "실시간 수치": [f"{round(tech['up'],0)} / {round(tech['dn'],0)}", f"{round(tech['rsi'],1)}", f"{round(tech['wr'],1)}", f"{round(tech['macd'],3)}"],
-            "현지수 대비 상세 진단": [b_diag, r_diag, w_diag, m_diag]
+            "현지수 대비 상세 진단": [
+                "⚠️ 상단선 돌파 (단기 고점)" if price > tech['up'] else "✅ 하단선 지지 (안전 주행)",
+                "🚨 심리 과열 (70 돌파)" if tech['rsi'] > 70 else "💎 심리 바닥 (30 하회)" if tech['rsi'] < 30 else "안정적 구간",
+                "🔥 천장 (조정 대비)" if tech['wr'] > -20 else "❄️ 바닥 (반등 임박)" if tech['wr'] < -80 else "보통",
+                "▲ 전진 동력 우세" if tech['macd'] > 0 else "▼ 하락 압력 우세"
+            ]
         })
         st.table(idx_df)
