@@ -18,8 +18,8 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- [1] 26년 EPS 강제 복구 엔진 ---
-def get_master_eps_2026(ticker_input):
+# --- [1] 자산 가치 전용 엔진 (BPS * PBR) ---
+def get_bps_valuation(ticker_input):
     try:
         is_kr = bool(re.match(r'^\d{6}$', ticker_input))
         y_ticker = ticker_input + (".KS" if is_kr else "")
@@ -37,44 +37,42 @@ def get_master_eps_2026(ticker_input):
 
         price = info.get('currentPrice') or info.get('previousClose') or 1.0
         
-        # [핵심 보정] EPS가 1원 미만으로 나오면 강제 재계산
-        eps_raw = info.get('forwardEps')
-        if not eps_raw or eps_raw < 1.0:
-            # 최근 12개월 EPS가 없으면 PER과 주가로 역산
-            curr_eps = info.get('trailingEps') or (price / info.get('trailingPE', 25))
-            # 실리콘투 등 고성장주 특성을 반영해 연 25% 성장률 가정 (2년 복리 가산)
-            eps_raw = curr_eps * (1.25 ** 2)
-
-        # 적정 PER (Forward PER 우선, 없으면 업종 평균 수준 20배 적용)
-        per = info.get('forwardPE') or info.get('trailingPE') or 20.0
+        # [공식 변경] BPS * PBR 기반 적정주가
+        bps = info.get('bookValue')
+        pbr = info.get('priceToBook')
         
-        # 최종 적정주가 계산
-        target_val = float(eps_raw * per)
-        
-        # [최종 방어선] 적정가가 현재가의 50% 미만이면 데이터 오류로 간주, 현재가 기반 20% 상향 제시
-        if target_val < price * 0.5: target_val = price * 1.2
+        # 데이터가 없을 경우 현재가 기준 역산하여 0원 방지
+        if not bps or bps < 10:
+            bps = price / (pbr if pbr and pbr > 0 else 1.0)
+        if not pbr or pbr < 0.1:
+            pbr = 1.0 # 최소 장부가 1배는 인정
             
-        return name, target_val, eps_raw, per, y_ticker, is_kr
+        target_val = float(bps * pbr)
+        
+        # 하한선: 자산 가치가 너무 낮게 잡히면 현재가로 보정
+        if target_val < price * 0.5: target_val = price
+            
+        return name, target_val, bps, pbr, y_ticker, is_kr
     except:
         return ticker_input, 0.0, 0.0, 0.0, ticker_input, False
 
 # --- [2] 메인 레이아웃 ---
-st.title("🏆 v36000 AI 마스터: EPS 강제 복구판")
+st.title("🏆 v36000 AI 마스터: 자산 가치(BPS) 모델")
 
 t_input = st.text_input("🔢 종목코드 또는 티커를 입력하고 [Enter]", value="257720")
-name, target, eps, per, y_tick, is_kr = get_master_eps_2026(t_input)
+name, target, bps_val, pbr_val, y_tick, is_kr = get_bps_valuation(t_input)
 
-# 상단 데이터 검증 보드
+# 상단 데이터 지표 표시
 st.success(f"📍 분석 종목: **{name}**")
 c1, c2, c3 = st.columns(3)
-with c1: st.metric("AI 보정 26년 EPS", f"{round(eps, 2)}원" if is_kr else f"${round(eps, 2)}")
-with c2: st.metric("적용 PER 배수", f"{round(per, 2)}배")
+with c1: st.metric("BPS (주당순자산)", f"{round(bps_val, 2)}원" if is_kr else f"${round(bps_val, 2)}")
+with c2: st.metric("적용 PBR 배수", f"{round(pbr_val, 2)}배")
 with c3: st.metric("최종 적정주가", f"{format(int(target), ',')}원" if is_kr else f"${round(target, 2)}")
 
-if st.button("🚀 4대 지표 정밀 분석 시작"):
+if st.button("🚀 4대 지표 실시간 정밀 분석 시작"):
     df = yf.download(y_tick, period="6mo", interval="1d", progress=False)
     if not df.empty:
-        # [ValueError 박멸] 모든 지표를 스칼라 숫자로 강제 변환
+        # [ValueError 박멸] Scalar 숫자 변환
         price = float(df['Close'].iloc[-1])
         ma20 = df['Close'].rolling(20).mean(); std = df['Close'].rolling(20).std()
         up_band = float((ma20 + std * 2).iloc[-1]); dn_band = float((ma20 - std * 2).iloc[-1])
@@ -96,7 +94,6 @@ if st.button("🚀 4대 지표 정밀 분석 시작"):
 
         st.markdown(f"<p class='big-price'>🔍 {name} 현재가: {f_p}</p>", unsafe_allow_html=True)
         
-        # 신호등 로직
         if rsi > 70 or price > up_band:
             bg, status = "#28A745", "🟢 매도 검토 (과열)"
         elif price < target * 0.95:
@@ -105,11 +102,11 @@ if st.button("🚀 4대 지표 정밀 분석 시작"):
             bg, status = "#FFC107; color: black !important;", "🟡 관망 대기 (중립)"
         
         st.markdown(f"<div class='signal-box' style='background-color: {bg};'><span class='signal-content'>{status}</span></div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='target-box'>💎 26년 수익 가치 보정가: {f_tg}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='target-box'>💎 자산 가치 기준 적정가: {f_tg}</div>", unsafe_allow_html=True)
 
         st.table(pd.DataFrame({
             "4대 핵심 지표": ["볼린저 밴드", "RSI (심리)", "Williams %R", "MACD Osc"],
             "실시간 수치": [f"{round(up_band,2)} / {round(dn_band,2)}", f"{round(rsi,1)}", f"{round(wr,1)}", f"{round(macd_val,3)}"],
             "진단": ["주의" if price > up_band else "기회" if price < dn_band else "정상", "주의" if rsi>70 else "바닥" if rsi<30 else "보통", "천장" if wr>-20 else "바닥" if wr<-80 else "보통", "상승" if macd_val>0 else "하락"]
         }))
-    else: st.error("데이터 로드 실패!")
+    else: st.error("데이터 로딩 실패!")
