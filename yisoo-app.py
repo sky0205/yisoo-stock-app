@@ -14,21 +14,21 @@ st.markdown("""
     .signal-box { padding: 30px; border-radius: 20px; text-align: center; color: white !important; line-height: 1.2; margin-bottom: 20px; }
     .signal-content { font-size: 48px; font-weight: 900; display: block; margin-top: 5px; color: white !important; }
     .target-box { background-color: #F0F9FF; border: 4px solid #007BFF; padding: 25px; border-radius: 20px; text-align: center; color: #0056b3; font-size: 32px; font-weight: 700; margin-bottom: 25px; }
-    .summary-box { background-color: #FFFDE7; border-left: 10px solid #FBC02D; padding: 20px; font-size: 19px; line-height: 1.6; color: #000000 !important; }
+    .summary-box { background-color: #FFFDE7; border-left: 10px solid #FBC02D; padding: 20px; font-size: 19px; line-height: 1.6; color: #000000 !important; border-radius: 0 15px 15px 0; }
     .stButton>button { width: 100%; height: 65px; font-size: 24px; font-weight: 800; background-color: #1E1E1E; color: white; border-radius: 12px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- [1] 테이버 지능형 엔진 (Earnings-Based) ---
+# --- [1] 최적 적정주가 엔진 (보정형 S-RIM, r=9%) ---
 @st.cache_data(ttl=3600)
-def fetch_taeber_info(user_input):
+def fetch_refined_stock_info(user_input):
     try:
         is_kr = bool(re.match(r'^\d{6}$', user_input))
         y_ticker = user_input + (".KS" if is_kr else "")
         stock = yf.Ticker(y_ticker)
         info = stock.info
         
-        # 1. 이름 검색 (국장/미장 자동)
+        # 1. 이름 검색
         if is_kr:
             url = f"https://finance.naver.com/item/main.naver?code={user_input}"
             res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -37,38 +37,56 @@ def fetch_taeber_info(user_input):
         else:
             name = info.get('shortName') or info.get('longName') or user_input
 
-        # 2. 테이버식 적정주가 (EPS * 1/r)
+        # 2. 보정형 S-RIM 엔진 (가장 적합한 공식)
         r = 0.09 # 요구수익률 9% 고정
-        eps = info.get('forwardEps') or info.get('trailingEps')
         
-        # EPS가 없으면 S-RIM(자산기반)으로 전환하여 빈칸 방지
-        if eps:
-            target_val = float(eps * (1 / r))
-        else:
-            bps = info.get('bookValue') or (info.get('currentPrice', 1) / info.get('priceToBook', 1))
-            roe = info.get('returnOnEquity') or 0.10
-            target_val = float(bps * (roe / r))
-
-        # 하한선 보정 (현재가의 70%는 보장)
-        current_p = info.get('currentPrice') or info.get('previousClose') or 1
-        if target_val < current_p * 0.7: target_val = current_p * 0.8
+        # BPS 확보 (누락 시 PBR 역산)
+        bps = info.get('bookValue')
+        if not bps or bps == 0:
+            price = info.get('currentPrice') or info.get('previousClose') or 1
+            pbr = info.get('priceToBook') or 1
+            bps = price / pbr
             
+        # ROE 확보 (누락 시 PER/PBR 역산 또는 기본치 적용)
+        roe = info.get('returnOnEquity')
+        if not roe or roe == 0:
+            per = info.get('trailingPE')
+            pbr = info.get('priceToBook')
+            if per and pbr: roe = pbr / per
+            else: roe = 0.10 # 데이터 전무할 경우 시장 평균 10%
+            
+        # ROE 단위 보정 (퍼센트 -> 소수점)
+        if roe > 1: roe = roe / 100
+        
+        # [최적 공식 적용] 적정주가 = BPS * (ROE / r)
+        # 이 공식은 미래의 초과이익이 영구히 지속된다고 가정하는 S-RIM의 가장 합리적인 요약 버전입니다.
+        target_val = float(bps * (roe / r))
+        
+        # [이상치 보정 로직] 
+        # ROE가 마이너스(적자)거나 너무 낮아 적정주가가 터무니없을 경우: BPS의 70%를 청산 가치로 인정
+        if roe <= 0.03 or target_val < bps * 0.7:
+            target_val = bps * 0.7
+            
+        # 지나친 고평가 방지 (ROE가 너무 높을 경우 캡 씌움)
+        if roe > 0.40: # ROE 40% 이상은 지속 불가능하다고 판단
+            target_val = bps * (0.40 / r)
+
         return {"name": name, "target": target_val, "ticker": y_ticker, "is_kr": is_kr}
     except:
         return None
 
 # --- [2] 메인 화면 ---
-st.title("🏆 이수할아버지 v36000 AI 마스터 (테이버 모델)")
+st.title("🏆 이수할아버지 v36000 AI 마스터 (9% 최적화)")
 
-t_input = st.text_input("🔢 종목코드 또는 티커를 입력하세요", value="005930")
-ai_data = fetch_taeber_info(t_input)
+t_input = st.text_input("🔢 종목코드(6자리) 또는 미장티커(영문) 입력", value="005930")
+ai_data = fetch_refined_stock_info(t_input)
 
 if ai_data:
     c1, c2 = st.columns(2)
-    with c1: st.text_input("📍 종목명", value=ai_data['name'], disabled=True)
-    with c2: in_target = st.number_input("💎 테이버 AI 적정주가 (9%)", value=ai_data['target'], step=0.1)
+    with c1: st.text_input("📍 분석 종목명", value=ai_data['name'], disabled=True)
+    with c2: in_target = st.number_input("💎 AI 최적 적정주가 (9%)", value=ai_data['target'], step=0.1)
     
-    if st.button("🚀 실시간 4대 지표 통합 분석 시작"):
+    if st.button("🚀 실시간 4대 지표 정밀 분석 시작"):
         df = yf.download(ai_data['ticker'], period="6mo", interval="1d", progress=False)
         if df.empty and ai_data['is_kr']: 
             df = yf.download(t_input + ".KQ", period="6mo", interval="1d", progress=False)
@@ -80,7 +98,7 @@ if ai_data:
             up_band = float((ma20 + std * 2).iloc[-1])
             dn_band = float((ma20 - std * 2).iloc[-1])
             
-            # 4대 지표 계산
+            # 4대 지수 계산 (ValueError 방지 스칼라화)
             delta = close.diff(); g = delta.where(delta > 0, 0).rolling(14).mean(); l = -delta.where(delta < 0, 0).rolling(14).mean()
             rsi = float((100 - (100 / (1 + (g/l)))).iloc[-1])
             h14, l14 = df['High'].rolling(14).max(), df['Low'].rolling(14).min()
@@ -93,22 +111,24 @@ if ai_data:
             f_p = f"{format(int(price), ',')} {cur}" if ai_data['is_kr'] else f"{cur}{price:,.2f}"
             f_tg = f"{format(int(in_target), ',')} {cur}" if ai_data['is_kr'] else f"{cur}{in_target:,.2f}"
 
-            # 결과 출력
             st.markdown(f"<p class='big-price'>🔍 {ai_data['name']} 현재가: {f_p}</p>", unsafe_allow_html=True)
             
+            # 신호등 로직
             if rsi > 70 or price > up_band:
-                bg, status = "#28A745", "🟢 매도 검토 (과열)"
+                bg, status = "#28A745", "🟢 매도 검토 (과열 구간)"
             elif price < in_target * 0.95:
-                bg, status = "#FF4B4B", "🔴 매수 사정권 (기회)"
+                bg, status = "#FF4B4B", "🔴 매수 사정권 (기회 구간)"
             else:
-                bg, status = "#FFC107; color: black !important;", "🟡 관망 대기 (중립)"
+                bg, status = "#FFC107; color: black !important;", "🟡 관망 대기 (중립 구간)"
             
             st.markdown(f"<div class='signal-box' style='background-color: {bg};'><span class='signal-content'>{status}</span></div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='target-box'>💎 테이버식 적정주가: {f_tg}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='target-box'>💎 최적 적정주가: {f_tg}</div>", unsafe_allow_html=True)
 
             # 4대 지표 표
             st.table(pd.DataFrame({
                 "4대 핵심 지표": ["볼린저 밴드", "RSI (심리)", "Williams %R", "MACD Osc"],
                 "실시간 수치": [f"{round(up_band,2)} / {round(dn_band,2)}", f"{round(rsi,1)}", f"{round(wr,1)}", f"{round(macd_val,3)}"],
-                "진단": ["과열" if price > up_band else "바닥" if price < dn_band else "정상", "과열" if rsi>70 else "바닥" if rsi<30 else "보통", "단기천장" if wr>-20 else "단기바닥" if wr<-80 else "보통", "상승세" if macd_val>0 else "하락세"]
+                "AI 진단": ["상단 돌파(주의)" if price > up_band else "하단 지지(기회)" if price < dn_band else "정상", "과열" if rsi>70 else "바닥" if rsi<30 else "보통", "단기천장" if wr>-20 else "단기바닥" if wr<-80 else "보통", "상승세" if macd_val>0 else "하락세"]
             }))
+        else:
+            st.error("데이터 로딩 실패! 코드 확인 요망")
