@@ -18,15 +18,15 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- [1] 수익성 전용 엔진 (EPS * PER 11.11) ---
-def get_eps_valuation(ticker_input):
+# --- [1] 수익성 직결 엔진 (EPS * PER) ---
+def get_pure_valuation(ticker_input):
     try:
         is_kr = bool(re.match(r'^\d{6}$', ticker_input))
         y_ticker = ticker_input + (".KS" if is_kr else "")
         stock = yf.Ticker(y_ticker)
         info = stock.info
         
-        # 이름 검색
+        # 이름 자동 검색
         if is_kr:
             url = f"https://finance.naver.com/item/main.naver?code={ticker_input}"
             res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -35,37 +35,35 @@ def get_eps_valuation(ticker_input):
         else:
             name = info.get('shortName') or info.get('longName') or ticker_input
 
-        # [공식 적용] 요구수익률 9% 기준 적정 PER = 11.11
-        r = 0.09
+        # [공식 수정] 요구수익률 없이 시장 PER 기반 산출
         price = info.get('currentPrice') or info.get('previousClose') or 1.0
-        
-        # 예상 EPS 확보 (없으면 현재 EPS 사용, 그것도 없으면 현재가/PER로 역산)
         eps = info.get('forwardEps') or info.get('trailingEps') or (price / info.get('trailingPE', 15))
+        per = info.get('trailingPE') or info.get('forwardPE') or 15.0 # 데이터 없으면 시장 평균 15배
         
-        # 적정주가 = EPS * (1/r)
-        target_val = float(eps * (1/r))
+        # 적정주가 = 주당순이익(EPS) * 현재 배수(PER)
+        target_val = float(eps * per)
         
-        # 데이터가 너무 낮게 나올 경우(적자 등) 현재가의 70%를 하한선으로 보정
-        if target_val <= 0 or target_val < price * 0.3:
-            target_val = price * 0.7
+        # 데이터 오류로 인한 '1원' 방지: 적정가가 현재가와 너무 동떨어지면 현재가로 보정
+        if target_val <= 1 or target_val < price * 0.1:
+            target_val = price 
             
         return name, target_val, y_ticker, is_kr
     except:
         return ticker_input, 0.0, ticker_input, False
 
 # --- [2] 메인 레이아웃 ---
-st.title("🏆 v36000 AI 마스터: EPS × PER 전용")
+st.title("🏆 v36000 AI 마스터: 순수 수익성 모델")
 
 t_input = st.text_input("🔢 종목코드 또는 티커를 입력하고 [Enter]", value="257720")
-name, target, y_tick, is_kr = get_eps_valuation(t_input)
+name, target, y_tick, is_kr = get_pure_valuation(t_input)
 
-# 상단 결과 표시
-st.success(f"📍 분석 종목: **{name}** | 💎 AI 수익가치 적정가(PER 11.1): **{format(int(target), ',') if is_kr else round(target, 2)}**")
+# 상단 결과 표시 (적정주가란 제거 및 결과 자동 노출)
+st.success(f"📍 분석 종목: **{name}** | 💎 시장 PER 기반 적정가: **{format(int(target), ',') if is_kr else round(target, 2)}**")
 
 if st.button("🚀 실시간 4대 지표 정밀 분석 시작"):
     df = yf.download(y_tick, period="6mo", interval="1d", progress=False)
     if not df.empty:
-        # [ValueError 방지] 모든 지표를 float 숫자로 강제 변환
+        # [ValueError 박멸] 모든 지표를 스칼라 숫자로 강제 변환
         price = float(df['Close'].iloc[-1])
         ma20 = df['Close'].rolling(20).mean(); std = df['Close'].rolling(20).std()
         up_band = float((ma20 + std * 2).iloc[-1]); dn_band = float((ma20 - std * 2).iloc[-1])
@@ -89,18 +87,18 @@ if st.button("🚀 실시간 4대 지표 정밀 분석 시작"):
         
         # 신호등 로직
         if rsi > 70 or price > up_band:
-            bg, status = "#28A745", "🟢 매도 검토 (과열 구간)"
+            bg, status = "#28A745", "🟢 매도 검토 (과열)"
         elif price < target * 0.95:
-            bg, status = "#FF4B4B", "🔴 매수 사정권 (기회 구간)"
+            bg, status = "#FF4B4B", "🔴 매수 사정권 (기회)"
         else:
-            bg, status = "#FFC107; color: black !important;", "🟡 관망 대기 (중립 구간)"
+            bg, status = "#FFC107; color: black !important;", "🟡 관망 대기 (중립)"
         
         st.markdown(f"<div class='signal-box' style='background-color: {bg};'><span class='signal-content'>{status}</span></div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='target-box'>💎 EPS × PER(11.1) 적정주가: {f_tg}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='target-box'>💎 EPS × PER 적정주가: {f_tg}</div>", unsafe_allow_html=True)
 
         st.table(pd.DataFrame({
             "4대 핵심 지표": ["볼린저 밴드", "RSI (심리)", "Williams %R", "MACD Osc"],
             "실시간 수치": [f"{round(up_band,2)} / {round(dn_band,2)}", f"{round(rsi,1)}", f"{round(wr,1)}", f"{round(macd_val,3)}"],
-            "AI 진단": ["주의" if price > up_band else "기회" if price < dn_band else "정상", "주의" if rsi>70 else "바닥" if rsi<30 else "보통", "천장" if wr>-20 else "바닥" if wr<-80 else "보통", "상승" if macd_val>0 else "하락"]
+            "진단": ["과열" if price > up_band else "기회" if price < dn_band else "정상", "주의" if rsi>70 else "바닥" if rsi<30 else "보통", "천장" if wr>-20 else "바닥" if wr<-80 else "보통", "상승" if macd_val>0 else "하락"]
         }))
     else: st.error("데이터 로딩 실패!")
