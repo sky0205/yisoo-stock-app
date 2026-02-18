@@ -4,12 +4,14 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
-# --- [0] 기본 설정 ---
+# --- [0] 기본 설정 및 검색 기록 저장소 ---
 st.set_page_config(page_title="v36000 글로벌 실시간 분석기", layout="wide")
+
 if 'history' not in st.session_state:
     st.session_state['history'] = []
 
-# --- [1] 종목 데이터베이스 (네이버용 코드는 숫자만 사용) ---
+# --- [1] 종목 데이터베이스 (티커 및 적정주가 설정) ---
+# 국장 종목은 네이버용 코드로, 미장은 야후 티커로 관리합니다.
 stock_info = {
     "아이온큐 (IONQ)": {"ticker": "IONQ", "market": "US", "target": 39.23},
     "엔비디아 (NVDA)": {"ticker": "NVDA", "market": "US", "target": 170.00},
@@ -17,92 +19,135 @@ stock_info = {
     "유한양행": {"ticker": "000100", "market": "KR", "target": 162000},
     "대한항공": {"ticker": "003490", "market": "KR", "target": 28500},
     "실리콘투": {"ticker": "257720", "market": "KR", "target": 49450},
+    "넷플릭스 (NFLX)": {"ticker": "NFLX", "market": "US", "target": 850.00},
 }
 
-# --- [2] 네이버 실시간 국장 주가 가져오기 (고속 엔진) ---
+# --- [2] 데이터 수집 및 지수 계산 엔진 ---
 def get_naver_price(code):
+    """네이버 금융에서 국장 실시간 주가 크롤링"""
     try:
         url = f"https://finance.naver.com/item/main.naver?code={code}"
         res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
         soup = BeautifulSoup(res.text, 'html.parser')
-        # 네이버 금융에서 현재가 추출
-        price_tag = soup.select_one(".no_today .blind")
-        return int(price_tag.text.replace(",", ""))
-    except:
-        return None
+        price = soup.select_one(".no_today .blind").text.replace(",", "")
+        return int(price)
+    except: return None
 
-# --- [3] 야후 미장 실시간 주가 및 볼린저 밴드 가져오기 ---
 @st.cache_data(ttl=60)
-def get_us_data(ticker):
+def get_full_analysis(ticker):
+    """야후 파이낸스 데이터를 통한 4대 기술지표(Bollinger, RSI, WR, MACD) 계산"""
     try:
-        data = yf.download(ticker, period="1mo", interval="1d", progress=False)
-        current_price = data['Close'].iloc[-1]
-        ma20 = data['Close'].rolling(window=20).mean()
-        std20 = data['Close'].rolling(window=20).std()
-        return round(float(current_price), 2), {"upper": round(float((ma20 + std20 * 2).iloc[-1]), 2), "lower": round(float((ma20 - std20 * 2).iloc[-1]), 2)}
-    except:
-        return None, None
+        df = yf.download(ticker, period="3mo", interval="1d", progress=False)
+        if df.empty: return None
+        
+        close = df['Close']
+        # 1. 볼린저 밴드 (20일)
+        ma20 = close.rolling(window=20).mean()
+        std20 = close.rolling(window=20).std()
+        upper, lower = ma20 + (std20 * 2), ma20 - (std20 * 2)
+        
+        # 2. RSI (14일)
+        delta = close.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+        rsi = 100 - (100 / (1 + (gain / loss)))
+        
+        # 3. Williams %R (14일)
+        high14 = df['High'].rolling(window=14).max()
+        low14 = df['Low'].rolling(window=14).min()
+        w_r = (high14 - close) / (high14 - low14) * -100
+        
+        # 4. MACD (12, 26, 9)
+        exp1 = close.ewm(span=12, adjust=False).mean()
+        exp2 = close.ewm(span=26, adjust=False).mean()
+        macd_line = exp1 - exp2
+        signal_line = macd_line.ewm(span=9, adjust=False).mean()
+        macd_osc = macd_line - signal_line
+        
+        return {
+            "price": round(float(close.iloc[-1]), 2),
+            "upper": round(float(upper.iloc[-1]), 2), "lower": round(float(lower.iloc[-1]), 2),
+            "rsi": round(float(rsi.iloc[-1]), 2), "wr": round(float(w_r.iloc[-1]), 2),
+            "macd": round(float(macd_osc.iloc[-1]), 4)
+        }
+    except: return None
 
-# --- [4] 화면 구성 및 검색 ---
-st.title("🏆 이수할아버지 v36000 실시간 분석기 (Naver Engine)")
+# --- [3] 메인 화면 구성 ---
+st.title("🏆 이수할아버지 v36000 글로벌 실시간 분석기")
 
-search_stock = st.selectbox("분석 종목 선택", list(stock_info.keys()))
+# 종목 선택 창
+search_stock = st.selectbox("분석할 종목을 선택하세요", list(stock_info.keys()))
 info = stock_info[search_stock]
 
-if st.button("정밀 분석 시작"):
+if st.button("🚀 실시간 정밀 분석 시작"):
     if search_stock not in st.session_state['history']:
         st.session_state['history'].insert(0, search_stock)
 
-# 주가 데이터 호출 (국적에 맞게 분기)
-if info["market"] == "KR":
-    price = get_naver_price(info["ticker"])
-    _, bands = get_us_data(info["ticker"] + ".KS" if "KQ" not in search_stock else info["ticker"] + ".KQ")
-else:
-    price, bands = get_us_data(info["ticker"])
+# 데이터 실시간 로딩
+y_ticker = info["ticker"] + (".KS" if info["market"] == "KR" and len(info["ticker"]) == 6 else ".KQ" if len(info["ticker"]) == 6 else "")
+tech = get_full_analysis(y_ticker)
+price = get_naver_price(info["ticker"]) if info["market"] == "KR" else (tech["price"] if tech else None)
 
-# --- [5] 결과 표시 (선생님 요청 순서 준수) ---
-if price:
+if price and tech:
     st.markdown("---")
-    st.header(f"🔍 종목명: {search_stock}")
     
-    # 단위 설정
-    fmt_price = f"{format(int(price), ',')} 원" if info["market"] == "KR" else f"${price}"
-    fmt_target = f"{format(int(info['target']), ',')} 원" if info["market"] == "KR" else f"${info['target']}"
-    
-    st.subheader(f"현주가: {fmt_price}")
+    # 1. 종목명 및 현주가 표시
+    unit = "원" if info["market"] == "KR" else "$"
+    fmt_p = f"{format(int(price), ',')} 원" if info["market"] == "KR" else f"${price}"
+    st.header(f"🔍 종목명: {search_stock} ({info['ticker']})")
+    st.markdown(f"# **현주가: {fmt_p}**")
 
-    # 신호등 로직
+    # 2. 신호등 표시 (특대형)
     if price < info["target"] * 0.9:
-        st.error("🚦 **신호등 상태: 🔴 매수 사정권 (적기)**")
+        st.error(f"# 🚦 신호등: 🔴 매수 사정권 (적기)")
     elif price > info["target"]:
-        st.success("🚦 **신호등 상태: 🟢 매도 검토 (수익실현)**")
+        st.success(f"# 🚦 신호등: 🟢 매도 검토 (수익실현)")
     else:
-        st.warning("🚦 **신호등 상태: 🟡 관망 (대기)**")
+        st.warning(f"# 🚦 신호등: 🟡 관망 (대기)")
 
-    st.info(f"💎 **테이버 적정주가: {fmt_target}**")
+    # 3. 적정주가 표시 (특대형)
+    fmt_t = f"{format(int(info['target']), ',')} 원" if info["market"] == "KR" else f"${info['target']}"
+    st.info(f"## 💎 테이버 적정주가: {fmt_t}")
 
-    # 추세 분석표
-    st.markdown("### 1. 📈 추세 분석표 (Trend Analysis)")
+    # 4. 추세 분석 요약
+    st.markdown("### 📝 추세 분석 요약")
+    sum_text = "상승 에너지가 포착되었습니다." if tech['macd'] > 0 else "현재 조정을 받으며 에너지를 모으는 중입니다."
+    st.success(f"**이수할아버지 의견:** {sum_text} 자전거 타이어에 바람을 채우듯 천천히 대응하세요.")
+
+    # 5. 추세 분석표 (Trend)
+    st.markdown("### 📈 추세 분석표 (Trend)")
     st.table(pd.DataFrame({
-        "분석 항목": ["가격 위치", "에너지 방향", "국적 및 환율 영향"],
+        "분석 항목": ["가격 위치", "에너지 방향", "투자 심리"],
         "현재 상태": [
-            "밴드 하단 부근" if bands and price < bands['lower'] * 1.05 else "밴드 상단 부근",
-            "에너지 응축 중",
-            "1,440원대 고환율 주의" if info["market"] == "US" else "정치적 리스크(국장) 경계"
+            "밴드 하단선 지지 중" if price < tech['lower'] * 1.05 else "밴드 상단 저항 돌파 중",
+            "상승 동력 발생" if tech['macd'] > 0 else "하락 압력 우세",
+            "공포 구간 (저점 매수 유효)" if tech['rsi'] < 40 else "탐욕 구간 (추격 매수 주의)"
         ]
     }))
 
-    # 지수 분석표
-    st.markdown("### 2. 📊 지수 분석표 (Index Analysis)")
-    if bands:
-        st.table(pd.DataFrame({
-            "핵심 지표": ["Bollinger Upper", "Bollinger Lower", "현재가"],
-            "실시간 수치": [f"{bands['upper']}", f"{bands['lower']}", f"{price}"]
-        }))
-else:
-    st.error("네이버/야후 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.")
+    # 6. 지수 분석표 (4대 지수 정밀 표시)
+    st.markdown("### 📊 상세 지수 분석표 (Index)")
+    st.table(pd.DataFrame({
+        "핵심 지표": ["Bollinger Band (상/하)", "RSI (심리지수)", "Williams %R", "MACD Osc"],
+        "실시간 수치": [
+            f"{tech['upper']} / {tech['lower']}",
+            f"{tech['rsi']} (●)",
+            f"{tech['wr']} (▲)",
+            f"{tech['macd']} (■)"
+        ],
+        "해석 가이드": [
+            "밴드 이격도를 통한 가격 통로 확인",
+            "30이하(바닥), 70이상(과열)",
+            "-80이하(강력바닥), -20이상(고점)",
+            "0보다 크면 매수세(페달링의 힘) 우위"
+        ]
+    }))
 
-# 히스토리
+else:
+    st.error("실시간 데이터를 불러오는 중입니다. 잠시만 기다려 주세요!")
+
+# 7. 오늘 검색한 종목 (History)
 st.markdown("---")
 st.subheader("🕒 오늘 검색한 종목 (History)")
-st.write(", ".join(st.session_state['history']))
+if st.session_state['history']:
+    st.write(", ".join(st.session_state['history']))
