@@ -1,114 +1,108 @@
 import streamlit as st
-import FinanceDataReader as fdr
+import yfinance as yf
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup
 
-# 1. 스타일 설정 (제목 굵게 및 테이버 카드 스타일)
-st.set_page_config(layout="centered")
-st.markdown("""
-    <style>
-    .stApp { background-color: #FFFFFF; }
-    .signal-box { padding: 30px; border-radius: 15px; text-align: center; font-size: 38px; font-weight: bold; border: 10px solid; margin-bottom: 20px; }
-    .buy { background-color: #FFECEC !important; border-color: #E63946 !important; color: #E63946 !important; }
-    .wait { background-color: #FFFBEB !important; border-color: #F59E0B !important; color: #92400E !important; }
-    .sell { background-color: #ECFDF5 !important; border-color: #10B981 !important; color: #065F46 !important; }
-    .trend-card { font-size: 22px; line-height: 1.8; color: #000000 !important; padding: 25px; background: #F1F5F9; border-left: 12px solid #1E3A8A; border-radius: 12px; margin-bottom: 10px; }
-    .value-card { font-size: 24px; font-weight: bold; color: #FFFFFF !important; padding: 20px; background: #1E3A8A; border-radius: 12px; text-align: center; margin-bottom: 25px; }
-    h1, h2, h3, b, span, div { color: #1E3A8A !important; font-weight: bold !important; }
-    [data-testid="stMetricLabel"] { font-size: 22px !important; font-weight: 900 !important; color: #000000 !important; }
-    [data-testid="stMetricValue"] { font-size: 28px !important; color: #333 !important; }
-    [data-testid="stMetricDelta"] svg { display: none !important; }
-    [data-testid="stMetricDelta"] { font-size: 20px !important; font-weight: bold !important; margin-left: -20px !important; }
-    </style>
-    """, unsafe_allow_html=True)
+# --- [0] 기본 설정 ---
+st.set_page_config(page_title="v36000 글로벌 실시간 분석기", layout="wide")
+if 'history' not in st.session_state:
+    st.session_state['history'] = []
 
-if 'history' not in st.session_state: st.session_state['history'] = []
-if 'target' not in st.session_state: st.session_state['target'] = "257720"
+# --- [1] 종목 데이터베이스 (네이버용 코드는 숫자만 사용) ---
+stock_info = {
+    "아이온큐 (IONQ)": {"ticker": "IONQ", "market": "US", "target": 39.23},
+    "엔비디아 (NVDA)": {"ticker": "NVDA", "market": "US", "target": 170.00},
+    "삼성전자": {"ticker": "005930", "market": "KR", "target": 68000},
+    "유한양행": {"ticker": "000100", "market": "KR", "target": 162000},
+    "대한항공": {"ticker": "003490", "market": "KR", "target": 28500},
+    "실리콘투": {"ticker": "257720", "market": "KR", "target": 49450},
+}
 
-st.title("👨‍💻 이수할아버지의 '글로벌' 분석기 v36000")
-
-@st.cache_data(ttl=3600)
-def load_all_base_data():
-    try: rate = fdr.DataReader('USD/KRW').iloc[-1]['close']
-    except: rate = 1350.0
-    try: krx = fdr.StockListing('KRX')[['Code', 'Name']]
-    except: krx = pd.DataFrame(columns=['Code', 'Name'])
-    return float(rate), krx
-
-usd_krw, krx_list = load_all_base_data()
-
-symbol = st.text_input("📊 종목코드 입력", value=st.session_state['target'], key="main_input").strip().upper()
-
-if symbol:
+# --- [2] 네이버 실시간 국장 주가 가져오기 (고속 엔진) ---
+def get_naver_price(code):
     try:
-        df = fdr.DataReader(symbol).tail(120)
-        if not df.empty:
-            if symbol in st.session_state['history']: st.session_state['history'].remove(symbol)
-            st.session_state['history'].insert(0, symbol)
-            st.session_state['target'] = symbol
-            
-            df.columns = [str(c).lower() for c in df.columns]
-            curr_p = float(df['close'].iloc[-1])
-            is_us = not symbol.isdigit()
-            
-            stock_name = symbol
-            if not is_us and not krx_list.empty:
-                match = krx_list[krx_list['Code'] == symbol]
-                if not match.empty: stock_name = str(match['Name'].values[0])
+        url = f"https://finance.naver.com/item/main.naver?code={code}"
+        res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+        soup = BeautifulSoup(res.text, 'html.parser')
+        # 네이버 금융에서 현재가 추출
+        price_tag = soup.select_one(".no_today .blind")
+        return int(price_tag.text.replace(",", ""))
+    except:
+        return None
 
-            # 지표 계산
-            ma20 = df['close'].rolling(20).mean(); std20 = df['close'].rolling(20).std()
-            lo_b = float(ma20.iloc[-1] - (std20.iloc[-1] * 2))
-            up_b = float(ma20.iloc[-1] + (std20.iloc[-1] * 2))
-            delta = df['close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(14).mean(); rsi = float(100 - (100 / (1 + (gain / loss))).iloc[-1])
-            exp12 = df['close'].ewm(span=12, adjust=False).mean(); exp26 = df['close'].ewm(span=26, adjust=False).mean()
-            macd = float((exp12 - exp26).iloc[-1]); sig = float((exp12 - exp26).ewm(span=9, adjust=False).mean().iloc[-1])
-            h14 = df['high'].rolling(14).max(); l14 = df['low'].rolling(14).min(); wr = float(((h14.iloc[-1] - curr_p) / (h14.iloc[-1] - l14.iloc[-1])) * -100)
+# --- [3] 야후 미장 실시간 주가 및 볼린저 밴드 가져오기 ---
+@st.cache_data(ttl=60)
+def get_us_data(ticker):
+    try:
+        data = yf.download(ticker, period="1mo", interval="1d", progress=False)
+        current_price = data['Close'].iloc[-1]
+        ma20 = data['Close'].rolling(window=20).mean()
+        std20 = data['Close'].rolling(window=20).std()
+        return round(float(current_price), 2), {"upper": round(float((ma20 + std20 * 2).iloc[-1]), 2), "lower": round(float((ma20 - std20 * 2).iloc[-1]), 2)}
+    except:
+        return None, None
 
-            # [출력 1] 종목 및 가격
-            st.header(f"🏢 {stock_name} ({symbol})")
-            if is_us: st.subheader(f"현재가: ${curr_p:,.2f} (약 {curr_p * usd_krw:,.0f}원)")
-            else: st.subheader(f"현재가: {curr_p:,.0f}원")
+# --- [4] 화면 구성 및 검색 ---
+st.title("🏆 이수할아버지 v36000 실시간 분석기 (Naver Engine)")
 
-            # [출력 2] 신호등
-            is_buy = curr_p <= lo_b or rsi < 35 or wr < -80
-            is_sell = curr_p >= up_b or rsi > 65 or wr > -20
-            if is_buy: st.markdown("<div class='signal-box buy'>🔴 매수 사정권 (적기)</div>", unsafe_allow_html=True)
-            elif is_sell: st.markdown("<div class='signal-box sell'>🟢 매도 검토 (수익실현)</div>", unsafe_allow_html=True)
-            else: st.markdown("<div class='signal-box wait'>🟡 관망 및 보유</div>", unsafe_allow_html=True)
+search_stock = st.selectbox("분석 종목 선택", list(stock_info.keys()))
+info = stock_info[search_stock]
 
-            # [출력 3] 추세분석 & 테이버 적정주가 (단위 자동 변환)
-            msg = "가격이 매력적인 바닥권입니다." if is_buy else "단기 고점에 도달했습니다." if is_sell else "안정적인 흐름입니다."
-            st.markdown(f"<div class='trend-card'><b>📋 종합 추세 분석:</b> {msg}</div>", unsafe_allow_html=True)
-            
-            # 적정주가 계산 (15% 할증 예시)
-            fair_v = curr_p * 1.15
-            if is_us:
-                st.markdown(f"<div class='value-card'>💎 테이버의 적정주가 제안: ${fair_v:,.2f} 기준</div>", unsafe_allow_html=True)
-            else:
-                st.markdown(f"<div class='value-card'>💎 테이버의 적정주가 제안: {fair_v:,.0f}원 기준</div>", unsafe_allow_html=True)
+if st.button("정밀 분석 시작"):
+    if search_stock not in st.session_state['history']:
+        st.session_state['history'].insert(0, search_stock)
 
-            # [출력 4] 핵심 지표
-            st.write("### 📋 핵심 지표 정밀 진단")
-            c1, c2 = st.columns(2)
-            bb_pos = "🔴 하단 지지" if curr_p < lo_b else "🟢 상단 저항" if curr_p > up_b else "⚪ 밴드 내"
-            c1.metric("**Bollinger Band**", bb_pos, delta=f"■ 하단가: {lo_b:,.0f}")
-            c2.metric("**RSI 심리수치**", f"{rsi:.2f}", delta=f"● {'과매도' if rsi < 35 else '정상'}")
-            
-            c3, c4 = st.columns(2)
-            c3.metric("**MACD 추세방향**", "🔴 상승 추세 ▲" if macd > sig else "🟢 하락 추세 ▼", delta=f"■ 수치: {macd:.2f}")
-            c4.metric("**Williams %R**", f"{wr:.2f}", delta=f"● {'바닥권' if wr < -80 else '정상'}")
+# 주가 데이터 호출 (국적에 맞게 분기)
+if info["market"] == "KR":
+    price = get_naver_price(info["ticker"])
+    _, bands = get_us_data(info["ticker"] + ".KS" if "KQ" not in search_stock else info["ticker"] + ".KQ")
+else:
+    price, bands = get_us_data(info["ticker"])
 
-    except Exception as e:
-        st.error(f"분석 실행 중 오류 발생: {e}")
+# --- [5] 결과 표시 (선생님 요청 순서 준수) ---
+if price:
+    st.markdown("---")
+    st.header(f"🔍 종목명: {search_stock}")
+    
+    # 단위 설정
+    fmt_price = f"{format(int(price), ',')} 원" if info["market"] == "KR" else f"${price}"
+    fmt_target = f"{format(int(info['target']), ',')} 원" if info["market"] == "KR" else f"${info['target']}"
+    
+    st.subheader(f"현주가: {fmt_price}")
 
-# 검색 기록 버튼
-st.write("---")
-st.subheader("📜 오늘 검색한 종목 기록")
-if st.session_state['history']:
-    h_cols = st.columns(5)
-    for idx, h_sym in enumerate(st.session_state['history'][:10]):
-        with h_cols[idx % 5]:
-            if st.button(f"🔍 {h_sym}", key=f"hist_{h_sym}_{idx}"):
-                st.session_state['target'] = h_sym
-                st.rerun()
+    # 신호등 로직
+    if price < info["target"] * 0.9:
+        st.error("🚦 **신호등 상태: 🔴 매수 사정권 (적기)**")
+    elif price > info["target"]:
+        st.success("🚦 **신호등 상태: 🟢 매도 검토 (수익실현)**")
+    else:
+        st.warning("🚦 **신호등 상태: 🟡 관망 (대기)**")
+
+    st.info(f"💎 **테이버 적정주가: {fmt_target}**")
+
+    # 추세 분석표
+    st.markdown("### 1. 📈 추세 분석표 (Trend Analysis)")
+    st.table(pd.DataFrame({
+        "분석 항목": ["가격 위치", "에너지 방향", "국적 및 환율 영향"],
+        "현재 상태": [
+            "밴드 하단 부근" if bands and price < bands['lower'] * 1.05 else "밴드 상단 부근",
+            "에너지 응축 중",
+            "1,440원대 고환율 주의" if info["market"] == "US" else "정치적 리스크(국장) 경계"
+        ]
+    }))
+
+    # 지수 분석표
+    st.markdown("### 2. 📊 지수 분석표 (Index Analysis)")
+    if bands:
+        st.table(pd.DataFrame({
+            "핵심 지표": ["Bollinger Upper", "Bollinger Lower", "현재가"],
+            "실시간 수치": [f"{bands['upper']}", f"{bands['lower']}", f"{price}"]
+        }))
+else:
+    st.error("네이버/야후 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.")
+
+# 히스토리
+st.markdown("---")
+st.subheader("🕒 오늘 검색한 종목 (History)")
+st.write(", ".join(st.session_state['history']))
