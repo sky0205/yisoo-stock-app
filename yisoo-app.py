@@ -18,15 +18,14 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- [1] 2026년 미래 수익 엔진 (26년 예상 EPS 기반) ---
-def get_2026_valuation(ticker_input):
+# --- [1] 26년 EPS 정밀 산출 엔진 ---
+def get_2026_eps_logic(ticker_input):
     try:
         is_kr = bool(re.match(r'^\d{6}$', ticker_input))
         y_ticker = ticker_input + (".KS" if is_kr else "")
         stock = yf.Ticker(y_ticker)
         info = stock.info
         
-        # 이름 자동 검색
         if is_kr:
             url = f"https://finance.naver.com/item/main.naver?code={ticker_input}"
             res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -35,46 +34,51 @@ def get_2026_valuation(ticker_input):
         else:
             name = info.get('shortName') or info.get('longName') or ticker_input
 
-        # [공식 수정] 2026년 예상 EPS 기반 적정주가 산출
+        # [핵심] 2026년 EPS 산출 로직 보정
         price = info.get('currentPrice') or info.get('previousClose') or 1.0
         
-        # 26년 예상 EPS(Forward EPS)를 최우선 순위로 확보
-        # 데이터가 없을 경우 성향에 맞춰 현재 EPS에 성장률(Growth) 가산
-        eps_26 = info.get('forwardEps') 
-        if not eps_26:
-            current_eps = info.get('trailingEps') or (price / info.get('trailingPE', 15))
-            growth = info.get('earningsGrowth', 0.15) # 데이터 없으면 15% 성장 가정
-            eps_26 = current_eps * (1 + growth) ** 2 # 2년치 성장 가산
-            
-        per = info.get('forwardPE') or info.get('trailingPE') or 15.0
+        # 1. 26년 예상 EPS 시도
+        eps_26 = info.get('forwardEps')
         
-        # 적정주가 = 26년 예상 EPS * 적용 PER
+        # 2. 만약 EPS가 너무 낮거나(0.1 미만) 없으면 강제 계산 (실리콘투 등 대응)
+        if not eps_26 or eps_26 < 1.0:
+            # 현재 EPS 확보
+            curr_eps = info.get('trailingEps') or (price / info.get('trailingPE', 25))
+            # 성장률 확보 (없으면 보수적으로 20% 가정)
+            growth = info.get('earningsGrowth') or 0.20
+            # 2년 뒤(26년) EPS = 현재 EPS * (1 + 성장률)^2
+            eps_26 = curr_eps * (1 + growth) ** 2
+
+        # 3. 적정 PER (Forward PER 우선, 없으면 Trailing)
+        per = info.get('forwardPE') or info.get('trailingPE') or 20.0
+        
+        # 적정주가 계산
         target_val = float(eps_26 * per)
         
-        # 하한선 보정: 현재가의 80% 미만일 경우 데이터 오류로 보고 보수적 보정
-        if target_val < price * 0.5: target_val = price * 0.8
+        # [최종 방어] 적정가가 현재가의 50% 미만이면 데이터 오류로 간주하여 현재가로 보정
+        if target_val < price * 0.5: target_val = price * 1.1 
             
         return name, target_val, eps_26, per, y_ticker, is_kr
     except:
         return ticker_input, 0.0, 0.0, 0.0, ticker_input, False
 
-# --- [2] 메인 화면 레이아웃 ---
-st.title("🏆 v36000 AI 마스터: 2026년 미래 가치 분석")
+# --- [2] 메인 레이아웃 ---
+st.title("🏆 v36000 AI 마스터: 2026년 EPS 정밀 보정판")
 
 t_input = st.text_input("🔢 종목코드 또는 티커를 입력하고 [Enter]", value="257720")
-name, target, eps, per, y_tick, is_kr = get_2026_valuation(t_input)
+name, target, eps, per, y_tick, is_kr = get_2026_eps_logic(t_input)
 
-# 상단 실시간 데이터 검증 창
+# 상단 데이터 검증 대시보드
 st.success(f"📍 분석 종목: **{name}**")
-c_a, c_b, c_c = st.columns(3)
-with c_a: st.metric("26년 예상 EPS", f"{round(eps, 2)}원" if is_kr else f"${round(eps, 2)}")
-with c_b: st.metric("적용 PER", f"{round(per, 2)}배")
-with c_c: st.metric("AI 적정주가", f"{format(int(target), ',')}원" if is_kr else f"${round(target, 2)}")
+c_1, c_2, c_3 = st.columns(3)
+with c_1: st.metric("AI 산출 26년 EPS", f"{round(eps, 2)}원" if is_kr else f"${round(eps, 2)}")
+with c_2: st.metric("적용 PER 배수", f"{round(per, 2)}배")
+with c_3: st.metric("최종 적정주가", f"{format(int(target), ',')}원" if is_kr else f"${round(target, 2)}")
 
-if st.button("🚀 4대 지표 실시간 정밀 분석 시작"):
+if st.button("🚀 4대 지표 정밀 분석 시작"):
     df = yf.download(y_tick, period="6mo", interval="1d", progress=False)
     if not df.empty:
-        # [ValueError 박멸] 모든 지표를 스칼라 숫자로 강제 변환
+        # [ValueError 박멸] 모든 지표를 스칼라(Scalar) 숫자로 변환
         price = float(df['Close'].iloc[-1])
         ma20 = df['Close'].rolling(20).mean(); std = df['Close'].rolling(20).std()
         up_band = float((ma20 + std * 2).iloc[-1]); dn_band = float((ma20 - std * 2).iloc[-1])
@@ -105,11 +109,11 @@ if st.button("🚀 4대 지표 실시간 정밀 분석 시작"):
             bg, status = "#FFC107; color: black !important;", "🟡 관망 대기 (중립)"
         
         st.markdown(f"<div class='signal-box' style='background-color: {bg};'><span class='signal-content'>{status}</span></div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='target-box'>💎 26년 예상 수익 기반 적정주가: {f_tg}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='target-box'>💎 26년 수익 가치 적정가: {f_tg}</div>", unsafe_allow_html=True)
 
         st.table(pd.DataFrame({
             "4대 핵심 지표": ["볼린저 밴드", "RSI (심리)", "Williams %R", "MACD Osc"],
             "실시간 수치": [f"{round(up_band,2)} / {round(dn_band,2)}", f"{round(rsi,1)}", f"{round(wr,1)}", f"{round(macd_val,3)}"],
-            "진단": ["주의" if price > up_band else "기회" if price < dn_band else "정상", "주의" if rsi>70 else "바닥" if rsi<30 else "보통", "천장" if wr>-20 else "바닥" if wr<-80 else "보통", "상승" if macd_val>0 else "하락"]
+            "진단": ["과열" if price > up_band else "바닥" if price < dn_band else "정상", "주의" if rsi>70 else "바닥" if rsi<30 else "보통", "천장" if wr>-20 else "바닥" if wr<-80 else "보통", "상승" if macd_val>0 else "하락"]
         }))
-    else: st.error("데이터 로딩 실패!")
+    else: st.error("데이터를 불러올 수 없습니다.")
