@@ -1,5 +1,5 @@
-streamlit
+finance-datareader
 pandas
 yfinance
-requests
-beautifulsoup4
+streamlit
+altair<5
