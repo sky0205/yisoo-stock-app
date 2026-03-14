@@ -16,8 +16,6 @@ if symbol:
         df = fdr.DataReader(symbol)
         curr_price = df['Close'].iloc[-1]
         prev_price = df['Close'].iloc[-2]
-        high_price = df['High'].iloc[-1]
-        low_price = df['Low'].iloc[-1]
         volume = df['Volume'].iloc[-1]
         vol_prev = df['Volume'].iloc[-2]
         vol_change = ((volume - vol_prev) / vol_prev) * 100
@@ -37,53 +35,52 @@ if symbol:
         low_14 = df['Low'].rolling(window=14).min()
         will_r = ((high_14 - df['Close']) / (high_14 - low_14) * -100).iloc[-1]
 
-        # [복구 1] 종목명 및 현재가 정보 (성벽 가격 포함)
+        # [기능 복구] 종목명, 현재가, 성벽(지지/저항)
         st.markdown(f"### 🏢 종목: {symbol} | 현재가: {curr_price:,.0f}원/$")
         c1, c2 = st.columns(2)
         with c1:
-            st.success(f"🏰 상단 성벽(저항): {upper_b.iloc[-1]:,.0f}")
+            st.success(f"🏰 상단 성벽(매도 목표): {upper_b.iloc[-1]:,.0f}")
         with c2:
-            st.error(f"🛡️ 하단 성벽(지지): {lower_b.iloc[-1]:,.0f}")
+            st.error(f"🛡️ 하단 성벽(매수 마지노선): {lower_b.iloc[-1]:,.0f}")
 
-        # [복구 2] 상단 신호등
+        # [기능 복구] 상단 신호등
         if rsi > 65 or will_r > -20:
-            st.error("🟢 매도(수익실현 적기) - 불지옥/광기 진입!")
+            st.error("🟢 매도(수익실현 적기) - 불지옥/광기 진입! 당장 나오시게!")
         elif rsi < 35 or will_r < -75:
-            st.success("🔴 매수(진입 적기) - 개미항복 지점!")
+            st.success("🔴 매수(진입 적기) - 개미들 항복했으니 슬슬 담아보시게.")
         else:
-            st.warning("🟡 관망(보유 유지) - 안개 정국")
+            st.warning("🟡 관망(보유 유지) - 안개 정국이니 힘 빼지 마시게.")
 
-        # [보완] 추세 분석 카드 및 실대응 방안
+        # [기능 복구/보완] 추세 분석 카드 및 실대응 방안
         st.info(f"""
-        **[🕵️ 이수 할배의 추세 분석 및 실대응]**
-        * **현재 흐름:** 거래량이 전일 대비 {vol_change:.1f}% 변동하며 {'기세가 살아나고' if vol_change > 0 else '숨을 죽이고'} 있구먼요.
-        * **실대응 방안:** - { 'RSI가 높으니 욕심 버리고 분할 매도 시작하시게.' if rsi > 60 else '지표가 바닥이니 공포를 이기고 조금씩 담아볼 때야.' if rsi < 40 else '지금은 관망하며 성벽(지지선) 깨지는지 확인이 우선일세.' }
-            - 특히 윌리엄 지수가 {will_r:.1f}이니 {'뇌동매매 금지!' if will_r > -20 else '조금 더 기다려보시게.'}
+        **[🕵️ 이수 할배의 정밀 추세 분석 및 실대응]**
+        * **장부 현황:** 현재 거래량은 전일 대비 {vol_change:+.1f}% 변동 중이며, 추세는 {'▲ 상승' if curr_price > prev_price else '▼ 하락'}세로 확인되구먼요.
+        * **실대응 방안:** { 'RSI가 65를 넘보는 불지옥 초입이니 욕심 버리고 챙길 건 챙기시게.' if rsi > 60 else '지표가 바닥권인 개미항복 지점이니 공포를 이기고 분할 매수할 때야.' if rsi < 40 else '지금은 관망하며 하단 성벽이 무너지지 않는지 지켜보는 게 상책일세.' }
         """)
 
-        # [복구 3] 네 기둥 상세 분석 및 거래량표
+        # [기능 복구] 네 기둥 상세 분석 및 거래량표
         st.divider()
         i1, i2, i3, i4 = st.columns(4)
         with i1:
             st.markdown("#### **Bollinger**")
             pos = "🔥 폭주" if curr_price >= upper_b.iloc[-1] else "📉 추락" if curr_price <= lower_b.iloc[-1] else "⚖️ 중도"
             st.write(f"■ 위치: {pos}")
-            st.caption(f"상단: {upper_b.iloc[-1]:,.0f}\n하단: {lower_b.iloc[-1]:,.0f}")
+            st.caption(f"상단: {upper_b.iloc[-1]:,.0f} / 하단: {lower_b.iloc[-1]:,.0f}")
         with i2:
             st.markdown("#### **RSI (14/9)**")
             r_stat = "👺 불지옥" if rsi > 65 else "🧊 빙하기" if rsi < 35 else "정상"
             st.write(f"■ 수치: {rsi:.1f} ({r_stat})")
-            st.caption("65↑ 과열 / 35↓ 과매도")
+            st.caption("진단: 과열 진입 여부 정밀 관측 중")
         with i3:
             st.markdown("#### **William %R**")
             w_stat = "🧨 광기폭발" if will_r > -20 else "🏳️ 개미항복" if will_r < -75 else "보통"
             st.write(f"■ 수치: {will_r:.1f} ({w_stat})")
-            st.caption("-20↑ 과매수 / -75↓ 매수적기")
+            st.caption("진단: 개미들의 항복 지점 추적 중")
         with i4:
             st.markdown("#### **Volume/MACD**")
             st.write(f"■ 거래량: {volume:,.0f}")
             st.write(f"■ 추세: {'▲ 상승' if curr_price > prev_price else '▼ 하락'}")
-            st.caption(f"전일비: {vol_change:+.1f}%")
+            st.caption(f"전일비 변동: {vol_change:+.1f}%")
 
     except Exception as e:
-        st.error(f"⚠️ 아이구, 기계가 또 헛소리를 하네: {e}")
+        st.error(f"⚠️ 기계 녀석이 또 딴소리를 하네: {e}")
