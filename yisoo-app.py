@@ -4,7 +4,7 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime
 
-# 1. 화면 구성
+# 1. 화면 구성 (어르신 전용 설계)
 st.set_page_config(page_title="이수할아버지 분석기", layout="wide")
 st.title("👴 이수할아버지의 주식분석기 v36000")
 
@@ -19,7 +19,7 @@ symbol = st.text_input("📊 종목코드(6자리) 또는 티커 입력", "00593
 
 if symbol:
     try:
-        # 데이터 수집
+        # 데이터 수집 (국장/미장 자동 판별)
         if symbol.isdigit():
             df = fdr.DataReader(symbol, start_date, end_date)
             currency = "원"
