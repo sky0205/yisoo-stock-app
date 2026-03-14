@@ -77,6 +77,11 @@ if symbol:
             buy_score = sum([p <= low_b, rsi_val <= 35, will_val <= -80]); sell_score = sum([p >= up_b, rsi_val >= 65, will_val >= -20])
             is_new_high = p >= year_high * 0.98; is_new_low = p <= year_low * 1.02
 
+            # [보완] 냉정 추세 진단 로직
+            trend_desc = "횡보 중"
+            if m_l > s_l and p > df['MA20'].iloc[-1]: trend_desc = "정배열 상승 가도"
+            elif m_l < s_l and p < df['MA20'].iloc[-1]: trend_desc = "역배열 하락 늪"
+
             # 1~3. 상단 헤더, 거래량, 신호등 표시
             st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt)} {currency}</p></div>", unsafe_allow_html=True)
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>● <b>진격 기준:</b> 200% 이상 폭발 시 세력 진입 간주 (추격 가능)<br>● <b>주의 사항:</b> 거래량 100% 미만인데 오르는 건 '가짜'이니 속지 마십시오.</div></div>", unsafe_allow_html=True)
@@ -87,9 +92,10 @@ if symbol:
             else: sig, color = "🟡 관망 및 대기", "#FBC02D"
             st.markdown(f"<div class='signal-box' style='background-color: {color};'><span class='signal-text'>{sig}</span></div>", unsafe_allow_html=True)
 
-            # 4. 실전 필살 대응 전략
+            # 4. 실전 필살 대응 전략 (추세 분석 보완 적용)
             st.markdown(f"""<div class='trend-card'>
                 <div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
+                <div class='trend-item'>● <b>추세 진단:</b> 현재 장부는 <span style='color:#D32F2F;'>{trend_desc}</span> 상태로 판독되구먼요.</div>
                 <div class='trend-item'>● <b>수비 상태:</b> 성벽({format(defense_line, fmt)} {currency}) {'함락! 후퇴하십시오.' if p < defense_line else '사수 중입니다.'}</div>
                 <div class='trend-item'>● <b>필살 조언:</b> <span class='advice-highlight'>{'⚠️ 신고가 추격 시: ' + format(p*0.95, fmt) + ' ' + currency + ' 이탈 시 손절!' if is_new_high else '📉 신저가 구간: ' + format(p, fmt) + ' ~ ' + format(year_low*0.95, fmt) + ' 사이 3회 분할 매수!' if is_new_low else '낚싯대만 던져두고 지표 바닥권을 기다리십시오.'}</span></div>
                 </div>""", unsafe_allow_html=True)
@@ -100,14 +106,14 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선(매도)</p><p class='val-main' style='color:#D32F2F;'>{format(up_b, fmt)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽 (방어선)</p><p class='val-main' style='color:#E65100;'>{format(defense_line, fmt)}</p></div>", unsafe_allow_html=True)
 
-            # 6. 네 기둥 지수란 (교정 완료)
+            # 6. 네 기둥 지수란
             i1, i2, i3, i4 = st.columns(4)
             with i1: # Bollinger
                 bb_pos = "폭주" if p>=up_b else "추락" if p<=low_b else "눈치보기"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger</p><p class='ind-status'>{bb_pos}</p><p class='ind-diag'>{'횡보 중이니 기세가 터질 때까지 자중하십시오.' if bb_pos=='눈치보기' else '울타리 밖 과열이니 곧 소나기가 옵니다. 보따리 쌀 준비 하십시오.' if bb_pos=='폭주' else '투매 상황이니 절대 칼날 잡지 마십시오.'}</p></div>", unsafe_allow_html=True)
             with i2: # RSI
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{'냉골이니 35 이하 비명이 들릴 때까지 대기하십시오.' if rsi_val < 50 else '탐욕의 불지옥 구간이니 수확 보따리를 챙기십시오.' if rsi_val > 65 else '미지근한 줄다리기 중입니다.'}</p></div>", unsafe_allow_html=True)
-            with i3: # Williams %R (어르신 교정 사항 반영)
+            with i3: # Williams %R
                 w_status = "광기폭발" if will_val > -20 else "개미항복" if will_val < -80 else "추락중"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{'개미들이 불나방처럼 달려든 꼭대기입니다! 곧 썰물이 밀려오니 뒤도 돌아보지 말고 후퇴하십시오.' if w_status=='광기폭발' else '진짜 개미들이 항복한 바닥입니다. 분할 매수 보따리를 푸십시오.' if w_status=='개미항복' else '바닥을 향해 추락 중이니 비명소리가 커질 때까지 기다리십시오.'}</p></div>", unsafe_allow_html=True)
             with i4: # MACD
