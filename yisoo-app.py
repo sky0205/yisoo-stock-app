@@ -10,18 +10,30 @@ st.markdown("""
     <style>
     .stApp { background-color: #ECEFF1; } 
     * { font-weight: bold !important; font-family: 'Nanum Gothic', sans-serif; color: #263238; }
+    
+    /* 상단 헤더 */
     .stock-header { background-color: #FFFFFF; padding: 18px; border-radius: 12px; border-left: 10px solid #1E88E5; margin-bottom: 15px; }
+    
+    /* 거래량 박스 */
     .vol-box { background-color: #E3F2FD; padding: 25px; border-radius: 15px; border: 4px solid #1E88E5; margin-bottom: 20px; }
     .vol-main-text { font-size: 32px !important; color: #0D47A1 !important; margin-bottom: 10px; }
     .vol-sub-text { font-size: 20px !important; color: #1565C0 !important; line-height: 1.6; background-color: #FFFFFF; padding: 12px; border-radius: 8px; border-left: 6px solid #1E88E5; }
+
+    /* 대형 신호등 */
     .signal-box { padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); }
     .signal-text { font-size: 65px !important; font-weight: 900 !important; color: #FFFFFF !important; }
+
+    /* 필살 대응 전략 카드 */
     .trend-card { background-color: #FFFFFF; padding: 30px; border-radius: 20px; border: 5px solid #D32F2F; margin: 20px 0; }
     .trend-title { font-size: 32px !important; color: #D32F2F !important; border-bottom: 3px solid #FFEBEE; padding-bottom: 12px; margin-bottom: 20px; }
     .trend-item { font-size: 23px !important; line-height: 2.0; margin-bottom: 12px; }
     .advice-highlight { color: #D32F2F !important; font-size: 26px !important; text-decoration: underline; }
+
+    /* 가격 전략 카드 */
     .price-card { background-color: #FFFFFF; padding: 15px; border-radius: 10px; border: 2px solid #CFD8DC; text-align: center; }
     .val-main { font-size: 32px !important; color: #333; }
+    
+    /* 지수 상세 박스 */
     .ind-box { background-color: #FFFFFF; padding: 22px; border-radius: 15px; border: 2.5px solid #90A4AE; min-height: 500px; margin-bottom: 15px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); }
     .ind-title { font-size: 26px !important; color: #1976D2 !important; border-bottom: 2px solid #EEEEEE; padding-bottom: 10px; margin-bottom: 15px; }
     .ind-status { font-size: 32px !important; color: #D32F2F !important; margin-bottom: 10px; }
@@ -48,12 +60,11 @@ if symbol:
             year_high = float(df['Close'].max()); year_low = float(df['Close'].min())
             peak_p = float(df['Close'].iloc[-20:].max()); defense_line = peak_p * 0.93
 
-            # 거래량 분석
+            # 1. 거래량 분석 (가격 방향성 연동 보완)
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean()
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
-            
-            # [어르신 지침 반영] 거래량 및 주가 방향별 훈수 로직
             price_up = p > prev_p
+            
             if v_ratio < 100:
                 v_status = "💤 거래침체"
                 v_advice = "🚨 <b>가짜 상승!</b> 거래량 없이 오르는 건 빈집에 바람 드는 격이니 절대 속지 마십시오." if price_up else \
@@ -80,7 +91,7 @@ if symbol:
             is_new_high = p >= year_high * 0.98; is_new_low = p <= year_low * 1.02
             trend_desc = "정배열 상승 가도" if (m_l > s_l and p > df['MA20'].iloc[-1]) else "역배열 하락 늪" if (m_l < s_l and p < df['MA20'].iloc[-1]) else "횡보 및 안개 정국"
 
-            # 1~3. 상단 헤더, 거래량(보완됨), 신호등 표시
+            # 상단 표시
             st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt)} {currency} (전일비: {p-prev_p:+.0f})</p></div>", unsafe_allow_html=True)
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_advice}</div></div>", unsafe_allow_html=True)
 
@@ -98,13 +109,13 @@ if symbol:
                 <div class='trend-item'>● <b>필살 조언:</b> <span class='advice-highlight'>{'⚠️ 신고가 추격 시: ' + format(p*0.95, fmt) + ' ' + currency + ' 이탈 시 손절!' if is_new_high else '📉 신저가 구간: ' + format(p, fmt) + ' ~ ' + format(year_low*0.95, fmt) + ' 사이 3회 분할 매수!' if is_new_low else '낚싯대만 던져두고 지표 바닥권을 기다리십시오.'}</span></div>
                 </div>""", unsafe_allow_html=True)
 
-            # 5. 가격 전략 카드 (매수/매도/성벽)
+            # 5. 가격 전략 카드
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선(매수)</p><p class='val-main' style='color:#388E3C;'>{format(low_b, fmt)}</p></div>", unsafe_allow_html=True)
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선(매도)</p><p class='val-main' style='color:#D32F2F;'>{format(up_b, fmt)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽 (방어선)</p><p class='val-main' style='color:#E65100;'>{format(defense_line, fmt)}</p></div>", unsafe_allow_html=True)
 
-            # 6. 네 기둥 지수란 (상세 진단)
+            # 6. 네 기둥 지수란 (윌리엄 지수 진단 교정)
             i1, i2, i3, i4 = st.columns(4)
             with i1: # Bollinger
                 bb_pos = "🔥 폭주" if p>=up_b else "📉 추락" if p<=low_b else "⚖️ 눈치보기"
@@ -118,11 +129,11 @@ if symbol:
                          f"● 온도 {rsi_val:.2f}의 **냉골 상태**입니다. 지수가 30 근처까지 완전히 식어버릴 때까지 낚싯대만 던져두고 기다리십시오." if r_stat=="🧊 냉골" else \
                          f"● 매수와 매도가 팽팽한 **줄다리기** 중입니다. 방향성 없는 싸움에 끼어들어 수수료만 버리지 마십시오."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
-            with i3: # Williams %R
-                w_status = "🧨 광기폭발" if will_val > -20 else "🏳️ 개미항복" if will_val < -75 else "추락중"
-                w_diag = f"● **불나방 광기**가 절정입니다! 세력들이 물량을 떠넘길 채비를 하고 있으니 뒤도 돌아보지 말고 후퇴하십시오." if w_status=="🧨 광기폭발" else \
-                         f"● 드디어 **개미들이 항복**한 바닥권입니다. 공포가 극에 달했을 때가 기회이니 분할 매수 보따리를 푸십시오." if w_status=="🏳️ 개미항복" else \
-                         f"● 지표가 **자유낙하 중**입니다. 어설픈 낙주 매매는 자살행위이니 비명소리가 시장에 가득 찰 때까지 기다리십시오."
+            with i3: # Williams %R (어르신 지적 반영 교정)
+                w_status = "🧨 광기폭발" if will_val > -35 else "🏳️ 개미항복" if will_val < -65 else "중간지대"
+                w_diag = f"● **불나방 광기(-20↑)** 직전입니다! 지수 {will_val:.2f}는 천장 근처이니 추격하지 말고 후퇴를 준비하십시오." if will_val > -35 else \
+                         f"● **항복 지점(-75↓)** 근처입니다. 지수 {will_val:.2f}로 바닥권이니 이제 분할 매수 보따리를 푸십시오." if will_val < -65 else \
+                         f"● 현재 지수 {will_val:.2f}로 **안개 속**입니다. 방향이 정해질 때까지 자중하며 째려만 보십시오."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
             with i4: # MACD
                 macd_status = "▲ 상승엔진" if m_l > s_l else "▼ 하강엔진"
