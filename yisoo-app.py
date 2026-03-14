@@ -2,11 +2,11 @@ import streamlit as st
 import FinanceDataReader as fdr
 import pandas as pd
 
-# 1. 환경 설정 및 이수 할아버지 냉정 진단 양식
+# 1. 환경 설정 및 어르신 전용 까칠한 양식
 st.set_page_config(page_title="이수 할배의 냉정 진단기 v36056", layout="wide")
 
 st.markdown(f"<h1 style='color: #FF4B4B;'>👴 이수 할아버지의 냉정 진단기 v36056</h1>", unsafe_allow_html=True)
-st.markdown("### 📢 [v36028 양식 적용] RSI 65↑ 불지옥, 윌리엄 -75↓ 개미항복")
+st.info("📢 [냉정 진단 모드] RSI 65↑ 불지옥, 윌리엄 -75↓ 개미항복 - 정중하지만 까칠하게 보고드립니다.")
 
 # 2. 종목 입력
 symbol = st.text_input("📊 종목번호 또는 티커 입력", value="005930")
@@ -32,7 +32,7 @@ if symbol:
         low_14 = df['Low'].rolling(window=14).min()
         will_r = ((high_14 - df['Close']) / (high_14 - low_14) * -100).iloc[-1]
 
-        # 3. 상단 신호등 (냉정 진단 로직)
+        # 3. 상단 신호등 (v36028 냉정 진단 로직)
         st.subheader(f"📍 {symbol} 현재가: {curr_price:,.0f}원 / $")
         
         if rsi > 65 or will_r > -20:
@@ -44,7 +44,7 @@ if symbol:
 
         st.divider()
 
-        # 4. 네 기둥 지수란 (어르신 전용 냉정 진단 문구)
+        # 4. 네 기둥 지수란 (■ 기호 사용, 까칠한 진단 문구)
         i1, i2, i3, i4 = st.columns(4)
         
         with i1:
