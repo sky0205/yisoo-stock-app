@@ -49,23 +49,20 @@ if symbol:
             
             # 2. 상단 신호등 표시
             st.markdown("---")
-            if curr_rsi < 35:
-                st.header("🔴 매수(적기)")
-            elif curr_rsi > 65:
-                st.header("🟢 매도(수익실현)")
-            else:
-                st.header("🟡 관망(보유)")
+            if curr_rsi < 35: st.header("🔴 매수(적기)")
+            elif curr_rsi > 65: st.header("🟢 매도(수익실현)")
+            else: st.header("🟡 관망(보유)")
 
             # 3. 종합 추세 분석 카드 (냉정한 진단)
             st.subheader(f"🏢 {symbol} 분석 결과")
             with st.expander("📝 추세 분석 카드 (부정적 요인을 우선합니다)", expanded=True):
                 st.write(f"현재 {symbol}의 장부를 보니 아주 위태롭구먼요. 2026년 실시간 지표는 거짓말을 하지 않습니다.")
                 st.write(f"● **Bollinger**: 현재 위치는 {curr_p:,.0f}{currency}로, 밴드 내에 있으나 하방 압력이 거셉니다. [cite: 2026-02-19]")
-                st.write(f"● **RSI/윌리엄**: 수치는 {curr_rsi:.2f}와 {curr_will:.2f}로 시장의 냉혹한 평가를 보여줍니다. [cite: 2026-02-19]")
+                st.write(f"● **RSI/윌리엄**: 상세 수치는 {curr_rsi:.2f}와 {curr_will:.2f}로 시장의 냉혹한 평가를 보여줍니다. [cite: 2026-02-19]")
                 st.write(f"■ **리스크 점검**: 수율 불안정과 관세 리스크가 어르신의 소중한 자산을 노리고 있으니 주의하십시오. [cite: 2026-02-23]")
 
             # 4. 적정주가 표시
             st.info(f"💎 테이버의 적정주가: {curr_p * 0.95:,.0f}{currency} / 현재가: {curr_p:,.0f}{currency}")
 
     except Exception as e:
-        st.error(f"⚠️ 장부 기입 중 오류가 났습니다: {e}")
+        st.error(f"⚠️ 장부 기입 중 오류: {e}")
