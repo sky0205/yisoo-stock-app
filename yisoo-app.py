@@ -2,7 +2,7 @@ import streamlit as st
 import yfinance as yf
 import pandas_ta as ta
 
-# 1. 앱 페이지 설정
+# 1. 앱 페이지 설정 (중앙 정렬)
 st.set_page_config(page_title="v36056 냉정분석기", layout="centered")
 
 st.title("👴 이수 할아버지의 냉정분석기 (v36056-Final)")
@@ -42,10 +42,10 @@ if ticker:
         st.write("* **진단**: 외인들은 짐을 싸는데 기관이 억지로 댐을 막고 있구먼. 거래량 없는 반등은 개미 유인용 함정일 뿐이야.")
         st.write("---")
 
-        # 2. 필살 대응 전략
+        # 2. 필살 대응 전략 (냉정 진단 보완)
         st.markdown("### 2. 필살 대응 전략 (Sure-win Strategy)")
         
-        # 어르신이 하명하신 서슬 퍼런 냉정 진단 문구를 핵심으로 넣었습니다.
+        # 어르신이 말씀하신 서슬 퍼런 냉정 진단 문구를 HTML로 강조함
         strategy_html = f"""
         <div style="border: 2px solid #e74c3c; padding: 15px; border-radius: 10px; background-color: #fffdfd;">
             <h4 style="color: #e74c3c; margin-top: 0;">⚠️ [냉정 진단]</h4>
@@ -63,7 +63,7 @@ if ticker:
         st.markdown(strategy_html, unsafe_allow_html=True)
         st.write("---")
 
-        # 3. 네 기둥 지수 상세 진단
+        # 3. 네 기둥 지수 상세 진단 (세밀한 분석 보완)
         st.markdown("### 3. 네 기둥 지수 상세 진단 (Four Pillars)")
         
         col_p1, col_p2 = st.columns(2)
@@ -71,8 +71,8 @@ if ticker:
             st.markdown(f"""
             ### 🛡️ 수율(Yield) x Bollinger
             * **상세**: 기술력 논란은 주가를 밴드 하단({bb_low:,.0f}원)으로 끌어당기는 자석일세. 
-              밴드 폭이 좁아지는 건 에너지가 아래로 터지기 전의 전조 증상이니, 
-              수율 확신이 없는 한 오늘의 반등은 가짜 숨구멍일 뿐이야.
+              밴드 폭이 좁아지며 에너지를 응축하고 있으나, 수율 확신이 없는 한 
+              오늘의 반등은 하단으로 가기 전 잠시 숨을 고르는 **'가짜 숨구멍'**일 뿐이야.
             
             ### 🛡️ 관세(Tariff) x RSI
             * **상세**: 미국의 관세 압박은 수출주의 RSI를 50 선 아래로 짓누르는 거대한 벽이지. 
@@ -97,4 +97,4 @@ if ticker:
         st.error("장부를 불러올 수 없구먼! 종목 코드를 다시 보시게.")
 
 st.write("---")
-st.caption("분석가 서강윤: 2026년 실시간 장부 및 v36056 최종 양식 적용 완료")
+st.caption("분석가 서강윤: 2026년 실시간 장부 및 v36056 최종 양식(보완형) 적용 완료")
