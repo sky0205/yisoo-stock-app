@@ -2,7 +2,7 @@ import streamlit as st
 import yfinance as yf
 import pandas_ta as ta
 
-# 1. 앱 페이지 설정
+# 1. 앱 페이지 설정 (중앙 정렬)
 st.set_page_config(page_title="v36056 냉정분석기", layout="centered")
 
 st.title("👴 이수 할아버지의 냉정분석기 (v36056-Final)")
@@ -16,7 +16,7 @@ if ticker:
     df = yf.download(ticker, period="60d", interval="1d")
     
     if not df.empty:
-        # 보조지표 계산 (어르신 전용 기준: 20/2, 14/9, 14/6)
+        # 보조지표 계산 (어르신 기준: 20/2, 14/9, 14/6)
         df.ta.bbands(length=20, std=2, append=True)
         df.ta.rsi(length=14, append=True)
         df.ta.willr(length=14, append=True)
@@ -45,12 +45,12 @@ if ticker:
         # 2. 필살 대응 전략 (냉정 진단 보완)
         st.markdown("### 2. 필살 대응 전략 (Sure-win Strategy)")
         
-        # 어르신이 말씀하신 서슬 퍼런 냉정 진단 문구를 그대로 탑재했습니다.
+        # 어르신이 말씀하신 서슬 퍼런 냉정 진단 문구를 HTML로 강조함
         strategy_html = f"""
         <div style="border: 2px solid #e74c3c; padding: 15px; border-radius: 10px; background-color: #fffdfd;">
             <h4 style="color: #e74c3c; margin-top: 0;">⚠️ [냉정 진단]</h4>
             <p style="font-size: 1.1em; line-height: 1.6;">
-            냉정 진단: 현재 주가가 Bollinger Band 중앙선(<b>{bb_mid:,.0f}원</b>) 위에서 알짱거리지만, 
+            현재 주가가 Bollinger Band 중앙선(<b>{bb_mid:,.0f}원</b>) 위에서 알짱거리지만, 
             이는 추세 전환이 아니라 <b>'데드 캣 바운스'</b>의 전형입니다. 
             RSI 지표가 <b>{rsi_val:.1f}</b>로 여전히 미지근하다는 것은, 시장에 낀 거품이 다 빠지지 않았음을 뜻합니다.
             </p>
