@@ -28,23 +28,22 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 데이터 호출 최적화 (캐시 적용하여 에러 방지)
+# [안전장치] 데이터 호출 캐싱 (5분간 유지)
 @st.cache_data(ttl=300)
-def get_global_indices():
+def get_global_data():
     indices = {"^IXIC": "나스닥", "^GSPC": "S&P 500", "^TNX": "미 국채 10년"}
     results = {}
     for t, name in indices.items():
         try:
             data = yf.Ticker(t).history(period="2d")
             if not data.empty:
-                last = data['Close'].iloc[-1]
-                prev = data['Close'].iloc[-2]
+                last = data['Close'].iloc[-1]; prev = data['Close'].iloc[-2]
                 results[name] = (last, (last/prev-1)*100)
         except: continue
     return results
 
 def display_global_risk():
-    g_data = get_global_indices()
+    g_data = get_global_data()
     st.markdown("<span class='title-text'>🌍 글로벌 시장 종합 전황</span>", unsafe_allow_html=True)
     st.markdown("<div class='info-card-box'>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
@@ -54,8 +53,8 @@ def display_global_risk():
         if "S&P 500" in g_data: c2.metric("S&P 500", f"{g_data['S&P 500'][0]:,.0f}", f"{g_data['S&P 500'][1]:.2f}%")
         if "미 국채 10년" in g_data: c3.metric("미 국채 10년", f"{g_data['미 국채 10년'][0]:.2f}%", f"{g_data['미 국채 10년'][1]:+.2f}%")
         
-        adv = f"✅ **[미장 쾌청: 진격!]**" if chg > 0.5 else "🚨 **[긴급 상황: 정박!]**" if chg < -1.0 else "🧐 **[안개 정국: 관망]**"
-        st.info(f"🧐 이수 할배의 글로벌 판독: {adv} 지표 끝단을 기다리시게.")
+        adv = f"✅ **[미장 쾌청: 진격!]** 나스닥 불 뿜으며 유동성이 숨을 쉬구먼!" if chg > 0.5 else "🧐 **[안개 정국: 관망]** 지표 끝단을 기다리시게."
+        st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
     st.markdown("</div>", unsafe_allow_html=True)
 
 st.title("👴 이수할아버지의 냉정 진단기 v36056")
@@ -68,8 +67,8 @@ if symbol:
         is_kr = symbol.isdigit()
         start_date = datetime.now() - timedelta(days=365)
         if is_kr:
-            df = fdr.DataReader(symbol, start_date)
-            stocks = fdr.StockListing('KRX'); name = stocks[stocks['Code'] == symbol]['Name'].values[0]; currency = "원"; fmt = ",.0f" 
+            df = fdr.DataReader(symbol, start_date); stocks = fdr.StockListing('KRX')
+            name = stocks[stocks['Code'] == symbol]['Name'].values[0]; currency = "원"; fmt = ",.0f" 
         else:
             t = yf.Ticker(symbol); df = t.history(start=start_date)
             name = t.info.get('shortName', symbol); currency = "$"; fmt = ",.2f"
@@ -79,13 +78,13 @@ if symbol:
             chg_rate = (diff / prev_p) * 100
             peak_p = float(df['Close'].iloc[-20:].max()); defense_line = peak_p * 0.93
 
-            # [복구] 현재 주가 진황 (콤마/상승률 %)
+            # 1. 현재 주가 진황 (콤마/상승률 %)
             diff_str = f"{format(diff, ',.0f')}" if is_kr else f"{format(diff, '+.2f')}"
             st.markdown(f"""<div class='stock-header'><p style='font-size:32px; color:#1565C0; margin-bottom:5px;'>📈 현재 주가 진황</p>
                 <p style='font-size:35px; color:#455A64; margin:0;'>{name} ({symbol})</p>
                 <p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt)} {currency} (전일비: {diff_str} / {chg_rate:+.2f}%)</p></div>""", unsafe_allow_html=True)
             
-            # 신호등 (주가 바로 아래)
+            # 2. 신호등 (위치 고정)
             df['MA20'] = df['Close'].rolling(20).mean(); df['Std'] = df['Close'].rolling(20).std()
             up_b = df['MA20'].iloc[-1] + (df['Std'].iloc[-1] * 2); low_b = df['MA20'].iloc[-1] - (df['Std'].iloc[-1] * 2)
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
@@ -96,7 +95,7 @@ if symbol:
             else: sig, col = "🟡 관망 및 대기", "#FBC02D"
             st.markdown(f"<div class='signal-box' style='background-color: {col};'><span class='signal-text'>{sig}</span></div>", unsafe_allow_html=True)
 
-            # [복구] 핵심 성벽 가격선
+            # 3. 핵심 성벽 가격선 (복구 완료)
             st.markdown("<span class='title-text'>🛡️ 매수·매도 핵심 성벽 가격선</span>", unsafe_allow_html=True)
             st.markdown("<div class='info-card-box'>", unsafe_allow_html=True)
             c1, c2, c3 = st.columns(3)
@@ -105,20 +104,20 @@ if symbol:
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽 (방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt)}</p></div>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # [복구] 거래량 분석 상세 (가짜 상승 로직 포함)
+            # 4. 거래량 분석 상세 (글씨 크게!)
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean(); v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
             v_adv = "🚨 <b>가짜 상승!</b> 빈집에 바람 드는 격이니 절대 속지 마십시오." if chg_rate > 2.0 and v_ratio < 100 else "✅ 세력의 발자국을 추적 중일세."
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_ratio:.1f} %</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
-            # [복구] 지수 상세 훈수
+            # 5. 지수 상세 훈수 (서슬 퍼런 문구 100%)
             st.divider()
             m_l = df['Close'].ewm(span=12).mean().iloc[-1] - df['Close'].ewm(span=26).mean().iloc[-1]
             i1, i2, i3, i4 = st.columns(4)
-            with i1: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>Bollinger (기세)</p><p class='ind-diag'>● **[상단 돌파!]** 하늘 찌르네! 익절 준비 하시게. 조만간 소나기가 올 수 있으니 보따리 싸시게.</p></div>", unsafe_allow_html=True)
-            with i2: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.1f}</p><p class='ind-diag'>● 온도 {rsi_val:.2f}로 **탐욕의 불지옥** 직전일세! 냉정하게 수익을 챙기시게.</p></div>", unsafe_allow_html=True)
+            with i1: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>Bollinger (기세)</p><p class='ind-diag'>● **[상단 돌파!]** 익절 준비 하시게. 소나기 올 수 있으니 보따리 싸시게.</p></div>", unsafe_allow_html=True)
+            with i2: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.1f}</p><p class='ind-diag'>● 지수 {rsi_val:.2f}로 **탐욕의 불지옥** 직전일세! 냉정하게 수익 챙기시게.</p></div>", unsafe_allow_html=True)
             with i3:
                 h14 = df['High'].rolling(14).max().iloc[-1]; l14 = df['Low'].rolling(14).min().iloc[-1]; will_val = (h14 - p) / (h14 - l14 + 1e-10) * -100
                 st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.1f}</p><p class='ind-diag'>● 지수 {will_val:.1f}로 **항복 지점** 근처일세! 이제 보따리를 푸시게.</p></div>", unsafe_allow_html=True)
-            with i4: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>MACD (엔진)</p><p class='ind-diag'>● {'엔진 정회전! 기세 좋구먼.' if m_l > 0 else '엔진 **역회전** 중! 절대 속지 마시게.'}</p></div>", unsafe_allow_html=True)
+            with i4: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>MACD (엔진)</p><p class='ind-diag'>● {'엔진 정회전!' if m_l > 0 else '엔진 **역회전** 중! 절대 속지 마시게.'}</p></div>", unsafe_allow_html=True)
 
-    except Exception as e: st.error(f"👵 아이구! 오류: {e} (데이터 호출 제한 가능성)")
+    except Exception as e: st.error(f"👵 아이구! 데이터 제한 걸렸네! 잠시만 쉬었다가 다시 하세.")
