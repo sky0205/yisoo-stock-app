@@ -96,7 +96,7 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선(상단)</p><p class='val-main' style='color:#D32F2F;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽 (방어선)</p><p class='val-main' style='color:#E65100;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-           # 필살 대응 전략 (v36056-Final 냉정 진단 로직)
+          # 필살 대응 전략 (v36056-Final 냉정 진단 로직)
         st.header("🎯 2. 필살 대응 전략 (Sure-win Strategy)")
         
         st.markdown(f"""
@@ -111,7 +111,7 @@ if symbol:
             <h4 style="color: #2980b9;">🎯 [필살 지침]</h4>
             <p>가짜 반등에 속아 방아쇠를 당기지 마시게. 윌리엄 지수({willr_val:.2f})가 심해로 잠수하며 
             개미들이 투항할 때까지 독하게 기다려야 하네. 지금은 <b>함정 수사</b>의 시간이야. 
-            쏠리드 익절금은 저들이 비명을 지를 때 비수로 써야 하네.</p>
+            쏠리드 익절금은 저들이 비명을 지르며 물량을 던질 때 비수로 써야 하네.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -143,7 +143,7 @@ if symbol:
             
             ### 🛡️ 지표(Index) x Williams %R
             * **상세**: 신용 잔고 33조 원은 시한폭탄일세. 
-              윌리엄 지수({willr_val:.2f})가 바닥을 기며 모든 개미가 항복을 선언할 때, 
+              윌리엄 지수가({willr_val:.2f})가 바닥을 기며 모든 개미가 항복을 선언할 때, 
               그 피비린내 속에 진짜 기회가 숨어 있구먼.
             """)
 
