@@ -114,19 +114,28 @@ if symbol:
                 <div class='trend-item'>● <b>필살 조언:</b> <span class='advice-highlight'>{'⚠️ 신고가 추격 시: ' + format(p*0.95, fmt_p) + ' ' + currency + ' 이탈 시 손절!' if p >= year_high * 0.98 else '낚싯대만 던져두고 지표 바닥권을 기다리십시오.'}</span></div>
                 </div>""", unsafe_allow_html=True)
 
-            # [수정] 네 기둥 지수 상세 진단 (Bollinger/RSI/MACD 상세화)
+            # 6. 네 기둥 지수 상세 진단 (어르신 전용 보강본)
             i1, i2, i3, i4 = st.columns(4)
-            with i1: # Bollinger
+            
+            with i1: # Bollinger 상세
                 bb_pos = "🔥 폭주" if p >= up_b else "📉 추락" if p <= low_b else "⚖️ 눈치보기"
-                bb_diag = f"중앙선({format(mid_line, fmt_p)}) 위에서 기세를 올리고 있으니 상단 성벽 돌파 여부를 부라리고 보시게!" if p > mid_line else f"중앙선 아래에서 빌빌대고 있으니 하단 성벽 무너지면 미련 없이 보따리 싸시게!"
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-status'>{bb_pos}</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
-            with i2: # RSI
-                r_stat = "👺 불지옥" if rsi_val > 65 else "🧊 냉골" if rsi_val < 35 else "미지근"
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>현재 {r_stat} 상태일세. 탐욕과 공포 사이에서 냉정하게 판단하시게.</p></div>", unsafe_allow_html=True)
-            with i3: # Williams
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p class='ind-status'>판독중</p><p class='ind-diag'>과매수와 과매도 사이의 변곡점을 매섭게 째려보고 있구먼.</p></div>", unsafe_allow_html=True)
-            with i4: # MACD
+                bb_diag = f"● 현재 **중앙선({format(mid_line, fmt_p)}) 아래**에서 빌빌대고 있으니 하단 성벽 무너지면 미련 없이 보따리 싸시게!" if p <= mid_line else \
+                          f"● 현재 **중앙선({format(mid_line, fmt_p)}) 위**에서 기세를 타는 중일세. 상단 성벽 돌파 여부를 눈을 부라리고 보시게!"
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-status' style='color:#D32F2F;'>{bb_pos}</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
+            
+            with i2: # RSI 상세
+                rsi_stat = "👺 불지옥" if rsi_val > 65 else "🧊 냉골" if rsi_val < 35 else "미지근"
+                rsi_diag = f"● 현재 **{rsi_stat}** 상태일세. 탐욕과 공포 사이에서 냉정하게 판단하시게. 섣부른 진격은 패가망신의 지름길이야."
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{rsi_diag}</p></div>", unsafe_allow_html=True)
+            
+            with i3: # Williams %R 상세
+                w_stat = "🧨 광기" if will_val > -35 else "🏳️ 항복" if will_val < -65 else "중간지대"
+                w_diag = f"● 현재 지수 {will_val:.2f}로 **{w_stat}** 구간 근처일세. 과매수와 과매도 사이의 변곡점을 매섭게 째려보고 있구먼."
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
+            
+            with i4: # MACD 상세
                 macd_status = "▲ 상승엔진" if m_l > s_l else "▼ 하강엔진"
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-status'>{macd_status}</p><p class='ind-diag'>추세의 엔진이 어느 쪽으로 도는지 냉정하게 판독 중일세.</p></div>", unsafe_allow_html=True)
+                macd_diag = f"● 현재 **{macd_status}**으로 역회전 혹은 가속 중일세. 추세의 엔진이 어느 쪽으로 도는지 냉정하게 판독 중이야."
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-status'>{macd_status}</p><p class='ind-diag'>{macd_diag}</p></div>", unsafe_allow_html=True)
 
     except Exception as e: st.error(f"👵 아이구! 오류가 났네: {e}")
