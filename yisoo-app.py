@@ -28,11 +28,10 @@ def display_global_risk():
     try:
         nasdaq = yf.Ticker("^IXIC").fast_info; sp500 = yf.Ticker("^GSPC").fast_info; tnx = yf.Ticker("^TNX").fast_info 
         n_chg = (nasdaq.last_price / nasdaq.previous_close - 1) * 100
-        s_chg = (sp500.last_price / sp500.previous_close - 1) * 100
         tnx_val = tnx.last_price
         c1, c2, c3 = st.columns(3)
         c1.metric("나스닥 (NASDAQ)", f"{nasdaq.last_price:,.2f}", f"{n_chg:.2f}%")
-        c2.metric("S&P 500 (SPX)", f"{sp500.last_price:,.2f}", f"{s_chg:.2f}%")
+        c2.metric("S&P 500 (SPX)", f"{sp500.last_price:,.2f}", f"{(sp500.last_price/sp500.previous_close-1)*100:.2f}%")
         c3.metric("미 국채 10년물 (TNX)", f"{tnx_val:.3f}%", f"{(tnx_val - tnx.previous_close)*100:+.2f}bp")
         if n_chg < -1.0 or tnx_val > 4.5: advice = f"🚨 **[긴급: 정박하시게!]** 시장 발작 중일세. 보따리 싸서 피신해 계시게!"
         elif n_chg > 0.8: advice = f"✅ **[쾌청: 진격하시게!]** 기세가 좋구먼. 빳빳하게 기세 타고 올라갈 종목 골라보시게."
@@ -48,9 +47,18 @@ symbol = st.text_input("📊 종목번호 또는 티커 입력", "005930")
 if symbol:
     try:
         start_date = datetime.now() - timedelta(days=400); end_date = datetime.now()
+        # [수선] KRX 오류 대비 종목 데이터 로직 강화
         if symbol.isdigit():
-            df = fdr.DataReader(symbol, start_date, end_date); currency = "원"; fmt_p = ",.0f"
-            stocks = fdr.StockListing('KRX'); name = stocks[stocks['Code'] == symbol]['Name'].values[0]
+            currency = "원"; fmt_p = ",.0f"
+            # FinanceDataReader 대신 yfinance 보조 활용하여 오류 방지
+            try:
+                df = fdr.DataReader(symbol, start_date, end_date)
+                stocks = fdr.StockListing('KRX')
+                name = stocks[stocks['Code'] == symbol]['Name'].values[0]
+            except:
+                ticker = yf.Ticker(f"{symbol}.KS")
+                df = ticker.history(start=start_date, end=end_date)
+                name = ticker.info.get('shortName', symbol)
         else:
             ticker = yf.Ticker(symbol); df = ticker.history(start=start_date, end=end_date); currency = "$"; fmt_p = ",.2f"
             name = ticker.info.get('shortName', symbol)
@@ -79,16 +87,14 @@ if symbol:
             else: sig, col, adv = "🟡 관망 및 대기", "#FBC02D", "● 아직 안개 속일세. 낚싯대만 던져두시게."
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{adv}</p></div>", unsafe_allow_html=True)
 
-            # [핵심 수선] 볼린저 하단 돌파 시 상세 판독 복구
+            # [핵심 수선] 볼린저 밴드 하단 돌파 시 상세 판독
             i1, i2, i3, i4 = st.columns(4)
             with i1: # Bollinger
                 if p <= low_b:
                     bb_diag = f"● **[비상: 성벽 돌파!]** 가격이 하단 성벽({format(low_b, fmt_p)}) 아래로 밀려났구먼! 여기서 지지받고 고개를 들이밀 때가 진짜 진격의 기회일세. 함부로 칼날 잡지 마시게."
-                elif p < mid_line:
-                    bb_diag = f"● 현재 하단 성벽({format(low_b, fmt_p)})을 향해 내려가는 중일세. 중앙선 아래니 서두르지 말고 성벽 사수를 확인하고 낚싯대 던지시게."
                 else:
-                    bb_diag = f"● 현재 중앙선 위에서 기세 타는 중일세. 상단 성벽 돌파 여부를 매섭게 보시게."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-status'>{'📉 바닥권/돌파' if p <= low_b else '📉 하락세' if p < mid_line else '📈 상승세'}</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
+                    bb_diag = f"● 현재 하단 성벽({format(low_b, fmt_p)})을 향해 내려가는 중일세. 지지 확인 전까지는 낚싯대만 던져두시게."
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-status'>{'📉 바닥/돌파' if p <= low_b else '📉 하락세'}</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             with i2: # RSI
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>● **{'🧊 냉골' if rsi_val < 35 else '👺 불지옥' if rsi_val > 65 else '미지근'}** 상태일세. 냉정하게 보시게.</p></div>", unsafe_allow_html=True)
             with i3: # Williams
