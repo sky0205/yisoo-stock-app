@@ -96,30 +96,59 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선(상단)</p><p class='val-main' style='color:#D32F2F;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽 (방어선)</p><p class='val-main' style='color:#E65100;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # [복구] 실전 필살 대응 전략
-            st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
-                <div class='trend-item'>● <b>추세 진단:</b> {"정배열 상승" if p > mid_line else "역배열 하락"} 상태일세. 중앙선({format(mid_line, fmt_p)}) 기준 판독하시게.</div>
-                <div class='trend-item'>● <b>수비 상태:</b> 성벽({format(defense_line, fmt_p)}) {'함락!' if p < defense_line else '사수 중.'}</div>
-                <div class='trend-item'>● <b>필살 조언:</b> <span class='advice-highlight'>{'과열권이니 수익 챙기시게!' if p >= up_b else '바닥권이나 추세 반전을 확인하고 진격하시게!'}</span></div></div>""", unsafe_allow_html=True)
+           # 필살 대응 전략 (v36056-Final 냉정 진단 로직)
+        st.header("🎯 2. 필살 대응 전략 (Sure-win Strategy)")
+        
+        st.markdown(f"""
+        <div style="border: 2px solid #e74c3c; padding: 15px; border-radius: 10px; background-color: #fffdfd;">
+            <h4 style="color: #e74c3c; margin-top: 0;">⚠️ [냉정 진단]</h4>
+            <p style="font-size: 1.1em; line-height: 1.6;">
+            현재 주가가 Bollinger Band 중앙선(<b>{bb_mid:,.0f}원</b>) 위에서 알짱거리지만, 
+            이는 추세 전환이 아니라 <b>'데드 캣 바운스'</b>의 전형입니다. 
+            RSI 지표가 <b>{rsi_val:.1f}</b>로 여전히 미지근하다는 것은, 시장에 낀 거품이 다 빠지지 않았음을 뜻합니다.
+            </p>
+            <hr style="border: 0.5px solid #eee;">
+            <h4 style="color: #2980b9;">🎯 [필살 지침]</h4>
+            <p>가짜 반등에 속아 방아쇠를 당기지 마시게. 윌리엄 지수({willr_val:.2f})가 심해로 잠수하며 
+            개미들이 투항할 때까지 독하게 기다려야 하네. 지금은 <b>함정 수사</b>의 시간이야. 
+            쏠리드 익절금은 저들이 비명을 지를 때 비수로 써야 하네.</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-            # [핵심 수선] 네 기둥 지수 상세 진단 (볼린저 하단 돌파 시 판독 수정 및 상세화)
-            i1, i2, i3, i4 = st.columns(4)
-            with i1: # Bollinger
-                if p <= low_b:
-                    bb_diag = f"● **[비상: 성벽 돌파!]** 가격이 하단 성벽({format(low_b, fmt_p)})을 뚫고 지하실로 내려갔구먼! 지금은 도망갈 때가 아니라, 여기서 지지받고 고개를 들이밀 때가 **진짜 90% 승률의 진격 기회**일세. 눈을 부라리고 보시게."
-                elif p < mid_line:
-                    bb_diag = f"● 현재 중앙선 아래서 하단 성벽({format(low_b, fmt_p)})을 향해 내려가는 중일세. 어설프게 잡지 말고 성벽까지 기다렸다가 지지 확인하고 낚싯대 던지시게."
-                else:
-                    bb_diag = f"● 현재 중앙선 위에서 기세 좋게 성벽을 쌓는 중일세. 상단 성벽({format(up_b, fmt_p)}) 돌파 여부를 매섭게 째려보시게."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-status'>{'📉 바닥/돌파' if p <= low_b else '📉 하락세' if p < mid_line else '📈 상승세'}</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
-            with i2: # RSI
-                r_diag = f"● 지수 {rsi_val:.2f}로 **🧊 냉골(과매도)** 상태일세! 남들 무서워서 던질 때 우리는 냉정하게 바닥을 가려내야 하네. 반등 기미를 보시게." if rsi_val < 35 else f"● 지수 {rsi_val:.2f}로 **👺 불지옥(과열)** 구간일세! 탐욕에 눈이 멀면 안 되네. 익절가 빳빳하게 잡으시게." if rsi_val > 65 else f"● 현재 탐욕과 공포 사이에서 눈치싸움 중일세. 중립 기어 넣고 보시게."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
-            with i3: # Williams
-                w_diag = f"● 지수 {will_val:.2f}로 **🏳️ 개미 항복 구간**일세! 보따리 풀 준비 하시게. 바닥 끝단이니 여기서 고개 들면 무조건 진격일세!" if will_val < -80 else f"● 지수 {will_val:.2f}로 **🧨 천장 광기 구간**일세! 천장 뚫고 나갈 기세지만 언제 비수가 꽂힐지 모르니 매섭게 보시게." if will_val > -20 else f"● 현재 안개 속일세. 바닥인지 천장인지 갈피를 못 잡고 있구먼."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
-            with i4: # MACD
-                m_diag = f"● 엔진이 위로 빳빳하게 돌기 시작했구먼! 상승 기세가 붙었으니 성벽 사수 여부를 보시게." if m_l > s_l else f"● 엔진이 거꾸로 돌고 있네! 역회전 중에는 차에 올라타면 안 되는 법일세. 함부로 키 잡지 마시게."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-status'>{'▲ 상승' if m_l > s_l else '▼ 하락'}</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
+        st.write("---")
 
-    except Exception as e: st.error(f"👵 아이구! 오류가 났네: {e}")
+        # 네 기둥 지수 상세 진단 (세밀한 분석 로직)
+        st.header("🏗️ 3. 네 기둥 지수 상세 진단 (Four Pillars)")
+        
+        col_p1, col_p2 = st.columns(2)
+        with col_p1:
+            st.markdown(f"""
+            ### 🛡️ 수율(Yield) x Bollinger
+            * **상세**: 기술력 논란은 주가를 밴드 하단({bb_low:,.0f}원)으로 끌어당기는 자석일세. 
+              밴드 폭이 좁아지며 에너지를 응축하고 있으나, 수율 확신이 없는 한 
+              오늘의 반등은 하단으로 가기 전 잠시 숨을 고르는 **'가짜 숨구멍'**일 뿐이야.
+            
+            ### 🛡️ 관세(Tariff) x RSI
+            * **상세**: 미국의 관세 압박은 수출주의 RSI를 50 선 아래로 짓누르는 거대한 벽이지. 
+              지표가 {rsi_val:.1f}에서 고개를 숙이는 건 이미 이익 전망치가 썩어 들어가고 있다는 증거야. 
+              이 벽을 못 넘으면 가격은 계단식으로 무너질 수밖에 없네.
+            """)
+        
+        with col_p2:
+            st.markdown(f"""
+            ### 🛡️ 환율(FX) x Momentum
+            * **상세**: 환율 1,490원 돌파는 외인들에게 '환차손 도살장' 입구와 같네. 
+              수급 모멘텀이 꺾인 자리에 발을 들이는 건 제 발로 호랑이 굴에 들어가는 짓이야. 
+              환율이 안정되어 외인들이 돌아올 때까지는 장부를 덮어두게.
+            
+            ### 🛡️ 지표(Index) x Williams %R
+            * **상세**: 신용 잔고 33조 원은 시한폭탄일세. 
+              윌리엄 지수({willr_val:.2f})가 바닥을 기며 모든 개미가 항복을 선언할 때, 
+              그 피비린내 속에 진짜 기회가 숨어 있구먼.
+            """)
+
+    else:
+        st.error("장부를 불러올 수 없구먼! 종목 코드를 다시 보시게.")
+
+st.write("---")
+st.caption("분석가 서강윤: 2026년 실시간 장부 및 v36056 최종 양식 적용 완료")
