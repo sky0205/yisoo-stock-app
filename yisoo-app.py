@@ -141,7 +141,7 @@ if symbol:
                 <div class='trend-item'>● <b>추세 진단:</b> 현재 장부는 <span style='color:#D32F2F;'>{trend_desc}</span> 상태로 판독되구먼요.</div>
                 <div class='trend-item'>● <b>수비 상태:</b> 성벽({format(defense_line, fmt)} {currency}) {'함락! 후퇴하십시오.' if p < defense_line else '사수 중입니다.'}</div>
                <div class='trend-item'>
-    ● <b>필살 조언:</b> <span style='color:#FFD700; font-weight:bold;'>{us_advice}</span><br>
+    <span style='color:#FF0000; font-weight:bold; font-size:1.2em; background-color:#000000; padding:3px 5px; border-radius:3px;'>{us_advice}</span><br>
     <span class='advice-highlight'>{'⚠️ 신고가 추격 시: ' + format(p*0.95, fmt) + ' ' + currency + ' 이탈 시 손절!'}</span>
 </div>
                 </div>""", unsafe_allow_html=True)
