@@ -8,29 +8,40 @@ import streamlit as st
 
 # [재료 1] 글로벌 리스크 지표 함수
 def display_global_risk():
-    st.markdown("### 🌍 글로벌 리스크 실시간 전황 (나스닥 필터)")
+    st.markdown("### 🌍 글로벌 시장 종합 전황 (90% 승률 필터)")
     
     try:
-        # [실시간 획득] 나스닥(^IXIC) 데이터를 빳빳하게 긁어옵니다
-        nasdaq_ticker = yf.Ticker("^IXIC")
-        info = nasdaq_ticker.fast_info
-        nasdaq_val = round(info.last_price, 2)
-        nasdaq_chg = round(((info.last_price - info.previous_close) / info.previous_close) * 100, 2)
+        # [실시간 획득] 나스닥(^IXIC), S&P500(^GSPC), 10년물 국채(^TNX)
+        nasdaq = yf.Ticker("^IXIC").fast_info
+        sp500 = yf.Ticker("^GSPC").fast_info
+        tnx = yf.Ticker("^TNX").fast_info
         
-        col1, col2 = st.columns([1, 2])
+        # 지수 계산 (값과 등락률)
+        n_val, n_chg = round(nasdaq.last_price, 2), round(((nasdaq.last_price - nasdaq.previous_close) / nasdaq.previous_close) * 100, 2)
+        s_val, s_chg = round(sp500.last_price, 2), round(((sp500.last_price - sp500.previous_close) / sp500.previous_close) * 100, 2)
+        t_val, t_chg = round(tnx.last_price, 2), round(tnx.last_price - tnx.previous_close, 3)
+        
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
         with col1:
-            # 나스닥 지수와 등락률을 보여줍니다
-            st.metric("나스닥 (NASDAQ)", f"{nasdaq_val:,}", f"{nasdaq_chg}%", delta_color="inverse")
-        
+            st.metric("나스닥 (NASDAQ)", f"{n_val:,}", f"{n_chg}%", delta_color="inverse")
         with col2:
-            # [독설 로직] 나스닥이 빠지면 할배가 호통을 칩니다
-            if nasdaq_chg < 0:
-                st.error(f"⚠️ **[할배의 호통]** 나스닥이 {nasdaq_chg}%나 빠지며 소나기가 내리는데 매수하시겠습니까? 빳빳하게 정박하십시오!")
+            st.metric("S&P 500", f"{s_val:,}", f"{s_chg}%", delta_color="inverse")
+        with col3:
+            st.metric("미 국채 10년물", f"{t_val}%", f"{t_chg}bp", delta_color="inverse")
+        
+        with col4:
+            # [할배의 종합 판독] 3대 지수를 묶어서 한마디!
+            if n_chg < 0 and s_chg < 0 and t_chg > 0:
+                st.error("🚨 **[초비상]** 지수는 폭락하고 금리는 치솟네! 이건 홍수 수준일세. 보따리 꽁꽁 묶고 정박하시게!")
+            elif n_chg < 0 or s_chg < 0:
+                st.warning("⚠️ **[주의]** 미국 하늘에 먹구름이 끼었구먼. 국장 상승은 '가짜 해'일 확률이 높으니 속지 마시게!")
+            elif n_chg > 0 and s_chg > 0 and t_chg < 0:
+                st.success("✅ **[기회]** 하늘도 맑고 돈줄(금리)도 풀렸네! 거래량 터지는 놈 위주로 부라리고 보시게!")
             else:
-                st.success("✅ 하늘은 맑구먼. 하지만 거래량 없으면 속지 마시게!")
+                st.info("🧐 **[관망]** 장세가 혼조세구먼. 섣불리 움직이지 말고 낚싯대만 던져두게.")
                 
     except Exception as e:
-        st.error("나스닥 지수를 불러오지 못했습니다. 인터넷을 확인하십시오!")
+        st.error("글로벌 지수 데이터를 불러오지 못했습니다.")
 
 # [재료 2] 호가창 허수 판독 함수
 def hoka_check(bid_res, ask_res):
