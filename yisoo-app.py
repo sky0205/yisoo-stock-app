@@ -28,7 +28,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 글로벌 지표 실시간 연동
+# 글로벌 지표 실시간 연동 (훈수 강화)
 def display_global_risk():
     st.markdown("### 🌍 글로벌 시장 및 국채 종합 전황")
     try:
@@ -46,7 +46,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "Nvda")
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
 if symbol:
     try:
@@ -54,7 +54,10 @@ if symbol:
         is_kr = symbol.isdigit()
         if is_kr:
             now_local = datetime.now(pytz.timezone('Asia/Seoul')); currency = "원"; fmt_p = ",.0f"
-            df = fdr.DataReader(symbol, start_date, end_date); stocks = fdr.StockListing('KRX'); name = stocks[stocks['Code'] == symbol]['Name'].values[0]
+            try:
+                df = fdr.DataReader(symbol, start_date, end_date); stocks = fdr.StockListing('KRX'); name = stocks[stocks['Code'] == symbol]['Name'].values[0]
+            except:
+                ticker = yf.Ticker(f"{symbol}.KS"); df = ticker.history(start=start_date, end=end_date); name = ticker.info.get('shortName', symbol)
         else:
             now_local = datetime.now(pytz.timezone('US/Eastern')); ticker = yf.Ticker(symbol); df = ticker.history(start=start_date, end=end_date); currency = "$"; fmt_p = ",.2f"; name = ticker.info.get('shortName', symbol)
         
@@ -65,7 +68,7 @@ if symbol:
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean(); v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
             peak_20 = float(df['Close'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
 
-            # 기술 지표
+            # 기술 지표 계산
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_val = 100 - (100 / (1 + (gain.iloc[-1] / (loss.iloc[-1] + 1e-10))))
             h14 = df['High'].rolling(14).max().iloc[-1]; l14 = df['Low'].rolling(14).min().iloc[-1]; will_val = (h14 - p) / (h14 - l14 + 1e-10) * -100
@@ -78,10 +81,10 @@ if symbol:
             v_status_label = "💤 거래침체" if v_ratio < 100 else "📈 거래증가"
             if v_ratio >= 30 and is_opening:
                 v_status = f"🔥 현지 시초 주가 {'폭등' if p_chg >= 3 else '폭락' if p_chg <= -3 else '급등'} ({v_ratio:.1f}%)"
-                v_adv = "🔥 세력 진격 포착!" if p_chg >= 3 else "💀 비명 포착!" if p_chg <= -3 else "✅ 힘겨루기 중."
+                v_adv = "🔥 **[세력 진격!]** 기세가 아주 빳빳하구먼!" if p_chg >= 3 else "💀 **[비명 포착!]** 피신하시게!" if p_chg <= -3 else "✅ 힘겨루기 중일세."
             else:
                 v_status = f"{v_status_label} ({v_ratio:.1f}%)"
-                v_adv = "🚨 가짜 상승 주의!" if p_chg > 3 and v_ratio < 100 else "✅ 세력 추적 중."
+                v_adv = "🚨 **[가짜 상승 주의!]** 빈 수레일세!" if p_chg > 3 and v_ratio < 100 else "✅ 세력 발자국 추적 중."
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status}</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
             c1, c2, c3 = st.columns(3)
@@ -89,7 +92,7 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # [복구] 실전 필살 대응 전략 칸
+            # [복구 완벽] 실전 필살 대응 전략 (조언 칸)
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
                 <div class='trend-item'>● <b>수비 상태:</b> 성벽({format(defense_line, fmt_p)}) {'함락!' if p < defense_line else '사수 중.'}</div>
                 <div class='trend-item'>● <b>필살 조언:</b> <span style='color:#D32F2F;'>{'과열권이니 수익 챙기시게!' if p >= up_b or rsi_val >= 60 else '바닥 확인하고 진격하시게!'}</span></div></div>""", unsafe_allow_html=True)
@@ -98,7 +101,7 @@ if symbol:
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
             with i1: # Bollinger
-                bb_diag = "● 상단 돌파! 수확하시게." if p >= up_b else "● 하단 돌파! 진격 기회일세." if p <= low_b else "● 성벽 사수 확인하시게."
+                bb_diag = "● 상단 돌파! 수확하시게." if p >= up_b else "● 하단 돌파! 진격 기회!" if p <= low_b else "● 성벽 사수 확인하시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             with i2: # RSI
                 r_diag = f"● 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱!" if rsi_val >= 60 else f"● 지수 {rsi_val:.2f}로 **🧊 냉골** 상태!" if rsi_val <= 35 else "● 눈치싸움 중."
