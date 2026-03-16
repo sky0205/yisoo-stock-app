@@ -4,36 +4,59 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 
-# 1. 화면 구성 및 디자인 (제목 강조 및 글로벌 통합형)
+# 1. 화면 구성 및 디자인 (제목 시인성 및 통합 박스 강화)
 st.set_page_config(page_title="v36056 냉정진단기 Final", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #ECEFF1; } 
     * { font-weight: bold !important; font-family: 'Nanum Gothic', sans-serif; color: #263238; }
-    /* 제목 글씨 크게 */
-    .main-title { font-size: 50px !important; color: #0D47A1 !important; margin-bottom: 20px; text-align: center; border-bottom: 5px solid #1E88E5; padding-bottom: 10px; }
-    /* 글로벌 전황 하나로 통합 */
+    
+    /* 1. 메인 제목: 가장 크고 확실하게 */
+    .header-title { 
+        font-size: 55px !important; 
+        color: #0D47A1 !important; 
+        text-align: center; 
+        padding: 30px 0; 
+        border-bottom: 8px solid #1E88E5; 
+        margin-bottom: 30px;
+        background-color: white;
+        border-radius: 15px;
+    }
+    
+    /* 2. 글로벌 전황 통합 박스 */
     .global-unified-box { background-color: #263238; color: #FFFFFF; padding: 25px; border-radius: 15px; border: 3px solid #455A64; margin-bottom: 25px; }
-    .global-item { font-size: 24px !important; margin-bottom: 10px; }
-    /* 나머지 스타일 유지 */
+    .global-item { font-size: 24px !important; }
+    
+    /* 3. 필승전략 + 냉정진단 통합 박스 */
+    .unified-strategy-box { 
+        background-color: #FFFFFF; 
+        padding: 35px; 
+        border-radius: 20px; 
+        border: 6px solid #D32F2F; 
+        margin: 25px 0; 
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+    }
+    .strategy-title { font-size: 34px !important; color: #D32F2F !important; border-bottom: 3px solid #FFEBEE; padding-bottom: 15px; margin-bottom: 20px; }
+    .diagnosis-text { font-size: 24px !important; color: #B71C1C !important; line-height: 1.8; background-color: #FFF8F1; padding: 20px; border-radius: 10px; border-left: 10px solid #D32F2F; margin-bottom: 20px; }
+    
+    /* 기타 스타일 유지 */
     .stock-header { background-color: #FFFFFF; padding: 20px; border-radius: 12px; border-left: 10px solid #1E88E5; margin-bottom: 15px; }
-    .signal-box { padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); }
+    .signal-box { padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
     .signal-text { font-size: 60px !important; font-weight: 900 !important; color: #FFFFFF !important; }
     .vol-box { background-color: #E3F2FD; padding: 25px; border-radius: 15px; border: 4px solid #1E88E5; margin-bottom: 20px; }
-    .trend-card { background-color: #FFFFFF; padding: 30px; border-radius: 20px; border: 5px solid #D32F2F; margin: 20px 0; }
-    .diagnosis-box { border: 2px solid #D32F2F; padding: 20px; border-radius: 10px; background-color: #FFF8F1; margin-bottom: 20px; }
     .price-card { background-color: #FFFFFF; padding: 20px; border-radius: 15px; border: 3px solid #CFD8DC; text-align: center; margin-bottom: 20px; }
     .val-main { font-size: 42px !important; color: #D32F2F !important; display: block; }
     .ind-box { background-color: #FFFFFF; padding: 25px; border-radius: 15px; border: 2.5px solid #90A4AE; min-height: 420px; margin-bottom: 15px; }
     .ind-title { font-size: 26px !important; color: #1976D2 !important; border-bottom: 2px solid #EEEEEE; padding-bottom: 12px; margin-bottom: 15px; }
     .ind-diag { font-size: 20px !important; color: #333333 !important; line-height: 1.8; background-color: #FDFDFD; padding: 15px; border-radius: 10px; border-left: 8px solid #D32F2F; }
-    .ind-value { font-size: 60px !important; color: #B71C1C !important; text-align: center; display: block; margin: 10px 0; }
+    .ind-value { font-size: 60px !important; color: #B71C1C !important; text-align: center; display: block; }
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown("<div class='main-title'>👴 이수할아버지 냉정 진단기 v36056</div>", unsafe_allow_html=True)
+# 메인 제목 출력
+st.markdown("<div class='header-title'>👴 이수할아버지 냉정 진단기 v36056</div>", unsafe_allow_html=True)
 
-# 2. 글로벌 전황 통합 보고 (하나의 박스로 구현)
+# 2. 글로벌 전황 통합 보고
 def get_global_data(ticker):
     try:
         g_df = yf.download(ticker, period="2d", progress=False)
@@ -56,8 +79,8 @@ st.markdown(f"""
             <div class='global-item'>미국채 10년 금리: <span style='color:{"#EF5350" if tnx_pct > 0 else "#42A5F5"};'>{tnx_val:,.2f} ({tnx_pct:+.2f}%)</span></div>
         </div>
         <hr style='border:1px dashed #546E7A;'>
-        <div style='font-size:18px; color:#CFD8DC;'>
-            <b>👴 냉정 평가:</b> 미장 거품이 여전하고 금리가 비수가 되어 돌아오니, 국장은 사지가 마비된 형국일세. 섣부른 낙관은 금물이야.
+        <div style='font-size:19px; color:#CFD8DC;'>
+            <b>👴 냉정 평가:</b> 미장 지수는 거품 위에서 줄타기 중이고, 국채 금리는 언제든 우리 목을 겨눌 비수가 될 수 있네. 국장은 사지가 묶인 격이니 절대 섣불리 진격하지 마시게.
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -103,21 +126,22 @@ if symbol:
             v_ratio = (df['Volume'].iloc[-1] / df['Volume'].iloc[-6:-1].mean()) * 100
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; color:#0D47A1; margin-bottom:10px;'>📊 1. 거래량 전황: {v_ratio:.1f}%</div><div style='font-size:20px; line-height:1.6; background-color:white; padding:12px; border-radius:8px; border-left:6px solid #1E88E5;'>{'🚨 가짜 상승! 거래량 없는 반등에 속지 마셔.' if p > prev_p and v_ratio < 100 else '⚠️ 물량이 쏟아지니 성벽 사수를 보셔.' if p < prev_p and v_ratio > 150 else '⏳ 눈치싸움 중이니 대기하셔.'}</div></div>", unsafe_allow_html=True)
 
-            # 2. 필살 대응 전략
-            st.markdown("<div class='trend-card'><div class='trend-title'>⚔️ 2. 필살 대응 전략</div>", unsafe_allow_html=True)
+            # 2. 필살 대응 전략 (통합 박스 구현)
             st.markdown(f"""
-                <div class='diagnosis-box'>
-                <p style='font-size:24px; color:#D32F2F; margin-bottom:10px;'>⚠️ [냉정 진단]</p>
-                <p style='font-size:22px; line-height:1.7;'>
-                냉정 진단: 현재 주가가 Bollinger Band 중앙선(<b>{format(mid_line, fmt)}</b>) 위에서 알짱거리지만, 
-                이는 추세 전환이 아니라 <b>'데드 캣 바운스'</b>의 전형입니다. 
-                RSI 지표가 <b>{rsi_val:.1f}</b>로 여전히 미지근하다는 것은, 시장에 낀 거품이 다 빠지지 않았음을 뜻합니다.
-                </p>
-                <hr style='border:1px dashed #D32F2F;'>
-                <p style='font-size:21px;'>● <b>필살 지침:</b> 가짜 반등에 속지 마시게. 지표가 바닥 심해로 잠수할 때까지 독하게 기다려야 하네.</p>
+                <div class='unified-strategy-box'>
+                    <div class='strategy-title'>⚔️ 2. 필살 대응 전략 및 냉정 진단</div>
+                    <div class='diagnosis-text'>
+                        <b>⚠️ [냉정 진단]:</b> 현재 주가가 Bollinger Band 중앙선(<b>{format(mid_line, fmt)}</b>) 위에서 알짱거리지만, 
+                        이는 추세 전환이 아니라 <b>'데드 캣 바운스'</b>의 전형입니다. 
+                        RSI 지표가 <b>{rsi_val:.1f}</b>로 여전히 미지근하다는 것은, 시장에 낀 거품이 다 빠지지 않았음을 뜻합니다.
+                    </div>
+                    <div style='font-size:22px; line-height:1.8; color:#333;'>
+                        ● <b>필살 지침:</b> 가짜 반등에 속아 방아쇠를 당기지 마시게. 지표가 바닥 심해로 잠수하며 
+                        개미들이 투항할 때까지 독하게 기다려야 하네. 지금은 <b>함정 수사</b>의 시간이야. 
+                        익절금은 저들이 비명을 지를 때 비수로 써야 하네.
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
 
             # 3. 매수 매도 성벽
             st.subheader("🛡️ 3. 매수 매도 성벽")
@@ -137,4 +161,4 @@ if symbol:
     except Exception as e: st.error(f"장부를 불러올 수 없구먼 (오류: {e})")
 
 st.write("---")
-st.caption("분석가 서강윤: 2026년 실시간 장부 및 v36056 최종 양식(글로벌 통합+제목강조) 적용")
+st.caption("분석가 서강윤: 2026년 실시간 장부 및 v36056 최종 양식 적용 완료")
