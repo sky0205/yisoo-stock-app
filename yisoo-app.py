@@ -28,7 +28,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# [복구] 미장 수치 연동 실시간 훈수
+# [복구] 미장 수치 연동 실시간 훈수 로직
 def display_global_risk():
     st.markdown("### 🌍 글로벌 시장 및 국채 종합 전황")
     try:
@@ -40,16 +40,19 @@ def display_global_risk():
         c2.metric("S&P 500 (SPX)", f"{sp500.last_price:,.2f}", f"{(sp500.last_price/sp500.previous_close-1)*100:.2f}%")
         c3.metric("미 국채 10년물 (TNX)", f"{tnx_val:.3f}%", f"{tnx_chg:+.2f}%")
         
-        if n_chg > 0.5 and tnx_chg < 0: advice = f"✅ **[미장 쾌청: 진격!]** 나스닥이 {n_chg:.2f}% 오르고 금리도 안정세일세! 세력이 판 깔아줬으니 기세 타고 진격하시게."
-        elif n_chg < -1.0 or tnx_val > 4.5: advice = f"🚨 **[긴급 상황: 정박!]** 미장이 피를 흘리고 금리 발작 중일세! 성벽 무너지기 전에 보따리 싸서 피신하시게."
-        else: advice = f"🧐 **[안개 정국: 관망]** 지수가 눈치 싸움 중일세. 무리한 진격은 비수가 되니 지표 바닥권을 기다리시게."
+        if n_chg > 0.5 and tnx_chg < 0:
+            advice = f"✅ **[미장 쾌청: 진격!]** 나스닥이 {n_chg:.2f}% 폭발 중이고 금리도 안정세일세! 세력이 판 깔아줬으니 기세 타고 진격하시게."
+        elif n_chg < -1.0 or tnx_val > 4.5:
+            advice = f"🚨 **[긴급 상황: 정박!]** 미장이 피를 흘리고 금리 발작 중일세! 성벽 무너지기 전에 보따리 싸서 피신하시게."
+        else:
+            advice = f"🧐 **[안개 정국: 관망]** 지수가 눈치 싸움 중일세. 무리한 진격은 비수가 되니 지표 바닥권을 기다리시게."
         st.info(f"🧐 이수 할배의 글로벌 판독: {advice}")
     except: st.error("⚠️ 데이터 호출 불가")
 
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "Nvda")
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
 if symbol:
     try:
@@ -78,7 +81,7 @@ if symbol:
 
             st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt_p)} {currency} (전일비: {format(p-prev_p, '+'+fmt_p)} / {p_chg:+.2f}%)</p></div>", unsafe_allow_html=True)
             
-            # [핵심 수선] 시초 거래량 30% 폭발 판독 로직
+            # [핵심 수선] 시초 거래량 30% 폭발 판독 로직 (오전 11시 전 기준)
             if current_hour <= 11 and v_ratio >= 30 and p_chg > 2:
                 v_status = "🔥 시초장 거래급등"
                 v_adv = f"🔥 **[시초장 주가급등+거래급등!]** 거래량이 벌써 {v_ratio:.1f}%를 넘어서며 불을 뿜고 있구먼! 이건 세력이 작정하고 돈 쓰는 기세니 빳빳하게 진격하시게!"
@@ -89,7 +92,7 @@ if symbol:
                 else: v_adv = "✅ 세력이 들어왔는지 눈을 부라리고 보시게."
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
-            # 신호등 및 성벽 카드
+            # 신호등 및 성벽 카드 (건드리지 않음)
             if p >= up_b or rsi_val >= 65: sig, col, adv = "🟢 매도권 진입", "#388E3C", "● 과열권일세! 수익 챙겨서 나오시게."
             elif p <= low_b or rsi_val <= 35: sig, col, adv = "🔴 매수권 진입", "#D32F2F", "● 바닥권일세. 분할 매수 보따리 푸시게."
             else: sig, col, adv = "🟡 관망 및 대기", "#FBC02D", "● 아직 안개 속일세. 낚싯대만 던져두시게."
