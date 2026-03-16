@@ -7,10 +7,11 @@ from datetime import datetime, timedelta
 import streamlit as st
 
 # [재료 1] 글로벌 리스크 지표 함수
+# 10번 줄부터 싹 지우시고 붙여넣으십시오!
 def display_global_risk():
     st.markdown("### 🌍 글로벌 시장 종합 전황 (90% 승률 필터)")
     
-    # [급소] 울타리 밖에서 소금 통을 먼저 준비합니다.
+    # [급소 1] 소금 통을 먼저 준비합니다.
     us_advice = "🧐 [안개 장세] 데이터 판독 중일세..." 
     
     try:
@@ -21,6 +22,10 @@ def display_global_risk():
         
         n_chg = (nasdaq.last_price / nasdaq.previous_close - 1) * 100
         
+        # [급소 2] 화면에 지수를 다시 그려줍니다.
+        st.write(f"📈 **나스닥:** {nasdaq.last_price:.2f} ({n_chg:.2f}%)")
+        # (SP500, TNX 등 다른 지수도 여기에 st.write로 그리십시오!)
+        
         # 할배의 매서운 미장 판독 로직
         if n_chg < -0.5:
             us_advice = f"🚨 [미장 소나기] 나스닥 {n_chg:.2f}% 폭락 중! 홍수 속에 핀 꽃은 금방 시드네. 진격 금지!"
@@ -29,119 +34,22 @@ def display_global_risk():
         else:
             us_advice = "🧐 [안개 장세] 미장이 혼조세구먼. 무리하지 말고 낚싯대만 던져두시게."
             
-        # [출구] 판독 완료 후 밖으로 던져주기
+        # [출구 1] 판독 완료 후 밖으로 던져주기
         return us_advice
 
     except Exception as e:
         # 에러가 나도 장부가 멈추지 않게 방어막을 칩니다.
         return "⚠️ [데이터 오류] 미장 전황을 읽을 수 없으니 일단 정박하십시오!"
 
-# 여기서부터는 다음 함수(hoka_check)가 시작되는 지점입니다.
-# [재료 2] 호가창 허수 판독 함수
-def hoka_check(bid_res, ask_res):
-    if bid_res > ask_res * 1.5:
-        return "🚨 호가창 허수 주의! (매수잔량 과다로 개미 유인 중)"
-    return "✅ 호가창 전황 안정적"
-# 1. 화면 구성 (기존 v36056 스타일 유지)
-st.set_page_config(page_title="이수할아버지 분석기 v36056", layout="wide")
-st.markdown("""
-    <style>
-    .stApp { background-color: #ECEFF1; } 
-    * { font-weight: bold !important; font-family: 'Nanum Gothic', sans-serif; color: #263238; }
-    .stock-header { background-color: #FFFFFF; padding: 18px; border-radius: 12px; border-left: 10px solid #1E88E5; margin-bottom: 15px; }
-    .vol-box { background-color: #E3F2FD; padding: 25px; border-radius: 15px; border: 4px solid #1E88E5; margin-bottom: 20px; }
-    .vol-main-text { font-size: 32px !important; color: #0D47A1 !important; margin-bottom: 10px; }
-    .vol-sub-text { font-size: 20px !important; color: #1565C0 !important; line-height: 1.6; background-color: #FFFFFF; padding: 12px; border-radius: 8px; border-left: 6px solid #1E88E5; }
-    .signal-box { padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); }
-    .signal-text { font-size: 65px !important; font-weight: 900 !important; color: #FFFFFF !important; }
-    .trend-card { background-color: #FFFFFF; padding: 30px; border-radius: 20px; border: 5px solid #D32F2F; margin: 20px 0; }
-    .trend-title { font-size: 32px !important; color: #D32F2F !important; border-bottom: 3px solid #FFEBEE; padding-bottom: 12px; margin-bottom: 20px; }
-    .trend-item { font-size: 23px !important; line-height: 2.0; margin-bottom: 12px; }
-    .advice-highlight { color: #D32F2F !important; font-size: 26px !important; text-decoration: underline; }
-    .price-card { background-color: #FFFFFF; padding: 15px; border-radius: 10px; border: 2px solid #CFD8DC; text-align: center; }
-    .val-main { font-size: 32px !important; color: #333; }
-    .ind-box { background-color: #FFFFFF; padding: 22px; border-radius: 15px; border: 2.5px solid #90A4AE; min-height: 520px; margin-bottom: 15px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); }
-    .ind-title { font-size: 26px !important; color: #1976D2 !important; border-bottom: 2px solid #EEEEEE; padding-bottom: 10px; margin-bottom: 15px; }
-    .ind-status { font-size: 32px !important; color: #D32F2F !important; margin-bottom: 10px; }
-    .ind-diag { font-size: 20px !important; color: #333333 !important; line-height: 1.8; background-color: #FDFDFD; padding: 15px; border-radius: 10px; border-left: 8px solid #D32F2F; }
-    </style>
-    """, unsafe_allow_html=True)
+# (hoka_check 등 다른 함수들이 지나갑니다...)
 
-st.title("👨‍🦳 이수할아버지의 냉정 진단기 v36056")
-us_advice = display_global_risk()
-symbol = st.text_input("📊 종목번호 또는 티커 입력", "005930")
-
-if symbol:
-    try:
-        start_date = datetime.now() - timedelta(days=365); end_date = datetime.now()
-        if symbol.isdigit(): # 국내 주식
-            df = fdr.DataReader(symbol, start_date, end_date)
-            stocks = fdr.StockListing('KRX'); name = stocks[stocks['Code'] == symbol]['Name'].values[0]
-            currency = "원"; fmt = ",.0f" 
-        else: # 미국 주식
-            ticker = yf.Ticker(symbol); df = ticker.history(start=start_date, end=end_date)
-            name = ticker.info.get('shortName', symbol); currency = "$"; fmt = ",.2f"
-        
-        if not df.empty:
-            p = float(df['Close'].iloc[-1]); prev_p = float(df['Close'].iloc[-2])
-            year_high = float(df['Close'].max()); year_low = float(df['Close'].min())
-            peak_p = float(df['Close'].iloc[-20:].max()); defense_line = peak_p * 0.93
-
-            # 거래량 분석
-            v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean()
-            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
-            price_up = p > prev_p
-            
-            if v_ratio < 100:
-                v_status = "💤 거래침체"
-                v_advice = "🚨 <b>가짜 상승!</b> 거래량 없이 오르는 건 빈집에 바람 드는 격이니 절대 속지 마십시오." if price_up else \
-                           "⏳ <b>눈치보기 중.</b> 파는 사람도 없으니 바닥 확인될 때까지 섣불리 물타지 마십시오."
-            elif 100 <= v_ratio < 200:
-                v_status = "📈 거래증가"
-                v_advice = "✅ <b>관심 집중.</b> 거래량이 실리며 오르니 기세가 붙고 있습니다. 정찰병 파견 검토하십시오." if price_up else \
-                           "⚠️ <b>물량 출회.</b> 누군가 던지기 시작했으니 하단 성벽 사수 여부를 부라리고 보십시오."
-            else:
-                v_status = "🔥 거래폭발"
-                v_advice = "🚀 <b>세력 진격!</b> 큰손들이 문 부수고 들어왔습니다. 장대양봉이면 진격 수위를 높이십시오." if price_up else \
-                           "💣 <b>투매 발생!</b> 아비규환이니 지하실 열리기 전에 일단 보따리 싸서 대피하십시오."
-
-            # 지표 계산 로직
-            delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(window=14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-            rsi_val = 100 - (100 / (1 + (gain.iloc[-1] / loss.iloc[-1])))
-            h14 = df['High'].rolling(window=14).max().iloc[-1]; l14 = df['Low'].rolling(window=14).min().iloc[-1]; will_val = (h14 - p) / (h14 - l14) * -100
-            m_l = df['Close'].ewm(span=12).mean().iloc[-1] - df['Close'].ewm(span=26).mean().iloc[-1]
-            s_l = (df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()).ewm(span=9).mean().iloc[-1]
-            df['MA20'] = df['Close'].rolling(window=20).mean(); df['Std'] = df['Close'].rolling(window=20).std()
-            mid_line = df['MA20'].iloc[-1]
-            up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
-
-            buy_score = sum([p <= low_b, rsi_val <= 35, will_val <= -75]); sell_score = sum([p >= up_b, rsi_val >= 65, will_val >= -20])
-            is_new_high = p >= year_high * 0.98; is_new_low = p <= year_low * 1.02
-            trend_desc = "정배열 상승 가도" if (m_l > s_l and p > mid_line) else "역배열 하락 늪" if (m_l < s_l and p < mid_line) else "횡보 및 안개 정국"
-
-            # 상단 표시
-            st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt)} {currency} (전일비: {p-prev_p:+.0f})</p></div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_advice}</div></div>", unsafe_allow_html=True)
-
-            if buy_score >= 2: sig, color = "🔴 매수권 진입", "#D32F2F"
-            elif sell_score >= 2: sig, color = "🟢 매도권 진입", "#388E3C"
-            elif is_new_high: sig, color = "🔥 신고가 돌파", "#E65100"
-            else: sig, color = "🟡 관망 및 대기", "#FBC02D"
-            st.markdown(f"<div class='signal-box' style='background-color: {color};'><span class='signal-text'>{sig}</span></div>", unsafe_allow_html=True)
-
-            # 4. 실전 필살 대응 전략
-            st.markdown(f"""<div class='trend-card'>
-                <div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
-                <div class='trend-item'>● <b>추세 진단:</b> 현재 장부는 <span style='color:#D32F2F;'>{trend_desc}</span> 상태로 판독되구먼요.</div>
-                <div class='trend-item'>● <b>수비 상태:</b> 성벽({format(defense_line, fmt)} {currency}) {'함락! 후퇴하십시오.' if p < defense_line else '사수 중입니다.'}</div>
-               <div class='trend-item'>
-    <div class='trend-item'>
+# [급소 3] 144번 줄: 검은 바탕 제거 및 할배 호통 출력
+# 어르신 장부의 144번 줄(`st.markdown(f"...`) 부분을 아래 내용으로 갈아끼우십시오!
+<div class='trend-item'>
     ● <b>필살 조언:</b><br>
-    <span style='color:#FF0000; font-weight:bold; font-size:1.2em; background-color:#000000; padding:3px 5px; border-radius:3px; display:inline-block; margin:5px 0;'>{us_advice}</span><br>
-    <span class='advice-highlight'>{'⚠️ 신고가 추격 시: ' + format(p*0.95, fmt) + ' ' + currency + ' 이탈 시 손절!'}</span>
+    # <span style='color:#FF0000; font-weight:bold; font-size:1.2em; display:inline-block; margin:5px 0;'>{us_advice}</span><br>
+    # <span class='advice-highlight'>{'⚠️ 신고가 추격 시: ' + format(p*0.95, fmt) + ' ' + currency + ' 이탈 시 손절!'}</span>
 </div>
-                </div>""", unsafe_allow_html=True)
-
             # 5. 가격 전략 카드 (중앙선 추가)
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선(하단)</p><p class='val-main' style='color:#388E3C;'>{format(low_b, fmt)}</p></div>", unsafe_allow_html=True)
