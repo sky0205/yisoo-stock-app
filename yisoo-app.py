@@ -8,6 +8,13 @@ import streamlit as st
 
 # [재료 1] 글로벌 리스크 지표 함수
 def display_global_risk():
+    st.markdown("### 🌍 글로벌 시장 종합 전황...")
+    
+    # [추가] 울타리 밖에서 소금 통을 먼저 준비합니다.
+    us_advice = "🧐 [안개 장세] 데이터 판독 중일세..." 
+    
+    try:
+        # ... (나스닥 데이터 가져오는 기존 코드들) ...
     st.markdown("### 🌍 글로벌 시장 종합 전황 (90% 승률 필터)")
     
     try:
