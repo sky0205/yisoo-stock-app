@@ -17,7 +17,6 @@ st.markdown("""
     .global-unified-box { background-color: #263238; color: #FFFFFF; padding: 20px; border-radius: 12px; border: 2px solid #455A64; margin-bottom: 20px; }
     .global-header { font-size: 20px !important; color: #81D4FA !important; border-bottom: 1px solid #546E7A; padding-bottom: 8px; margin-bottom: 12px; }
     .global-item-container { display: flex; justify-content: space-around; flex-wrap: wrap; text-align: center; }
-    .global-item { padding: 10px; min-width: 120px; }
     .global-item-label { font-size: 14px !important; color: #B0BEC5 !important; display: block; margin-bottom: 5px; }
     .global-item-val { font-size: 17px !important; }
     
@@ -64,7 +63,7 @@ st.markdown(f"""
             <div class='global-item'><span class='global-item-label'>S&P 500 (지수)</span><span class='global-item-val' style='color:{"#EF5350" if s_p > 0 else "#42A5F5"};'>{s_v} ({s_p:+.2f}%)</span></div>
             <div class='global-item'><span class='global-item-label'>미국채 10년 금리</span><span class='global-item-val' style='color:{"#EF5350" if t_p > 0 else "#42A5F5"};'>{t_v} ({t_p:+.2f}%)</span></div>
         </div>
-        <hr style='border:1px dashed #546E7A; margin: 15px 0;'>
+        <hr style='border:1px dashed #546E7A; margin: 10px 0;'>
         <div style='font-size:16px; color:#CFD8DC; line-height:1.6;'>
             <b>👴 냉정 평가:</b> 미장 지수는 거품 위에서 줄타기 중이고, 국채 금리는 언제든 우리 목을 겨눌 비수가 될 수 있네. 국장은 사지가 마비된 형국일세. 섣부른 낙관은 금물이야.
         </div>
@@ -94,7 +93,7 @@ if symbol:
             will_val = (h14 - p) / (h14 - l14) * -100 if (h14 - l14) != 0 else 0
             m_l = df['Close'].ewm(span=12).mean().iloc[-1] - df['Close'].ewm(span=26).mean().iloc[-1]
             s_l = (df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()).ewm(span=9).mean().iloc[-1]
-            peak_p = float(df['Close'].iloc[-20:].max()); defense_line = peak_p * 0.93
+            peak_p = float(df['Close'].iloc[-60:].max()); defense_line = peak_p * 0.93
 
             st.markdown(f"<div class='stock-header'><p style='font-size:20px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:26px; color:{'#D32F2F' if diff > 0 else '#1976D2'}; margin:0;'>{format(p, fmt)} {currency} <span style='font-size:16px;'>({format(diff, diff_fmt)})</span></p></div>", unsafe_allow_html=True)
 
@@ -102,32 +101,38 @@ if symbol:
             sig, color = ("🔴 매수권 진입", "#D32F2F") if buy_score >= 2 else ("🟢 매도권 진입", "#388E3C") if sell_score >= 2 else ("🟡 관망 및 대기", "#FBC02D")
             st.markdown(f"<div style='padding:15px; border-radius:10px; text-align:center; background-color:{color}; margin-bottom:15px;'><span style='font-size:28px; color:white;'>{sig}</span></div>", unsafe_allow_html=True)
 
-            # 1. 거래량 전황
             v_ratio = (df['Volume'].iloc[-1] / df['Volume'].iloc[-6:-1].mean()) * 100
-            if p > prev_p: v_advice = "📈 <b>주포의 진격:</b> 거래량이 실린 상승일세. 외인/기관이 벽을 뚫고 있으니 기세가 살아있구먼." if v_ratio > 150 else "🚨 <b>가짜 축제:</b> 거래량 없이 가격만 올렸어. 함정이니 쫓지 마셔." if v_ratio < 80 else "⏳ <b>간보기 상승:</b> 눈치 보는 중이야."
-            else: v_advice = "⚠️ <b>도살장 입구:</b> 거래량 터진 하락이야. 지하실 구경하기 싫으면 엎드리셔." if v_ratio > 150 else "💤 <b>무관심 하락:</b> 파는 놈도 사는 놈도 없어. 바닥 성벽만 째려보게나." if v_ratio < 80 else "📉 <b>계단식 하락:</b> 야금야금 물량이 쏟아지고 있구먼."
+            if p > prev_p: v_advice = "📈 <b>주포의 진격:</b> 거래량이 실린 상승일세. 외인/기관이 벽을 뚫고 있으니 기세가 살아있구먼." if v_ratio > 150 else "🚨 <b>가짜 축제:</b> 거래량 없이 가격만 올렸어. 함정이니 쫓지 마셔." if v_ratio < 80 else "⏳ <b>간보기 상승:</b> 적당한 거래량으로 눈치 보는 중이야."
+            else: v_advice = "⚠️ <b>도살장 입구:</b> 거래량 터진 하락이야. 주포들이 보따리 쌌으니 지하실 구경하기 싫으면 엎드리셔." if v_ratio > 150 else "💤 <b>무관심 하락:</b> 파는 놈도 사는 놈도 없어. 매수세가 마른 형국이니 바닥 성벽만 째려보게나." if v_ratio < 80 else "📉 <b>계단식 하락:</b> 야금야금 물량이 쏟아지고 있구먼."
             st.markdown(f"<div class='volume-box-unified'><div style='font-size:20px; color:#0D47A1; margin-bottom:8px;'>📊 1. 거래량 전황: {v_ratio:.1f}%</div><div style='font-size:15px; line-height:1.6;'>{v_advice}</div></div>", unsafe_allow_html=True)
 
-            # 2. 필살 전략 + 냉정 진단
-            if p <= low_b * 1.03: strategy_txt = "<b>하단 성벽 사수:</b> 개미 투항까지 총을 아끼며 독하게 기다리시게. 지표가 심해를 뚫을 때가 기회일세."
-            elif p >= up_b * 0.97: strategy_txt = "<b>수확의 시간:</b> 욕심이 화를 부르네. 성벽 상단이니 보따리 싸고 수익금을 챙기셔."
-            else: strategy_txt = "<b>함정 수사 대기:</b> 가짜 반등에 속지 마시게. 지표가 완전히 식을 때까지는 그저 째려만 보셔."
+            # 2. 필살 전략 + 냉정 진단 (신고가 특화 로직)
+            is_new_high = p >= peak_p * 0.98
+            if is_new_high:
+                strategy_txt = "🚀 <b>신고가 돌파 및 추세 확장:</b> 성벽 상단을 뚫고 기세가 폭발했네. 익절선을 전일 고점 부근으로 바짝 올리고, 추세가 꺾이기 전까지는 수익을 끝까지 즐기셔. 지금 새로 올라타는 건 독약을 마시는 것이니 보유자의 영역일세."
+            elif p <= low_b * 1.03: 
+                strategy_txt = "🛡️ <b>하단 성벽 사수:</b> 개미 투항까지 총을 아끼며 독하게 기다리시게. 지표가 심해를 뚫을 때가 기회일세."
+            elif p >= up_b * 0.97: 
+                strategy_txt = "🎯 <b>수확의 시간:</b> 욕심이 화를 부르네. 성벽 상단이니 보따리 싸고 수익금을 챙기셔."
+            else: 
+                strategy_txt = "⏳ <b>함정 수사 대기:</b> 가짜 반등에 속지 마시게. 지표가 완전히 식을 때까지는 그저 째려만 보셔."
             
             st.markdown(f"""
                 <div class='unified-strategy-box'>
-                    <div class='strategy-title'>⚔️ 2. 필살 대응 전략 및 냉정 진단</div>
+                    <div style='font-size:20px; color:#D32F2F; border-bottom:2px solid #FFEBEE; padding-bottom:8px; margin-bottom:12px;'>⚔️ 2. 필살 대응 전략 및 냉정 진단</div>
                     <div class='diagnosis-content'>
-                        <b>⚠️ [냉정 진단]:</b> 현재 주가는 볼린저 중앙선({format(mid_line, fmt)}){'을 하회하여 하단 성벽으로 끌려가는 중일세.' if p < mid_line * 0.97 else ' 위에서 알짱거리지만 데드 캣 바운스일 뿐이야.' if p > mid_line * 1.03 else ' 근처에서 눈치만 보며 미지적대고 있구먼.'} RSI <b>{rsi_val:.1f}</b>는 거품이 덜 빠졌음을 뜻해.
+                        <b>⚠️ [냉정 진단]:</b> 현재 주가는 볼린저 중앙선({format(mid_line, fmt)}){'을 하회하여 하단 성벽으로 끌려가는 중일세.' if p < mid_line * 0.97 else ' 위에서 알짱거리지만 신고가 영역의 기세가 무섭구먼.' if is_new_high else ' 근처에서 눈치만 보며 미지적대고 있구먼.'} RSI <b>{rsi_val:.1f}</b>는 거품 여전함을 뜻해.
                     </div>
                     <div style='font-size:16px; color:#333; padding-left:10px;'>● <b>필살 대응 전략:</b> {strategy_txt}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
-            # 3. 매수매도 성벽
+            # 3. 매수매도 성벽 (에러 수정 완료)
             st.markdown("<div class='price-wall-container'><div style='font-size:18px; color:#1E88E5; margin-bottom:12px;'>🛡️ 3. 매수 매도 성벽 (Price Wall)</div>", unsafe_allow_html=True)
             cw1, cw2, cw3 = st.columns(3)
+            target_high = "확장 중 (신고가)" if is_new_high else format(up_b, fmt)
             with cw1: st.markdown(f"<div class='price-card'><p style='font-size:15px;'>⚖️ 공략(하단)</p><span class='val-main' style='color:#388E3C;'>{format(low_b, fmt)}</span></div>", unsafe_allow_html=True)
-            with cw2: st.markdown(f"<div class='price-card'><p style='font-size:15px;'>🎯 수확(상단)</p><span class='val-main' style='color:#D32F2F;'>{format(up_b, fmt)}</span></div>", unsafe_allow_html=True)
+            with cw2: st.markdown(f"<div class='price-card'><p style='font-size:15px;'>🎯 수확(상단)</p><span class='val-main' style='color:#D32F2F;'>{target_high}</span></div>", unsafe_allow_html=True)
             with cw3: st.markdown(f"<div class='price-card'><p style='font-size:15px;'>🛡️ 성벽(93%)</p><span class='val-main' style='color:#E65100;'>{format(defense_line, fmt)}</span></div>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
@@ -135,24 +140,18 @@ if symbol:
             st.subheader("🏗️ 4. 네 기둥 지수 상세 진단")
             i1, i2, i3, i4 = st.columns(4)
             with i1: # Bollinger
-                if p <= low_b * 1.03: bb_txt = "⚠️ 하단 성벽 바짝 붙었구먼! 비명이 들릴 때까지 기다려."
+                if is_new_high: bb_txt = "🚀 밴드 상단 라이딩 구간일세. 기세가 하늘을 찌르는구먼."
+                elif p <= low_b * 1.03: bb_txt = "⚠️ 하단 성벽 바짝 붙었구먼! 비명이 들릴 때까지 기다려."
                 elif p < mid_line * 0.97: bb_txt = "📉 중앙선 뚫리고 하단 성벽으로 끌려가는 중이야."
-                elif p > mid_line * 1.03: bb_txt = "📈 중앙선 위에서 기세 타나 가짜 상승을 경계해."
-                else: bb_txt = "⚖️ 중앙선 근처에서 눈치만 보며 미지적대고 있네."
+                else: bb_txt = "⚖️ 중앙선 근처에서 눈치 보는 중일세."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>🛡️ Bollinger (기세)</p><span style='font-size:13px; color:#546E7A;'>[중앙선 가격]</span><span class='ind-value'>{format(mid_line, fmt)}</span><div class='ind-diag'>● <b>판독:</b> {bb_txt}<br>하단 성벽인 {format(low_b, fmt)}선 사수 여부가 진짜 맥점일세.</div></div>", unsafe_allow_html=True)
             with i2: # RSI
-                if rsi_val < 35: r_txt = "🧊 냉골 공포 구간이야. 낚싯줄 던질 준비하게."
-                elif rsi_val > 65: r_txt = "👺 불지옥 탐욕 권역일세. 보따리 쌀 준비하게."
-                else: r_txt = "미지근한 줄다리기 중일세."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>🛡️ RSI (온도)</p><span style='font-size:13px; color:#546E7A;'>[현재 지수]</span><span class='ind-value'>{rsi_val:.1f}</span><div class='ind-diag'>● <b>판독:</b> {r_txt}<br>지수가 50을 못 넘으면 힘이 없네. 30 근처로 식을 때까지 총을 아끼셔.</div></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>🛡️ RSI (온도)</p><span style='font-size:13px; color:#546E7A;'>[현재 지수]</span><span class='ind-value'>{rsi_val:.1f}</span><div class='ind-diag'>● 현재 온도 <b>{rsi_val:.1f}</b>일세. 30 이하로 식을 때까지 총을 아끼게. 과열 구간에선 익절 방어선을 독하게 지키셔.</div></div>", unsafe_allow_html=True)
             with i3: # Williams
-                if will_val < -80: w_txt = "🏳️ 개미 항복 지점일세. 매집 시기야."
-                elif will_val > -20: w_txt = "🧨 광기 폭발! 상투 잡지 마셔."
-                else: w_txt = "중간 지대에서 간 보는 중이야."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>🛡️ Williams (심리)</p><span style='font-size:13px; color:#546E7A;'>[현재 지수]</span><span class='ind-value'>{will_val:.1f}</span><div class='ind-diag'>● <b>판독:</b> {w_txt}<br>-80 아래 심해로 잠수할 때가 진짜 개미들이 털리는 시점이니 그때를 노리셔.</div></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>🛡️ Williams (심리)</p><span style='font-size:13px; color:#546E7A;'>[현재 지수]</span><span class='ind-value'>{will_val:.1f}</span><div class='ind-diag'>● 수치 <b>{will_val:.1f}</b>일세. -80 아래 심해로 잠수하며 모든 개미가 항복을 선언할 때, 그때가 진짜 기회일세.</div></div>", unsafe_allow_html=True)
             with i4: # MACD
                 m_txt = "🚀 상승 엔진 가동 중일세." if m_l > s_l else "💣 하강 엔진 가동 중이야."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>🛡️ MACD (추세)</p><span style='font-size:13px; color:#546E7A;'>[엔진 상태]</span><span class='ind-value' style='font-size:26px !important;'>{'▲ 상승' if m_l > s_l else '▼ 하락'}</span><div class='ind-diag'>● <b>판독:</b> {m_txt}<br>엔진이 역회전 중일 때는 호재가 들려도 믿지 마셔. 방향을 틀어야 진짜 반등일세.</div></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>🛡️ MACD (추세)</p><span style='font-size:13px; color:#546E7A;'>[엔진 상태]</span><span class='ind-value' style='font-size:26px !important;'>{'▲ 상승' if m_l > s_l else '▼ 하락'}</span><div class='ind-diag'>● 엔진 {'정방향' if m_l > s_l else '역회전'} 중일세. 엔진이 멈추고 방향을 틀 때까지는 장부만 믿으셔.</div></div>", unsafe_allow_html=True)
 
     except Exception as e: st.error(f"장부 오류: {e}")
 
