@@ -11,11 +11,9 @@ st.markdown("""
     .stApp { background-color: #ECEFF1; } 
     * { font-weight: bold !important; font-family: 'Nanum Gothic', sans-serif; color: #263238; }
     
-    /* 제목 및 글로벌 통합 */
     .header-container { background-color: #0D47A1; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px; border-bottom: 4px solid #1565C0; }
     .main-title { font-size: 24px !important; color: #FFFFFF !important; margin: 0; }
     
-    /* 글로벌 전황 통합 박스 (제목 및 배치 보완) */
     .global-unified-box { background-color: #263238; color: #FFFFFF; padding: 20px; border-radius: 12px; border: 2px solid #455A64; margin-bottom: 20px; }
     .global-header { font-size: 20px !important; color: #81D4FA !important; border-bottom: 1px solid #546E7A; padding-bottom: 8px; margin-bottom: 12px; }
     .global-item-container { display: flex; justify-content: space-around; flex-wrap: wrap; text-align: center; }
@@ -23,21 +21,17 @@ st.markdown("""
     .global-item-label { font-size: 16px !important; color: #B0BEC5 !important; display: block; margin-bottom: 5px; }
     .global-item-val { font-size: 18px !important; }
     
-    /* 2. 필승전략 + 냉정진단 통합 박스 */
     .unified-strategy-box { background-color: #FFFFFF; padding: 20px; border-radius: 12px; border: 4px solid #D32F2F; margin: 15px 0; }
     .diagnosis-content { font-size: 17px !important; color: #B71C1C !important; line-height: 1.6; background-color: #FFF8F1; padding: 15px; border-radius: 8px; border-left: 8px solid #D32F2F; margin-bottom: 10px; }
     
-    /* 3. 매수매도 성벽 (박스 유지) */
     .price-wall-container { background-color: #FFFFFF; padding: 20px; border-radius: 15px; border: 4px solid #1E88E5; margin-bottom: 20px; }
     .price-card { background-color: #F8F9FA; padding: 15px; border-radius: 10px; border: 1.5px solid #CFD8DC; text-align: center; }
     
-    /* 4. 네 기둥 지수 상세 진단 */
     .ind-box { background-color: #FFFFFF; padding: 15px; border-radius: 10px; border: 2px solid #90A4AE; min-height: 400px; margin-bottom: 10px; }
     .ind-title { font-size: 18px !important; color: #1976D2 !important; border-bottom: 1px solid #EEEEEE; padding-bottom: 5px; margin-bottom: 10px; }
     .ind-value { font-size: 35px !important; color: #B71C1C !important; text-align: center; display: block; margin: 5px 0; }
     .ind-diag { font-size: 14px !important; color: #333333 !important; line-height: 1.6; background-color: #FDFDFD; padding: 12px; border-radius: 5px; border-left: 5px solid #D32F2F; }
     
-    /* 수치 스타일 */
     .stock-header { background-color: #FFFFFF; padding: 15px; border-radius: 10px; border-left: 8px solid #1E88E5; margin-bottom: 15px; }
     .val-main { font-size: 26px !important; color: #D32F2F !important; display: block; }
     </style>
@@ -45,7 +39,7 @@ st.markdown("""
 
 st.markdown("<div class='header-container'><p class='main-title'>👴 이수할아버지 냉정 진단기 v36056</p></div>", unsafe_allow_html=True)
 
-# 0. 글로벌 전황 보고 (이름표 명확하게 부착)
+# 0. 글로벌 전황 보고 (이름표 확실하게)
 def get_global_data(ticker):
     try:
         g_df = yf.download(ticker, period="2d", progress=False)
@@ -104,10 +98,8 @@ if symbol:
             s_l = (df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()).ewm(span=9).mean().iloc[-1]
             peak_p = float(df['Close'].iloc[-20:].max()); defense_line = peak_p * 0.93
 
-            # 헤더
             st.markdown(f"<div class='stock-header'><p style='font-size:22px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:28px; color:{'#D32F2F' if diff > 0 else '#1976D2'}; margin:0;'>{format(p, fmt)} {currency} <span style='font-size:18px;'>({format(diff, diff_fmt)})</span></p></div>", unsafe_allow_html=True)
 
-            # 신호등
             buy_score = sum([p <= low_b * 1.01, rsi_val <= 35, will_val <= -75])
             sell_score = sum([p >= up_b * 0.99, rsi_val >= 65, will_val >= -25])
             sig, color = ("🔴 매수권 진입", "#D32F2F") if buy_score >= 2 else ("🟢 매도권 진입", "#388E3C") if sell_score >= 2 else ("🟡 관망 및 대기", "#FBC02D")
@@ -117,7 +109,7 @@ if symbol:
             v_ratio = (df['Volume'].iloc[-1] / df['Volume'].iloc[-6:-1].mean()) * 100
             st.markdown(f"<div class='vol-box'><div style='font-size:20px; color:#0D47A1; margin-bottom:5px;'>📊 1. 거래량 전황: {v_ratio:.1f}%</div><div style='font-size:15px;'>{'🚨 가짜 상승! 거래량 없는 반등에 속지 마셔.' if p > prev_p and v_ratio < 100 else '⚠️ 물량이 쏟아지니 성벽 사수를 보셔.' if p < prev_p and v_ratio > 150 else '⏳ 안개 속이니 대기하셔.'}</div></div>", unsafe_allow_html=True)
 
-            # 2. 필살 전략 + 냉정 진단 (통합 박스 유지)
+            # 2. 필살 전략 + 냉정 진단 (통합 박스)
             st.markdown(f"""
                 <div class='unified-strategy-box'>
                     <div style='font-size:22px; color:#D32F2F; border-bottom:2px solid #FFEBEE; padding-bottom:10px; margin-bottom:15px;'>⚔️ 2. 필살 대응 전략 및 냉정 진단</div>
@@ -128,19 +120,19 @@ if symbol:
                 </div>
                 """, unsafe_allow_html=True)
 
-            # 3. 매수매도 성벽 (박스 유지)
+            # 3. 매수매도 성벽 (에러 고정 및 박스 유지)
             st.markdown("<div class='price-wall-container'><div style='font-size:20px; color:#1E88E5; margin-bottom:15px;'>🛡️ 3. 매수 매도 성벽 (Price Wall)</div>", unsafe_allow_html=True)
             c1, c2, c3 = st.columns(3)
-            with c1: st.markdown(f<div class='price-card'><p style='font-size:16px;'>⚖️ 공략(하단)</p><span class='val-main' style='color:#388E3C;'>{format(low_b, fmt)}</span></div>, unsafe_allow_html=True)
-            with c2: st.markdown(f<div class='price-card'><p style='font-size:16px;'>🎯 수확(상단)</p><span class='val-main' style='color:#D32F2F;'>{format(up_b, fmt)}</span></div>, unsafe_allow_html=True)
-            with c3: st.markdown(f<div class='price-card'><p style='font-size:16px;'>🛡️ 성벽(93%)</p><span class='val-main' style='color:#E65100;'>{format(defense_line, fmt)}</span></div>, unsafe_allow_html=True)
+            with c1: st.markdown(f"<div class='price-card'><p style='font-size:16px;'>⚖️ 공략(하단)</p><span class='val-main' style='color:#388E3C;'>{format(low_b, fmt)}</span></div>", unsafe_allow_html=True)
+            with c2: st.markdown(f"<div class='price-card'><p style='font-size:16px;'>🎯 수확(상단)</p><span class='val-main' style='color:#D32F2F;'>{format(up_b, fmt)}</span></div>", unsafe_allow_html=True)
+            with c3: st.markdown(f"<div class='price-card'><p style='font-size:16px;'>🛡️ 성벽(93%)</p><span class='val-main' style='color:#E65100;'>{format(defense_line, fmt)}</span></div>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # 4. 네 기둥 지수 상세 진단 (상세 설명 보완)
+            # 4. 네 기둥 지수 상세 진단 (상세 설명)
             st.subheader("🏗️ 4. 네 기둥 지수 상세 진단")
             i1, i2, i3, i4 = st.columns(4)
             with i1: # Bollinger
-                bb_txt = "⚠️ 하단 성벽 돌파! 칼날 잡지 마셔. 실리콘투처럼 하단 근처면 투매 비명이 그칠 때까지 기다려야 해." if p <= low_b * 1.01 else "⚖️ 중앙선 아래서 빌빌대네. 에너지가 아래로 흐르고 있어." if p < mid_line else "📈 중앙선 위에서 기세 타네. 상단 돌파 여부를 째려보셔."
+                bb_txt = "⚠️ 하단 성벽 돌파! 실리콘투처럼 하단 근처면 투매 비명이 그칠 때까지 기다려야 해." if p <= low_b * 1.01 else "⚖️ 중앙선 아래서 빌빌대네. 에너지가 아래로 흐르고 있어." if p < mid_line else "📈 중앙선 위에서 기세 타네."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>🛡️ Bollinger (기세)</p><span style='font-size:14px; color:#546E7A;'>[중앙선 가격]</span><span class='ind-value'>{format(mid_line, fmt)}</span><div class='ind-diag'>● {bb_txt}<br>하단 성벽인 {format(low_b, fmt)}선 사수 여부가 진짜 맥점일세.</div></div>", unsafe_allow_html=True)
             with i2: # RSI
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>🛡️ RSI (온도)</p><span style='font-size:14px; color:#546E7A;'>[현재 지수]</span><span class='ind-value'>{rsi_val:.1f}</span><div class='ind-diag'>● 현재 온도 <b>{rsi_val:.1f}</b>일세. 30 이하로 완전히 식어버릴 때까지 총을 아끼게. 지표가 미지근할 때 덤비면 화상 입는 법이야.</div></div>", unsafe_allow_html=True)
