@@ -12,9 +12,8 @@ st.markdown("""
     * { font-weight: bold !important; font-family: 'Nanum Gothic', sans-serif; color: #263238; }
     .stock-header { background-color: #FFFFFF; padding: 18px; border-radius: 12px; border-left: 10px solid #1E88E5; margin-bottom: 15px; }
     .title-text { font-size: 32px !important; color: #1565C0 !important; margin: 15px 0 10px 0; display: block; border-left: 10px solid #1565C0; padding-left: 15px; }
-    .info-card-box { background-color: #FFFFFF; padding: 25px; border-radius: 15px; border: 3px solid #CFD8DC; margin-bottom: 25px; box-shadow: 2px 2px 10px rgba(0,0,0,0.05); }
     
-    /* [수정] 거래량 전황 글씨 키우고 어르신 스타일 박스 적용 */
+    /* 거래량 전황 박스: 글씨 대폭 키움 */
     .vol-box { background-color: #E3F2FD; padding: 25px; border-radius: 15px; border: 4px solid #1E88E5; margin-bottom: 20px; }
     .vol-main-text { font-size: 42px !important; color: #0D47A1 !important; margin-bottom: 12px; }
     .vol-sub-text { font-size: 26px !important; color: #1565C0 !important; line-height: 1.6; background-color: #FFFFFF; padding: 15px; border-radius: 8px; border-left: 8px solid #1E88E5; }
@@ -22,10 +21,8 @@ st.markdown("""
     .signal-box { padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); }
     .signal-text { font-size: 65px !important; font-weight: 900 !important; color: #FFFFFF !important; }
     .trend-card { background-color: #FFFFFF; padding: 30px; border-radius: 20px; border: 5px solid #D32F2F; margin: 20px 0; }
-    .trend-item { font-size: 23px !important; line-height: 2.0; margin-bottom: 12px; }
     .advice-highlight { color: #D32F2F !important; font-size: 26px !important; text-decoration: underline; }
     
-    .price-card { background-color: #FFFFFF; padding: 15px; border-radius: 10px; border: 2px solid #CFD8DC; text-align: center; }
     .ind-box { background-color: #FFFFFF; padding: 22px; border-radius: 15px; border: 2.5px solid #90A4AE; min-height: 520px; margin-bottom: 15px; }
     .ind-diag { font-size: 20px !important; color: #333333 !important; line-height: 1.8; background-color: #FDFDFD; padding: 15px; border-radius: 10px; border-left: 8px solid #D32F2F; }
     [data-testid="stMetricValue"] { font-size: 55px !important; font-weight: 900 !important; }
@@ -43,15 +40,13 @@ def display_global_risk():
         c1.metric("나스닥 (NASDAQ)", f"{nasdaq.last_price:,.0f}", f"{n_chg:.2f}%")
         c2.metric("S&P 500", f"{sp500.last_price:,.0f}", f"{(sp500.last_price/sp500.previous_close-1)*100:.2f}%")
         c3.metric("미 국채 10년", f"{tnx.last_price:.2f}%", f"{(tnx.last_price/tnx.previous_close-1)*100:+.2f}%")
-        advice = f"✅ **[미장 쾌청: 진격!]** 나스닥 {n_chg:.2f}% 불을 뿜으며 유동성이 숨을 쉬구먼! 세력들이 고삐 풀었으니 빳빳하게 기세를 타시게." if n_chg > 0.5 else "🧐 **[안개 정국: 관망]** 지표 끝단을 기다리시게."
-        st.info(f"🧐 이수 할배의 글로벌 판독: {advice}")
         st.markdown("</div>", unsafe_allow_html=True)
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
 st.title("👴 이수할아버지의 냉정 진단기 v36056")
 display_global_risk()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "000660")
 
 if symbol:
     try:
@@ -69,9 +64,9 @@ if symbol:
             chg_rate = (diff / prev_p) * 100
             peak_p = float(df['Close'].iloc[-20:].max()); defense_line = peak_p * 0.93
 
-            # 현재 주가 (상승률 복구)
+            # [1순위] 현재 주가 (이미지 aa6dc5 스타일)
             diff_str = f"{format(diff, ',.0f')}" if is_kr else f"{format(diff, '+.2f')}"
-            st.markdown(f"""<div class='stock-header'><p style='font-size:32px; color:#1565C0; margin-bottom:5px;'>📈 현재 주가 진황</p>
+            st.markdown(f"""<div class='stock-header'><p style='font-size:32px; color:#1565C0; margin-bottom:5px;'>📊 현재 주가 진황</p>
                 <p style='font-size:35px; color:#455A64; margin:0;'>{name} ({symbol})</p>
                 <p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt)} {currency} (전일비: {diff_str} / {chg_rate:+.2f}%)</p></div>""", unsafe_allow_html=True)
             
@@ -86,39 +81,33 @@ if symbol:
             else: sig, col = "🟡 관망 및 대기", "#FBC02D"
             st.markdown(f"<div class='signal-box' style='background-color: {col};'><span class='signal-text'>{sig}</span></div>", unsafe_allow_html=True)
 
-            # [복구 및 강화] 거래량 분석 상세 (image_aa7163.png 기반)
+            # [2순위 핵심 수선] 주가는 올랐으나 거래량이 못 받쳐줄 때 호통 로직
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean(); v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
-            price_up = p > prev_p
             
-            if v_ratio < 100:
+            if chg_rate > 2.0 and v_ratio < 100: # 주가는 2% 넘게 뛰었는데 거래량은 평균 미달일 때
+                v_status = "💤 거래침체 (가짜 상승 주의!)"
+                v_advice = "🚨 <b>주가 급등했으나 거래량이 태부족!</b> 빈집에 바람 드는 격이니 절대 속지 마십시오. 세력들이 물량 넘기고 도망갈 준비 하는 것일 수도 있습니다."
+            elif v_ratio < 100:
                 v_status = "💤 거래침체"
-                v_advice = "🚨 <b>가짜 상승!</b> 빈집에 바람 드는 격이니 절대 속지 마십시오." if price_up else "⏳ <b>눈치보기 중.</b> 바닥 확인될 때까지 섣불리 물타지 마십시오."
-            elif 100 <= v_ratio < 200:
-                v_status = "📈 거래증가"
-                v_advice = "✅ <b>관심 집중.</b> 거래량이 실리며 오르니 기세가 붙고 있습니다. 정찰병 파견 검토하십시오." if price_up else "⚠️ <b>물량 출회.</b> 하단 성벽 사수 여부를 부라리고 보십시오."
+                v_advice = "⏳ <b>눈치보기 중.</b> 파는 사람도 없으니 바닥 확인될 때까지 섣불리 물타지 마십시오."
+            elif v_ratio >= 200:
+                v_status = "🔥 거래폭발 (세력 진격!)"
+                v_advice = "🚀 <b>큰손들이 문 부수고 들어왔습니다!</b> 장대양봉이면 기세 좋게 진격 수위를 높이셔도 좋구먼요."
             else:
-                v_status = "🔥 거래폭발"
-                v_advice = "🚀 <b>세력 진격!</b> 큰손들이 문 부수고 들어왔습니다. 진격 수위를 높이십시오." if price_up else "💣 <b>투매 발생!</b> 지하실 열리기 전에 일단 대피하십시오."
+                v_status = "📈 거래보통"
+                v_advice = "✅ 세력의 발자국을 차분히 추적 중일세."
 
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_ratio:.1f} % ({v_status})</div><div class='vol-sub-text'>{v_advice}</div></div>", unsafe_allow_html=True)
 
-            # 성벽 가격선 및 필살 전략
-            st.markdown("<span class='title-text'>🛡️ 매수·매도 핵심 성벽 가격선</span>", unsafe_allow_html=True)
-            st.markdown("<div class='info-card-box'>", unsafe_allow_html=True)
-            c1, c2, c3 = st.columns(3)
-            with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt)}</p></div>", unsafe_allow_html=True)
-            with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt)}</p></div>", unsafe_allow_html=True)
-            with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽 (방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt)}</p></div>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            # 지수 설명 (원본 100% 복구)
+            # 지수 설명 (어르신 필살 문구 100% 복구)
+            st.divider()
             m_l = df['Close'].ewm(span=12).mean().iloc[-1] - df['Close'].ewm(span=26).mean().iloc[-1]; s_l = (df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()).ewm(span=9).mean().iloc[-1]
             i1, i2, i3, i4 = st.columns(4)
-            with i1: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>Bollinger (기세)</p><p class='ind-diag'>● **[상단 돌파!]** 하늘 찌르네! 익절 준비 하시게. 조만간 소나기가 올 수 있으니 보따리 싸시게.</p></div>", unsafe_allow_html=True)
-            with i2: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.1f}</p><p class='ind-diag'>● 온도 {rsi_val:.2f}로 **탐욕의 불지옥** 직전입니다. 냉정하게 수익을 확정 지으십시오.</p></div>", unsafe_allow_html=True)
+            with i1: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>Bollinger (기세)</p><p class='ind-diag'>● **[상단 돌파!]** 하늘 찌르네! 익절 준비 하시게. 조만간 수익 실현 소나기가 올 수 있으니 보따리 싸시게.</p></div>", unsafe_allow_html=True)
+            with i2: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.1f}</p><p class='ind-diag'>● 온도 {rsi_val:.2f}로 **탐욕의 불지옥** 직전입니다. 남들 환호할 때 냉정하게 분할 매도로 수익을 챙기시게.</p></div>", unsafe_allow_html=True)
             with i3:
                 h14 = df['High'].rolling(14).max().iloc[-1]; l14 = df['Low'].rolling(14).min().iloc[-1]; will_val = (h14 - p) / (h14 - l14 + 1e-10) * -100
-                st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.1f}</p><p class='ind-diag'>● 지수 {will_val:.1f}로 **항복 지점** 근처입니다. 분할 매수 보따리를 푸십시오.</p></div>", unsafe_allow_html=True)
-            with i4: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>MACD (엔진)</p><p class='ind-diag'>● {'엔진 정회전! 기세 좋구먼.' if m_l > s_l else '엔진 **역회전** 중! 절대 속지 마시게.'}</p></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.1f}</p><p class='ind-diag'>● 지수 {will_val:.1f}로 **항복 지점** 근처입니다. 바닥권이니 이제 분할 매수 보따리를 푸시게.</p></div>", unsafe_allow_html=True)
+            with i4: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>MACD (엔진)</p><p class='ind-diag'>● {'엔진 정회전! 기세 좋구먼.' if m_l > s_l else '엔진 **역회전** 중! 절대 속지 마시게.'} 폭풍우 지나가길 기다리는 게 상책일세.</p></div>", unsafe_allow_html=True)
 
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
