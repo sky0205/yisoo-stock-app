@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import streamlit as st
 
 # [재료 1] 글로벌 리스크 지표 함수
-def display_global_risk():
+def display_global_risk():return us_advice
     st.markdown("### 🌍 글로벌 시장 종합 전황 (90% 승률 필터)")
     
     try:
