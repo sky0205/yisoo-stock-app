@@ -2,7 +2,7 @@ import streamlit as st
 import yfinance as yf
 import pandas_ta as ta
 
-# 1. 앱 페이지 설정 (어르신의 격식)
+# 1. 앱 페이지 설정 (와이드 모드)
 st.set_page_config(page_title="v36056 냉정분석기", layout="centered")
 
 st.title("👴 이수 할아버지의 냉정분석기 (v36056-Final)")
@@ -12,11 +12,11 @@ st.write("---")
 ticker = st.text_input("분석할 종목 코드를 넣으셔 (예: 005930.KS)", "005930.KS")
 
 if ticker:
-    # 2026년 실시간 장부 데이터 우선 (yfinance)
+    # 2026년 실시간 장부 데이터 (yfinance)
     df = yf.download(ticker, period="60d", interval="1d")
     
     if not df.empty:
-        # 보조지표 계산 (20/2, 14/9, 14/6)
+        # 어르신 전용 보조지표 계산 (20/2, 14/9, 14/6)
         df.ta.bbands(length=20, std=2, append=True)
         df.ta.rsi(length=14, append=True)
         df.ta.willr(length=14, append=True)
@@ -24,7 +24,7 @@ if ticker:
         curr = df.iloc[-1]
         prev = df.iloc[-2]
         
-        # 변수 정리
+        # 지표 변수 정리
         close_p = curr['Close']
         diff = close_p - prev['Close']
         rsi_val = curr['RSI_14']
@@ -43,9 +43,11 @@ if ticker:
         
         st.write("---")
 
-        # 2. 필살 대응 전략 (냉정 진단 & 맥점 보완)
+        # 2. 필살 대응 전략 (냉정 진단 보완)
         st.markdown("### 2. 필살 대응 전략 (Sure-win Strategy)")
-        st.markdown(f"""
+        
+        # HTML을 사용하여 어르신이 원하신 문구를 강조함
+        strategy_html = f"""
         <div style="border: 2px solid #e74c3c; padding: 15px; border-radius: 10px; background-color: #fffdfd;">
             <h4 style="color: #e74c3c; margin-top: 0;">⚠️ [냉정 진단]</h4>
             <p style="font-size: 1.1em; line-height: 1.6;">
@@ -58,7 +60,8 @@ if ticker:
             <p>가짜 반등에 속아 방아쇠를 당기지 마시게. 윌리엄 지수({willr_val:.2f})가 심해로 잠수하며 
             개미들이 투항할 때까지 독하게 기다려야 하네. 지금은 <b>함정 수사</b>의 시간이야.</p>
         </div>
-        """, unsafe_allow_html=True)
+        """
+        st.markdown(strategy_html, unsafe_allow_html=True)
 
         st.write("---")
 
@@ -94,4 +97,4 @@ if ticker:
         st.error("장부를 불러올 수 없구먼! 종목 코드를 다시 보시게.")
 
 st.write("---")
-st.caption("분석가 서강윤: 2026년 실시간 장부 및 v36056 최종 양식(보완형) 적용")
+st.caption("분석가 서강윤: 2026년 실시간 장부 및 v36056 최종 양식(보완형) 적용 완료")
