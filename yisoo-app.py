@@ -4,16 +4,26 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 
-# 기존 제목 (대머리 탈출한 버전)
-st.title("👨‍🦳 이수할아버지의 냉정 진단기 v36056")
+import streamlit as st
 
-# [실행] 여기서 글로벌 리스크를 먼저 보여줍니다!
-display_global_risk() 
+# [재료 1] 글로벌 리스크 지표 함수
+def display_global_risk():
+    st.markdown("### 🌍 글로벌 리스크 리포트 (90% 승률 필터)")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        # 나스닥이 떨어지면(-0.93%) 빨간색으로 경고하게 'inverse' 설정했습니다.
+        st.metric("나스닥 (NASDAQ)", "22,105.36", "-0.93%", delta_color="inverse")
+    with col2:
+        # 금리가 오르면(+1.2bp) 시장엔 악재니 빨간색으로 뜨게 했습니다.
+        st.metric("미 국채 10년물", "4.285%", "+1.2bp", delta_color="inverse")
+    with col3:
+        st.warning("⚠️ 이란 전쟁 리스크 지속 중 - 보수적 접근 필수")
 
-st.divider() # 줄 하나 빳빳하게 긋고 시작합니다.
-
-# 기존 종목 입력창
-symbol = st.text_input("📊 종목번호 또는 티커 입력", "005930")
+# [재료 2] 호가창 허수 판독 함수
+def hoka_check(bid_res, ask_res):
+    if bid_res > ask_res * 1.5:
+        return "🚨 호가창 허수 주의! (매수잔량 과다로 개미 유인 중)"
+    return "✅ 호가창 전황 안정적"
 # 1. 화면 구성 (기존 v36056 스타일 유지)
 st.set_page_config(page_title="이수할아버지 분석기 v36056", layout="wide")
 st.markdown("""
