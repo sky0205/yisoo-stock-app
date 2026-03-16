@@ -10,11 +10,11 @@ st.markdown("""
     <style>
     .stApp { background-color: #ECEFF1; } 
     * { font-weight: bold !important; font-family: 'Nanum Gothic', sans-serif; color: #263238; }
+    .stock-header { background-color: #FFFFFF; padding: 18px; border-radius: 12px; border-left: 10px solid #1E88E5; margin-bottom: 15px; }
     .title-text { font-size: 32px !important; color: #1565C0 !important; margin: 15px 0 10px 0; display: block; border-left: 10px solid #1565C0; padding-left: 15px; }
     .info-card-box { background-color: #FFFFFF; padding: 25px; border-radius: 15px; border: 3px solid #CFD8DC; margin-bottom: 25px; box-shadow: 2px 2px 10px rgba(0,0,0,0.05); }
-    .stock-header { background-color: #FFFFFF; padding: 18px; border-radius: 12px; border-left: 10px solid #1E88E5; margin-bottom: 15px; }
     
-    /* [복구] 필승전략 박스 스타일 */
+    /* [복구] 필승전략 박스 스타일 완벽 복구 */
     .strategy-box { background-color: #FFF9C4; padding: 25px; border-radius: 15px; border: 4px dashed #FBC02D; margin-bottom: 20px; }
     .strategy-text { font-size: 24px !important; color: #F57F17 !important; line-height: 1.7; }
     
@@ -31,6 +31,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# 글로벌 지수 판독 (캐시 적용)
 @st.cache_data(ttl=300)
 def get_global_data():
     indices = {"^IXIC": "나스닥", "^GSPC": "S&P 500", "^TNX": "미 국채 10년"}
@@ -61,7 +62,7 @@ def display_global_risk():
 st.title("👴 이수할아버지의 냉정 진단기 v36056")
 display_global_risk()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "NVDA")
 
 if symbol:
     try:
@@ -79,13 +80,13 @@ if symbol:
             chg_rate = (diff / prev_p) * 100
             peak_p = float(df['Close'].iloc[-20:].max()); defense_line = peak_p * 0.93
 
-            # 1. 현재 주가 진황
+            # 현재 주가 진황
             diff_str = f"{format(diff, ',.0f')}" if is_kr else f"{format(diff, '+.2f')}"
             st.markdown(f"""<div class='stock-header'><p style='font-size:32px; color:#1565C0; margin-bottom:5px;'>📈 현재 주가 진황</p>
                 <p style='font-size:35px; color:#455A64; margin:0;'>{name} ({symbol})</p>
                 <p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt)} {currency} (전일비: {diff_str} / {chg_rate:+.2f}%)</p></div>""", unsafe_allow_html=True)
             
-            # 2. 신호등
+            # 신호등
             df['MA20'] = df['Close'].rolling(20).mean(); df['Std'] = df['Close'].rolling(20).std()
             up_b = df['MA20'].iloc[-1] + (df['Std'].iloc[-1] * 2); low_b = df['MA20'].iloc[-1] - (df['Std'].iloc[-1] * 2)
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
@@ -96,7 +97,7 @@ if symbol:
             else: sig, col = "🟡 관망 및 대기", "#FBC02D"
             st.markdown(f"<div class='signal-box' style='background-color: {col};'><span class='signal-text'>{sig}</span></div>", unsafe_allow_html=True)
 
-            # [복구 완료] 3. 이수 할배의 필승전략 박스
+            # [복구] 3. 이수 할배의 필승전략 박스 완벽 복구
             st.markdown(f"""<div class='strategy-box'>
                 <p style='font-size:28px; color:#E65100; margin-bottom:10px;'>📜 이수 할배의 필승전략</p>
                 <p class='strategy-text'>
@@ -105,7 +106,7 @@ if symbol:
                 ● <b>[수확]</b> "초록불 켜지고 욕심이 가득할 때, 조용히 보따리 싸서 나오시게."
                 </p></div>""", unsafe_allow_html=True)
 
-            # 4. 핵심 성벽 가격선
+            # 성벽 가격선 (원본 보존)
             st.markdown("<span class='title-text'>🛡️ 매수·매도 핵심 성벽 가격선</span>", unsafe_allow_html=True)
             st.markdown("<div class='info-card-box'>", unsafe_allow_html=True)
             c1, c2, c3 = st.columns(3)
@@ -114,20 +115,20 @@ if symbol:
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽 (방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt)}</p></div>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # 5. 거래량 분석
+            # 거래량 분석 상세 (원본 보존)
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean(); v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
             v_adv = "🚨 <b>가짜 상승!</b> 빈집에 바람 드는 격이니 절대 속지 마십시오." if chg_rate > 2.0 and v_ratio < 100 else "✅ 세력의 발자국을 추적 중일세."
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_ratio:.1f} %</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
-            # 6. 지수 상세 훈수
+            # 지수 상세 훈수 (원본 보존)
             st.divider()
             m_l = df['Close'].ewm(span=12).mean().iloc[-1] - df['Close'].ewm(span=26).mean().iloc[-1]
             i1, i2, i3, i4 = st.columns(4)
             with i1: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>Bollinger (기세)</p><p class='ind-diag'>● **[상단 돌파!]** 익절 준비 하시게. 소나기 올 수 있으니 보따리 싸시게.</p></div>", unsafe_allow_html=True)
-            with i2: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.1f}</p><p class='ind-diag'>● 온도 {rsi_val:.2f}로 **탐욕의 불지옥** 직전일세!</p></div>", unsafe_allow_html=True)
+            with i2: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.1f}</p><p class='ind-diag'>● 온도 {rsi_val:.2f}로 **탐욕의 불지옥** 직전일세! 냉정하게 수익 챙기시게.</p></div>", unsafe_allow_html=True)
             with i3:
                 h14 = df['High'].rolling(14).max().iloc[-1]; l14 = df['Low'].rolling(14).min().iloc[-1]; will_val = (h14 - p) / (h14 - l14 + 1e-10) * -100
-                st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.1f}</p><p class='ind-diag'>● 지수 {will_val:.1f}로 **항복 지점** 근처일세!</p></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.1f}</p><p class='ind-diag'>● 지수 {will_val:.1f}로 **항복 지점** 근처일세! 이제 보따리를 푸시게.</p></div>", unsafe_allow_html=True)
             with i4: st.markdown(f"<div class='ind-box'><p style='font-size:26px; color:#1976D2;'>MACD (엔진)</p><p class='ind-diag'>● {'엔진 정회전!' if m_l > 0 else '엔진 **역회전** 중!'}</p></div>", unsafe_allow_html=True)
 
     except Exception as e: st.error(f"👵 아이구! 데이터 제한 걸렸네! 잠시만 쉬었다가 다시 하세.")
