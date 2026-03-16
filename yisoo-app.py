@@ -2,7 +2,7 @@ import streamlit as st
 import yfinance as yf
 import pandas_ta as ta
 
-# 1. 앱 페이지 설정 (격조 있게)
+# 1. 앱 페이지 설정
 st.set_page_config(page_title="v36056 냉정분석기", layout="centered")
 
 st.title("👴 이수 할아버지의 냉정분석기 (v36056-Final)")
@@ -16,7 +16,7 @@ if ticker:
     df = yf.download(ticker, period="60d", interval="1d")
     
     if not df.empty:
-        # 보조지표 계산 (20/2, 14/9, 14/6)
+        # 보조지표 계산 (어르신 전용 기준: 20/2, 14/9, 14/6)
         df.ta.bbands(length=20, std=2, append=True)
         df.ta.rsi(length=14, append=True)
         df.ta.willr(length=14, append=True)
@@ -40,12 +40,12 @@ if ticker:
         st.markdown("### 1. 거래량 전황 (Volume Status)")
         st.write(f"* **현재가**: {close_p:,.0f}원 (전일대비 {diff:,.0f}원)")
         st.write("* **진단**: 외인들은 짐을 싸는데 기관이 억지로 댐을 막고 있구먼. 거래량 없는 반등은 개미 유인용 함정일 뿐이야.")
-        
         st.write("---")
 
         # 2. 필살 대응 전략 (냉정 진단 보완)
         st.markdown("### 2. 필살 대응 전략 (Sure-win Strategy)")
         
+        # 어르신이 말씀하신 서슬 퍼런 냉정 진단 문구를 그대로 탑재했습니다.
         strategy_html = f"""
         <div style="border: 2px solid #e74c3c; padding: 15px; border-radius: 10px; background-color: #fffdfd;">
             <h4 style="color: #e74c3c; margin-top: 0;">⚠️ [냉정 진단]</h4>
@@ -61,7 +61,6 @@ if ticker:
         </div>
         """
         st.markdown(strategy_html, unsafe_allow_html=True)
-
         st.write("---")
 
         # 3. 네 기둥 지수 상세 진단 (세밀한 분석 보완)
@@ -78,6 +77,7 @@ if ticker:
             ### 🛡️ 관세(Tariff) x RSI
             * **상세**: 미국의 관세 압박은 수출주의 RSI를 50 선 아래로 짓누르는 거대한 벽이지. 
               지표가 {rsi_val:.1f}에서 고개를 숙이는 건 이미 이익 전망치가 썩어 들어가고 있다는 증거야. 
+              이 벽을 못 넘으면 가격은 계단식으로 무너질 수밖에 없네.
             """)
         
         with col_p2:
@@ -85,6 +85,7 @@ if ticker:
             ### 🛡️ 환율(FX) x Momentum
             * **상세**: 환율 1,490원 돌파는 외인들에게 '환차손 도살장' 입구와 같네. 
               수급 모멘텀이 꺾인 자리에 발을 들이는 건 제 발로 호랑이 굴에 들어가는 짓이야. 
+              환율이 안정되어 외인들이 돌아올 때까지는 장부를 덮어두게.
             
             ### 🛡️ 지표(Index) x Williams %R
             * **상세**: 신용 잔고 33조 원은 시한폭탄일세. 
