@@ -74,7 +74,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.title("👨‍🦳 이수할아버지의 냉정 진단기 v36056")
-display_global_risk()
+us_advice = display_global_risk()
 symbol = st.text_input("📊 종목번호 또는 티커 입력", "005930")
 
 if symbol:
