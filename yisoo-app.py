@@ -22,7 +22,7 @@ st.markdown("""
         padding-left: 18px;
     }
     
-    /* 진짜 내용이 담긴 몸통 박스 */
+    /* [수정 완료] 진짜 알맹이 수치만 담는 빳빳한 몸통 박스 */
     .real-content-box {
         background-color: #FFFFFF;
         border-radius: 15px;
@@ -39,7 +39,7 @@ st.markdown("""
     .vol-main-text { font-size: 42px !important; color: #0D47A1 !important; margin-bottom: 12px; }
     .vol-sub-text { font-size: 30px !important; color: #1565C0 !important; line-height: 1.7; background-color: #F5F5F5; padding: 20px; border-radius: 10px; border-left: 12px solid #1E88E5; }
     
-    /* 지수 상세 박스 (내용 복구) */
+    /* 지수 상세 박스 (비수 꽂는 훈수 복구) */
     .ind-box { background-color: #FFFFFF; padding: 30px; border-radius: 20px; border: 4px solid #90A4AE; min-height: 550px; margin-bottom: 25px; }
     .ind-title { font-size: 38px !important; color: #1976D2 !important; border-bottom: 4.5px solid #EEEEEE; padding-bottom: 15px; margin-bottom: 20px; }
     .ind-diag { font-size: 30px !important; color: #333333 !important; line-height: 1.8; background-color: #FAFAFA; padding: 22px; border-radius: 12px; border-left: 15px solid #D32F2F; }
@@ -50,14 +50,14 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 글로벌 전황: 빈 박스 걷어내고 제목과 수치 박스만 남김
+# 글로벌 전황: 빈 박스 공간 싹 제거
 def display_global_risk():
     try:
         nasdaq = yf.Ticker("^IXIC").fast_info; sp500 = yf.Ticker("^GSPC").fast_info; tnx = yf.Ticker("^TNX").fast_info 
         n_chg = (nasdaq.last_price / nasdaq.previous_close - 1) * 100
         
         st.markdown("<span class='title-text'>🌍 글로벌 시장 종합 전황</span>", unsafe_allow_html=True)
-        # 꼴 보기 싫은 빈 박스 공간은 없애고 바로 알맹이 박스 시작
+        # 꼴 보기 싫은 가짜 빈 박스 공간은 없애고 바로 알맹이 박스 시작
         st.markdown("<div class='real-content-box'>", unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
         c1.metric("나스닥", f"{nasdaq.last_price:,.0f}", f"{n_chg:.2f}%")
@@ -104,7 +104,7 @@ if symbol:
             st.markdown(f"<div class='vol-main-text'>{v_status}</div><div class='vol-sub-text'>{v_adv}</div>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # 신호등 및 전략 지표 계산
+            # 지표 계산 및 신호등
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_val = 100 - (100 / (1 + (gain.iloc[-1] / (loss.iloc[-1] + 1e-10))))
             df['MA20'] = df['Close'].rolling(20).mean(); df['Std'] = df['Close'].rolling(20).std(); up_b = df['MA20'].iloc[-1] + (df['Std'].iloc[-1] * 2); low_b = df['MA20'].iloc[-1] - (df['Std'].iloc[-1] * 2)
@@ -123,7 +123,7 @@ if symbol:
             with c3: st.metric("🛡️ 성벽(방어선)", format(defense_line, fmt_p))
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # 4대 지수 상세 분석: 박스 안에 빳빳하게 복구
+            # [상세 훈수] 4대 지수 매서운 분석 복구
             st.divider()
             i1, i2 = st.columns(2); i3, i4 = st.columns(2)
             with i1: # Bollinger
