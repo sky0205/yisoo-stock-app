@@ -5,18 +5,18 @@ import pandas as pd
 from datetime import datetime, timedelta
 import pytz
 
-# 1. 화면 구성 및 할배 캐릭터 스타일 (제목-내용 완전 결합 레이아웃)
+# 1. 화면 구성 및 할배 캐릭터 스타일 (제목-내용 완전 봉인 레이아웃)
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #ECEFF1; } 
     * { font-weight: bold !important; font-family: 'Nanum Gothic', sans-serif; color: #263238; }
     
-    /* [진짜 핵심 수선] 제목 지붕과 내용을 완전히 하나로 가두는 통합 섹션 박스 */
+    /* [진짜 핵심] 제목 지붕과 내용을 완전히 하나로 가두는 통합 섹션 박스 */
     .unified-box {
         background-color: #FFFFFF;
         border-radius: 15px;
-        border: 5px solid #CFD8DC;
+        border: 4px solid #CFD8DC;
         box-shadow: 0 8px 16px rgba(0,0,0,0.1);
         margin-bottom: 35px;
         overflow: hidden; /* 제목 배경이 박스 테두리에 딱 맞게 절단 */
@@ -103,7 +103,7 @@ if symbol:
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean(); v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
             peak_20 = float(df['Close'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
 
-            # 기술 지표 계산
+            # 기술 지표 계산 (상세 분석 및 전략용)
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_val = 100 - (100 / (1 + (gain.iloc[-1] / (loss.iloc[-1] + 1e-10))))
             h14 = df['High'].rolling(14).max().iloc[-1]; l14 = df['Low'].rolling(14).min().iloc[-1]; will_val = (h14 - p) / (h14 - l14 + 1e-10) * -100
@@ -119,10 +119,10 @@ if symbol:
             v_label = "💤 거래침체" if v_ratio < 100 else "📈 거래증가"
             if v_ratio >= 30 and is_opening:
                 v_status = f"🔥 시초 거래폭발 ({v_ratio:.1f}%)"
-                v_adv = f"🔥 **[세력 진격!]** 거래량이 5일 평균 대비 {v_ratio:.1f}% 터지며 폭등 중일세! 진짜 세력이 미는 거니 빳빳하게 기세 타시게!" if p_chg >= 3 else f"💀 **[비명 포착!]** 거래량이 {v_ratio:.1f}% 터지며 폭락 중일세! 성벽 함락 중이니 일단 피신하시게!"
+                v_adv = f"🔥 **[세력 진격!]** 거래량이 빳빳하게 터지며 폭등 중일세! 진짜 세력이 미는 거니 기세 타시게!" if p_chg >= 3 else f"💀 **[비명 포착!]** 거래량이 {v_ratio:.1f}% 터지며 폭락 중일세! 일단 피신하시게!"
             else:
                 v_status = f"{v_label} ({v_ratio:.1f}%)"
-                v_adv = f"🚨 **[가짜 상승 주의!]** 주가는 올랐는데 거래량은 {v_ratio:.1f}%로 빈 수레일세! 개미 꼬드기는 격이니 속지 마시게." if p_chg > 3 and v_ratio < 100 else f"✅ 현재 5일 평균 대비 거래율 {v_ratio:.1f}%로 세력의 발자국을 추적 중일세."
+                v_adv = f"🚨 **[가짜 상승 주의!]** 주가는 올랐는데 거래량은 {v_ratio:.1f}%로 빈 수레일세! 속지 마시게." if p_chg > 3 and v_ratio < 100 else f"✅ 현재 5일 평균 대비 거래율 {v_ratio:.1f}%로 세력의 발자국을 추적 중일세."
             st.markdown(f"<div class='vol-main-text'>{v_status}</div><div class='vol-sub-text'>{v_adv}</div>", unsafe_allow_html=True)
             st.markdown("</div></div>", unsafe_allow_html=True)
 
