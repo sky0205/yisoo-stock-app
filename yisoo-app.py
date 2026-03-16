@@ -111,4 +111,9 @@ if symbol:
             with i3: # Williams %R
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>🛡️ Williams %R</p><span class='ind-value'>{will_val:.1f}</span><p class='ind-diag'>● 지표 수치 <b>{will_val:.1f}</b>는 개미들의 항복 시점을 말해주네. -80 아래 심해로 잠수하며 비명소리가 들릴 때가 진짜 기회일세.</p></div>", unsafe_allow_html=True)
             with i4: # MACD
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>🛡️ MACD (추세엔진)</p><span class='ind-value'>{'상승' if m_l > s_l else '하락'}</span><p class='ind-
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>🛡️ MACD (추세엔진)</p><span class='ind-value'>{'상승' if m_l > s_l else '하락'}</span><p class='ind-diag'>● 엔진이 {'힘차게 도는 중이나' if m_l > s_l else '역회전 중이야.'} 시그널선과의 간격이 좁아지는지 부라리고 보게나. 추세의 마디가 바뀌는 지점이 맥점일세.</p></div>", unsafe_allow_html=True)
+
+    except Exception as e: st.error(f"장부를 불러올 수 없구먼 (오류: {e})")
+
+st.write("---")
+st.caption("분석가 서강윤: 2026년 실시간 장부 및 v36056 최종 양식(지표 정밀형) 적용")
