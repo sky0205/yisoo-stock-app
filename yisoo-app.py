@@ -4,6 +4,16 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 
+# 기존 제목 (대머리 탈출한 버전)
+st.title("👨‍🦳 이수할아버지의 냉정 진단기 v36056")
+
+# [실행] 여기서 글로벌 리스크를 먼저 보여줍니다!
+display_global_risk() 
+
+st.divider() # 줄 하나 빳빳하게 긋고 시작합니다.
+
+# 기존 종목 입력창
+symbol = st.text_input("📊 종목번호 또는 티커 입력", "005930")
 # 1. 화면 구성 (기존 v36056 스타일 유지)
 st.set_page_config(page_title="이수할아버지 분석기 v36056", layout="wide")
 st.markdown("""
@@ -30,6 +40,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.title("👨‍🦳 이수할아버지의 냉정 진단기 v36056")
+display_global_risk()
 symbol = st.text_input("📊 종목번호 또는 티커 입력", "005930")
 
 if symbol:
