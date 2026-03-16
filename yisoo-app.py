@@ -78,7 +78,7 @@ if symbol:
             v_status_label = "💤 거래침체" if v_ratio < 100 else "📈 거래증가"
             if v_ratio >= 30 and is_opening:
                 v_status = f"🔥 현지 시초 주가 {'폭등' if p_chg >= 3 else '폭락' if p_chg <= -3 else '급등'} ({v_ratio:.1f}%)"
-                v_adv = f"🔥 **[세력 진격!]** 기세가 빳빳하구먼!" if p_chg >= 3 else f"💀 **[비명 포착!]** 피신하시게!" if p_chg <= -3 else f"✅ 힘겨루기 중일세."
+                v_adv = f"🔥 **[세력 진격!]** 기세가 아주 빳빳하구먼!" if p_chg >= 3 else f"💀 **[비명 포착!]** 피신하시게!" if p_chg <= -3 else f"✅ 힘겨루기 중일세."
             else:
                 v_status = f"{v_status_label} ({v_ratio:.1f}%)"
                 v_adv = f"🚨 **[가짜 상승 주의!]** 빈 수레일세!" if p_chg > 3 and v_ratio < 100 else f"✅ 세력 추적 중일세."
