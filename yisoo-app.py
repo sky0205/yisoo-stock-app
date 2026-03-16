@@ -49,7 +49,7 @@ def display_global_risk():
                 
     except Exception as e:
         st.error("글로벌 지수 데이터를 불러오지 못했습니다.")
-    return us_advice
+        return us_advice
 # [재료 2] 호가창 허수 판독 함수
 def hoka_check(bid_res, ask_res):
     if bid_res > ask_res * 1.5:
