@@ -4,7 +4,7 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 
-# 1. 화면 구성 (어르신 원본 스타일 및 문구 100% 보존)
+# 1. 화면 구성 (어르신 원본 스타일 100% 보존)
 st.set_page_config(page_title="이수할아버지 분석기 v36056", layout="wide")
 st.markdown("""
     <style>
@@ -29,7 +29,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 1. 미장 분석 내용 상세 복구 (image_abc7b5.png 기반)
+# 글로벌 지수 상세 판독 (어르신 캐릭터 100% 강화)
 def display_global_risk():
     try:
         nasdaq = yf.Ticker("^IXIC").fast_info; sp500 = yf.Ticker("^GSPC").fast_info; tnx = yf.Ticker("^TNX").fast_info 
@@ -42,7 +42,7 @@ def display_global_risk():
         c2.metric("S&P 500", f"{sp500.last_price:,.0f}", f"{(sp500.last_price/sp500.previous_close-1)*100:.2f}%")
         c3.metric("미 국채 10년", f"{tnx.last_price:.2f}%", f"{t_chg:+.2f}%")
         if n_chg > 0.5: advice = f"✅ **[미장 쾌청: 진격!]** 나스닥 {n_chg:.2f}% 불을 뿜으며 유동성이 숨을 쉬구먼! 세력들이 고삐 풀었으니 빳빳하게 기세를 타시게."
-        elif n_chg < -1.0: advice = f"🚨 **[긴급 상황: 정박!]** 나스닥 {n_chg:.2f}% 급락에 비명 소리가 자자하네! 성벽 함락 위기니 무리한 진격은 금물이고 일단 보따리 싸서 소나기를 피하시게."
+        elif n_chg < -1.0: advice = f"🚨 **[긴급 상황: 정박!]** 나스닥 {n_chg:.2f}% 급락에 비명 소리가 자자하네! 성벽 함락 위기니 무리한 진격은 금물일세."
         else: advice = "🧐 **[안개 정국: 관망]** 방향성 없이 눈치싸움이 치열하구먼. 대왕 고래들 움직임 보일 때까지 자중하며 기다리시게."
         st.info(f"🧐 이수 할배의 글로벌 판독: {advice}")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -51,15 +51,16 @@ def display_global_risk():
 st.title("👴 이수할아버지의 냉정 진단기 v36056")
 display_global_risk()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "GOOGL")
 
 if symbol:
     try:
         start_date = datetime.now() - timedelta(days=365); end_date = datetime.now()
-        if symbol.isdigit(): # 국내 주식
+        is_kr = symbol.isdigit()
+        if is_kr:
             df = fdr.DataReader(symbol, start_date, end_date)
             stocks = fdr.StockListing('KRX'); name = stocks[stocks['Code'] == symbol]['Name'].values[0]; currency = "원"; fmt = ",.0f" 
-        else: # 미국 주식
+        else:
             ticker = yf.Ticker(symbol); df = ticker.history(start=start_date, end=end_date)
             name = ticker.info.get('shortName', symbol); currency = "$"; fmt = ",.2f"
         
@@ -68,11 +69,11 @@ if symbol:
             year_high = float(df['Close'].max()); year_low = float(df['Close'].min())
             peak_p = float(df['Close'].iloc[-20:].max()); defense_line = peak_p * 0.93
 
+            # [수정] 현재 주가 제목 추가
             st.markdown(f"""<div class='stock-header'><p style='font-size:32px; color:#1565C0; margin-bottom:5px;'>📈 현재 주가 진황</p>
                 <p style='font-size:35px; color:#455A64; margin:0;'>{name} ({symbol})</p>
                 <p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt)} {currency} (전일비: {p-prev_p:+.2f})</p></div>""", unsafe_allow_html=True)
             
-            # 2. 거래현황 분석 내용 원본 100% 복구
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean(); v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
             price_up = p > prev_p
             if v_ratio < 100: v_status = "💤 거래침체"; v_advice = "🚨 <b>가짜 상승!</b> 거래량 없이 오르는 건 빈집에 바람 드는 격이니 절대 속지 마십시오." if price_up else "⏳ <b>눈치보기 중.</b> 파는 사람도 없으니 바닥 확인될 때까지 섣불리 물타지 마십시오."
@@ -80,7 +81,7 @@ if symbol:
             else: v_status = "🔥 거래폭발"; v_advice = "🚀 <b>세력 진격!</b> 큰손들이 문 부수고 들어왔습니다. 장대양봉이면 진격 수위를 높이십시오." if price_up else "💣 <b>투매 발생!</b> 아비규환이니 지하실 열리기 전에 일단 보따리 싸서 대피하십시오."
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_advice}</div></div>", unsafe_allow_html=True)
 
-            # 지표 계산
+            # 지수 계산
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(window=14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
             rsi_val = 100 - (100 / (1 + (gain.iloc[-1] / (loss.iloc[-1] + 1e-10))))
             df['MA20'] = df['Close'].rolling(window=20).mean(); df['Std'] = df['Close'].rolling(window=20).std()
@@ -88,22 +89,28 @@ if symbol:
             m_l = df['Close'].ewm(span=12).mean().iloc[-1] - df['Close'].ewm(span=26).mean().iloc[-1]; s_l = (df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()).ewm(span=9).mean().iloc[-1]
             trend_desc = "정배열 상승 가도" if (m_l > s_l and p > mid_line) else "역배열 하락 늪" if (m_l < s_l and p < mid_line) else "횡보 및 안개 정국"
 
-            # 3. 실전 필살 조언 로직 수선 (image_ab5a41.png 반영)
+            # [수정] 볼린저 밴드 돌파 상태에 따른 필살 조언 로직
             if p >= up_b: adv_text = "💰 **[과열 경보]** 성벽 밖으로 튀어나갔네! 탐욕 버리고 익절 수익을 빳빳하게 챙기시게."
             elif p <= low_b: adv_text = "🛡️ **[바닥 포착]** 하단 성벽 근처일세! 겁내지 말고 분할 매수 보따리를 푸시게."
             else: adv_text = "🎣 낚싯대만 던져두고 지표 바닥권을 기다리십시오."
+
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
                 <div class='trend-item'>● <b>추세 진단:</b> 현재 장부는 <span style='color:#D32F2F;'>{trend_desc}</span> 상태로 판독되구먼요.</div>
                 <div class='trend-item'>● <b>수비 상태:</b> 성벽({format(defense_line, fmt)} {currency}) {'함락! 후퇴하십시오.' if p < defense_line else '사수 중입니다.'}</div>
                 <div class='trend-item'>● <b>필살 조언:</b> <span class='advice-highlight'>{adv_text}</span></div></div>""", unsafe_allow_html=True)
 
-            # 가격 카드
+            # 가격 카드 및 신호등
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt)}</p></div>", unsafe_allow_html=True)
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽 (방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt)}</p></div>", unsafe_allow_html=True)
 
-            # 4. 지수 상세 설명 원본 100% 복구 (image_abbc54.png 기반)
+            if p >= up_b or rsi_val >= 65: sig, col = "🟢 매도권 진입", "#388E3C"
+            elif p <= low_b or rsi_val <= 35: sig, col = "🔴 매수권 진입", "#D32F2F"
+            else: sig, col = "🟡 관망 및 대기", "#FBC02D"
+            st.markdown(f"<div class='signal-box' style='background-color: {col};'><span class='signal-text'>{sig}</span></div>", unsafe_allow_html=True)
+
+            # [복구] 4대 지수 훈수 원본 100%
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
             with i1: # Bollinger
