@@ -84,7 +84,6 @@ if symbol:
         v_status = f"{v_label} ({v_ratio:.1f}%)"
         v_adv = "현재 5일 평균 대비 거래량을 부라리고 보며 세력의 발자국을 추적 중일세."
 
-        # 볼린저 및 윌리엄 상세 설명 (어르신의 매서운 눈미 반영!)
         if p >= up_b * 0.98: b_adv = "🔥 성벽(상단선) 돌파 중! 기세가 하늘을 찌르는구먼."
         elif p >= mid_b: b_adv = "📈 중앙선 위에서 안착! 성벽을 향해 진격 중일세."
         else: b_adv = "⚖️ 중앙선 아래서 빌빌대고 있구먼. 성벽 사수 확인하시게."
@@ -93,7 +92,6 @@ if symbol:
         elif w_r >= -50: w_adv = "🚀 중간 지대 돌파! 바닥 탈출해서 기운차게 달리는 중일세."
         else: w_adv = "⚓ 바닥권이거나 아직 힘이 부족하구먼. 갈피를 잡는지 보시게."
 
-        # 신호등 최종 판독
         if p >= up_b or rsi_val >= 60: sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"🔴 {b_adv} {w_adv}"
         elif p <= low_b or rsi_val <= 35: sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"🔵 바닥권일세. 겁먹지 말고 보따리 푸시게."
         else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"⚪ {b_adv} {w_adv}"
@@ -105,19 +103,15 @@ if symbol:
         with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
         with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-        st.divider() # 이제 줄 맞춤이 딱 맞을 게야요!
-            i1, i2, i3, i4 = st.columns(4)
-            with i1: # Bollinger
-                bb_diag = f"● **[비상: 상단 돌파!]** 하늘 찌르는구먼! 탐욕 버리고 수확(익절) 준비 하시게." if p >= up_b else f"● **[비상: 하단 돌파!]** 바닥권일세! 지지받고 고개 들면 진짜 진격 기회일세." if p <= low_b else f"● 중앙선 아래서 빌빌대고 있구먼. 성벽 사수 확인 전까지는 낚싯대만 던지시게."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
-            with i2: # RSI (60 이상 불지옥 반영)
-                r_diag = f"● 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱일세! 천장에 다 왔으니 익절가 빳빳하게 잡으시게." if rsi_val >= 60 else f"● 지수 {rsi_val:.2f}로 **🧊 냉골** 상태일세! 남들 무서울 때 우리는 냉정하게 바닥을 보시게." if rsi_val <= 35 else f"● 지수 {rsi_val:.2f}로 탐욕과 공포 사이 중립 기어 넣고 눈치싸움 중일세. 지표 끝단을 기다리시게."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
-            with i3: # Williams
-                w_diag = f"● 지수 {will_val:.2f}로 **🏳️ 개미 항복** 구간일세! 보따리 푸시게. 여기서 고개 들면 무조건 진격일세!" if will_val < -80 else f"● 지수 {will_val:.2f}로 **🧨 천장 광기** 구간일세! 언제 비수 꽂힐지 모르니 매섭게 보시게." if will_val > -20 else f"● 현재 중간지대일세. 바닥인지 천장인지 갈피를 못 잡고 있구먼."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
-            with i4: # MACD
-                m_diag = "● 엔진이 정회전 중일세! 기세 붙었으니 성벽 사수 여부를 보시게." if m_l > s_l else f"● 엔진이 **역회전** 중이네! 거꾸로 도는 차에 올라타면 안 되는 법일세. 함부로 키 잡지 마시게."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
+        st.divider()
 
+        i1, i2, i3, i4 = st.columns(4)
+        with i1: 
+            st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p>{b_adv}</p></div>", unsafe_allow_html=True)
+        with i2: 
+            st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p>지수 {rsi_val:.2f}로 눈치싸움 중일세.</p></div>", unsafe_allow_html=True)
+        with i3: 
+            st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p>{w_adv}</p></div>", unsafe_allow_html=True)
+        with i4: 
+            st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p>엔진 가동 상태를 보시게.</p></div>", unsafe_allow_html=True)
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
