@@ -127,12 +127,18 @@ if symbol:
             with i1:
                 bb_diag = f"● **[상단 돌파!]** 탐욕 버리고 익절 준비 하시게." if p >= up_b else f"● **[하단 돌파!]** 바닥 지지 확인하고 보따리 싸시게." if p <= low_b else f"● 중앙선 근처서 눈치 보는 중일세. 성벽 사수 여부를 보시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
-            with i2:
-                r_diag = f"● 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱일세! 익절가 빳빳하게 잡으시게." if rsi_val >= 60 else f"● 지수 {rsi_val:.2f}로 **🧊 냉골** 상태일세! 냉정하게 바닥을 보시게." if rsi_val <= 35 else f"● 지수 {rsi_val:.2f}로 중립 기어 박고 눈치싸움 중일세."
+            with i2: # RSI (온도) - 자네의 예리한 혜안을 담았네!
+                if rsi_val >= 60:
+                    r_diag = f"● 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱일세! 익절가 빳빳하게 잡고 도망갈 준비 하시게."
+                elif 35 <= rsi_val <= 42:
+                    # 자네가 지적한 바로 그 '냉골 문턱' 구간일세!
+                    r_diag = f"● 지수 {rsi_val:.2f}로 **🧊 냉골 문턱**에서 덜덜 떠는 중일세! 온기가 전혀 없으니 진격은 꿈도 꾸지 마시게."
+                elif rsi_val < 35:
+                    r_diag = f"● 지수 {rsi_val:.2f}로 **💀 완전 냉골** 상태일세! 남들 무서울 때 우리는 냉정하게 바닥을 보시게."
+                else:
+                    r_diag = f"● 지수 {rsi_val:.2f}로 어정쩡한 온도네. 세력의 눈치싸움이 치열구먼."
+
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
-            # 133번 줄부터 아래 내용을 그대로 복사해서 넣으시게
-            with i3: # 윌리엄 기둥 다시 세웠네!
-                if will_val <= -80:
                     w_diag = f"● 지수 {will_val:.2f}로 **🏳️ 개미 항복** 구간일세! 바닥 찍었으니 고개 들면 무조건 진격일세."
                 elif will_val <= -60:
                     w_diag = f"● 지수 {will_val:.2f}로 **📉 하단 진흙탕**에서 헤매는 중일세! 기어 나올 힘이 없으니 함부로 보따리 풀지 마시게."
