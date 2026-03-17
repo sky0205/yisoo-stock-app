@@ -51,7 +51,7 @@ display_global_risk(); st.divider()
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
 if symbol:
-    start_date = datetime.now() - timedelta(days=500)
+   start_date = datetime.now() - timedelta(days=500)
     end_date = datetime.now()
     is_kr = symbol.isdigit()
 
@@ -97,18 +97,11 @@ if symbol:
         else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"⚪ {b_adv} {w_adv}"
         
         st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white;'>{s_adv}</p></div>", unsafe_allow_html=True)
-    else:
-        w_adv = "⚓ 바닥권이거나 아직 힘이 부족하구먼. 갈피를 잡는지 보시게."
 
-    # 101번 줄 근처: 신호등 최종 판독 (에러의 근원지 수선!)
-    if p >= up_b or rsi_val >= 60:
-        sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"🔴 {b_adv} {w_adv}"
-    elif p <= low_b or rsi_val <= 35:
-        sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"🔵 바닥권일세. 겁먹지 말고 보따리 푸시게."
-    else:
-        sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"⚪ {b_adv} {w_adv}"
-            with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
-
+        c1, c2, c3 = st.columns(3)
+        with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+        with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+        with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
             # 필살 대응 전략 및 최종 결론 (원본 보존)
             adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
