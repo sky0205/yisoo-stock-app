@@ -58,15 +58,18 @@ if symbol:
     if is_kr:
         now_local = datetime.now(pytz.timezone('Asia/Seoul')); currency = "원"; fmt_p = ",.0f"
         df = fdr.DataReader(symbol, start_date, end_date); stocks = fdr.StockListing('KRX')
+        # 종목명 찾기 (복구 완료!)
+        stock_name = stocks[stocks['Code'] == symbol]['Name'].values[0] if symbol in stocks['Code'].values else symbol
     else:
         now_local = datetime.now(pytz.timezone('US/Eastern')); ticker = yf.Ticker(symbol); df = ticker.history(start=start_date)
+        stock_name = symbol
 
     if not df.empty:
-        p = float(df['Close'].iloc[-1]); prev_p = float(df['Close'].iloc[-2]); p_chg = ((p / prev_p) - 1) * 100
+        p = float(df['Close'].iloc[-1]); prev_p = float(df['Close'].iloc[-2]); p_diff = p - prev_p; p_chg = (p_diff / prev_p) * 100
         v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean(); v_ratio = (v_curr / v_avg5) * 100
         peak_20 = float(df['Close'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
 
-        # 지표 계산
+        # 기술 지표 판독
         delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
         rsi_val = 100 - (100 / (1 + (gain.iloc[-1] / (loss.iloc[-1] + 1e-10))))
         h14 = df['High'].rolling(14).max().iloc[-1]; l14 = df['Low'].rolling(14).min().iloc[-1]
@@ -74,9 +77,15 @@ if symbol:
         ma20 = df['Close'].rolling(20).mean(); std20 = df['Close'].rolling(20).std()
         up_b = ma20.iloc[-1] + (std20.iloc[-1] * 2); mid_b = ma20.iloc[-1]; low_b = ma20.iloc[-1] - (std20.iloc[-1] * 2)
 
-        # 1. 현재 주가 현황
-        st.markdown("### 📊 현재주가현황")
-        st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0;'>현재가: {format(p, fmt_p)}{currency} ({p_chg:+.2f}%)</p></div>", unsafe_allow_html=True)
+        # 1. 현재 주가 현황 (종목명, 전일비 복구!)
+        st.markdown(f"### 📊 {stock_name} 현재주가현황")
+        diff_color = "#D32F2F" if p_diff > 0 else "#1565C0" if p_diff < 0 else "#757575"
+        st.markdown(f"""
+        <div class='stock-header'>
+            <p style='font-size:35px; color:#1565C0;'>현재가: {format(p, fmt_p)}{currency}</p>
+            <p style='font-size:20px; color:{diff_color};'>전일대비: {format(p_diff, fmt_p)}{currency} ({p_chg:+.2f}%)</p>
+        </div>
+        """, unsafe_allow_html=True)
 
         # 2. 매수매도 성벽 사수선
         st.markdown("### 🏰 매수매도 성벽 사수선")
@@ -87,23 +96,19 @@ if symbol:
 
         st.divider()
 
-        # 3. 실전 필승 대응 전략 및 지표 판독
+        # 3. 실전 필승 대응 전략 및 거래량 전황 (복구!)
         st.markdown("### 🎯 실전 필승 대응 전략")
-        
-        # 거래량 전황 복구
         v_label = "💤 거래침체" if v_ratio < 100 else "📈 거래증가" if v_ratio < 200 else "🔥 거래폭발"
-        v_adv = f"5일 평균 대비 **{v_ratio:.1f}%** 수준일세. " + ("세력이 힘을 아끼고 있구먼." if v_ratio < 100 else "누군가 물량을 집어삼키고 있네!" if v_ratio > 200 else "적당히 활기가 돌고 있구먼.")
+        v_adv = f"현재 거래량은 5일 평균 대비 **{v_ratio:.1f}%** 수준일세. " + ("세력이 관망 중이니 서두르지 마시게." if v_ratio < 100 else "누군가 물량을 강하게 낚아채는 중이구먼!" if v_ratio > 200 else "시장에 활기가 도니 흐름을 타 보시게.")
 
-        # 볼린저/윌리엄 판독 복구
-        if p >= up_b * 0.98: b_adv = "🔥 성벽(상단선) 돌파 중! 기세가 하늘을 찌르니 익절 보따리를 챙기시게."
-        elif p >= mid_b: b_adv = "📈 중앙선 위에서 안착! 성벽을 향해 진격 중이니 홀딩이 상책일세."
-        else: b_adv = "⚖️ 중앙선 아래서 빌빌대고 있구먼. 성벽 사수 여부를 확인하고 관망하시게."
+        if p >= up_b * 0.98: b_adv = "🔥 성벽(상단선) 돌파 중! 기세가 하늘을 찌르니 수확 보따리를 챙길 때일세."
+        elif p >= mid_b: b_adv = "📈 중앙선 위에서 안착! 성벽을 향해 진격 중이니 낚싯대를 꽉 붙잡으시게."
+        else: b_adv = "⚖️ 중앙선 아래서 빌빌대고 있구먼. 성벽 사수 여부를 확인하고 관망하는 게 상책일세."
 
-        if w_r >= -20: w_adv = "🚩 천장 문고리 잡았네! 과열 구간이니 욕심 버리고 수확 준비 하시게."
+        if w_r >= -20: w_adv = "🚩 천장 문고리 잡았네! 과열 구간이니 욕심 버리고 내려올 준비 하시게."
         elif w_r >= -50: w_adv = "🚀 중간 지대 돌파! 바닥 탈출해서 천장으로 기운차게 달리는 중일세."
-        else: w_adv = "⚓ 바닥권이거나 아직 힘이 부족하구먼. 갈피를 잡는지 낚싯대만 던져두시게."
+        else: w_adv = "⚓ 바닥권이거나 아직 힘이 부족하구먼. 갈피를 잡는지 보며 기다리시게."
 
-        # 신호등 결론
         if p >= up_b or rsi_val >= 60: sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"🔴 {b_adv} {w_adv}"
         elif p <= low_b or rsi_val <= 35: sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"🔵 바닥권일세. 겁먹지 말고 보따리 푸시게."
         else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"⚪ {b_adv} {w_adv}"
@@ -112,12 +117,12 @@ if symbol:
 
         st.divider()
 
-        # 4. 상세 지표 판독 (단순 설명에서 상세 설명으로 복구!)
+        # 4. 상세 지표 판독 (상세 설명 복구!)
         st.markdown("### 📉 지표별 정밀 전황 보고")
         i1, i2, i3, i4 = st.columns(4)
         with i1: st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p>{b_adv}</p></div>", unsafe_allow_html=True)
         with i2: 
-            rsi_desc = "과열 구간일세. 조심하시게!" if rsi_val > 70 else "바닥권이니 기회를 보시게." if rsi_val < 30 else "눈치싸움 중인 온도일세."
+            rsi_desc = "과열 구간이니 상단을 부라리고 보시게." if rsi_val > 70 else "바닥권이니 반등의 기회를 노려보시게." if rsi_val < 30 else "미지근한 온도일세. 눈치싸움이 치열하구먼."
             st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p>현재 {rsi_val:.1f}도. {rsi_desc}</p></div>", unsafe_allow_html=True)
         with i3: st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p>{w_adv}</p></div>", unsafe_allow_html=True)
         with i4: st.markdown(f"<div class='ind-box'><p class='ind-title'>거래량 (수급)</p><p>{v_label}: {v_adv}</p></div>", unsafe_allow_html=True)
