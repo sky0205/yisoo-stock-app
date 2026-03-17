@@ -84,6 +84,7 @@ if symbol:
         v_status = f"{v_label} ({v_ratio:.1f}%)"
         v_adv = "현재 5일 평균 대비 거래량을 부라리고 보며 세력의 발자국을 추적 중일세."
 
+        # 볼린저 및 윌리엄 상세 설명 (어르신의 매서운 눈미 반영!)
         if p >= up_b * 0.98: b_adv = "🔥 성벽(상단선) 돌파 중! 기세가 하늘을 찌르는구먼."
         elif p >= mid_b: b_adv = "📈 중앙선 위에서 안착! 성벽을 향해 진격 중일세."
         else: b_adv = "⚖️ 중앙선 아래서 빌빌대고 있구먼. 성벽 사수 확인하시게."
@@ -92,6 +93,7 @@ if symbol:
         elif w_r >= -50: w_adv = "🚀 중간 지대 돌파! 바닥 탈출해서 기운차게 달리는 중일세."
         else: w_adv = "⚓ 바닥권이거나 아직 힘이 부족하구먼. 갈피를 잡는지 보시게."
 
+        # 신호등 최종 판독
         if p >= up_b or rsi_val >= 60: sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"🔴 {b_adv} {w_adv}"
         elif p <= low_b or rsi_val <= 35: sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"🔵 바닥권일세. 겁먹지 말고 보따리 푸시게."
         else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"⚪ {b_adv} {w_adv}"
@@ -102,12 +104,6 @@ if symbol:
         with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
         with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
         with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
-            # 필살 대응 전략 및 최종 결론 (원본 보존)
-            adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
-            adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
-            adv3 = f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네! 절대 속지 마시게!" if m_l < s_l else "3. **엔진 정회전:** 엔진 시동 걸렸구먼!"
-            if p >= up_b or rsi_val >= 60: final_adv = "💰 **[최종 결론]** 탐욕의 끝자락일세. **분할 매도**하여 수익을 빳빳하게 챙기시게!"
-            elif p <= low_b or rsi_val <= 35: final_adv = "🛡️ **[최종 결론]** 공포가 극에 달한 바닥권일세. **분할 매수**로 보따리를 푸시게!"
             elif p < defense_line: final_adv = "🧐 **[최종 결론]** 성벽이 위태롭네. 사수 확인 전까지는 **관망하며 기다리시게!**"
             else: final_adv = "📈 **[최종 결론]** 추세 살아있구먼. 성벽 사수 확인하며 **보유(홀딩)**하시게!"
 
