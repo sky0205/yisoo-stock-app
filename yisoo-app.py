@@ -51,7 +51,7 @@ display_global_risk(); st.divider()
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
 if symbol:
-   start_date = datetime.now() - timedelta(days=500)
+    start_date = datetime.now() - timedelta(days=500)
     end_date = datetime.now()
     is_kr = symbol.isdigit()
 
