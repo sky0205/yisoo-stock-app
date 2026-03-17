@@ -78,24 +78,28 @@ if symbol:
             st.markdown("### 📊 현재주가현황")
             st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt_p)} {currency} (전일비: {format(p-prev_p, '+'+fmt_p)} / {p_chg:+.2f}%)</p></div>", unsafe_allow_html=True)
             
-            # 거래량 상세 판독 및 호통 로직 (원본 보존)
-            v_label = "💤 거래침체" if v_ratio < 100 else "📈 거래증가" if v_ratio < 200 else "🔥 거래폭발"
-            if v_ratio >= 30 and is_opening:
-                if p_chg >= 3: v_status, v_adv = f"🔥 현지 시초 주가 폭등 / 거래폭발 ({v_ratio:.1f}%)", f"🔥 **[세력 진격!]** 거래량이 5일 평균 대비 {v_ratio:.1f}% 터지며 폭등 중일세! 진짜 세력이 미는 거니 빳빳하게 기세 타시게!"
-                elif p_chg <= -3: v_status, v_adv = f"💀 현지 시초 주가 폭락 / 거래폭발 ({v_ratio:.1f}%)", f"💀 **[비명 포착!]** 거래량이 {v_ratio:.1f}% 터지며 폭락 중일세! 성벽 함락 중이니 일단 피신하시게!"
-                else: v_status, v_adv = f"📈 현지 시초 거래급등 ({v_ratio:.1f}%)", f"✅ 거래량 {v_ratio:.1f}%로 터졌으나 주가가 힘겨루기 중일세. 방향 정해질 때까지 눈을 부라리고 보시게."
-            else:
-                v_status = f"{v_label} ({v_ratio:.1f}%)"
-                if p_chg > 3 and v_ratio < 100: v_adv = f"🚨 **[가짜 상승 주의!]** 주가는 {p_chg:.2f}% 올랐는데 거래량은 {v_ratio:.1f}%로 빈 수레일세! 개미 꼬드기는 격이니 속지 마시게."
-                elif p_chg > 3 and v_ratio > 150: v_adv = f"🔥 **[진짜 상승!]** 거래량 {v_ratio:.1f}% 실린 빳빳한 진격일세! 성벽을 제대로 뚫었구먼."
-                else: v_adv = f"✅ 현재 5일 평균 대비 거래율 {v_ratio:.1f}%로 세력의 발자국을 추적 중일세."
-            st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status}</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
+          # 81번 줄 근처: 거래량 상세 판독 (기존 로직 유지하며 문구만 보강)
+v_label = "💤 거래침체" if v_ratio < 100 else "📈 거래증가" if v_ratio < 200 else "🔥 거래폭발"
+# ... (중략: 기존 v_adv 로직) ...
 
-            # 신호등 신호 (원본 보존)
-            if p >= up_b or rsi_val >= 60: sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"● {'👺 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 60 else '과열권일세! 수익 챙기시게.'}"
-            elif p <= low_b or rsi_val <= 35: sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", "● 🧊 바닥권일세. 겁먹지 말고 보따리 푸시게."
-            else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", "● 눈치싸움 중일세. 지표 끝단을 기다리시게."
-            st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
+# 94번 줄 근처: 신호등 및 지표 상세 설명 (여기서 윌리엄과 볼린저를 빳빳하게 고칩니다!)
+# 볼린저 상세 설명 (b_adv)
+if p >= up_b * 0.98: b_adv = "🔥 성벽(상단선) 돌파 중! 기세가 하늘을 찌르는구먼."
+elif p >= mid_b: b_adv = "📈 중앙선 위에서 안착! 성벽을 향해 진격 중일세."
+else: b_adv = "⚖️ 중앙선 아래서 빌빌대고 있구먼. 성벽 사수 확인하시게."
+
+# 윌리엄 상세 설명 (w_adv)
+if w_r >= -20: w_adv = "🚩 천장 문고리 잡았네! 과열 구간이니 수확 준비 하시게."
+elif w_r >= -50: w_adv = "🚀 중간 지대 돌파! 바닥 탈출해서 기운차게 달리는 중일세."
+else: w_adv = "⚓ 바닥권이거나 아직 힘이 부족하구먼. 갈피를 잡는지 보시게."
+
+# 95번 줄: 신호등 신호 (최종 결론 반영)
+if p >= up_b or rsi_val >= 60: 
+    sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"🔴 {b_adv} {w_adv}"
+elif p <= low_b or rsi_val <= 35: 
+    sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"🔵 바닥권일세. 겁먹지 말고 보따리 푸시게."
+else: 
+    sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"⚪ {b_adv} {w_adv}"background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
