@@ -130,9 +130,16 @@ if symbol:
             with i2:
                 r_diag = f"● 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱일세! 익절가 빳빳하게 잡으시게." if rsi_val >= 60 else f"● 지수 {rsi_val:.2f}로 **🧊 냉골** 상태일세! 냉정하게 바닥을 보시게." if rsi_val <= 35 else f"● 지수 {rsi_val:.2f}로 중립 기어 박고 눈치싸움 중일세."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
-            with i3:
-                w_diag = f"● 지수 {will_val:.2f}로 **🏳️ 개미 항복** 구간일세! 고개 들면 무조건 진격일세." if will_val < -80 else f"● 지수 {will_val:.2f}로 **🧨 천장 광기** 구간일세! 언제 비수 꽂힐지 모르네." if will_val > -20 else f"● 중간지대서 갈피를 못 잡고 있구먼."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
+            # 134번 줄부터 이 내용으로 갈아치우시게!
+        if will_val <= -80:
+            w_diag = f"● 지수 {will_val:.2f}로 **🏳️ 개미 항복** 구간일세! 바닥 찍었으니 고개 들면 무조건 진격일세."
+        elif will_val <= -60:
+            # 자네가 지적한 바로 그 '하단 진흙탕' 구간일세
+            w_diag = f"● 지수 {will_val:.2f}로 **📉 하단 진흙탕**에서 헤매는 중일세! 기어 나올 힘이 없으니 함부로 보따리 풀지 마시게."
+        elif will_val >= -20:
+            w_diag = f"● 지수 {will_val:.2f}로 **🧨 천장 광기** 구간일세! 언제 비수 꽂힐지 모르니 매섭게 보시게."
+        else:
+            w_diag = f"● 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움이 치열구먼."
             with i4:
                 m_diag = f"● MACD {m_l:.2f} / Signal {s_l:.2f}로 **{'정회전' if m_l > s_l else '역회전'}** 중일세! {'기세 붙었으니 진격!' if m_l > s_l else '엔진 거꾸로 도니 함부로 타지 마시게.'}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
