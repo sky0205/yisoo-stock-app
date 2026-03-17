@@ -91,18 +91,28 @@ if symbol:
         b_adv = "⚖️ 중앙선 아래서 빌빌대고 있구먼. 성벽 사수 확인하시게."
 
     # 윌리엄 상세 설명 (w_adv)
+    # 94번 줄 근처: 볼린저 및 윌리엄 상세 설명
+    if p >= up_b * 0.98:
+        b_adv = "🔥 성벽(상단선) 돌파 중! 기세가 하늘을 찌르는구먼."
+    elif p >= mid_b:
+        b_adv = "📈 중앙선 위에서 안착! 성벽을 향해 진격 중일세."
+    else:
+        b_adv = "⚖️ 중앙선 아래서 빌빌대고 있구먼. 성벽 사수 확인하시게."
+
     if w_r >= -20:
         w_adv = "🚩 천장 문고리 잡았네! 과열 구간이니 수확 준비 하시게."
     elif w_r >= -50:
         w_adv = "🚀 중간 지대 돌파! 바닥 탈출해서 기운차게 달리는 중일세."
     else:
         w_adv = "⚓ 바닥권이거나 아직 힘이 부족하구먼. 갈피를 잡는지 보시게."
-else: 
-    sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"⚪ {b_adv} {w_adv}"background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
-            c1, c2, c3 = st.columns(3)
-            with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
-            with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+    # 101번 줄 근처: 신호등 최종 판독 (에러의 근원지 수선!)
+    if p >= up_b or rsi_val >= 60:
+        sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"🔴 {b_adv} {w_adv}"
+    elif p <= low_b or rsi_val <= 35:
+        sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"🔵 바닥권일세. 겁먹지 말고 보따리 푸시게."
+    else:
+        sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"⚪ {b_adv} {w_adv}"
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
             # 필살 대응 전략 및 최종 결론 (원본 보존)
