@@ -65,11 +65,12 @@ if symbol:
         stock_name = symbol
 
     if not df.empty:
+        # 현재가 및 전일비 계산 (복구 완료!)
         p = float(df['Close'].iloc[-1]); prev_p = float(df['Close'].iloc[-2]); p_diff = p - prev_p; p_chg = (p_diff / prev_p) * 100
         v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean(); v_ratio = (v_curr / v_avg5) * 100
         peak_20 = float(df['Close'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
 
-        # 기술 지표 판독
+        # 기술 지표 계산
         delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
         rsi_val = 100 - (100 / (1 + (gain.iloc[-1] / (loss.iloc[-1] + 1e-10))))
         h14 = df['High'].rolling(14).max().iloc[-1]; l14 = df['Low'].rolling(14).min().iloc[-1]
@@ -77,7 +78,7 @@ if symbol:
         ma20 = df['Close'].rolling(20).mean(); std20 = df['Close'].rolling(20).std()
         up_b = ma20.iloc[-1] + (std20.iloc[-1] * 2); mid_b = ma20.iloc[-1]; low_b = ma20.iloc[-1] - (std20.iloc[-1] * 2)
 
-        # 1. 현재 주가 현황 (종목명, 전일비 복구!)
+        # 1. 현재 주가 현황 (종목명, 전일비 빳빳하게 복구!)
         st.markdown(f"### 📊 {stock_name} 현재주가현황")
         diff_color = "#D32F2F" if p_diff > 0 else "#1565C0" if p_diff < 0 else "#757575"
         st.markdown(f"""
@@ -87,7 +88,7 @@ if symbol:
         </div>
         """, unsafe_allow_html=True)
 
-        # 2. 매수매도 성벽 사수선
+        # 2. 매수매도 성벽 사수선 (제목 복구!)
         st.markdown("### 🏰 매수매도 성벽 사수선")
         c1, c2, c3 = st.columns(3)
         with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
@@ -96,7 +97,7 @@ if symbol:
 
         st.divider()
 
-        # 3. 실전 필승 대응 전략 및 거래량 전황 (복구!)
+        # 3. 실전 필승 대응 전략 (상세 문구 복구!)
         st.markdown("### 🎯 실전 필승 대응 전략")
         v_label = "💤 거래침체" if v_ratio < 100 else "📈 거래증가" if v_ratio < 200 else "🔥 거래폭발"
         v_adv = f"현재 거래량은 5일 평균 대비 **{v_ratio:.1f}%** 수준일세. " + ("세력이 관망 중이니 서두르지 마시게." if v_ratio < 100 else "누군가 물량을 강하게 낚아채는 중이구먼!" if v_ratio > 200 else "시장에 활기가 도니 흐름을 타 보시게.")
@@ -117,7 +118,7 @@ if symbol:
 
         st.divider()
 
-        # 4. 상세 지표 판독 (상세 설명 복구!)
+        # 4. 상세 지표 판독 (RSI/거래량 상세 설명 복구!)
         st.markdown("### 📉 지표별 정밀 전황 보고")
         i1, i2, i3, i4 = st.columns(4)
         with i1: st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p>{b_adv}</p></div>", unsafe_allow_html=True)
