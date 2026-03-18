@@ -212,4 +212,4 @@ if symbol:
    
     
             except Exception as e:
-                    st.error(f"장부 기입 중 복병(에러) 발생: {e}")
+                st.error(f"장부 기입 중 복병(에러) 발생: {e}")
