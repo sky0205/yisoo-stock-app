@@ -203,13 +203,16 @@ if symbol:
             st.warning("🚨 **[비상! 지표의 배신]** 주가 오르나 지표 식었네. '불 트랩' 조심하시게.")
         elif w_momentum > 10:
             st.info("🔥 **[진격! 기세 폭발]** 윌리엄 시그널 뚫고 천정 돌진 중이니 홀딩하시게.")
-        else:
+        else: # 206번 줄: 성벽 사수 여부에 따른 최종 전략
+            # MACD(엔진) 상태를 여기서 한 번 더 변수로 정의하시게
+            m_status = "정회전" if m_l > s_l else "역회전"
+            
             if p > mid:
-                # {stock_name} 대신 {ticker}를 써보시게. (만약 ticker도 에러나면 그냥 '본 종목'이라고 적으시게)
-                strategy_msg = f"📈 현재 {ticker} 전황은 안정적이네. 성벽 사수하시게."
+                # {stock_name} 에러를 피하기 위해 문구를 담백하게 고쳤네
+                strategy_msg = f"📈 **[안정적 진격]** 현재 성벽 사수 중이며, 엔진(MACD)은 {m_status} 상태일세. 냉정하게 지켜보시게."
                 st.success(strategy_msg)
             else:
-                strategy_msg = f"📉 성문이 함락된 상태네. 자숙하시게."
+                strategy_msg = f"📉 **[성문 함락]** 성벽 밑으로 가라앉았고 엔진은 {m_status}네. 칼 거두고 자숙이 상책일세."
                 st.error(strategy_msg)
 
     # --- 213번 줄: except는 try와 세로줄을 맞춰야 하네! ---
