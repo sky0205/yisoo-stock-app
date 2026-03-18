@@ -169,7 +169,7 @@ if symbol:
                 if p > mid:
                     m_color = "orange" if m_l < s_l else "red"
                     m_status = "역회전폭 급감" if m_l < s_l else "정회전"
-                    m_diag = "• 엔진 **역회전폭 급감** 중일세! 주가가 성문 부쉈으니 엔진도 따라 도는 중이니 기세 타시게." if m_l < s_l else "• 엔진 **정회전** 진입! 기세 제대로 붙었으니 천정(21.8만원)까지 홀딩하시게."
+                    m_diag = f"• 엔진 **정회전** 진입! 기세 제대로 붙었으니 천정({up_b:,.0f}{currency})까지 홀딩하시게."
                 else:
                     m_color = "red" if m_l > s_l else "blue"
                     m_status = "정회전" if m_l > s_l else "역회전"
