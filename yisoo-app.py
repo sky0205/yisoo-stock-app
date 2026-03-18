@@ -210,5 +210,5 @@ if symbol:
                     strategy_msg = f"📉 성문이 함락된 상태네. {mid:,.0f}{currency} 성벽 수복 전까지는 자숙하시게."
                     st.error(strategy_msg)
 
-            except Exception as e:
-                st.error(f"장부 기입 중 복병(에러) 발생: {e}")
+        except Exception as e:
+            st.error(f"장부 기입 중 복병(에러) 발생: {e}")
