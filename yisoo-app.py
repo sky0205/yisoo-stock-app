@@ -174,7 +174,7 @@ if symbol:
            # [154번 줄] 여기서부터 파일 끝까지 아래 내용으로 덮어쓰시게나!
             with i4: # MACD (엔진) 상세 진단
             m_diff = m_l - s_l
-            m_diff_prev = m_prev_l - s_prev_l # 이제 에러 안 날 걸세!
+            m_diff_prev = m_prev_l - s_prev_l # 이제 상단에 정의했으니 에러 안 나네!
 
             if m_l > s_l:
                 m_status = "정회전"
@@ -186,7 +186,7 @@ if symbol:
                 else:
                     m_diag = "• 엔진 **역회전** 심화 중! 아직 차에 타기엔 시기상조니 자숙하며 기다리시게."
             
-            # 이 마크다운이 지수 칸을 다시 화면에 띄워주네
+            # 이 마크다운이 지수 칸을 다시 화면에 빳빳하게 띄워주네
             st.markdown(f"""
                 <div class='ind-box'>
                     <p class='ind-title'>MACD (엔진)</p>
