@@ -150,25 +150,4 @@ if symbol:
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
             ## 151번 줄 근처: 여기서부터 파일 맨 끝까지 싹 비우고 넣으시게!
-            # 153번 줄부터 164번 줄까지 싹 비우고 넣으시게!
-            with i4: # MACD (엔진) 상세 진단
-                m_color = "orange" if m_l > s_l or abs(m_l - s_l) < 500 else "red" # 폭이 줄어들면 오렌지색!
-                m_diag = "• 엔진 **역회전폭 급감** 중일세! 주가가 성문 부수니 엔진도 따라 도는 중이니 기세 타시게."
-    # (이하 st.markdown 부분은 기존 양식 유지하되 m_diag만 갈아끼우시게)
-
-            # --- 윌리엄 진단 (중복 방지를 위해 울타리 밖에서 딱 한 번만!) ---
-            if will_val <= -80:
-                w_diag = f"● 지수 {will_val:.2f}로 **개미 항복** 구간일세! 바닥 찍었으니 진격 보시게."
-            elif will_val <= -60:
-                w_diag = f"● 지수 {will_val:.2f}로 **하단 진흙탕**일세! 기어 나올 힘이 없으니 조심하시게."
-            elif will_val >= -20:
-                w_diag = f"● 지수 {will_val:.2f}로 **천장 광기** 구간일세! 언제 비수 꽂힐지 모르니 매섭게 보시게."
-            else:
-                w_diag = f"● 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움이 치열구먼."
-            
-            # 네 기둥 아래에 빳빳하게 배치 (이게 딱 한 번만 나와야 하네!)
-            st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
-
-    except Exception as e:
-            st.error(f"👵 아이구! 할애비가 장부를 놓쳤네: {e}")
-# --- 여기가 파일의 절대적인 끝일세! 아래에 빈 줄 하나라도 더 있으면 안 되네 ---
+            # 153번 줄부터 덮어쓰시게!
