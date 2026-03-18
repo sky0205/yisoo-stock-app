@@ -156,20 +156,19 @@ if symbol:
             
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
 
-            with i3: # 159번 줄: 기존에 있던 집일세!
-            # --- 집 안에 아래 두 줄을 먼저 세우시게 (160번 줄부터) ---
-                 w_momentum = will_val - will_prev
-                 m_adv = "🔥 **[기세 급팽창!]**" if w_momentum > 10 else "📈 기세 유지 중"
+            with i3: # 159번 줄: Williams %R (심리) 기둥일세
+            # 아래 두 줄의 앞공백(들여쓰기)이 with보다 4칸 더 들어가야 하네!
+                w_momentum = will_val - will_prev
+                m_adv = "🔥 **[기세 급팽창!]**" if w_momentum > 10 else "📈 기세 유지 중"
             
-            # --- 그 밑에 기존의 if문들이 줄지어 있으면 되네 ---
                 if will_val <= -80:
-                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로..."
+                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로 **⚪ 개미 항복** 구간!"
                 elif will_val >= -20:
-                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로..."
+                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로 **🚀 천장 광기!**"
                 else:
-                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로..."
-        
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
+                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로 어중간한 위치네."
+            
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
             ## 155번 줄부터 이 내용을 넣으시게! (줄 맞춤 보정 완료)
            # [154번 줄] 여기서부터 파일 끝까지 아래 내용으로 덮어쓰시게나!
