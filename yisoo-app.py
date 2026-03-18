@@ -175,19 +175,19 @@ if symbol:
             ## 155번 줄부터 이 내용을 넣으시게! (줄 맞춤 보정 완료)
            # [154번 줄] 여기서부터 파일 끝까지 아래 내용으로 덮어쓰시게나!
             with i4: # MACD (엔진) 상세 진단
-            m_diff = m_l - s_l
-            m_diff_prev = m_prev_l - s_prev_l # 이제 위에서 챙겼으니 에러 안 나네!
+                m_diff = m_l - s_l
+                m_diff_prev = m_prev_l - s_prev_l # 이제 위에서 챙겼으니 에러 안 나네!
 
-            if m_l > s_l:
-                m_status = "정회전"
-                m_diag = "• 엔진 **정회전** 유지 중! 기세 제대로 붙었으니 천정 향해 홀딩하시게."
-            else:
-                m_status = "역회전"
-                if m_diff > m_diff_prev:
-                    m_diag = "• 엔진 역회전 중이나 **폭이 급감**하며 정회전 채비 중일세! 성급한 매도는 금물이네."
+                if m_l > s_l:
+                    m_status = "정회전"
+                    m_diag = "• 엔진 **정회전** 유지 중! 기세 제대로 붙었으니 천정 향해 홀딩하시게."
                 else:
-                    m_diag = "• 엔진 **역회전** 심화 중! 아직 차에 타기엔 시기상조니 자숙하며 기다리시게."
-            
+                    m_status = "역회전"
+                    if m_diff > m_diff_prev:
+                        m_diag = "• 엔진 역회전 중이나 **폭이 급감**하며 정회전 채비 중일세! 성급한 매도는 금물이네."
+                    else:
+                        m_diag = "• 엔진 **역회전** 심화 중! 아직 차에 타기엔 시기상조니 자숙하며 기다리시게."
+                
             # 이 마크다운이 지수 칸을 다시 화면에 빳빳하게 띄워주네
             st.markdown(f"""
                 <div class='ind-box'>
