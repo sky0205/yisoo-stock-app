@@ -143,15 +143,18 @@ if symbol:
         # 139번 줄: 여기서 부르는 이름도 'bband_diag'여야 에러가 안 나네!
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bband_diag}</p></div>", unsafe_allow_html=True)
             with i2: # RSI (온도) 기둥일세
-                if rsi_val >= 60:
-                    r_diag = f"● 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱일세! 익절가 빳빳하게 잡으시게."
-                elif 35 <= rsi_val <= 42:
-                    r_diag = f"● 지수 {rsi_val:.2f}로 **🧊 냉골 문턱**에서 덜덜 떠는 중일세! 온기가 전혀 없으니 진격은 꿈도 꾸지 마시게."
-                elif rsi_val < 35:
-                    r_diag = f"● 지수 {rsi_val:.2f}로 **💀 완전 냉골** 상태일세! 남들 무서울 때 우리는 냉정하게 바닥을 보시게."
-                else:
-                    r_diag = f"● 지수 {rsi_val:.2f}로 어정쩡한 온도네. 세력의 눈치싸움이 치열구먼."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
+            # [삽입] 배신(Divergence) 감지: 주가는 올랐는데 온도는 식었는가?
+            is_divergence = p > prev_p and rsi_val < rsi_prev
+            d_adv = "🚨 **[배신 포착!]** 주가 오르나 지표 식었네. '불 트랩' 조심하시게." if is_divergence else ""
+            
+            if rsi_val >= 60:
+                r_diag = f"• {d_adv} 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱일세! 익절가 빳빳하게 잡으시게."
+            elif rsi_val <= 35:
+                r_diag = f"• {d_adv} 지수 {rsi_val:.2f}로 **💀 완전 냉골** 상태일세! 남들 무서워할 때 보시게."
+            else:
+                r_diag = f"• {d_adv} 지수 {rsi_val:.2f}로 어정쩡한 온도네. 세력의 눈치싸움이 치열구먼."
+            
+            st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
 
             with i3: # Williams %R (심리) 기둥일세
                 if will_val <= -80:
