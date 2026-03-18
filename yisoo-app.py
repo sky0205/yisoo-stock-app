@@ -174,8 +174,11 @@ if symbol:
             else:
                 w_diag = f"● 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움이 치열구먼."
             
-            st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
+            # 177번 줄: 맨 끝에 ')'가 반드시 있어야 하네!
+st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
-        except Exception as e:
-            st.error(f"👵 아이구! 할애비가 장부를 놓쳤네: {e}")
-# --- 여기까지가 파일의 절대적인 끝일세! 아래에 빈 줄이나 글자가 더 있으면 안 되네 ---
+# 179번 줄: 여기서부터는 'st.markdown'보다 왼쪽으로 더 나와야 하네 (딱 탭 2번 거리!)
+except Exception as e:
+    st.error(f"👵 아이구! 할애비가 장부를 놓쳤네: {e}")
+
+# --- 여기가 파일의 절대적인 끝일세! ---
