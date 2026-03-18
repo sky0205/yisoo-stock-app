@@ -131,11 +131,11 @@ if symbol:
                 mid = (upper + lower) / 2
         
                 if p > mid:
-                    bband_diag = f"• **[중앙선 수복!]** 빳빳하게 성문 부쉈으니 이제 천정({upper:,.0f}원) 향해 진격하시게."
+                    bb_diag = f"• **[중앙선 수복!]** 빳빳하게 성문 부쉈으니 이제 천정({upper:,.0f}원) 향해 진격하시게."
                 else:
-                    bband_diag = f"• **[중앙선 하단]** 아직 성문 밖일세. {mid:,.0f}원 수복 전까지는 보따리 사수하시게."
+                    bb_diag = f"• **[중앙선 하단]** 아직 성문 밖일세. {mid:,.0f}원 수복 전까지는 보따리 사수하시게."
             
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bband_diag}</p></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             with i2: # RSI (온도) 기둥일세
                 if rsi_val >= 60:
                     r_diag = f"● 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱일세! 익절가 빳빳하게 잡으시게."
