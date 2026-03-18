@@ -105,17 +105,33 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # 필살 대응 전략 (논리 정교화)
+            # [v36056] 삼성전자 필승 전략 및 진격 논리 통합
             is_divergence = p > prev_p and rsi_val < rsi_prev
             w_momentum = (will_val - will_prev)
             m_status = "정회전" if m_l > s_l else "역회전"
+            m_diff = m_l - s_l; m_diff_prev = m_prev_l - s_prev_l
             
-            st.markdown(f"<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>", unsafe_allow_html=True)
-            if is_divergence: st.warning("🚨 **[비상: 지표의 배신]** 주가 오르나 온도가 식었네! 가짜 상승에 속지 마시게.")
-            elif w_momentum > 10: st.info("🔥 **[진격: 기세 폭발]** 윌리엄 시그널 돌파! 노도와 같은 기세니 기회 잡으시게.")
+            st.markdown(f"<div class='trend-card'><div class='trend-title'>⚔️ {name} v36056 필승 대응 전략</div>", unsafe_allow_html=True)
+            
+            # 1순위: 지표의 배신 (최우선 경고)
+            if is_divergence:
+                st.warning(f"🚨 **[비상: 지표의 배신]** 주가는 오르나 온도가 식었네! 삼성전자 특유의 '불 트랩' 가능성이 농후하니, 수익을 빳빳하게 챙기고 성벽 밖으로 대피하시게.")
+            
+            # 2순위: 기세 폭발 (진격 신호)
+            elif w_momentum > 10:
+                st.info(f"🔥 **[진격: 기세 폭발]** 윌리엄 시그널이 성문을 부쐈네! 엔진이 {m_status}이라도 이 기세면 단기 천정까지는 무난히 진격할 걸세. 홀딩하며 수익 극대화하시게.")
+            
+            # 3순위: 성벽 사수 및 엔진 상태 (진격 유지 로직)
             else:
-                if p > mid_line: st.success(f"📈 **[안정적 진격]** 성벽 사수 중이며 엔진은 {m_status} 상태일세.")
-                else: st.error(f"📉 **[성문 함락]** 성벽 밑일세. 엔진 {m_status}인 동안은 자숙하시게.")
+                if p > mid_line:
+                    # 성벽 위일 때의 상세 전략
+                    m_advice = "엔진까지 정회전이니 거칠 것이 없구먼!" if m_l > s_l else "엔진은 역회전이나 폭이 급감 중이니 성벽 사수하며 회복을 기다리시게."
+                    st.success(f"📈 **[성벽 사수: 진격 유지]** 현재 중앙선({mid_line:,.0f}) 위에서 빳빳하게 버티고 있네. {m_advice} 냉정하게 관망하며 이익을 보존하시게.")
+                else:
+                    # 성벽 아래일 때의 상세 전략
+                    m_advice = "엔진 역회전 심화 중이니 절대 섣불리 칼을 뽑지 마시게." if m_diff <= m_diff_prev else "엔진이 회복 채비 중이나 아직 성문 밖일세."
+                    st.error(f"📉 **[성문 함락: 자숙]** 성벽 밑으로 가라앉았네. {m_advice} 소나기는 피하는 게 상책이니 보따리 풀지 말고 기다리시게.")
+            
             st.markdown("</div>", unsafe_allow_html=True)
 
             # 네 기둥 지수 상세 분석
