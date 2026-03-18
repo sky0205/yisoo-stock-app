@@ -124,8 +124,15 @@ if symbol:
             # 네 기둥 지수 상세 진단 (수치 연동 완벽 보정)
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
-            with i1:
-                bb_diag = f"• **[중앙선 수복!]** 빳빳하게 성문 부쉈으니 이제 천정(21.8만원) 향해 진격하시게." if p > 193000 else f"• **[중앙선 하단]** 아직 성문 밖일세. 지지 확인하고 보따리 사수하시게."
+            with i1: # 127번 줄
+        # [v36056] 종목별 가변 성문(중앙선) 기준 보정
+                mid = (upper + lower) / 2
+        
+                if p > mid:
+                    bb_diag = f"• **[중앙선 수복!]** 빳빳하게 성문 부쉈으니 이제 천정({upper:,.0f}원) 향해 진격하시게."
+                else:
+                    bb_diag = f"• **[중앙선 하단]** 아직 성문 밖일세. {mid:,.0f}원 수복 전까지는 보따리 사수하시게."
+        
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             with i2: # RSI (온도) 기둥일세
                 if rsi_val >= 60:
