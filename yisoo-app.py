@@ -126,8 +126,8 @@ if symbol:
             i1, i2, i3, i4 = st.columns(4)
             with i1: # 127번 줄
         # [v36056] upper와 lower가 누군지 성벽 위에 이름표를 붙여주시게!
-                upper = bb['upperband'].iloc[-1]
-                lower = bb['lowerband'].iloc[-1]
+                upper = bband['upperband'].iloc[-1]
+                lower = bband['lowerband'].iloc[-1]
                 mid = (upper + lower) / 2
         
                 if p > mid:
