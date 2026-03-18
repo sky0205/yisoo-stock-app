@@ -128,8 +128,8 @@ if symbol:
         # [v36056] 윗동네 이름표가 'bb'든 'bband'든 상관없게 새로 계산하시게!
         # 자네 장부에 bband라고 되어있을 확률이 높으니 그걸로 다시 잡음세.
                 # 130번 줄: 'bb'라는 상자에서 실시간 값을 꺼내오시게!
-                upper = bband['upperband'].iloc[-1]
-                lower = bband['lowerband'].iloc[-1]
+                upper = up_b
+                lower = low_b
                 mid = (upper + lower) / 2
 
                 if p > mid:
@@ -166,7 +166,7 @@ if symbol:
            # [154번 줄] 여기서부터 파일 끝까지 아래 내용으로 덮어쓰시게나!
             with i4: # MACD (엔진) 상세 진단
         # [v36056] 중앙선 수복 시 엔진 논리 보정
-                if p > 193000:
+                if p > mid:
                     m_color = "orange" if m_l < s_l else "red"
                     m_status = "역회전폭 급감" if m_l < s_l else "정회전"
                     m_diag = "• 엔진 **역회전폭 급감** 중일세! 주가가 성문 부쉈으니 엔진도 따라 도는 중이니 기세 타시게." if m_l < s_l else "• 엔진 **정회전** 진입! 기세 제대로 붙었으니 천정(21.8만원)까지 홀딩하시게."
