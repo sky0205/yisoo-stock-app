@@ -182,5 +182,5 @@ if symbol:
 
             st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
-        except Exception as e:
+         except Exception as e:
             st.error(f"장부 기입 중 복병(에러) 발생: {e}")
