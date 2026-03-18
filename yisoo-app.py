@@ -183,17 +183,7 @@ if symbol:
                     </div>
                 """, unsafe_allow_html=True)
 
-    # --- 윌리엄 진단 (중복 방지를 위해 네 기둥 아래에 딱 한 번만 배치) ---
-            if will_val <= -80:
-                w_diag = f"• 지수 {will_val:.2f}로 **⚪ 개미 항복** 구간일세! 바닥 찍었으니 진격 보시게."
-            elif will_val <= -60:
-                w_diag = f"• 지수 {will_val:.2f}로 **📉 하단 진흙탕**일세! 기어 나올 힘이 없으니 조심하시게."
-            elif will_val >= -20:
-                w_diag = f"• 지수 {will_val:.2f}로 **🚀 천장 광기** 구간일세! 언제 비수 꽂힐지 모르니 매섭게 보시게."
-            else:
-                w_diag = f"• 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움이 치열구먼."
-
-            st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
+   
     
     except Exception as e:
             st.error(f"장부 기입 중 복병(에러) 발생: {e}")
