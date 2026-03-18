@@ -158,8 +158,8 @@ if symbol:
 
             with i3: # 159번 줄: 기존에 있던 집일세!
             # --- 집 안에 아래 두 줄을 먼저 세우시게 (160번 줄부터) ---
-                w_momentum = will_val - will_prev
-                m_adv = "🔥 **[기세 급팽창!]**" if w_momentum > 10 else "📈 기세 유지 중"
+                 w_momentum = will_val - will_prev
+                 m_adv = "🔥 **[기세 급팽창!]**" if w_momentum > 10 else "📈 기세 유지 중"
             
             # --- 그 밑에 기존의 if문들이 줄지어 있으면 되네 ---
                 if will_val <= -80:
