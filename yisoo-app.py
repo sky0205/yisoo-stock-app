@@ -144,8 +144,8 @@ if symbol:
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bband_diag}</p></div>", unsafe_allow_html=True)
             with i2: # RSI (온도) 기둥일세
             # [삽입] 배신(Divergence) 감지: 주가는 올랐는데 온도는 식었는가?
-            is_divergence = p > prev_p and rsi_val < rsi_prev
-            d_adv = "🚨 **[배신 포착!]** 주가 오르나 지표 식었네. '불 트랩' 조심하시게." if is_divergence else ""
+                is_divergence = p > prev_p and rsi_val < rsi_prev
+                d_adv = "🚨 **[배신 포착!]** 주가 오르나 지표 식었네. '불 트랩' 조심하시게." if is_divergence else ""
             
             if rsi_val >= 60:
                 r_diag = f"• {d_adv} 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱일세! 익절가 빳빳하게 잡으시게."
