@@ -105,7 +105,7 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # [v36056] 삼성전자 필승 전략 및 진격 논리 통합
+           # [v36056] 삼성전자 필승 전략 및 진격 논리 통합
             is_divergence = p > prev_p and rsi_val < rsi_prev
             w_momentum = (will_val - will_prev)
             m_status = "정회전" if m_l > s_l else "역회전"
@@ -133,7 +133,6 @@ if symbol:
                     st.error(f"📉 **[성문 함락: 자숙]** 성벽 밑으로 가라앉았네. {m_advice} 소나기는 피하는 게 상책이니 보따리 풀지 말고 기다리시게.")
             
             st.markdown("</div>", unsafe_allow_html=True)
-
             # 네 기둥 지수 상세 분석
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
