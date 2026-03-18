@@ -194,22 +194,22 @@ if symbol:
                # [v36056] 지표의 배신과 기세를 종합한 필살 대응 전략
                 # [v36056] 필살 대응 전략 마무리
             # [v36056] 필살 대응 전략 마무리 (들여쓰기 보정 완료)
+        # [v36056] 충돌 방지를 위한 전략 칸 단일화
         st.markdown("---")
-        st.markdown("### ⚔️ 필살 대응 전략")
+        st.markdown(f"### ⚔️ {stock_name} 실전 필살 대응 전략")
 
+        # 1. 위에서 계산된 결론(is_divergence, w_momentum 등)에 따라 상자 출력
         if is_divergence:
-            strategy_msg = "🚨 **[비상! 지표의 배신]** 주가는 오르나 지표 온도가 식었네. '불 트랩' 조심하시게."
-            st.warning(strategy_msg)
+            st.warning("🚨 **[비상! 지표의 배신]** 주가 오르나 지표 식었네. '불 트랩' 조심하시게.")
         elif w_momentum > 10:
-            strategy_msg = "🔥 **[진격! 기세 폭발]** 윌리엄 시그널 뚫고 천정으로 돌진하는 노도와 같은 기세네!"
-            st.info(strategy_msg)
+            st.info("🔥 **[진격! 기세 폭발]** 윌리엄 시그널 뚫고 천정 돌진 중이니 홀딩하시게.")
         else:
             if p > mid:
-                strategy_msg = f"📈 현재 {stock_name} 전황은 안정적이네. 성벽({mid:,.0f}{currency}) 사수하시게."
-                st.success(strategy_msg)
+                # MACD(엔진) 상태까지 한 번 더 체크해서 정교하게 말하시게
+                m_status = "정회전" if m_l > s_l else "역회전"
+                st.success(f"📈 **[안정적 진격]** 성벽 사수 중이며 엔진은 {m_status} 상태일세. 냉정하게 지켜보시게.")
             else:
-                strategy_msg = f"📉 성문이 함락된 상태네. {mid:,.0f}{currency} 성벽 수복 전까지는 자숙하시게."
-                st.error(strategy_msg)
+                st.error(f"📉 **[성문 함락]** 성벽 밑으로 가라앉았네. 칼 거두고 자숙이 상책일세.")
 
     # --- 213번 줄: except는 try와 세로줄을 맞춰야 하네! ---
     except Exception as e:
