@@ -206,7 +206,7 @@ if symbol:
         else:
             if p > mid:
                 # MACD(엔진) 상태까지 한 번 더 체크해서 정교하게 말하시게
-                m_status = "정회전" if m_l > s_l else "역회전"
+                strategy_msg ="📈 현재 전황은 안정적이네. 성벽 사수하시게."
                 st.success(f"📈 **[안정적 진격]** 성벽 사수 중이며 엔진은 {m_status} 상태일세. 냉정하게 지켜보시게.")
             else:
                 st.error(f"📉 **[성문 함락]** 성벽 밑으로 가라앉았네. 칼 거두고 자숙이 상책일세.")
