@@ -118,8 +118,16 @@ if symbol:
             # [복구 완벽] 네 기둥 지수 상세 분석 (원본 문구 보존)
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
-            with i1: # Bollinger
-                bb_diag = f"● **[비상: 상단 돌파!]** 하늘 찌르는구먼! 탐욕 버리고 수확(익절) 준비 하시게." if p >= up_b else f"● **[비상: 하단 돌파!]** 바닥권일세! 지지받고 고개 들면 진짜 진격 기회일세." if p <= low_b else f"● 중앙선 아래서 빌빌대고 있구먼. 성벽 사수 확인 전까지는 낚싯대만 던지시게."
+            # 121번 줄: 앞의 st.columns(4)에서 갈라져 나온 첫 번째 기둥일세
+            with i1: # Bollinger (기세 상세 진단)
+                if p >= up_b:
+                    bb_diag = "🔥 **[진격: 상단 돌파!]** 성벽 넘어 하늘 찌르네! 기세 꺾이기 전까지 추세 즐기시게."
+                elif p > mid_line:
+                    bb_diag = "🏰 **[성벽 사수]** 중앙선 위에서 안정적 진격 중일세. 성벽 무너지기 전까진 홀딩!"
+                else:
+                    bb_diag = "🏚️ **[성문 함락]** 중앙선 아래서 빌빌대네. 성벽 사수 확인 전까진 칼 뽑지 마시게."
+                
+                # 이 줄도 위 if/else와 시작점이 같아야 하네!
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             with i2: # RSI (60 이상 불지옥 반영)
                 r_diag = f"● 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱일세! 천장에 다 왔으니 익절가 빳빳하게 잡으시게." if rsi_val >= 60 else f"● 지수 {rsi_val:.2f}로 **🧊 냉골** 상태일세! 남들 무서울 때 우리는 냉정하게 바닥을 보시게." if rsi_val <= 35 else f"● 지수 {rsi_val:.2f}로 탐욕과 공포 사이 중립 기어 넣고 눈치싸움 중일세. 지표 끝단을 기다리시게."
