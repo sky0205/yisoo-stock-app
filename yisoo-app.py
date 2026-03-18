@@ -158,14 +158,13 @@ if symbol:
 
             with i3: # Williams %R (심리) 기둥일세
                 if will_val <= -80:
-                    w_diag = f"● 지수 {will_val:.2f}로 **🏳️ 개미 항복** 구간일세! 바닥 찍었으니 고개 들면 무조건 진격일세."
-                elif will_val <= -60:
-                    w_diag = f"● 지수 {will_val:.2f}로 **📉 하단 진흙탕**에서 헤매는 중일세! 기어 나올 힘이 없으니 함부로 보따리 풀지 마시게."
+                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로 **⚪ 개미 항복** 구간! 바닥권 탈출 보시게."
                 elif will_val >= -20:
-                    w_diag = f"● 지수 {will_val:.2f}로 **🧨 천장 광기** 구간일세! 언제 비수 꽂힐지 모르니 매섭게 보시게."
+                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로 **🚀 천장 광기!** 언제 비수 꽂힐지 모르니 매섭게 보시게."
                 else:
-                    w_diag = f"● 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움이 치열구먼."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
+                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움 치열구먼."
+        
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
             ## 155번 줄부터 이 내용을 넣으시게! (줄 맞춤 보정 완료)
            # [154번 줄] 여기서부터 파일 끝까지 아래 내용으로 덮어쓰시게나!
