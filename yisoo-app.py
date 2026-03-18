@@ -105,25 +105,18 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-           # [v36056] 필승 대응 전략: 진격 논리 및 상세 훈수 통합
+           # [v36056] 필승 대응 전략: 모든 내용을 상자(trend-card) 안으로 통합
             st.markdown(f"<div class='trend-card'><div class='trend-title'>⚔️ {name} v36056 필승 대응 전략</div>", unsafe_allow_html=True)
             
-            # 1. 지표의 배신 감지 (최우선)
-            is_divergence = p > prev_p and rsi_val < rsi_prev
-            w_momentum = (will_val - will_prev)
-            m_status = "정회전" if m_l > s_l else "역회전"
-            m_diff = m_l - s_l; m_diff_prev = m_prev_l - s_prev_l
-
+            # --- 여기서부터 모든 출력물이 상자 안으로 들어가는 게야 ---
             if is_divergence:
-                # 배신이 떴을 때는 경고 위주로 진격 내용을 구성하네
                 st.warning(f"""
                     🚨 **[진격 중단: 지표의 배신 포착]**
                     * 현재 주가는 오르나 온도가 식었으니 가짜 상승(불 트랩)일세.
-                    * 성벽({defense_line:,.0f}) 사수보다 보따리 챙기는 게 우선이니 분할 매도로 수익을 빳빳하게 확정하시게!
+                    * 필승 전략: 성벽({defense_line:,.0f}) 사수보다 보따리 챙기는 게 우선이니 분할 매도로 수익을 확정하시게!
                 """)
             
             elif w_momentum > 10:
-                # 기세가 폭발했을 때 진격 내용을 안으로 넣었네
                 st.info(f"""
                     🔥 **[진격 개시: 기세 폭발 및 성문 돌파]**
                     * 윌리엄 시그널이 성문을 부쐈으니 노도와 같은 기세로 진격하시게!
@@ -132,24 +125,22 @@ if symbol:
                 """)
                 
             else:
-                # 평시 성벽 사수 여부에 따른 상세 진격 전략
                 if p > mid_line:
-                    m_advice = "엔진까지 정회전이니 거칠 것이 없네!" if m_l > s_l else "엔진 역회전폭 급감 중이니 곧 시동이 걸릴 걸세."
                     st.success(f"""
                         📈 **[안정적 진격: 성벽 사수 중]**
                         * 현재 중앙선 위에서 빳빳하게 버티며 진격의 기틀을 다지고 있네.
-                        * 엔진 상태: {m_status} ({m_advice})
+                        * 엔진 상태: {m_status}
                         * **필승 전략:** 흔들리지 말고 홀딩하며 세력의 발자국을 끝까지 추적하시게!
                     """)
                 else:
-                    m_advice = "엔진 역회전 심화 중이니 절대 칼 뽑지 마시게." if m_diff <= m_diff_prev else "엔진이 회복 채비 중이나 아직 성문 밖일세."
                     st.error(f"""
                         📉 **[진격 불가: 성문 함락 및 자숙]**
                         * 성벽 밑으로 가라앉았으니 소나기는 피하는 게 상책일세.
-                        * 엔진 상태: {m_status} ({m_advice})
+                        * 엔진 상태: {m_status}
                         * **필승 전략:** 보따리 풀지 말고 관망하며 지표 끝단이 고개 들 때까지 기다리시게!
                     """)
-            
+
+            # [핵심!] 여기서 상자를 닫아야 모든 내용이 안으로 들어오네!
             st.markdown("</div>", unsafe_allow_html=True)
             # 네 기둥 지수 상세 분석
             st.divider()
