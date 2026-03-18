@@ -29,20 +29,30 @@ st.markdown("""
 
 # 글로벌 지표 실시간 연동 (그대로 유지)
 def display_global_risk():
-    st.markdown("### 🌍 글로벌 시장 및 국채 종합 전황 (미장 실시간 분석)")
+    st.markdown("### 🌍 글로벌 시장 및 국채 종합 전황 (미장 정밀 분석)")
     try:
         nasdaq = yf.Ticker("^IXIC").fast_info; sp500 = yf.Ticker("^GSPC").fast_info; tnx = yf.Ticker("^TNX").fast_info 
         n_chg = (nasdaq.last_price / nasdaq.previous_close - 1) * 100
         tnx_val = tnx.last_price; tnx_chg = (tnx_val / tnx.previous_close - 1) * 100
+        
         c1, c2, c3 = st.columns(3)
         c1.metric("나스닥 (NASDAQ)", f"{nasdaq.last_price:,.2f}", f"{n_chg:.2f}%")
         c2.metric("S&P 500 (SPX)", f"{sp500.last_price:,.2f}", f"{(sp500.last_price/sp500.previous_close-1)*100:.2f}%")
         c3.metric("미 국채 10년물 (TNX)", f"{tnx_val:.3f}%", f"{tnx_chg:+.2f}%")
-        if n_chg > 0.5 and tnx_chg < 0: advice = f"✅ **[미장 쾌청: 진격!]** 나스닥 불 뿜고 금리도 안정세일세! 기세 타고 진격하시게."
-        elif n_chg < -1.0: advice = f"🚨 **[긴급 상황: 정박!]** 나스닥 급락 중이니 성벽 무너지기 전에 보따리 싸서 피신하시게."
-        elif tnx_val > 4.3: advice = "⚠️ **[금리 비상: 관망]** 국채 금리 너무 높네! 성벽 위태로우니 무리한 진격은 금물일세."
-        else: advice = "🧐 **[안개 정국: 관망]** 지표 끝단을 기다리시게."
-        st.info(f"🧐 이수 할배의 글로벌 판독: {advice}")
+
+        # --- 이수 할배의 빳빳한 정밀 훈수 (여기서부터 수술일세) ---
+        if tnx_val >= 4.5:
+            advice = "🚨 **[금리 발작: 비상]** 국채 금리가 4.5%를 넘어섰네! 기술주 성벽 무너질 수 있으니 진격을 멈추시게."
+        elif n_chg > 0.5 and tnx_chg < 0:
+            advice = "🔥 **[골디락스 진입]** 지수는 오르고 금리는 내리니, 이건 하늘이 준 진격의 기회일세! 기세 타시게."
+        elif n_chg < -1.0:
+            advice = "💀 **[패닉 셀 감지]** 나스닥 비명 지르며 투매 중이네. 성문 닫고 소나기 피하는 게 상책일세."
+        elif tnx_val > 4.2:
+            advice = "⚠️ **[금리 압박: 주의]** 금리가 빳빳하게 고개 드니 시장 맷집 시험할 걸세. 무리한 진격은 금물이네."
+        else:
+            advice = "🧐 **[눈치싸움 중]** 세력들이 다음 재료 기다리며 간 보고 있구먼. 섣부른 판단은 독이네."
+
+        st.info(f"🧐 이수 할배의 글로벌 정밀 판독: {advice}")
     except: st.error("⚠️ 데이터 호출 불가")
 
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
