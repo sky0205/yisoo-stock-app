@@ -187,7 +187,24 @@ if symbol:
                     </div>
                 """, unsafe_allow_html=True)
 
+               # [v36056] 지표의 배신과 기세를 종합한 필살 대응 전략
+                st.markdown("---")
+                st.markdown("### ⚔️ 필살 대응 전략")
+        
+                if is_divergence:
+                    strategy_msg = "🚨 **[비상! 지표의 배신]** 주가는 오르나 지표 온도가 식었네. 옆방 청년 말대로 '불 트랩'일 가능성이 농후하니, 무리한 진격보다는 보따리 일부를 챙겨두는 게 상책일세."
+                    st.warning(strategy_msg)
+                elif w_momentum > 10:
+                    strategy_msg = "🔥 **[진격! 기세 폭발]** 윌리엄 시그널 뚫고 천정으로 돌진하는 노도와 같은 기세네! 성문(Bollinger mid) 사수하며 수익을 극대화하시게."
+                    st.info(strategy_msg)
+                else:
+                    if p > mid:
+                        strategy_msg = f"📈 현재 {stock_name} 전황은 안정적이네. 성벽({mid:,.0f}{currency}) 무너지지 않으면 냉정하게 지켜보시게."
+                        st.success(strategy_msg)
+                    else:
+                        strategy_msg = f"📉 성문이 함락된 상태네. {mid:,.0f}{currency} 성벽을 다시 수복하기 전까지는 칼을 거두고 자숙하시게."
+                        st.error(strategy_msg)
    
     
-    except Exception as e:
-            st.error(f"장부 기입 중 복병(에러) 발생: {e}")
+        except Exception as e:
+                st.error(f"장부 기입 중 복병(에러) 발생: {e}")
