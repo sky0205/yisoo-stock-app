@@ -125,7 +125,7 @@ if symbol:
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
             with i1:
-                bb_diag = f"● **[상단 돌파!]** 탐욕 버리고 익절 준비 하시게." if p >= up_b else f"● **[하단 돌파!]** 바닥 지지 확인하고 보따리 싸시게." if p <= low_b else f"● 중앙선 근처서 눈치 보는 중일세. 성벽 사수 여부를 보시게."
+                bb_diag = f"• **[중앙선 수복!]** 빳빳하게 성문 부쉈으니 이제 천정(21.8만원) 향해 진격하시게." if p > 193000 else f"• **[중앙선 하단]** 아직 성문 밖일세. 지지 확인하고 보따리 사수하시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             with i2: # RSI (온도) 기둥일세
                 if rsi_val >= 60:
@@ -150,18 +150,11 @@ if symbol:
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
             ## 151번 줄 근처: 여기서부터 파일 맨 끝까지 싹 비우고 넣으시게!
-            with i4: # MACD (엔진) 상세 진단
-                m_color = "red" if m_l > s_l else "blue"
-                m_status = "정회전" if m_l > s_l else "역회전"
-                m_diag = "● 엔진이 **정회전** 중일세! 기세 붙었으니 성벽 사수 보시게." if m_l > s_l else "● 엔진이 **역회전** 중이네! 거꾸로 도는 차에 올라타면 안 되는 법일세."
-                
-                st.markdown(f"""
-                    <div class='ind-box'>
-                        <p class='ind-title'>MACD (엔진)</p>
-                        <p class='ind-val' style='color:{m_color}; font-weight:bold;'>MACD {m_l:,.2f} / Signal {s_l:,.2f} ({m_status})</p>
-                        <p class='ind-diag'>{m_diag}</p>
-                    </div>
-                """, unsafe_allow_html=True)
+            # 153번 줄부터 164번 줄까지 싹 비우고 넣으시게!
+           with i4: # MACD (엔진) 상세 진단
+               m_color = "orange" if m_l > s_l or abs(m_l - s_l) < 500 else "red" # 폭이 줄어들면 오렌지색!
+               m_diag = "• 엔진 **역회전폭 급감** 중일세! 주가가 성문 부수니 엔진도 따라 도는 중이니 기세 타시게."
+    # (이하 st.markdown 부분은 기존 양식 유지하되 m_diag만 갈아끼우시게)
 
             # --- 윌리엄 진단 (중복 방지를 위해 울타리 밖에서 딱 한 번만!) ---
             if will_val <= -80:
