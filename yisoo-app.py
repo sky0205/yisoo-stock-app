@@ -172,55 +172,45 @@ if symbol:
 
             ## 155번 줄부터 이 내용을 넣으시게! (줄 맞춤 보정 완료)
            # [154번 줄] 여기서부터 파일 끝까지 아래 내용으로 덮어쓰시게나!
-            with i4: # MACD (엔진) 상세 진단
-        # [v36056] 중앙선 수복 시 엔진 논리 보정
-                # [v36056] MACD 엔진 상태 정교화 (178번 줄 근처 수정)
-                m_diff = m_l - s_l  # 현재 차이
-                m_diff_prev = m_prev_l - s_prev_l  # 어제 차이
+            with i4: # 175번 줄: MACD (엔진) 상세 진단
+            # [v36056] MACD 엔진 상태 정교화 (들여쓰기 주의!)
+            m_diff = m_l - s_l
+            m_diff_prev = m_prev_l - s_prev_l
 
-                if m_l > s_l:
-                    m_status = "정회전"
-                    m_diag = "• 엔진 **정회전** 유지 중! 기세 제대로 붙었으니 천정 향해 홀딩하시게."
-                else:
-                    m_status = "역회전"
-            # 역회전인데 어제보다 차이가 줄어들었다면? (골든크로스 준비 중)
-                    if m_diff > m_diff_prev:
-                        m_diag = "• 엔진 역회전 중이나 **폭이 급감**하며 정회전 채비 중일세! 성급한 매도는 금물이네."
-                    else:
-                        m_diag = "• 엔진 **역회전** 심화 중! 아직 차에 타기엔 시기상조니 자숙하며 기다리시게."
-
-                st.markdown(f"""
-                    <div class='ind-box'>
-                        <p class='ind-title'>MACD (엔진)</p>
-                        <p class='ind-val' style='color:{m_color}; font-weight:bold;'>MACD {m_l:,.2f} / Signal {s_l:,.2f} ({m_status})</p>
-                        <p class='ind-diag'>{m_diag}</p>
-                    </div>
-                """, unsafe_allow_html=True)
-
-               # [v36056] 지표의 배신과 기세를 종합한 필살 대응 전략
-                # [v36056] 필살 대응 전략 마무리
-            # [v36056] 필살 대응 전략 마무리 (들여쓰기 보정 완료)
-        # [v36056] 충돌 방지를 위한 전략 칸 단일화
-        st.markdown("---")
-        st.markdown(f"### ⚔️ {stock_name} 실전 필살 대응 전략")
-
-        # 1. 위에서 계산된 결론(is_divergence, w_momentum 등)에 따라 상자 출력
-        if is_divergence:
-            st.warning("🚨 **[비상! 지표의 배신]** 주가 오르나 지표 식었네. '불 트랩' 조심하시게.")
-        elif w_momentum > 10:
-            st.info("🔥 **[진격! 기세 폭발]** 윌리엄 시그널 뚫고 천정 돌진 중이니 홀딩하시게.")
-        else: # 206번 줄: 성벽 사수 여부에 따른 최종 전략
-            # MACD(엔진) 상태를 여기서 한 번 더 변수로 정의하시게
-            m_status = "정회전" if m_l > s_l else "역회전"
-            
-            if p > mid:
-                # {stock_name} 에러를 피하기 위해 문구를 담백하게 고쳤네
-                strategy_msg = f"📈 **[안정적 진격]** 현재 성벽 사수 중이며, 엔진(MACD)은 {m_status} 상태일세. 냉정하게 지켜보시게."
-                st.success(strategy_msg)
+            if m_l > s_l:
+                m_status = "정회전"
+                m_diag = "• 엔진 **정회전** 유지 중! 기세 제대로 붙었으니 천정 향해 홀딩하시게."
             else:
-                strategy_msg = f"📉 **[성문 함락]** 성벽 밑으로 가라앉았고 엔진은 {m_status}네. 칼 거두고 자숙이 상책일세."
-                st.error(strategy_msg)
+                m_status = "역회전"
+                if m_diff > m_diff_prev:
+                    m_diag = "• 엔진 역회전 중이나 **폭이 급감**하며 정회전 채비 중일세! 성급한 매도는 금물이네."
+                else:
+                    m_diag = "• 엔진 **역회전** 심화 중! 아직 차에 타기엔 시기상조니 자숙하며 기다리시게."
+            
+            # 이 마크다운이 찍혀야 지수 칸이 다시 나오네!
+            st.markdown(f"""
+                <div class='ind-box'>
+                    <p class='ind-title'>MACD (엔진)</p>
+                    <p class='ind-val' style='color:{"red" if m_l > s_l else "blue"}; font-weight:bold;'>MACD {m_l:.2f} / Signal {s_l:.2f}</p>
+                    <p class='ind-diag'>{m_diag}</p>
+                </div>
+            """, unsafe_allow_html=True)
 
-    # --- 213번 줄: except는 try와 세로줄을 맞춰야 하네! ---
+        # [v36056] 필살 대응 전략 마무리 (에러 방지용)
+        st.markdown("---")
+        st.markdown("### ⚔️ 실전 필살 대응 전략")
+
+        # stock_name 대신 ticker를 써서 에러를 원천 차단하시게!
+        if is_divergence:
+            st.warning("🚨 **[비상! 지표의 배신]** 주가는 오르나 지표 온도가 식었네. '불 트랩' 조심하시게.")
+        elif w_momentum > 10:
+            st.info("🔥 **[진격! 기세 폭발]** 윌리엄 시그널 뚫고 천정으로 돌진하는 노도와 같은 기세네!")
+        else:
+            if p > mid:
+                st.success(f"📈 **[안정적 진격]** 현재 성벽 사수 중이며, 엔진은 {m_status} 상태일세. 냉정하게 지켜보시게.")
+            else:
+                st.error(f"📉 **[성문 함락]** 성벽 밑으로 가라앉았고 엔진은 {m_status}네. 칼 거두고 자숙이 상책일세.")
+
     except Exception as e:
+        # 장부 하단에 에러를 빳빳하게 표시하네
         st.error(f"장부 기입 중 복병(에러) 발생: {e}")
