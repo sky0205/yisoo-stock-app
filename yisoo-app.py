@@ -149,12 +149,12 @@ if symbol:
                     w_diag = f"● 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움이 치열구먼."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
-            # 151번 줄 근처: 여기서부터 파일 끝까지 싹 갈아치우시게!
+            # 151번 줄 근처: 여기서부터 파일 맨 끝까지 싹 비우고 이걸 넣으시게!
             with i4: # MACD (엔진) 상세 진단
                 m_color = "red" if m_l > s_l else "blue"
                 m_diag = "● 엔진이 **정회전** 중일세! 기세 붙었으니 성벽 사수 보시게." if m_l > s_l else "● 엔진이 **역회전** 중이네! 거꾸로 도는 차에 올라타면 안 되는 법일세."
                 
-                # 자네가 좋아하던 수치와 진단을 하나로 묶었네
+                # 자네가 원했던 수치와 진단을 하나로 빳빳하게 묶었네
                 st.markdown(f"""
                     <div class='ind-box'>
                         <p class='ind-title'>MACD (엔진)</p>
@@ -163,7 +163,7 @@ if symbol:
                     </div>
                 """, unsafe_allow_html=True)
 
-            # 윌리엄 지수 진단 (울타리 밖으로 빼내서 정리했네)
+            # 윌리엄 지수 진단 (울타리 밖으로 빼서 깔끔하게 정리했네)
             if will_val <= -80:
                 w_diag = f"● 지수 {will_val:.2f}로 **개미 항복** 구간일세! 바닥 찍었으니 진격 보시게."
             elif will_val <= -60:
