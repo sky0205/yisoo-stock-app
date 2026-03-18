@@ -149,21 +149,19 @@ if symbol:
                     w_diag = f"● 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움이 치열구먼."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
-            with i4: # 마지막 MACD 엔진 기둥일세!
-                m_diag = "● 엔진이 정회전 중일세! 기세 붙었으니 성벽 사수 여부를 보시게." if m_l > s_l else f"● 엔진이 **역회전** 중이네! 거꾸로 도는 차에 올라타면 안 되는 법일세. 함부로 키 잡지 마시게."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
-           # 134번 줄부터 이 내용으로 갈아치우시게!
-        if will_val <= -80:
-            w_diag = f"● 지수 {will_val:.2f}로 **🏳️ 개미 항복** 구간일세! 바닥 찍었으니 고개 들면 무조건 진격일세."
-        elif will_val <= -60:
-            # 자네가 지적한 바로 그 '하단 진흙탕' 구간일세
-            w_diag = f"● 지수 {will_val:.2f}로 **📉 하단 진흙탕**에서 헤매는 중일세! 기어 나올 힘이 없으니 함부로 보따리 풀지 마시게."
-        elif will_val >= -20:
-            w_diag = f"● 지수 {will_val:.2f}로 **🧨 천장 광기** 구간일세! 언제 비수 꽂힐지 모르니 매섭게 보시게."
-        else:
-            w_diag = f"● 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움이 치열구먼."
-            with i4:
-                m_diag = f"● MACD {m_l:.2f} / Signal {s_l:.2f}로 **{'정회전' if m_l > s_l else '역회전'}** 중일세! {'기세 붙었으니 진격!' if m_l > s_l else '엔진 거꾸로 도니 함부로 타지 마시게.'}"
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
+            # 151번 줄 근처: 여기서부터 딱 하나만 남기시게!
+            with i4: # MACD (엔진) 상세 진단
+                m_color = "red" if m_l > s_l else "blue"
+                m_diag = "● 엔진이 **정회전** 중일세! 기세 붙었으니 성벽 사수 보시게." if m_l > s_l else "● 엔진이 **역회전** 중이네! 거꾸로 도는 차에 올라타면 안 되는 법일세."
+                
+                # 자네가 좋아하던 실시간 수치까지 빳빳하게 넣었네
+                st.markdown(f"""
+                    <div class='ind-box'>
+                        <p class='ind-title'>MACD (엔진)</p>
+                        <p class='ind-val' style='color:{m_color};'>MACD {m_l:,.2f} / Signal {s_l:,.2f}</p>
+                        <p class='ind-diag'>{m_diag}</p>
+                    </div>
+                """, unsafe_allow_html=True)
 
-    except Exception as e: st.error(f"👵 아이구! 할애비가 장부를 놓쳤네: {e}")
+        except Exception as e:
+            st.error(f"👵 아이구! 할애비가 장부를 놓쳤네: {e}")
