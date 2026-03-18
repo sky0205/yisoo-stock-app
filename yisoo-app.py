@@ -174,14 +174,20 @@ if symbol:
            # [154번 줄] 여기서부터 파일 끝까지 아래 내용으로 덮어쓰시게나!
             with i4: # MACD (엔진) 상세 진단
         # [v36056] 중앙선 수복 시 엔진 논리 보정
-                if p > mid:
-                    m_color = "orange" if m_l < s_l else "red"
-                    m_status = "역회전폭 급감" if m_l < s_l else "정회전"
-                    m_diag = f"• 엔진 **정회전** 진입! 기세 제대로 붙었으니 천정({up_b:,.0f}{currency})까지 홀딩하시게."
+                # [v36056] MACD 엔진 상태 정교화 (178번 줄 근처 수정)
+                m_diff = m_l - s_l  # 현재 차이
+                m_diff_prev = m_prev_l - s_prev_l  # 어제 차이
+
+                if m_l > s_l:
+                    m_status = "정회전"
+                    m_diag = "• 엔진 **정회전** 유지 중! 기세 제대로 붙었으니 천정 향해 홀딩하시게."
                 else:
-                    m_color = "red" if m_l > s_l else "blue"
-                    m_status = "정회전" if m_l > s_l else "역회전"
-                    m_diag = "• 엔진이 **정회전** 중일세!" if m_l > s_l else "• 엔진이 **역회전** 중이네! 거꾸로 도는 차에 올라타면 안 되는 법일세."
+                    m_status = "역회전"
+            # 역회전인데 어제보다 차이가 줄어들었다면? (골든크로스 준비 중)
+                    if m_diff > m_diff_prev:
+                        m_diag = "• 엔진 역회전 중이나 **폭이 급감**하며 정회전 채비 중일세! 성급한 매도는 금물이네."
+                    else:
+                        m_diag = "• 엔진 **역회전** 심화 중! 아직 차에 타기엔 시기상조니 자숙하며 기다리시게."
 
                 st.markdown(f"""
                     <div class='ind-box'>
