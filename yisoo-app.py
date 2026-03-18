@@ -156,13 +156,18 @@ if symbol:
             
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
 
-            with i3: # Williams %R (심리) 기둥일세
+            with i3: # 159번 줄: 기존에 있던 집일세!
+            # --- 집 안에 아래 두 줄을 먼저 세우시게 (160번 줄부터) ---
+                w_momentum = will_val - will_prev
+                m_adv = "🔥 **[기세 급팽창!]**" if w_momentum > 10 else "📈 기세 유지 중"
+            
+            # --- 그 밑에 기존의 if문들이 줄지어 있으면 되네 ---
                 if will_val <= -80:
-                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로 **⚪ 개미 항복** 구간! 바닥권 탈출 보시게."
+                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로..."
                 elif will_val >= -20:
-                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로 **🚀 천장 광기!** 언제 비수 꽂힐지 모르니 매섭게 보시게."
+                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로..."
                 else:
-                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움 치열구먼."
+                    w_diag = f"• {m_adv} 지수 {will_val:.2f}로..."
         
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
