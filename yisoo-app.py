@@ -176,6 +176,6 @@ if symbol:
             # 네 기둥 아래에 빳빳하게 배치 (이게 딱 한 번만 나와야 하네!)
             st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
-        except Exception as e:
+    except Exception as e:
             st.error(f"👵 아이구! 할애비가 장부를 놓쳤네: {e}")
 # --- 여기가 파일의 절대적인 끝일세! 아래에 빈 줄 하나라도 더 있으면 안 되네 ---
