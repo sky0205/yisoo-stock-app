@@ -193,22 +193,24 @@ if symbol:
 
                # [v36056] 지표의 배신과 기세를 종합한 필살 대응 전략
                 # [v36056] 필살 대응 전략 마무리
-            st.markdown("---")
-            st.markdown("### ⚔️ 필살 대응 전략")
+            # [v36056] 필살 대응 전략 마무리 (들여쓰기 보정 완료)
+        st.markdown("---")
+        st.markdown("### ⚔️ 필살 대응 전략")
 
-            if is_divergence:
-                strategy_msg = "🚨 **[비상! 지표의 배신]** 주가는 오르나 지표 온도가 식었네. '불 트랩' 조심하시게."
-                st.warning(strategy_msg)
-            elif w_momentum > 10:
-                strategy_msg = "🔥 **[진격! 기세 폭발]** 윌리엄 시그널 뚫고 천정으로 돌진하는 노도와 같은 기세네!"
-                st.info(strategy_msg)
+        if is_divergence:
+            strategy_msg = "🚨 **[비상! 지표의 배신]** 주가는 오르나 지표 온도가 식었네. '불 트랩' 조심하시게."
+            st.warning(strategy_msg)
+        elif w_momentum > 10:
+            strategy_msg = "🔥 **[진격! 기세 폭발]** 윌리엄 시그널 뚫고 천정으로 돌진하는 노도와 같은 기세네!"
+            st.info(strategy_msg)
+        else:
+            if p > mid:
+                strategy_msg = f"📈 현재 {stock_name} 전황은 안정적이네. 성벽({mid:,.0f}{currency}) 사수하시게."
+                st.success(strategy_msg)
             else:
-                if p > mid:
-                    strategy_msg = f"📈 현재 {stock_name} 전황은 안정적이네. 성벽({mid:,.0f}{currency}) 사수하시게."
-                    st.success(strategy_msg)
-                else:
-                    strategy_msg = f"📉 성문이 함락된 상태네. {mid:,.0f}{currency} 성벽 수복 전까지는 자숙하시게."
-                    st.error(strategy_msg)
+                strategy_msg = f"📉 성문이 함락된 상태네. {mid:,.0f}{currency} 성벽 수복 전까지는 자숙하시게."
+                st.error(strategy_msg)
 
-        except Exception as e:
-            st.error(f"장부 기입 중 복병(에러) 발생: {e}")
+    # --- 213번 줄: except는 try와 세로줄을 맞춰야 하네! ---
+    except Exception as e:
+        st.error(f"장부 기입 중 복병(에러) 발생: {e}")
