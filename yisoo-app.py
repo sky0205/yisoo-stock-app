@@ -21,7 +21,7 @@ st.markdown("""
     .trend-title { font-size: 32px !important; color: #D32F2F !important; border-bottom: 3px solid #FFEBEE; padding-bottom: 12px; margin-bottom: 20px; }
     .trend-item { font-size: 23px !important; line-height: 2.0; margin-bottom: 12px; }
     .price-card { background-color: #FFFFFF; padding: 15px; border-radius: 10px; border: 2px solid #CFD8DC; text-align: center; }
-    .ind-box { background-color: #FFFFFF; padding: 22px; border-radius: 15px; border: 2.5px solid #90A4AE; min-height: 520px; margin-bottom: 15px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); }
+    .ind-box { background-color: #FFFFFF; padding: 15px; border-radius: 15px; border: 2.5px solid #90A4AE; min-height: 320px; margin-bottom: 10px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); }
     .ind-title { font-size: 26px !important; color: #1976D2 !important; border-bottom: 2px solid #EEEEEE; padding-bottom: 10px; margin-bottom: 15px; }
     .ind-diag { font-size: 20px !important; color: #333333 !important; line-height: 1.8; background-color: #FDFDFD; padding: 15px; border-radius: 10px; border-left: 8px solid #D32F2F; }
     </style>
