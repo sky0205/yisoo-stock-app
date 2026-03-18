@@ -5,7 +5,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import pytz
 
-# 1. 화면 구성 및 할배 캐릭터 스타일
+# 1. 화면 구성 및 할배 캐릭터 스타일 (완벽 유지)
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
@@ -64,79 +64,76 @@ if symbol:
             currency = "$"; fmt_p = ",.2f"; name = ticker.info.get('shortName', symbol)
         
         if not df.empty:
-            # 1. 기초 데이터 및 지표 계산
+            # [재료 준비] 85번 줄 근처 핵심 지표 계산
             p = float(df['Close'].iloc[-1]); prev_p = float(df['Close'].iloc[-2]); p_chg = ((p / prev_p) - 1) * 100
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean(); v_ratio = (v_curr / v_avg5) * 100
-            
-            # RSI 및 배신(Divergence) 계산
+            peak_20 = float(df['Close'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
+
+            # 기술 지표 계산 (배신 및 기세 로직 포함)
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
             rsi_val = rsi_series.iloc[-1]; rsi_prev = rsi_series.iloc[-2]
-            is_divergence = p > prev_p and rsi_val < rsi_prev # 지표의 배신 포착
-
-            # Williams %R 및 기세(Momentum) 계산
+            
             h14_s = df['High'].rolling(14).max(); l14_s = df['Low'].rolling(14).min()
             will_series = (h14_s - df['Close']) / (h14_s - l14_s + 1e-10) * -100
             will_val = will_series.iloc[-1]; will_prev = will_series.iloc[-2]
-            w_momentum = will_val - will_prev # 기세 폭발 여부
 
-            # MACD 엔진 및 역회전폭 계산
             exp1 = df['Close'].ewm(span=12, adjust=False).mean(); exp2 = df['Close'].ewm(span=26, adjust=False).mean()
             macd_series = exp1 - exp2; sig_series = macd_series.ewm(span=9, adjust=False).mean()
             m_l = macd_series.iloc[-1]; s_l = sig_series.iloc[-1]
             m_prev_l = macd_series.iloc[-2]; s_prev_l = sig_series.iloc[-2]
-            m_diff = m_l - s_l; m_diff_prev = m_prev_l - s_prev_l
 
-            # 볼린저 밴드 및 성벽
             df['MA20'] = df['Close'].rolling(20).mean(); df['Std'] = df['Close'].rolling(20).std()
             mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
-            peak_20 = float(df['Close'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
 
-            # [화면 출력 시작]
+            # [출력] 현재 주가 및 거래량
             st.markdown("### 📊 현재주가현황")
-            st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt_p)} {currency} ({p_chg:+.2f}%)</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt_p)} {currency} (전일비: {format(p-prev_p, '+'+fmt_p)} / {p_chg:+.2f}%)</p></div>", unsafe_allow_html=True)
             
-            # 거래량 판독
             v_label = "💤 거래침체" if v_ratio < 100 else "📈 거래증가" if v_ratio < 200 else "🔥 거래폭발"
             v_adv = f"✅ 현재 5일 평균 대비 거래율 {v_ratio:.1f}%로 세력의 발자국을 추적 중일세."
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_label} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
-            # 신호등
-            if p >= up_b or rsi_val >= 60: sig, col = "🟢 매도권 진입", "#388E3C"
-            elif p <= low_b or rsi_val <= 35: sig, col = "🔴 매수권 진입", "#D32F2F"
-            else: sig, col = "🟡 관망 및 대기", "#FBC02D"
-            st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p></div>", unsafe_allow_html=True)
+            # [출력] 신호등
+            if p >= up_b or rsi_val >= 60: sig, col, s_adv = "🟢 매도권 진입", "#388E3C", "● 👺 불지옥 문턱일세! 탐욕 버리고 익절하시게."
+            elif p <= low_b or rsi_val <= 35: sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", "● 🧊 바닥권일세. 겁먹지 말고 보따리 푸시게."
+            else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", "● 눈치싸움 중일세. 지표 끝단을 기다리시게."
+            st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
-            # 네 기둥 지수 상세 분석
+            # [출력] 매수매도 성벽 (자네가 찾던 그 칸들이네!)
+            c1, c2, c3 = st.columns(3)
+            with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
+
+            # [출력] 필살 대응 전략 (알짜 통합본)
+            is_divergence = p > prev_p and rsi_val < rsi_prev
+            w_momentum = will_val - will_prev
+            m_status = "정회전" if m_l > s_l else "역회전"
+            
+            st.markdown(f"<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>", unsafe_allow_html=True)
+            if is_divergence: st.warning("🚨 **[비상: 지표의 배신]** 주가는 오르나 온도가 식었네! 가짜 상승에 속지 마시게.")
+            elif w_momentum > 10: st.info("🔥 **[진격: 기세 폭발]** 윌리엄 시그널 돌파! 노도와 같은 기세니 기회 잡으시게.")
+            else:
+                if p > mid_line: st.success(f"📈 **[안정적 진격]** 성벽 사수 중이며 엔진은 {m_status} 상태일세.")
+                else: st.error(f"📉 **[성문 함락]** 성벽 밑으로 가라앉았네. 엔진 {m_status}인 동안은 자숙하시게.")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            # [출력] 네 기둥 지수 상세 분석
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
-            with i1: # Bollinger
-                bb_diag = "🏰 **[성문 수복]** 중앙선 위일세." if p > mid_line else "🏚️ **[성문 함락]** 중앙선 아래네."
+            with i1:
+                bb_diag = "🏰 **[성벽 사수]** 중앙선 안착했네." if p > mid_line else "🏚️ **[성벽 함락]** 성벽 밑일세."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
-            with i2: # RSI (배신 감지)
-                d_adv = "🚨 **[배신 포착!]** 주가는 오르나 지수 하락!" if is_divergence else "✅ 정상 흐름"
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{d_adv}</p></div>", unsafe_allow_html=True)
-            with i3: # Williams (기세 폭발)
-                m_adv = "🔥 **[기세 폭발!]**" if w_momentum > 10 else "📈 기세 유지 중"
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{m_adv}</p></div>", unsafe_allow_html=True)
-            with i4: # MACD (엔진 정교화)
-                if m_l > s_l: m_status, m_diag = "정회전", "• 엔진 **정회전** 유지 중! 홀딩하시게."
-                else: 
-                    m_status = "역회전"
-                    m_diag = "• 엔진 역회전 중이나 **폭이 급감**하며 채비 중!" if m_diff > m_diff_prev else "• 엔진 **역회전** 심화 중! 기다리시게."
+            with i2:
+                r_diag = f"● 지수 {rsi_val:.2f}: {'🚨 배신 포착! 온도 급랭 중.' if is_divergence else '정상 온도 흐름일세.'}"
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
+            with i3:
+                w_diag = f"● 지수 {will_val:.2f}: {'🔥 기세 폭발! 개미들 몰려드네.' if w_momentum > 10 else '기세 유지 중일세.'}"
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
+            with i4:
+                m_diff = m_l - s_l; m_diff_prev = m_prev_l - s_prev_l
+                m_diag = "● 엔진 **정회전**! 홀딩하시게." if m_l > s_l else ("● 엔진 **역회전폭 급감**! 정회전 채비 중일세." if m_diff > m_diff_prev else "● 엔진 **역회전 심화**! 아직은 시기상조네.")
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
-
-            # 필살 대응 전략 (종합 결론 상자)
-            st.markdown("---")
-            st.markdown(f"### ⚔️ {name} 실전 필살 대응 전략")
-            if is_divergence:
-                st.warning("🚨 **[비상! 지표의 배신]** 주가는 오르나 지표 온도가 식었네. '불 트랩' 가능성 농후하니 보따리 챙겨두시게!")
-            elif w_momentum > 10:
-                st.info("🔥 **[진격! 기세 폭발]** 윌리엄 시그널 뚫고 천정 돌진 중! 엔진 사수하며 수익 극대화하시게.")
-            else:
-                if p > mid_line:
-                    st.success(f"📈 **[안정적 진격]** 현재 성벽 사수 중이며 엔진은 {m_status} 상태일세. 냉정하게 지켜보시게.")
-                else:
-                    st.error(f"📉 **[성문 함락]** 성벽 밑으로 가라앉았고 엔진은 {m_status}네. 칼 거두고 자숙하시게.")
 
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
