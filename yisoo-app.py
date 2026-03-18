@@ -140,8 +140,20 @@ if symbol:
                     bb_diag = "🏚️ **[성문 함락]** 성벽 밑일세. 온도가 낮아도 엔진 시동 걸리기 전까지는 절대 칼 뽑지 마시게."
                 
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
-            with i2: # RSI (60 이상 불지옥 반영)
-                r_diag = f"● 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱일세! 천장에 다 왔으니 익절가 빳빳하게 잡으시게." if rsi_val >= 60 else f"● 지수 {rsi_val:.2f}로 **🧊 냉골** 상태일세! 남들 무서울 때 우리는 냉정하게 바닥을 보시게." if rsi_val <= 35 else f"● 지수 {rsi_val:.2f}로 탐욕과 공포 사이 중립 기어 넣고 눈치싸움 중일세. 지표 끝단을 기다리시게."
+            with i2: # RSI (온도 상세 진단)
+                # [핵심] 주가는 오르는데 온도는 식는 '배신의 신호'를 먼저 계산하네!
+                is_divergence = p > prev_p and rsi_val < rsi_prev
+                
+                if rsi_val >= 60:
+                    # 천정권일 때 배신이 뜨면 이건 무조건 도망쳐야 할 신호일세
+                    r_diag = f"● 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱일세! {'🚨 온도가 식고 있네(배신 포착)! 가짜 상승이니 대피하시게.' if is_divergence else '천장에 다 왔으니 수익 챙길 채비 하시게.'}"
+                elif rsi_val <= 35:
+                    r_diag = f"● 지수 {rsi_val:.2f}로 **🧊 냉골** 바닥일세! 남들 무서워할 때 우리는 냉정하게 보따리 푸시게."
+                else:
+                    # 중간 지대라도 배신이 뜨면 눈 부라리고 봐야 하네
+                    r_diag = f"● 지수 {rsi_val:.2f}로 중립일세. {'🚨 주가는 오르나 온도가 식고 있네! 눈 부라리고 보시게.' if is_divergence else '지표 끝단을 기다리시게.'}"
+                
+                # 박스 출력 (줄 맞춤 빳빳하게!)
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
             # 135번 줄 근처: 세 번째 기둥(Williams %R) 진단 구역일세
             with i3: # Williams %R (기세 상세 진단)
