@@ -125,7 +125,7 @@ if symbol:
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
             with i1: # 127번 줄
-        # [v36056] 종목별 가변 성문(중앙선) 기준 보정
+        # [v36056] upper와 lower가 누군지 성벽 위에 이름표를 붙여주시게!
                 upper, lower = bband['upperband'].iloc[-1], bband['lowerband'].iloc[-1]
                 mid = (upper + lower) / 2  # 이제야 mid가 계산될 게야.
         
