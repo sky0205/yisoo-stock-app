@@ -126,7 +126,8 @@ if symbol:
             i1, i2, i3, i4 = st.columns(4)
             with i1: # 127번 줄
         # [v36056] 종목별 가변 성문(중앙선) 기준 보정
-                mid = (upper + lower) / 2
+                upper, lower = bband['upperband'].iloc[-1], bband['lowerband'].iloc[-1]
+                mid = (upper + lower) / 2  # 이제야 mid가 계산될 게야.
         
                 if p > mid:
                     bb_diag = f"• **[중앙선 수복!]** 빳빳하게 성문 부쉈으니 이제 천정({upper:,.0f}원) 향해 진격하시게."
