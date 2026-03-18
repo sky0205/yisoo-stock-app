@@ -127,15 +127,18 @@ if symbol:
             with i1: # 127번 줄
         # [v36056] 윗동네 이름표가 'bb'든 'bband'든 상관없게 새로 계산하시게!
         # 자네 장부에 bband라고 되어있을 확률이 높으니 그걸로 다시 잡음세.
+                # 130번 줄: 'bb'라는 상자에서 실시간 값을 꺼내오시게!
                 upper = bb['upperband'].iloc[-1]
                 lower = bb['lowerband'].iloc[-1]
                 mid = (upper + lower) / 2
 
                 if p > mid:
+            # [중요] 그릇 이름을 'bband_diag'로 통일함세!
                     bband_diag = f"• **[중앙선 수복!]** 빳빳하게 성문 부쉈으니 이제 천정({upper:,.0f}원) 향해 진격하시게."
                 else:
                     bband_diag = f"• **[중앙선 하단]** 아직 성문 밖일세. {mid:,.0f}원 수복 전까지는 보따리 사수하시게."
 
+        # 139번 줄: 여기서 부르는 이름도 'bband_diag'여야 에러가 안 나네!
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bband_diag}</p></div>", unsafe_allow_html=True)
             with i2: # RSI (온도) 기둥일세
                 if rsi_val >= 60:
