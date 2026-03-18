@@ -128,8 +128,8 @@ if symbol:
         # [v36056] 윗동네 이름표가 'bb'든 'bband'든 상관없게 새로 계산하시게!
         # 자네 장부에 bband라고 되어있을 확률이 높으니 그걸로 다시 잡음세.
                 # 130번 줄: 'bb'라는 상자에서 실시간 값을 꺼내오시게!
-                upper = bb['upperband'].iloc[-1]
-                lower = bb['lowerband'].iloc[-1]
+                upper = bband['upperband'].iloc[-1]
+                lower = bband['lowerband'].iloc[-1]
                 mid = (upper + lower) / 2
 
                 if p > mid:
