@@ -176,7 +176,7 @@ if symbol:
            # [154번 줄] 여기서부터 파일 끝까지 아래 내용으로 덮어쓰시게나!
             with i4: # MACD (엔진) 상세 진단
             m_diff = m_l - s_l
-            m_diff_prev = m_prev_l - s_prev_l # 이제 상단에 정의했으니 에러 안 나네!
+            m_diff_prev = m_prev_l - s_prev_l # 이제 위에서 챙겼으니 에러 안 나네!
 
             if m_l > s_l:
                 m_status = "정회전"
@@ -196,7 +196,6 @@ if symbol:
                     <p class='ind-diag'>{m_diag}</p>
                 </div>
             """, unsafe_allow_html=True)
-
         # [v36056] 필살 대응 전략 마무리 (에러 방지용)
         st.markdown("---")
         st.markdown("### ⚔️ 실전 필살 대응 전략")
