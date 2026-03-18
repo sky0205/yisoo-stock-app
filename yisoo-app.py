@@ -164,7 +164,7 @@ if symbol:
                     </div>
                 """, unsafe_allow_html=True)
 
-            # 윌리엄 지수 진단
+            # 윌리엄 지수 진단 (with i4 울타리 밖으로 빼서 정리했네)
             if will_val <= -80:
                 w_diag = f"● 지수 {will_val:.2f}로 **개미 항복** 구간일세! 바닥 찍었으니 진격 보시게."
             elif will_val <= -60:
