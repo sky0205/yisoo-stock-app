@@ -176,7 +176,7 @@ if symbol:
             # 176번 줄: 여기서부터 시작하시게!
             st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
-        except Exception as e:
+    except Exception as e:
             st.error(f"👵 아이구! 할애비가 장부를 놓쳤네: {e}")
 
 # --- 여기까지가 파일의 절대적인 끝일세! ---
