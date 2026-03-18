@@ -211,5 +211,5 @@ if symbol:
                         st.error(strategy_msg)
    
     
-        except Exception as e:
-                st.error(f"장부 기입 중 복병(에러) 발생: {e}")
+            except Exception as e:
+                    st.error(f"장부 기입 중 복병(에러) 발생: {e}")
