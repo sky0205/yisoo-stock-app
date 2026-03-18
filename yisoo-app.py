@@ -83,8 +83,8 @@ if symbol:
             st.markdown("### 📊 현재주가현황")
             st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt_p)} {currency} (전일비: {format(p-prev_p, '+'+fmt_p)} / {p_chg:+.2f}%)</p></div>", unsafe_allow_html=True)
             # [85번 줄 삽입] 어제의 지표값을 가져와서 전황의 흐름을 분석함세
-        rsi_prev = 100 - (100 / (1 + (gain.iloc[-2] / (loss.iloc[-2] + 1e-10))))
-        will_prev = (df['High'].rolling(14).max().iloc[-2] - df['Close'].iloc[-2]) / (df['High'].rolling(14).max().iloc[-2] - df['Low'].rolling(14).min().iloc[-2] + 1e-10) * -100
+            rsi_prev = 100 - (100 / (1 + (gain.iloc[-2] / (loss.iloc[-2] + 1e-10))))
+            will_prev = (df['High'].rolling(14).max().iloc[-2] - df['Close'].iloc[-2]) / (df['High'].rolling(14).max().iloc[-2] - df['Low'].rolling(14).min().iloc[-2] + 1e-10) * -100
             # 거래량 상세 판독
             v_label = "💤 거래침체" if v_ratio < 100 else "📈 거래증가" if v_ratio < 200 else "🔥 거래폭발"
             if v_ratio >= 30 and is_opening:
