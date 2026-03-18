@@ -149,7 +149,7 @@ if symbol:
                     w_diag = f"● 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움이 치열구먼."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
-            # 152번 줄: 여기서부터 시작해서 파일 맨 끝까지 싹 비우고 넣으시게!
+            # 151번 줄 근처: 여기서부터 파일 맨 끝까지 싹 비우고 넣으시게!
             with i4: # MACD (엔진) 상세 진단
                 m_color = "red" if m_l > s_l else "blue"
                 m_status = "정회전" if m_l > s_l else "역회전"
@@ -173,9 +173,9 @@ if symbol:
             else:
                 w_diag = f"● 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움이 치열구먼."
             
-            # 자네 장부에서 빠졌던 중요한 문장이 바로 이 아래 줄일세!
+            # 자네 장부에서 빠졌던 화면 출력 명령일세!
             st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
 
         except Exception as e:
-            st.error(f" Grandma! 할애비가 장부를 놓쳤네: {e}")
-# --- 여기가 파일의 절대적인 끝일세! ---
+            st.error(f"👵 아이구! 할애비가 장부를 놓쳤네: {e}")
+# --- 여기가 파일의 절대적인 끝일세! 아래에 빈 줄 하나라도 더 있으면 안 되네 ---
