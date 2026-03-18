@@ -174,6 +174,3 @@ if symbol:
                 w_diag = f"● 지수 {will_val:.2f}로 어중간한 위치네. 세력의 눈치싸움이 치열구먼."
             
             st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (심리)</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
-
-        except Exception as e:
-            st.error(f"👵 아이구! 할애비가 장부를 놓쳤네: {e}")
