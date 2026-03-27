@@ -90,13 +90,15 @@ if symbol:
         is_opening = 9 <= now_local.hour <= 11
 
         if not df.empty:
-        # 93-94: 데이터 세척 (주말/마감 대응)
+        # 93-94: 데이터 세척 (주말/마감에도 종가를 사수하네)
             df = df.ffill()
             df = df.dropna()
 
-        # 95-97: 가격 데이터 추출 및 변동률(p_chg) 계산
+        # 95-97: 가격 데이터 추출 및 변동률(p_chg), 성벽(defense_line) 계산
             p = float(df['Close'].iloc[-1]); prev_p = float(df['Close'].iloc[-2])
-            p_chg = ((p / prev_p) - 1) * 100  # <--- 요 녀석이 에러의 범인이었네!
+            p_chg = ((p / prev_p) - 1) * 100
+            peak_20 = float(df['Close'].iloc[-21:-1].max())
+            defense_line = peak_20 * 0.93  # <--- 요 녀석이 이번 에러의 범인이었네!
 
         # 98-99: 거래량 점수 계산 기초 데이터
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean()
