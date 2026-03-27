@@ -84,6 +84,9 @@ if symbol:
             now_local = datetime.now(pytz.timezone('US/Eastern'))
             ticker = yf.Ticker(symbol); df = ticker.history(start=start_date, end=end_date)
             name = ticker.info.get('shortName', symbol)
+        
+        # [87번 줄 추가] 미장은 달러($)를 쓰고, 소수점 2자리(,.2f)까지 보여줘야 하네!
+            currency = "$"; fmt_p = ",.2f"
         is_opening = 9 <= now_local.hour <= 11
 
         if not df.empty:
