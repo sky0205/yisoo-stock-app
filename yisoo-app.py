@@ -224,4 +224,4 @@ if symbol:
 
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
 
-    except Exception as e: st.error(f"👵 아이구! 오류: {e}")
+   
