@@ -128,7 +128,23 @@ if symbol:
 
             # [수정] 어르신 명하신 대로 제목만 정갈하게 추가
             st.markdown("### 📊 현재주가현황")
-            st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:24px; color:#FF4B4B;'>{p:,.0f}원 ({p_chg:+.2f}%)</p></div>", unsafe_allow_html=True)
+           # [수정] 화폐 단위와 전광판 출력 로직 - 131번 줄 근처에 넣으시게!
+            unit = "원" if is_kr else "$"
+        
+            if is_kr:
+            # 국장용: 55,900원 (전일비: -1,200 / -2.10%)
+                display_price = f"{p:,.0f}{unit} <span style='font-size:18px;'>(전일비: {p_diff:+,.0f} / {p_chg:+.2f}%)</span>"
+            else:
+            # 미장용: $169.37 (전일비: -2.10 / -1.22%)
+                display_price = f"{unit}{p:,.2f} <span style='font-size:18px;'>(전일비: {p_diff:+.2f} / {p_chg:+.2f}%)</span>"
+
+        # 화면에 빳빳하게 뿌려주는 전광판일세
+            st.markdown(f"""
+                <div class='stock-header'>
+                    <p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p>
+                    <p style='font-size:24px; color:#FF4B4B;'>{display_price}</p>
+                </div>
+            """, unsafe_allow_html=True)
             # [시간 가중치 로직 추가] - 114번 줄 바로 위에 넣으시게!
             now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
             now = datetime.now(now_tz)
