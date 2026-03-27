@@ -83,7 +83,7 @@ if symbol:
         else:
             now_local = datetime.now(pytz.timezone('US/Eastern'))
             ticker = yf.Ticker(symbol); df = ticker.history(start=start_date, end=end_date)
-        
+            name = ticker.info.get('shortName', symbol)
         is_opening = 9 <= now_local.hour <= 11
 
         if not df.empty:
