@@ -110,7 +110,19 @@ if symbol:
             # [수정] 어르신 명하신 대로 제목만 정갈하게 추가
             st.markdown("### 📊 현재주가현황")
             st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt_p)} {currency} (전일비: {format(p-prev_p, '+'+fmt_p)} / {p_chg:+.2f}%)</p></div>", unsafe_allow_html=True)
-            
+            # [시간 가중치 로직 추가] - 114번 줄 바로 위에 넣으시게!
+            now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
+            now = datetime.now(now_tz)
+        
+            # 시작 시간 설정 (국장 9:00, 미장 9:30)
+            s_h, s_m = (9, 0) if is_kr else (9, 30)
+        
+            # 경과 시간 계산 (분 단위)
+            elapsed = (now.hour - s_h) * 60 + (now.minute - s_m)
+            elapsed = max(10, min(390, elapsed)) # 10분~390분 사이로 고정하네
+        
+            # [핵심] 시간 대비 거래 강도 점수 (150점 이상이면 '급증'으로 보네)
+            vol_strength = (v_ratio / (elapsed / 390))
             # 거래량 상세 판독 및 호통 로직 (원본 보존)
             v_label = "💤 거래침체" if v_ratio < 100 else "📈 거래증가" if v_ratio < 200 else "🔥 거래폭발"
             if v_ratio >= 30 and is_opening:
