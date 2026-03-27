@@ -90,18 +90,24 @@ if symbol:
         is_opening = 9 <= now_local.hour <= 11
 
         if not df.empty:
-        # 93-94: 데이터 세척
-            df = df.ffill()
-            df = df.dropna()
+        # 93-94: 데이터 세척 (주말에도 종가를 사수하네)
+            df = df.ffill().dropna()
 
-        # 95-97: [핵심 수술] p_diff(전일비 금액)를 추가하시게!
+        # 95-97: [핵심 수술] 오늘 가격(p)과 전일 가격(prev_p)을 가져오네
             p = float(df['Close'].iloc[-1])
-            prev_p = float(df['Close'].iloc[-2])
         
-        # 전일비 금액 계산 (오늘 종가 - 어제 종가)
+        # 주말/휴일에는 오늘과 어제 데이터가 같을 수 있으니, 한 칸 더 뒤를 보네
+            prev_p = float(df['Close'].iloc[-2])
+            if is_kr and p == prev_p and len(df) > 2:
+                prev_p = float(df['Close'].iloc[-3]) # 금요일 vs 목요일 비교!
+        
+        # 101-104: 전일비 금액과 비율을 빳빳하게 계산하네
             p_diff = p - prev_p
-        # 전일비 비율 계산
             p_chg = (p_diff / prev_p) * 100
+
+            peak_20 = float(df['Close'].iloc[-21:-1].max())
+            defense_line = peak_20 * 0.93
+            unit = "원" if is_kr else "$"
 
             peak_20 = float(df['Close'].iloc[-21:-1].max())
             defense_line = peak_20 * 0.93
@@ -131,18 +137,21 @@ if symbol:
            # [수정] 화폐 단위와 전광판 출력 로직 - 131번 줄 근처에 넣으시게!
             unit = "원" if is_kr else "$"
         
+            # [최종 수술] 화폐 단위 설정 및 시원시원한 전광판 출력
+            unit = "원" if is_kr else "$"
+        
             if is_kr:
-            # 국장용: 55,900원 (전일비: -1,200 / -2.10%)
-                display_price = f"{p:,.0f}{unit} <span style='font-size:18px;'>(전일비: {p_diff:+,.0f} / {p_chg:+.2f}%)</span>"
+            # 국장용: 글씨 28px로 키우고 전일비 금액까지 빳빳하게!
+                display_price = f"{p:,.0f}{unit} (전일비: {p_diff:+,.0f} / {p_chg:+.2f}%)"
             else:
             # 미장용: $169.37 (전일비: -2.10 / -1.22%)
-                display_price = f"{unit}{p:,.2f} <span style='font-size:18px;'>(전일비: {p_diff:+.2f} / {p_chg:+.2f}%)</span>"
+                display_price = f"{unit}{p:,.2f} (전일비: {p_diff:+.2f} / {p_chg:+.2f}%)"
 
-        # 화면에 빳빳하게 뿌려주는 전광판일세
+        # 화면에 큼직하게 뿌려주는 전광판 (배경색까지 넣었네)
             st.markdown(f"""
-                <div class='stock-header'>
-                    <p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p>
-                    <p style='font-size:24px; color:#FF4B4B;'>{display_price}</p>
+                <div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'>
+                    <p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{name} ({symbol})</p>
+                    <p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p>
                 </div>
             """, unsafe_allow_html=True)
             # [시간 가중치 로직 추가] - 114번 줄 바로 위에 넣으시게!
