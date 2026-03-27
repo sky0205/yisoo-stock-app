@@ -152,29 +152,28 @@ if symbol:
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
             adv3 = f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네! 절대 속지 마시게!" if m_l < s_l else "3. **엔진 정회전:** 엔진 시동 걸렸구먼!"
             
-           # [최종 결론 생성] - 여기서부터 173번 줄까지 빳빳하게 갈아 끼우시게!
+           # [최종 결론 생성] - 여기서부터 177번 줄까지 빳빳하게 갈아 끼우시게!
             if p >= up_b or rsi_val >= 60:
-                final_adv = "💰 **[최종 결론]** 탐욕의 끝자락일세. **분할 매도**하여 수익을 챙기시게!"
+                final_adv = f"💰 **[최종 결론]** 거래강도({vol_strength:.0f}점). 탐욕의 끝자락일세. **분할 매도**하여 수익을 챙기시게!"
         
             elif m_l < s_l or p < defense_line:
-            # 엔진 역회전인데 거래 강도(vol_strength)가 150점 넘게 터지면 진짜 위험한 폭락세일세
+            # 150점이 넘으면 경고등(🚨)을 켜고, 아니면 일반 관망(🧐)으로 표시하네
                 if vol_strength > 150:
                     final_adv = f"🚨 **[최종 결론]** 거래량({vol_strength:.0f}점) 실린 폭락세일세! **무조건 관망하고 소나기를 피하시게!**"
                 else:
-                    final_adv = "🧐 **[최종 결론]** 엔진 역회전 혹은 성벽 위태롭네. **관망하며 기다리시게!**"
+                    final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). 엔진 역회전 혹은 성벽 위태롭네. **관망하며 기다리시게!**"
 
             elif p <= (defense_line * 1.01): # 성벽 근처 바닥권
-            # 장 초반이라도 거래 강도가 150점 넘게 터지면 세력이 들어온 진짜 바닥으로 보네
                 if vol_strength > 150:
                     final_adv = f"🔥 **[최종 결론]** 거래량({vol_strength:.0f}점) 실린 진짜 바닥권일세! **강력 분할 매수**하시게!"
                 else:
-                    final_adv = "🛡️ **[최종 결론]** 공포의 바닥권이나 기세가 약하네. **천천히 분할 매수**하시게!"
+                    final_adv = f"🛡️ **[최종 결론]** 거래강도({vol_strength:.0f}점). 공포의 바닥권이나 기세가 약하네. **천천히 분할 매수**하시게!"
         
             elif rsi_val <= 35:
-                final_adv = "🛡️ **[최종 결론]** 지표 온도가 냉골일세. **분할 매수**로 대응하시게!"
+                final_adv = f"🛡️ **[최종 결론]** 거래강도({vol_strength:.0f}점). 지표 온도가 냉골일세. **분할 매수**로 대응하시게!"
             
             else:
-                final_adv = "📈 **[최종 결론]** 추세 살아있구먼. 성벽 사수 확인하며 **보유(홀딩)**하시게!"
+                final_adv = f"📈 **[최종 결론]** 거래강도({vol_strength:.0f}점). 추세 살아있구먼. 성벽 사수 확인하며 **보유(홀딩)**하시게!"
             # --- 필살 전략 박스 출력부 (자네 양식 그대로일세) ---
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
