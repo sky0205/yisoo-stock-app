@@ -118,7 +118,7 @@ if symbol:
 
             # [수정] 어르신 명하신 대로 제목만 정갈하게 추가
             st.markdown("### 📊 현재주가현황")
-            st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:38px; color:#D32F2F; margin:0;'>{format(p, fmt_p)} {currency} (전일비: {format(p-prev_p, '+'+fmt_p)} / {p_chg:+.2f}%)</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='stock-header'><p style='font-size:35px; color:#1565C0; margin:0;'>{name} ({symbol})</p><p style='font-size:24px; color:#FF4B4B;'>{p:,.0f}원 ({p_chg:+.2f}%)</p></div>", unsafe_allow_html=True)
             # [시간 가중치 로직 추가] - 114번 줄 바로 위에 넣으시게!
             now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
             now = datetime.now(now_tz)
