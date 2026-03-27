@@ -124,19 +124,21 @@ if symbol:
             adv3 = f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네! 절대 속지 마시게!" if m_l < s_l else "3. **엔진 정회전:** 엔진 시동 걸렸구먼!"
             
             # [최종 결론] - 가장 까칠한 조건부터 위로 올렸네!
+           # [최종 결론] - 성벽 상태를 최우선으로 하는 철옹성 로직일세!
             if p >= up_b or rsi_val >= 60:
                 final_adv = "💰 **[최종 결론]** 탐욕의 끝자락일세. **분할 매도**하여 수익을 빳빳하게 챙기시게!"
-            elif p < low_b: 
-                # [순서 변경] 성문 함락(가장 위험)을 제일 먼저 검사해야 하네!
-                final_adv = "🏚️ **[최종 결론]** 성문 함락 상태일세! 엔진이 돌아도 진흙탕이니 **절대 금물, 관망하시게!**"
-            elif p <= low_b or rsi_val <= 35:
-                # 위에서 p < low_b를 걸러냈으니, 여기는 p == low_b거나 RSI 바닥인 경우만 오게 되지
-                final_adv = "🛡️ **[최종 결론]** 공포가 극에 달한 바닥권일세. **분할 매수**로 보따리를 푸시게!"
+            elif p <= low_b:
+                # [수정] 성벽에 닿았거나 밑으로 처졌을 때 - 엔진 상태를 한 번 더 묻네!
+                if m_l > s_l:
+                    final_adv = "🏚️ **[최종 결론]** 성문 함락 상태일세! 엔진이 돌아도 진흙탕이니 **절대 금물, 관망하시게!**"
+                else:
+                    final_adv = "🛡️ **[최종 결론]** 공포가 극에 달한 바닥권일세. **분할 매수**로 보따리를 푸시게!"
+            elif rsi_val <= 35:
+                final_adv = "🛡️ **[최종 결론]** 지표 온도가 냉골일세. **분할 매수**로 대응하시게!"
             elif m_l < s_l or p < defense_line:
                 final_adv = "🧐 **[최종 결론]** 엔진 역회전 혹은 성벽 위태롭네. **관망하며 기다리시게!**"
             else:
                 final_adv = "📈 **[최종 결론]** 추세 살아있구먼. 성벽 사수 확인하며 **보유(홀딩)**하시게!"
-
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
                 <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)
