@@ -179,26 +179,30 @@ if symbol:
                 # 출력 박스 스타일과 줄 맞춤도 빳빳하게 고정했네
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
             # 182번 줄 근처: 네 번째 기둥(MACD 엔진) 진단 구역일세
+            # 182번 줄 근처: 네 번째 기둥(MACD 엔진) 진단 구역일세
             with i4: # MACD (엔진 상세 진단)
                 # 어제와 오늘의 엔진 간격(diff)을 비교하여 회복 기미를 포착하네!
                 m_diff = m_l - s_l      # 오늘의 엔진 상태
                 m_diff_prev = m_p - s_p  # 어제의 엔진 상태
                 
-               # 수정된 MACD (엔진 상세 진단) 로직
                 if m_l > s_l:
                     # 엔진이 정회전일 때도 성벽의 상태를 먼저 묻는다!
-                    if "성문 함락" in b_diag:  # Bollinger(기세) 판정 결과를 참조
+                    if p < low_b:  # 현재가(p)가 볼린저 하단(low_b)보다 낮으면 헛바퀴일세
                         m_diag = "● 엔진 **정회전(헛바퀴)** 중일세! 엔진은 돌려보려 애쓰나 성벽 밑 진흙탕에 빠졌으니 속지 마시게."
                     else:
                         m_diag = "● 엔진 **정회전** 중일세! 기세 붙었으니 성벽 사수 여부 보며 자신 있게 진격하시게."
                 else:
                     # 엔진이 거꾸로 돌고 있을 때 (역회전)
                     if m_diff > m_diff_prev:
+                        # 역회전폭이 어제보다 줄어들었다면? 시동 걸기 직전일세!
                         m_diag = "● 엔진 **역회전폭 급감**! 시동 걸 채비 중이니 보따리 챙겨두고 진격 신호를 기다리시게."
                     else:
+                        # 역회전이 더 심해진다면? 절대 타면 안 되는 차일세
                         m_diag = "● 엔진 **역회전 심화** 중일세! 거꾸로 도는 차에 올라타면 안 되는 법, 냉정하게 자숙하시게."
                 
                 # 출력 박스 스타일 (줄 맞춤 빳빳하게!)
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
+
+    except Exception as e: st.error(f"👵 아이구! 오류: {e}")
 
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
