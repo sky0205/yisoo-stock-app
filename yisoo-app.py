@@ -65,10 +65,16 @@ if symbol:
         start_date = datetime.now() - timedelta(days=500); end_date = datetime.now()
         is_kr = symbol.isdigit()
         if is_kr:
-            now_local = datetime.now(pytz.timezone('Asia/Seoul')); currency = "원"; fmt_p = ",.0f"
-            df = fdr.DataReader(symbol, start_date, end_date); stocks = fdr.StockListing('KRX'); name = stocks[stocks['Code'] == symbol]['Name'].values[0]
+            # [수정] 국장도 미장처럼 yfinance를 써야 튼튼하게 가져오네!
+            now_local = datetime.now(pytz.timezone('Asia/Seoul'))
+            currency = "원"; fmt_p = ",.0f"
+            ticker_symbol = f"{symbol}.KS" # 삼성전자면 005930.KS로 변환!
+            ticker = yf.Ticker(ticker_symbol)
+            df = ticker.history(start=start_date, end=end_date)
+            name = symbol # 이름은 나중에 종목번호로 뜨겠지만 데이터는 확실히 가져오네
         else:
-            now_local = datetime.now(pytz.timezone('US/Eastern')); ticker = yf.Ticker(symbol); df = ticker.history(start=start_date, end=end_date); currency = "$"; fmt_p = ",.2f"; name = ticker.info.get('shortName', symbol)
+            now_local = datetime.now(pytz.timezone('US/Eastern'))
+            ticker = yf.Ticker(symbol); df = ticker.history(start=start_date, end=end_date)
         
         is_opening = 9 <= now_local.hour <= 11
 
