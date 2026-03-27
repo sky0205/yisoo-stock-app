@@ -93,7 +93,9 @@ if symbol:
             p = float(df['Close'].iloc[-1]); prev_p = float(df['Close'].iloc[-2]); p_chg = ((p / prev_p) - 1) * 100
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean(); v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
             peak_20 = float(df['Close'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
-
+            # 96번 줄 근처, df = ... 데이터를 가져온 코드 바로 아래에 넣으시게!
+            df = df.ffill()  # 1. 비어있는 값(주말 데이터 등)을 이전 종가로 채우네
+            df = df.dropna() # 2. 그래도 비어있는 게 있다면 과감히 버려서 nan을 막네
             # 기술 지표 계산
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
