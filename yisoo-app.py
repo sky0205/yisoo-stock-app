@@ -199,9 +199,6 @@ if symbol:
                 m_diff_prev = m_p - s_p  # 어제의 엔진 상태
                 
                 if m_l > s_l:
-                    # 엔진이 정회전일 때도 성벽의 상태를 먼저 묻는다!
-                    # 187번 줄 근처의 MACD 판정 로직 수정
-                if m_l > s_l:
                     if p < defense_line: # 성벽(defense_line)보다 낮으면 헛바퀴일세!
                         m_diag = "● 엔진 **정회전(헛바퀴)** 중일세! 엔진은 도나 성벽이 무너졌으니 속지 마시게."
                     else:
