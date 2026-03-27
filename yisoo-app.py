@@ -118,15 +118,17 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # 필살 대응 전략 및 최종 결론 (원본 보존)
+            # 필살 대응 전략 및 최종 결론 (성벽 우선 판정)
             adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
             adv3 = f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네! 절대 속지 마시게!" if m_l < s_l else "3. **엔진 정회전:** 엔진 시동 걸렸구먼!"
+            
             if p >= up_b or rsi_val >= 60:
                 final_adv = "💰 **[최종 결론]** 탐욕의 끝자락일세. **분할 매도**하여 수익을 빳빳하게 챙기시게!"
             elif p <= low_b or rsi_val <= 35:
                 final_adv = "🛡️ **[최종 결론]** 공포가 극에 달한 바닥권일세. **분할 매수**로 보따리를 푸시게!"
-            elif p < low_b: # [추가] 성벽 밑에 있을 때는 엔진이 돌아도 '절대 금물'일세!
+            elif p < low_b:
+                # [성벽 우선 로직] 엔진이 돌아도 성벽 밑이면 '절대 금물'이라 호통을 쳐야지!
                 final_adv = "🏚️ **[최종 결론]** 성문 함락 상태일세! 엔진이 돌아도 진흙탕이니 **절대 금물, 관망하시게!**"
             elif m_l < s_l or p < defense_line:
                 final_adv = "🧐 **[최종 결론]** 엔진 역회전 혹은 성벽 위태롭네. **관망하며 기다리시게!**"
