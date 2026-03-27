@@ -90,14 +90,15 @@ if symbol:
         is_opening = 9 <= now_local.hour <= 11
 
         if not df.empty:
-        # 93-94: [핵심] 주말이나 장 마감 후 빈칸(NaN)을 이전 종가로 채우네
+        # 93-94: 데이터 세척 (주말/마감 대응)
             df = df.ffill()
             df = df.dropna()
 
-        # 95-97: 현재가(p)와 전일종가(prev_p)를 안전하게 가져오네
+        # 95-97: 가격 데이터 추출 및 변동률(p_chg) 계산
             p = float(df['Close'].iloc[-1]); prev_p = float(df['Close'].iloc[-2])
-        
-        # 98-99: 거래량 점수 계산을 위한 기초 데이터를 준비하네
+            p_chg = ((p / prev_p) - 1) * 100  # <--- 요 녀석이 에러의 범인이었네!
+
+        # 98-99: 거래량 점수 계산 기초 데이터
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean()
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 else 0
             # 기술 지표 계산
