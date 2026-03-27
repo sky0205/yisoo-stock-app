@@ -119,9 +119,14 @@ if symbol:
             # 시작 시간 설정 (국장 9:00, 미장 9:30)
             s_h, s_m = (9, 0) if is_kr else (9, 30)
         
-            # 경과 시간 계산 (분 단위)
+            # 123번 줄: 현재 경과 시간을 계산하네
             elapsed = (now.hour - s_h) * 60 + (now.minute - s_m)
-            elapsed = max(10, min(390, elapsed)) # 10분~390분 사이로 고정하네
+
+        # 124번 줄: [핵심] 주말이거나 장 마감(오후 3:30) 이후면 390분으로 고정!
+            if now.weekday() >= 5 or elapsed > 390:
+                elapsed = 390
+            elif elapsed < 10:
+                elapsed = 10
         
             # [핵심] 시간 대비 거래 강도 점수 (150점 이상이면 '급증'으로 보네)
             vol_strength = (v_ratio / (elapsed / 390))
