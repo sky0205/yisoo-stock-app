@@ -71,14 +71,17 @@ if symbol:
             ticker_symbol = f"{symbol}.KS" # 삼성전자면 005930.KS로 변환!
             ticker = yf.Ticker(ticker_symbol)
             df = ticker.history(start=start_date, end=end_date)
-          # [74번 줄 시작] 앞줄 들여쓰기를 73번 줄과 똑같이 맞췄네!
+          # [74번 줄] 여기서부터 딱 이 덩어리만 넣으시게!
             try:
                 import FinanceDataReader as fdr
                 df_krx = fdr.StockListing('KRX')
                 name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
             except:
-                # 리스트에서 못 찾으면 미국 서버가 주는 영어 이름이라도 가져오네
-                name = ticker.info.get('shortName', symbol)  
+                # KRX 리스트 실패 시 미국 서버 이름이라도 가져오네
+                try:
+                    name = ticker.info.get('shortName', symbol)
+                except:
+                    name = symbol
             # [핵심] 종목명을 ticker 정보에서 빳빳하게 긁어오네!
             try:
                 name = ticker.info.get('shortName', symbol)
