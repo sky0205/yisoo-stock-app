@@ -71,7 +71,12 @@ if symbol:
             ticker_symbol = f"{symbol}.KS" # 삼성전자면 005930.KS로 변환!
             ticker = yf.Ticker(ticker_symbol)
             df = ticker.history(start=start_date, end=end_date)
-            name = symbol # 이름은 나중에 종목번호로 뜨겠지만 데이터는 확실히 가져오네
+            
+            # [핵심] 종목명을 ticker 정보에서 빳빳하게 긁어오네!
+            try:
+                name = ticker.info.get('shortName', symbol)
+            except:
+                name = symbol # 이름 못 찾으면 번호라도 띄우는 게 안전하네
         else:
             now_local = datetime.now(pytz.timezone('US/Eastern'))
             ticker = yf.Ticker(symbol); df = ticker.history(start=start_date, end=end_date)
