@@ -113,16 +113,28 @@ if symbol:
             defense_line = peak_20 * 0.93
 
         # [수술] 거래량 점수 계산 (국장 '0의 저주' 해결)
+            # 115-121: 미장 방식과 동일한 '시간 비례' 거래량 계산부
+            import datetime
+            now = datetime.datetime.now()
             v_curr = df['Volume'].iloc[-1]
         
-        # 최근 5일간 거래량 중 0인 데이터는 빼고 평균을 내야 미장처럼 정확하네!
-            valid_v = df['Volume'].iloc[-6:-1].replace(0, np.nan).dropna()
-        
-            if not valid_v.empty:
-                v_avg5 = valid_v.mean()
-                vol_strength = (v_curr / v_avg5) * 100
+        # 5일 평균에서 0인 데이터 제거 (계산 오류 방지)
+            v_avg5_data = df['Volume'].iloc[-6:-1].replace(0, np.nan).dropna()
+            v_avg5 = v_avg5_data.mean() if not v_avg5_data.empty else 100
+
+        # [핵심] 미장처럼 시간 비례 보정 (국장 09:00~15:30 기준 390분)
+            if is_kr:
+                market_start = now.replace(hour=9, minute=0, second=0, microsecond=0)
+            # 장 시작 전이면 1분으로, 장 마감 후면 390분으로 고정하네
+                elapsed = (now - market_start).total_seconds() / 60
+                elapsed_min = max(min(elapsed, 390), 1) 
+            
+            # 현재 시간까지 터져야 할 '기대 거래량'을 구해서 비교하네
+                expected_v = (v_avg5 / 390) * elapsed_min
+                vol_strength = (v_curr / expected_v) * 100
             else:
-                vol_strength = 100  # 데이터가 없으면 기본 100점으로 보네
+            # 미장도 자네가 가진 기존의 시간 보정 로직이 있다면 이와 똑같이 작동할 걸세
+                vol_strength = (v_curr / v_avg5) * 100
             # 기술 지표 계산
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
