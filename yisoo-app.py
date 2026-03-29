@@ -114,13 +114,29 @@ if symbol:
 
         # [수술] 거래량 점수 계산 (국장 '0의 저주' 해결)
             # 115-121: 미장 방식과 동일한 '시간 비례' 거래량 계산부
+           # 115-122: 거래량 점수 계산 (에러 방지 및 시간 보정)
             import datetime
             now = datetime.datetime.now()
             v_curr = df['Volume'].iloc[-1]
         
+        # 0인 데이터를 빼고 평균을 내는 아주 쉬운 방법일세!
+            v_list = [v for v in df['Volume'].iloc[-6:-1] if v > 0]
+            v_avg5 = sum(v_list) / len(v_list) if v_list else 100
+
+        # 미장 방식과 동일한 시간 보정 로직 (국장 390분 기준)
+            if is_kr:
+                m_start = now.replace(hour=9, minute=0, second=0, microsecond=0)
+                elapsed = (now - m_start).total_seconds() / 60
+                elapsed_min = max(min(elapsed, 390), 1) 
+            
+                expected_v = (v_avg5 / 390) * elapsed_min
+                vol_strength = (v_curr / expected_v) * 100
+            else:
+                vol_strength = (v_curr / v_avg5) * 100
+        
         # 5일 평균에서 0인 데이터 제거 (계산 오류 방지)
-            v_avg5_data = df['Volume'].iloc[-6:-1].replace(0, np.nan).dropna()
-            v_avg5 = v_avg5_data.mean() if not v_avg5_data.empty else 100
+                v_avg5_data = df['Volume'].iloc[-6:-1].replace(0, np.nan).dropna()
+                v_avg5 = v_avg5_data.mean() if not v_avg5_data.empty else 100
 
         # [핵심] 미장처럼 시간 비례 보정 (국장 09:00~15:30 기준 390분)
             if is_kr:
