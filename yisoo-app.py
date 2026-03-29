@@ -219,29 +219,29 @@ if symbol:
             
            # [최종 결론 생성] - 여기서부터 177번 줄까지 빳빳하게 갈아 끼우시게!
            # 221-242: 최종 결론 생성 (시간 보정 점수 반영 및 분할 매매 전략)
-        if p >= up_b or rsi_val >= 60:
-            final_adv = f"💰 **[최종 결론]** 거래강도({vol_strength:.0f}점). 탐욕의 끝자락일세. **분할 매도**하여 수익을 챙기시게!"
+            if p >= up_b or rsi_val >= 60:
+                final_adv = f"💰 **[최종 결론]** 거래강도({vol_strength:.0f}점). 탐욕의 끝자락일세. **분할 매도**하여 수익을 챙기시게!"
 
-        elif m_l < s_1 or p < defense_line:
+            elif m_l < s_1 or p < defense_line:
             # 150점이 넘으면 거래량이 실린 위험 신호로 판단하네
-            if vol_strength > 150:
-                final_adv = f"🚨 **[최종 결론]** 거래량({vol_strength:.0f}점) 실린 폭락세일세! **무조건 관망하고 소나기를 피하시게!**"
+                if vol_strength > 150:
+                    final_adv = f"🚨 **[최종 결론]** 거래량({vol_strength:.0f}점) 실린 폭락세일세! **무조건 관망하고 소나기를 피하시게!**"
+                else:
+                    final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). 엔진 역회전 혹은 성벽 위태롭네. **관망하며 기다리시게!**"
+
+            elif p <= (defense_line * 1.01): # 성벽 근처 바닥권
+                if vol_strength > 150:
+                    final_adv = f"🔥 **[최종 결론]** 거래량({vol_strength:.0f}점) 실린 진짜 바닥권일세! **강력 분할 매수** 시점이네!"
+                else:
+                    final_adv = f"🛡️ **[최종 결론]** 거래강도({vol_strength:.0f}점). 공포의 바닥권이나 기세가 약하네. **천천히 분할 매수**하시게!"
+
+            elif rsi_val <= 35:
+                final_adv = f"💎 **[최종 결론]** 거래강도({vol_strength:.0f}점). 지표 온도가 냉골일세. **정찰병 파견(분할 매수)**으로 대응하시게!"
+
             else:
-                final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). 엔진 역회전 혹은 성벽 위태롭네. **관망하며 기다리시게!**"
+                final_adv = f"📈 **[최종 결론]** 거래강도({vol_strength:.0f}점). 추세 살아있구먼. 성벽 사수 확인하며 **보유(홀딩)**하시게!"
 
-        elif p <= (defense_line * 1.01): # 성벽 근처 바닥권
-            if vol_strength > 150:
-                final_adv = f"🔥 **[최종 결론]** 거래량({vol_strength:.0f}점) 실린 진짜 바닥권일세! **강력 분할 매수** 시점이네!"
-            else:
-                final_adv = f"🛡️ **[최종 결론]** 거래강도({vol_strength:.0f}점). 공포의 바닥권이나 기세가 약하네. **천천히 분할 매수**하시게!"
-
-        elif rsi_val <= 35:
-            final_adv = f"💎 **[최종 결론]** 거래강도({vol_strength:.0f}점). 지표 온도가 냉골일세. **정찰병 파견(분할 매수)**으로 대응하시게!"
-
-        else:
-            final_adv = f"📈 **[최종 결론]** 거래강도({vol_strength:.0f}점). 추세 살아있구먼. 성벽 사수 확인하며 **보유(홀딩)**하시게!"
-
-        st.info(final_adv)
+            st.info(final_adv)
             # --- 필살 전략 박스 출력부 (자네 양식 그대로일세) ---
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
