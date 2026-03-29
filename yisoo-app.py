@@ -112,13 +112,17 @@ if symbol:
             peak_20 = float(df['Close'].iloc[-21:-1].max())
             defense_line = peak_20 * 0.93
 
-        # 98-99: 거래량 데이터
-            v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean()
-            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 else 0
-
-        # 98-99: 거래량 점수 계산 기초 데이터
-            v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean()
-            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 else 0
+        # [수술] 거래량 점수 계산 (국장 '0의 저주' 해결)
+            v_curr = df['Volume'].iloc[-1]
+        
+        # 최근 5일간 거래량 중 0인 데이터는 빼고 평균을 내야 미장처럼 정확하네!
+            valid_v = df['Volume'].iloc[-6:-1].replace(0, np.nan).dropna()
+        
+            if not valid_v.empty:
+                v_avg5 = valid_v.mean()
+                vol_strength = (v_curr / v_avg5) * 100
+            else:
+                vol_strength = 100  # 데이터가 없으면 기본 100점으로 보네
             # 기술 지표 계산
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
