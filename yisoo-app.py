@@ -133,25 +133,25 @@ if symbol:
 
             is_opening = 9 <= now_local.hour <= 11
             
-            # [수정] 어르신의 '평균(50/100/150%) 지침'에 따른 언어 중심 판독 로직
+            # [수정] 어르신의 지침: 전황 옆에는 수치만, 아래 분석 내용에 상태 포함
             if v_ratio < 0.50:
-                v_status = "[기세부족]"
+                v_status = "기세부족"
                 v_msg = "아직은 안개뿐이니, 아군 화력을 더 기다리시게."
             elif v_ratio < 1.00:
-                v_status = "[매집시작]"
+                v_status = "매집시작"
                 v_msg = "평균치를 향해 아군 화력이 차오르고 있으니 눈여겨보시게."
             elif v_ratio < 1.50:
-                v_status = "[주의단계]"
+                v_status = "주의단계"
                 v_msg = "평균 화력을 넘어섰구먼! 기세가 충만하니 추세를 타며 소량 대응해 보시게."
             else:
-                v_status = "[과열폭발]"
+                v_status = "과열폭발"
                 v_msg = "화력이 폭발 중일세! 단기 고점의 위험이 있으나, 기세가 범상치 않으니 냉정하게 대응하시게."
 
-    # [화면 출력 및 최종 결론 전송용 문구 정리]
-            v_adv = f"현재 {v_status} 단계로, {v_msg}"
+    # [1. 화면 출력용] 전황 옆에는 수치(%)만 빳빳하게 보여주네
+            st.markdown(f"📊 **거래량 전황**: {v_ratio:.1f}%")
 
-    # 화면 출력 (모든 수치와 128점 같은 망령된 점수를 싹 걷어냈네)
-            st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status}</div></div>", unsafe_allow_html=True)
+    # [2. 분석 내용] 그 아래에 상태와 지침이 한꺼번에 보이게 하네
+            v_adv = f"현재 [{v_status}] 단계로, {v_msg}"
             # 신호등
            # --- [141번 줄부터 끝까지 통째로 교체] ---
             v_score = vol_strength
