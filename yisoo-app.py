@@ -134,12 +134,19 @@ if symbol:
             # [긴급 수술] df에서 가져오지 말고 ticker 자체 정보에서 '오늘'치만 낚아채네
             # [긴급 수술] 낡은 장부 버리고 fdr의 최신 거래량을 직접 가져오네
             try:
-                # 국장은 ticker.info['volume']이 가장 정확한 실시간 수치일세
-                v_curr = float(ticker.info.get('volume', 0))
-                if v_curr == 0: # 혹시라도 0이면 차선책으로 실시간 장부(fdr)를 보네
-                    v_curr = float(fdr.DataReader(symbol).iloc[-1]['Volume'])
+                # FinanceDataReader로 오늘 장부를 새로고침해서 가져오네
+                df_now = fdr.DataReader(symbol)
+                v_curr = float(df_now['Volume'].iloc[-1])
+                
+                # 만약 가져온 데이터가 어제 종가라면, 아직 오늘 장부가 안 열린 것이니 0으로 두네
+                if df_now.index[-1].date() < datetime.now().date():
+                    v_curr = 0
             except:
                 v_curr = float(df['Volume'].iloc[-1])
+
+            # 분모(5일 평균)는 과거 기록(df)에서 가져오되, 숫자로 빳빳하게 고정하네
+            v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
+            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
             # 분모(5일 평균)는 변하지 않는 과거 기록이니 그대로 쓰되 숫자로 빳빳하게 고정하네
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
