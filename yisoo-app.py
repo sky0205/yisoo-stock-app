@@ -254,7 +254,7 @@ if symbol:
             adv2 = f"2. [성벽 사수 확인] 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세."
             adv3 = f"3. [엔진 확인] 엔진이 아직 역회전 중이라네!" if not is_forward else "3. [엔진 정회전] 엔진 시동 걸렸구먼!"
 
-            # --- [화면 출력부 2] 필살 대응 전략 카드 (문법 최적화) ---
+            # --- [최종] 불필요한 이모지와 복잡한 따옴표 제거 ---
             trend_html = "<div class='trend-card'>"
             trend_html += f"<div class='trend-title'>[필살] {name} 실전 대응 전략</div>"
             trend_html += f"<div class='trend-item'>{adv1}</div>"
