@@ -115,9 +115,20 @@ if symbol:
                 <p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>""", unsafe_allow_html=True)
 
             is_opening = 9 <= now_local.hour <= 11
-            v_label = "💤 거래침체" if v_ratio < 100 else "📈 거래증가" if v_ratio < 150 else "🔥 거래폭발"
-            v_adv = f"🔥 **[진짜 상승!]** 거래량 실린 빳빳한 진격일세!" if p_chg > 3 and vol_strength > 150 else f"✅ 현재 5일 평균 대비 거래율 {v_ratio:.1f}%로 세력을 추적 중일세."
-            st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_label} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
+            
+            # [수정] 시초(is_opening)일 때는 강도 점수(vol_strength)를 기준으로 판독하네
+            if is_opening:
+                if vol_strength >= 130: v_label, v_status = "🔥 시초 거래폭발", f"🔥 시초 거래폭발"
+                elif vol_strength >= 80: v_label, v_status = "📈 시초 거래급등", f"📈 시초 거래급등"
+                else: v_label, v_status = "✅ 시초 거래진행", f"✅ 시초 거래진행"
+            else:
+                v_label = "💤 거래침체" if vol_strength < 70 else "📈 거래증가" if vol_strength < 150 else "🔥 거래폭발"
+                v_status = v_label
+
+            v_adv = f"🔥 **[진짜 상승!]** 거래량 실린 빳빳한 진격일세!" if p_chg > 3 and vol_strength > 130 else f"✅ 현재 거래율 {v_ratio:.1f}%로 세력의 발자국을 추적 중일세."
+            
+            # 화면 출력 (v_status와 v_ratio를 함께 보여주네)
+            st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
             # 신호등
             if p >= up_b or rsi_val >= 60: sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"● {'👺 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 60 else '과열권일세! 수익 챙기시게.'}"
