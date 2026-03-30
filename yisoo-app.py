@@ -133,7 +133,7 @@ if symbol:
 
             is_opening = 9 <= now_local.hour <= 11
             
-            # [수선] 국장/미장 가리지 않고 실시간 화력(v_ratio)을 낚아채서 판독하네
+            # [최종] 낡은 로직(v_strength 등)을 싹 베어내고 어르신의 4단계 수치 판독만 남기네
             if v_ratio < 0.50:
                 v_status, v_msg = "기세부족", "아직은 안개뿐이니, 아군 화력을 더 기다리시게."
             elif v_ratio < 1.00:
@@ -143,20 +143,19 @@ if symbol:
             else:
                 v_status, v_msg = "과열폭발", "화력이 폭발 중일세! 단기 고점의 위험이 있으나, 기세가 범상치 않으니 냉정하게 대응하시게."
 
-        # [1. 전황판 출력] 국장에서도 32px 대왕 글자로 시원하게 보여주네
+        # [출력] 낡은 코드가 방해하지 못하도록 큼직하게 새로 찍어내네
             st.markdown(f"""
                 <div style='background-color: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 10px solid #1f77b4; margin-bottom: 10px;'>
-                    <p style='font-size: 20px; margin: 0; color: #444;'>📊 <b>거래량 전황</b></p>
-                    <p style='font-size: 32px; font-weight: bold; color: #1f77b4; margin: 5px 0;'>{v_ratio:.1f}%</p>
+                    <p style='font-size: 22px; margin: 0; color: #444;'>📊 <b>거래량 전황</b></p>
+                    <p style='font-size: 38px; font-weight: bold; color: #1f77b4; margin: 5px 0;'>{v_ratio:.1f}%</p>
                 </div>
-                <div style='background-color: #e3f2fd; padding: 15px; border-radius: 10px; border: 1px solid #bbdefb;'>
-                    <p style='font-size: 20px; line-height: 1.5; color: #0d47a1; margin: 0;'>
+                <div style='background-color: #e3f2fd; padding: 18px; border-radius: 10px; border: 1px solid #bbdefb; margin-top: 10px;'>
+                    <p style='font-size: 24px; line-height: 1.6; color: #0d47a1; margin: 0;'>
                         현재 <b>[{v_status}]</b> 단계로,<br>{v_msg}
                     </p>
                 </div>
             """, unsafe_allow_html=True)
 
-        # [2. 최종 결론 전송용 문구 정리]
             v_adv = f"현재 [{v_status}] 단계로, {v_msg}"
             # 신호등
            # --- [141번 줄부터 끝까지 통째로 교체] ---
