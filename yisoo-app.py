@@ -203,18 +203,18 @@ if symbol:
             # --- [203행 시작] 미장 판별 및 거래강도 수치 보정 ---
             is_us_market = any(c.isalpha() for c in name) if 'name' in locals() else False
 
-if is_us_market and vol_strength > 300:
-    import math
-    vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
-    vol_strength = min(vol_strength, 300)
+            if is_us_market and vol_strength > 300:
+                import math
+                vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
+                vol_strength = min(vol_strength, 300)
 
 # --- [중간 지지 및 결론 도출] ---
-elif m_l < s_l or p < defense_line:
-    diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
-    final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. 칼 뽑지 말고 성벽 회복 전까지 **무조건 관망!**"
+            elif m_l < s_l or p < defense_line:
+                diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
+                final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. 칼 뽑지 말고 성벽 회복 전까지 **무조건 관망!**"
 
-else:
-    final_adv = f"🚀 **[최종 결론]** 거래강도({vol_strength:.0f}점). 성벽 위 안착 및 기세가 빳빳하네! **정찰대 진격 가능**할세."
+            else:
+                final_adv = f"🚀 **[최종 결론]** 거래강도({vol_strength:.0f}점). 성벽 위 안착 및 기세가 빳빳하네! **정찰대 진격 가능**할세."
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
                 <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)
