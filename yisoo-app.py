@@ -184,32 +184,32 @@ if symbol:
 
             # --- [186번 줄부터 213번 줄까지 이 내용으로 대체] ---
             
-            # 1. 청년의 5단계 신호등 전광판 출력
+            ## --- [186~214번 줄] 화면 출력부 최종 통합 ---
+
+            # 1. 신호등 전광판 (sig, col, s_adv 변수가 위에서 정의되어 있어야 하네)
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
-            # 2. 하단 3대 기둥 가격 카드 (공략, 수확, 성벽 수치 복구)
+            # 2. 하단 3대 가격 카드 (공략, 수확, 성벽)
             c1, c2, c3 = st.columns(3)
-            with c1:
-                st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
-            with c2:
-                st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
-            with c3:
-                st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # 3. 실전 필살 대응 전략 텍스트 준비
-            adv1_t = f"1. [기세] RSI {rsi_val:.2f}로 {'60 돌파! 기세 좋네' if rsi_val >= 60 else '아직 고개 들기 전일세'}."
-            adv2_t = f"2. [성벽] 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세."
-            adv3_t = f"3. [엔진] 엔진 {'정회전 시동 걸렸네!' if is_forward else '아직 역회전 중이라네.'}"
+            # 3. 실전 필살 대응 전략 (변수명 꼬임 방지를 위해 여기서 결론 문구 재확인)
+            # 위쪽 로직에서 final_adv_text 혹은 final_adv로 만든 결론을 여기서 출력하네
+            try:
+                display_msg = final_adv_text if 'final_adv_text' in locals() else final_adv
+            except NameError:
+                display_msg = "데이터 분석 중일세. 잠시만 기다려주시게."
 
-            # 4. 필살 대응 전략 카드 출력 (에러 없는 안전 구조)
-            # 4. 필살 대응 전략 카드 출력 (에러 원천 차단)
+            # 4. 필살 대응 전략 카드 출력 (이모지 제거로 에러 원천 차단)
             t_html = "<div class='trend-card'>"
             t_html += f"<div class='trend-title'>[필살] {name} 실전 대응 전략</div>"
             t_html += f"<div class='trend-item'>{adv1_t}</div>"
             t_html += f"<div class='trend-item'>{adv2_t}</div>"
             t_html += f"<div class='trend-item'>{adv3_t}</div>"
             t_html += "<hr style='border:1px solid #FFEBEE;'>"
-            t_html += f"<div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div>"
+            t_html += f"<div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{display_msg}</div>"
             t_html += "</div>"
             
             st.markdown(t_html, unsafe_allow_html=True)
