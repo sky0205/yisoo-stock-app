@@ -200,20 +200,23 @@ if symbol:
                     final_adv = f"🛡️ **[최종 결론]** 거래강도({vol_strength:.0f}점). 엔진은 도는데 성벽이 아직 멀구먼. 소량 **정찰대**만 보내고 성벽 돌파 보시게."
 
             # --- 미장 거래강도 수치 보정 (203행 바로 위에 추가) ---
-            if is_us_market and vol_strength > 300:
-                import math
-                vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
-                vol_strength = min(vol_strength, 300) # 아무리 터져도 300점까지만!
+            # --- [203행 시작] 미장 판별 및 거래강도 수치 보정 ---
+is_us_market = any(c.isupper() for c in name) if 'name' in locals() else False
+
+if is_us_market and vol_strength > 300:
+    import math
+    vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
+    vol_strength = min(vol_strength, 300) 
 # --------------------------------------------------
 
-            elif m_l < s_l or p < defense_line:
-                diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
-                final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. 칼 뽑지 말고 성벽 회복 전까지 **무조건 관망!**"# --- [그 외 중간 지대 및 성벽 함락] ---
-            elif m_l < s_l or p < defense_line:
-                diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
-                final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. 칼 뽑지 말고 성벽 회복 전까진 **무조건 관망!**"
-            else:
-                final_adv = f"📈 **[최종 결론]** 거래강도({vol_strength:.0f}점). 성벽 위에서 추세 유지 중이네. 성벽 사수 확인하며 **보유(홀딩)**하시게."
+# --- [기존 중복 구간 삭제 후 결론 도출] ---
+elif m_l < s_l or p < defense_line:
+    diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
+    final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. 칼 뽑지 말고 성벽 회복 전까지 **무조건 관망!**"
+
+else:
+    final_adv = f"🚀 **[최종 결론]** 거래강도({vol_strength:.0f}점). 성벽 위 안착 및 기세가 빳빳하네! **정찰대 진격 가능**할세."
+# --- [기존 217행 부근 끝] ---
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
                 <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)
