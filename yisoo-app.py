@@ -139,52 +139,60 @@ if symbol:
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
             # 신호등
-            # --- [복구 및 통합] 미장 보정 및 5단계 신호등 로직 ---
+            # --- [복구] 미장 거래량 보정 로직 ---
             v_score = vol_strength
             if not is_kr and v_score > 300:
                 import math
                 v_score = 100 + (math.log10(v_score / 100) * 100)
                 v_score = min(v_score, 300)
 
-            # 1. [매도 권유] 구간: 성벽 위(상단) 혹은 과열권
-            if p >= up_b or rsi_val >= 70:
-                if is_forward and v_score > 150: # 정회전 + 거래폭발
+            # --- [신호등 로직] 청년의 냉철한 5단계 대응 지침 반영 ---
+            if p >= up_b or rsi_val >= 70: # 1. 매도 권유 구간
+                if is_forward and v_score > 150: 
                     sig, col = "💰 매도 권유 (강세)", "#388E3C"
                     s_adv = "• [보유] 기세 좋으니 홀딩(수익 극대화)! / [비보유] 첨병 파견 가능 (단, 3% 손절 엄수!)"
-                    final_adv_text = f"💰 **[최종 결론]**. 거래강도({v_score:.0f}점). 정회전 기세 살아있으니 좀 더 즐기시게."
-                else: # 역회전 혹은 기세 둔화
+                    final_adv = f"💰 **[최종 결론]**. 거래강도({v_score:.0f}점). 정회전 기세 살아있으니 좀 더 즐기시게."
+                else: 
                     sig, col = "💰 매도 권유 (주의)", "#E64A19"
                     s_adv = "• [보유] 역회전 감지, 강한 매도 권유(수익 확정)! / [비보유] 진입 절대 금지!"
-                    final_adv_text = f"💰 **[최종 결론]**. 거래강도({v_score:.0f}점). 성벽 위협받으니 미련 없이 챙겨서 나오시게."
+                    final_adv = f"💰 **[최종 결론]**. 거래강도({v_score:.0f}점). 성벽 위협받으니 미련 없이 챙겨서 나오시게."
 
-            # 2. [매수 신호] 구간: 바닥권(하단) 혹은 냉골
-            elif p <= low_b or rsi_val <= 35:
-                if is_narrowing: # 역회전 간극 축소 확인
+            elif p <= low_b or rsi_val <= 35: # 2. 매수 신호 구간
+                if is_narrowing: 
                     sig, col = "☘️ 매수 신호 (진입)", "#D32F2F"
                     s_adv = "• [지침] 간극 축소 확인! 분할 매수 및 첨병 파견 시작(공격적 대응)!"
-                    final_adv_text = f"☘️ **[최종 결론]**. 거래강도({v_score:.0f}점). 하강 에너지 소멸 중이니 조용히 보따리 푸시게."
-                else: # 역회전 간극 확대 중
+                    final_adv = f"☘️ **[최종 결론]**. 거래강도({v_score:.0f}점). 하강 에너지 소멸 중이니 조용히 보따리 푸시게."
+                else: 
                     sig, col = "☘️ 매수 신호 (대기)", "#795548"
                     s_adv = "• [지침] 간극 확대 중! 바닥 밑 지하실 위험 있으니 좀 더 인내하며 대기!"
-                    final_adv_text = f"☘️ **[최종 결론]**. 거래강도({v_score:.0f}점). 역회전 심화 중이니 아직 칼 뽑지 마시게."
+                    final_adv = f"☘️ **[최종 결론]**. 거래강도({v_score:.0f}점). 역회전 심화 중이니 아직 칼 뽑지 마시게."
 
-            # 3. [성벽 함락] 구간: 방어선 아래 위험지대
-            elif p < defense_line:
+            elif p < defense_line: # 3. 성벽 함락 구간
                 sig, col = "🧐 관망 (위험)", "#263238"
                 s_adv = "• [보유] 비중 축소 및 후퇴 권유 / [비보유] 성벽 아래 무법지대, 진입 절대 금지!"
-                final_adv_text = f"🧐 **[최종 결론]**. 거래강도({v_score:.0f}점). 성벽 함락 상태일세. 냉정하게 관망하시게."
+                final_adv = f"🧐 **[최종 결론]**. 거래강도({v_score:.0f}점). 성벽 함락 상태일세. 냉정하게 관망하시게."
 
-            # 4. [진격] 구간: 정회전 기세 확인 (매수 2단계)
-            elif is_forward and p >= defense_line and v_score > 100:
+            elif is_forward and p >= defense_line and v_score > 100: # 4. 진격 구간
                 sig, col = "🔥 진격 (진행)", "#1E88E5"
                 s_adv = "• [보유] 홀딩 및 관망 / [비보유] 본진 투입(전량 매수)하여 기세 타시게!"
-                final_adv_text = f"🔥 **[최종 결론]**. 거래강도({v_score:.0f}점). 엔진 정회전에 성벽 안착, 승기를 잡았네."
+                final_adv = f"🔥 **[최종 결론]**. 거래강도({v_score:.0f}점). 엔진 정회전에 성벽 안착, 승기를 잡았네."
 
-            # 5. [기타] 평시 관망 구간
-            else:
+            else: # 5. 평시 관망 구간
                 sig, col = "🧐 관망 (보통)", "#FBC02D"
                 s_adv = "• [보유] 탈출 및 진격 기회 대기 / [비보유] 안개 정국, 섣불리 움직이지 마시게."
-                final_adv_text = f"🧐 **[최종 결론]**. 거래강도({v_score:.0f}점). 지표 혼조세이니 느긋하게 지켜보시게."
+                final_adv = f"🧐 **[최종 결론]**. 거래강도({v_score:.0f}점). 지표 혼조세이니 느긋하게 지켜보시게."
+
+            # --- [화면 출력부] 사라졌던 신호등 박스 복구 ---
+            st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
+
+            # --- [필살 대응 전략 박스] 원래 내용 완벽 복원 ---
+            adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
+            adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세."
+            adv3 = f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네!" if not is_forward else "3. **엔진 정회전:** 엔진 시동 걸렸구먼!"
+
+            st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
+                <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
+                <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
