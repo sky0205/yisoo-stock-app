@@ -203,11 +203,14 @@ if symbol:
             # --- [203행 시작] 미장 판별 및 거래강도 수치 보정 ---
             # --- [204행 시작] 미장 판별 및 거래강도 수치 보정 ---
     # 변수 이름이 무엇이든 영어가 섞여 있으면 미장으로 판별하네
-                chk_target = str(ticker_symbol if 'ticker_symbol' in locals() else name if 'name' in locals() else "")
-                is_us_market = any(c.isalpha() for c in chk_target)
+                # --- [204행 시작] 미장 판별 및 거래강도 수치 보정 ---
+    # 종목코드가 숫자 6자리가 아니면 미장으로 간주하네
+                t_str = str(ticker_symbol) if 'ticker_symbol' in locals() else ""
+                is_us_market = not (t_str.isdigit() and len(t_str) == 6)
 
                 if is_us_market and vol_strength > 300:
                     import math
+        # 4137점 같은 광기를 200~300점대로 빳빳하게 깎아주기
                     vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
                     vol_strength = min(vol_strength, 300) 
     # --------------------------------------------------
