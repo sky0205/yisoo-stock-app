@@ -209,14 +209,15 @@ if symbol:
                     vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
                     vol_strength = min(vol_strength, 300)
 
-    # 2. 통합 결론 도출 (if-else는 한 식구라네)
+    # 2. 통합 결론 도출 (final_adv 변수를 여기서 빳빳하게 만드네)
                 if m_l < s_l or p < defense_line:
                     diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
                     final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. 칼 뽑지 말고 성벽 회복 전까지 **무조건 관망!**"
                 else:
                     final_adv = f"🚀 **[최종 결론]** 거래강도({vol_strength:.0f}점). 성벽 위 안착 및 기세가 빳빳하네! **정찰대 진격 가능**할세."
 
-    # 3. 최종 화면 출력 (이 줄의 시작점과 위쪽 t_str의 시작점이 일직선이어야 하네!)
+    # 3. [이 부분이 핵심!] 사라졌던 필승 전략 카드를 화면에 다시 찍어내기
+    # 위쪽 if/else 문과 앞줄(들여쓰기)을 똑같이 맞춰야 에러가 안 나네!
                 st.markdown(f"""
                 <div class='trend-card'>
                     <div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
