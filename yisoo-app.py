@@ -246,9 +246,26 @@ if symbol:
                 final_adv = f"🧐 **[최종 결론]** 거래강도({v_score:.0f}점). {diag} 상태일세. **무조건 관망!**"
             else:
                 final_adv = f"📈 **[최종 결론]** 거래강도({v_score:.0f}점). 성벽 위 추세 유지 중이네. **보유(홀딩)**하시게."
-            st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
-                <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
-                <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)
+            # --- [화면 출력부 1] 신호등 박스 ---
+            st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
+
+            # 필살 대응 전략 텍스트 생성 (이모지 제거로 에러 방지)
+            adv1 = f"1. [진격 금지] RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네." if rsi_val < 60 else "1. [기세 타기] RSI가 60을 돌파하며 불이 붙었구먼!"
+            adv2 = f"2. [성벽 사수 확인] 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세."
+            adv3 = f"3. [엔진 확인] 엔진이 아직 역회전 중이라네!" if not is_forward else "3. [엔진 정회전] 엔진 시동 걸렸구먼!"
+
+            # --- [화면 출력부 2] 필살 대응 전략 카드 (문법 최적화) ---
+            trend_html = f"""
+            <div class='trend-card'>
+                <div class='trend-title'>[필살] {name} 실전 대응 전략</div>
+                <div class='trend-item'>{adv1}</div>
+                <div class='trend-item'>{adv2}</div>
+                <div class='trend-item'>{adv3}</div>
+                <hr style='border:1px solid #FFEBEE;'>
+                <div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div>
+            </div>
+            """
+            st.markdown(trend_html, unsafe_allow_html=True)
 
             # 4대 지수 정밀 진단 (원본 문구 완벽 복원)
             st.divider()
