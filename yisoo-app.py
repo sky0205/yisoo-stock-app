@@ -139,77 +139,70 @@ if symbol:
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
             # 신호등
-            # # --- [복구 1] 미장 거래량 보정 및 v_score 확정 ---
+           # --- [141번 줄부터 끝까지 통째로 교체] ---
             v_score = vol_strength
             if not is_kr and v_score > 300:
                 import math
                 v_score = 100 + (math.log10(v_score / 100) * 100)
                 v_score = min(v_score, 300)
 
-            # --- [복구 2] 청년의 냉철한 5단계 대응 지침 (내용 완벽 반영) ---
-            if p >= up_b or rsi_val >= 70: # 1. 매도 권유 구간
-                if is_forward and v_score > 150: 
+            # 1. 5단계 신호등 로직 (변수명 final_adv로 통일했네!)
+            if p >= up_b or rsi_val >= 70:
+                if is_forward and v_score > 150:
                     sig, col = "💰 매도 권유 (강세)", "#388E3C"
-                    s_adv = "• [보유] 기세 좋으니 홀딩(수익 극대화)! / [비보유] 첨병 파견 가능 (단, 3% 손절 엄수!)"
+                    s_adv = "• [보유] 기세 좋으니 홀딩! / [비보유] 첨병 파견 가능 (단, 3% 손절 엄수!)"
                     final_adv = f"💰 **[최종 결론]**. 거래강도({v_score:.0f}점). 정회전 기세 살아있으니 수익을 즐기시게."
-                else: 
+                else:
                     sig, col = "💰 매도 권유 (주의)", "#E64A19"
-                    s_adv = "• [보유] 역회전 감지, 강한 매도 권유(수익 확정)! / [비보유] 진입 절대 금지!"
+                    s_adv = "• [보유] 역회전 감지, 강한 매도 권유! / [비보유] 진입 절대 금지!"
                     final_adv = f"💰 **[최종 결론]**. 거래강도({v_score:.0f}점). 성벽 위협받으니 미련 없이 챙겨서 나오시게."
 
-            elif p <= low_b or rsi_val <= 35: # 2. 매수 신호 구간
-                if is_narrowing: 
+            elif p <= low_b or rsi_val <= 35:
+                if is_narrowing:
                     sig, col = "☘️ 매수 신호 (진입)", "#D32F2F"
                     s_adv = "• [지침] 간극 축소 확인! 분할 매수 및 첨병 파견 시작(공격적 대응)!"
                     final_adv = f"☘️ **[최종 결론]**. 거래강도({v_score:.0f}점). 하강 에너지 소멸 중이니 조용히 보따리 푸시게."
-                else: 
+                else:
                     sig, col = "☘️ 매수 신호 (대기)", "#795548"
                     s_adv = "• [지침] 간극 확대 중! 바닥 밑 지하실 위험 있으니 좀 더 인내하며 대기!"
                     final_adv = f"☘️ **[최종 결론]**. 거래강도({v_score:.0f}점). 역회전 심화 중이니 아직 칼 뽑지 마시게."
 
-            elif p < defense_line: # 3. 성벽 함락 구간
+            elif p < defense_line:
                 sig, col = "🧐 관망 (위험)", "#263238"
                 s_adv = "• [보유] 비중 축소 및 후퇴 권유 / [비보유] 성벽 아래 무법지대, 진입 절대 금지!"
                 final_adv = f"🧐 **[최종 결론]**. 거래강도({v_score:.0f}점). 성벽 함락 상태일세. 냉정하게 관망하시게."
 
-            elif is_forward and p >= defense_line and v_score > 100: # 4. 진격 구간
+            elif is_forward and p >= defense_line and v_score > 100:
                 sig, col = "🔥 진격 (진행)", "#1E88E5"
                 s_adv = "• [보유] 홀딩 및 관망 / [비보유] 본진 투입(전량 매수)하여 기세 타시게!"
                 final_adv = f"🔥 **[최종 결론]**. 거래강도({v_score:.0f}점). 엔진 정회전에 성벽 안착, 승기를 잡았네."
 
-            else: # 5. 평시 관망 구간
+            else:
                 sig, col = "🧐 관망 (보통)", "#FBC02D"
                 s_adv = "• [보유] 탈출 및 진격 기회 대기 / [비보유] 안개 정국, 섣불리 움직이지 마시게."
                 final_adv = f"🧐 **[최종 결론]**. 거래강도({v_score:.0f}점). 지표 혼조세이니 느긋하게 지켜보시게."
 
-            # --- [186번 줄부터 213번 줄까지 이 내용으로 대체] ---
-            
-            ## --- [186~214번 줄] 화면 출력부 최종 통합 ---
-
-            # 1. 신호등 전광판 (sig, col, s_adv 변수가 위에서 정의되어 있어야 하네)
+            # 2. 화면 출력부 (신호등 박스)
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
-            # 2. 하단 3대 가격 카드 (공략, 수확, 성벽)
+            # 3. 하단 3대 가격 카드
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # 3. 실전 필살 대응 전략 (변수명 꼬임 방지를 위해 여기서 결론 문구 재확인)
-            # 위쪽 로직에서 final_adv_text 혹은 final_adv로 만든 결론을 여기서 출력하네
-            try:
-                display_msg = final_adv_text if 'final_adv_text' in locals() else final_adv
-            except NameError:
-                display_msg = "데이터 분석 중일세. 잠시만 기다려주시게."
+            # 4. 필살 대응 전략 텍스트 및 카드 출력
+            adv1_t = f"1. [기세] RSI {rsi_val:.2f}로 {'60 돌파! 기세 좋네' if rsi_val >= 60 else '아직 고개 들기 전일세'}."
+            adv2_t = f"2. [성벽] 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세."
+            adv3_t = f"3. [엔진] 엔진 {'정회전 시동 걸렸네!' if is_forward else '아직 역회전 중이라네.'}"
 
-            # 4. 필살 대응 전략 카드 출력 (이모지 제거로 에러 원천 차단)
             t_html = "<div class='trend-card'>"
             t_html += f"<div class='trend-title'>[필살] {name} 실전 대응 전략</div>"
             t_html += f"<div class='trend-item'>{adv1_t}</div>"
             t_html += f"<div class='trend-item'>{adv2_t}</div>"
             t_html += f"<div class='trend-item'>{adv3_t}</div>"
             t_html += "<hr style='border:1px solid #FFEBEE;'>"
-            t_html += f"<div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{display_msg}</div>"
+            t_html += f"<div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div>"
             t_html += "</div>"
             
             st.markdown(t_html, unsafe_allow_html=True)
