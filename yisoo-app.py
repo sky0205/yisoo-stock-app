@@ -106,7 +106,15 @@ if symbol:
             df['MA20'] = df['Close'].rolling(20).mean(); df['Std'] = df['Close'].rolling(20).std()
             mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
             peak_20 = float(df['High'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
-
+            # --- [109번 줄 삽입] 청년의 냉철한 기세 및 간극 판단 로직 ---
+            m_diff = m_l - s_l      # 현재 엔진 간격 (입술)
+            m_diff_p = m_p - s_p    # 전일 엔진 간격
+            is_forward = m_l > s_l  # 엔진 정회전(MACD 골든크로스 상태) 여부
+            
+            # 볼린저 밴드 하단 간극 축소 여부 판별
+            current_width = up_b - low_b
+            prev_width = (df['Std'].iloc[-2] * 4) # 전일 밴드폭 (상단-하단 간격)
+            is_narrowing = current_width < prev_width
             # 전광판
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
@@ -139,33 +147,43 @@ if symbol:
                 v_score = min(v_score, 300)
 
             # --- 어르신 전용 5단계 실전 신호등 로직 (비보유자 첨병 지침 반영) ---
-            if p < defense_line:
-                sig, col = "💀 퇴각 (매도 2단계)", "#263238"
-                s_adv = "● [보유] 전원 퇴각(전량 매도)! / [비보유] 진입 절대 금지!"
-                final_adv = f"💀 **[최종 결론] 퇴각**. 거래강도({v_score:.0f}점). 성벽 함락! 즉시 대피하시게."
+            # --- [수정] 141번 줄부터 대체 ---
+if p < defense_line:
+    sig, col = "💀 퇴각 (매도 2단계)", "#263238"
+    s_adv = "● [보유] 전원 퇴각(전량 매도)! / [비보유] 진입 절대 금지!"
+    final_adv_text = f"💀 **[최종 결론] 퇴각**. 거래강도({v_score:.0f}점). 성벽 함락! 즉시 대피하시게."
 
-            elif rsi_val >= 70 or p >= up_b:
-                sig, col = "💰 수확 (매도 1단계)", "#388E3C"
-                # [수정] 비보유자에게 첨병 파견 및 3% 손절 지침 명시!
-                s_adv = "● [보유] 소량 익절(수익 확정)! / [비보유] 첨병 파견(소량) 가능, 단 3% 하락 시 즉시 손절!"
-                final_adv = f"💰 **[최종 결론] 수확**. 거래강도({v_score:.0f}점). 과열권이니 방망이 짧게 잡고 대응하시게."
+elif rsi_val >= 70 or p >= up_b:
+    if is_forward and v_score > 150: # 정회전 + 거래폭발
+        sig, col = "💰 홀딩 (매도 1단계)", "#388E3C"
+        s_adv = "● [보유] 기세 좋으니 홀딩! / [비보유] 첨병(소량) 진입 가능, 단 3% 하락 시 칼 손절!"
+        final_adv_text = f"💰 **[최종 결론] 수확 대기**. 거래강도({v_score:.0f}점). 정회전 기세 타며 수익 극대화하시게."
+    else: # 역회전 조짐
+        sig, col = "💰 익절 (매도 1단계)", "#E64A19"
+        s_adv = "● [보유] 역회전 감지, 즉시 익절(수익 확정)! / [비보유] 관심 보류."
+        final_adv_text = f"💰 **[최종 결론] 익절**. 거래강도({v_score:.0f}점). 추세 꺾였으니 미련 없이 짐 챙기게."
 
-            elif m_l > s_l and p >= defense_line and v_score > 100:
-                sig, col = "🔥 진격 (매수 2단계)", "#1E88E5"
-                s_adv = "● [보유] 홀딩 및 관망 / [비보유] 본진 투입(전량 매수)하여 기세 타시게!"
-                final_adv = f"🔥 **[최종 결론] 진격**. 거래강도({v_score:.0f}점). 엔진 정회전에 성벽 사수! 진격의 발판일세."
+elif is_forward and p >= defense_line and v_score > 100:
+    sig, col = "🔥 진격 (매수 2단계)", "#1E88E5"
+    s_adv = "● [보유] 홀딩 및 관망 / [비보유] 본진 투입(전량 매수)하여 기세 타시게!"
+    final_adv_text = f"🔥 **[최종 결론] 진격**. 거래강도({v_score:.0f}점). 엔진 정회전에 성벽 안착, 승기를 잡았네."
 
-            elif (rsi_val <= 35 or will_val <= -80) and p <= low_b:
-                sig, col = "☘️ 매복 (매수 1단계)", "#D32F2F"
-                s_adv = "● [보유] 인내하며 사수! / [비보유] 정찰대(20~30%) 먼저 조용히 매복시키게."
-                final_adv = f"☘️ **[최종 결론] 매복**. 거래강도({v_score:.0f}점). 바닥권 복귀 신호니 조용히 보따리 푸시게."
+elif (rsi_val <= 35 or will_val <= -80) and p <= low_b:
+    if is_narrowing: # 간극 축소 시
+        sig, col = "☘️ 매복 (매수 1단계)", "#D32F2F"
+        s_adv = "● [보유] 인내하며 사수! / [비보유] 간극 축소 확인, 정찰대(20~30%) 매복시키게."
+        final_adv_text = f"☘️ **[최종 결론] 매복**. 거래강도({v_score:.0f}점). 하락 에너지 소멸 중이니 첨병을 보내게."
+    else: # 간극 확대 시 (역회전 심화)
+        sig, col = "☘️ 인내 (매수 대기)", "#795548"
+        s_adv = "● [보유] 추가 하락 대비 / [비보유] 간극 확대 중이니 아직 칼 뽑지 말고 인내하게."
+        final_adv_text = f"☘️ **[최종 결론] 인내**. 거래강도({v_score:.0f}점). 바닥 밑 지하실 확인 중일세."
 
-            else:
-                sig, col = "🧐 지옥행 (관망)", "#FBC02D"
-                s_adv = "● [보유] 탈출 기회 대기 / [비보유] 강 건너 불구경하듯 절대 칼 뽑지 마시게."
-                final_adv = f"🧐 **[최종 결론] 지옥행**. 거래강도({v_score:.0f}점). 추세 꺾였으니 냉정하게 관망하시게."
+else:
+    sig, col = "🧐 관망 (지옥행 대기)", "#FBC02D"
+    s_adv = "● [보유] 탈출 기회 대기 / [비보유] 강 건너 불구경하듯 절대 칼 뽑지 마시게."
+    final_adv_text = f"🧐 **[최종 결론] 관망**. 거래강도({v_score:.0f}점). 추세 모호하니 섣부른 판단은 금물이네."
 
-            st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
+st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
