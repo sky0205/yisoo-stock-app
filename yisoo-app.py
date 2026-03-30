@@ -112,45 +112,13 @@ if symbol:
             peak_20 = float(df['Close'].iloc[-21:-1].max())
             defense_line = peak_20 * 0.93
 
-        # [수술] 거래량 점수 계산 (국장 '0의 저주' 해결)
-            # 115-121: 미장 방식과 동일한 '시간 비례' 거래량 계산부
-           # 115-122: 거래량 점수 계산 (에러 방지 및 시간 보정)
-            import datetime
-            now = datetime.datetime.now()
-            v_curr = df['Volume'].iloc[-1]
-        
-        # 0인 데이터를 빼고 평균을 내는 아주 쉬운 방법일세!
-            v_list = [v for v in df['Volume'].iloc[-6:-1] if v > 0]
-            v_avg5 = sum(v_list) / len(v_list) if v_list else 100
+        # 98-99: 거래량 데이터
+            v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean()
+            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 else 0
 
-        # 미장 방식과 동일한 시간 보정 로직 (국장 390분 기준)
-            if is_kr:
-                m_start = now.replace(hour=9, minute=0, second=0, microsecond=0)
-                elapsed = (now - m_start).total_seconds() / 60
-                elapsed_min = max(min(elapsed, 390), 1) 
-            
-                expected_v = (v_avg5 / 390) * elapsed_min
-                vol_strength = (v_curr / expected_v) * 100
-            else:
-                vol_strength = (v_curr / v_avg5) * 100
-        
-        # 5일 평균에서 0인 데이터 제거 (계산 오류 방지)
-                v_avg5_data = df['Volume'].iloc[-6:-1].replace(0, np.nan).dropna()
-                v_avg5 = v_avg5_data.mean() if not v_avg5_data.empty else 100
-
-        # [핵심] 미장처럼 시간 비례 보정 (국장 09:00~15:30 기준 390분)
-            if is_kr:
-                market_start = now.replace(hour=9, minute=0, second=0, microsecond=0)
-            # 장 시작 전이면 1분으로, 장 마감 후면 390분으로 고정하네
-                elapsed = (now - market_start).total_seconds() / 60
-                elapsed_min = max(min(elapsed, 390), 1) 
-            
-            # 현재 시간까지 터져야 할 '기대 거래량'을 구해서 비교하네
-                expected_v = (v_avg5 / 390) * elapsed_min
-                vol_strength = (v_curr / expected_v) * 100
-            else:
-            # 미장도 자네가 가진 기존의 시간 보정 로직이 있다면 이와 똑같이 작동할 걸세
-                vol_strength = (v_curr / v_avg5) * 100
+        # 98-99: 거래량 점수 계산 기초 데이터
+            v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean()
+            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 else 0
             # 기술 지표 계산
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
@@ -234,12 +202,11 @@ if symbol:
             adv3 = f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네! 절대 속지 마시게!" if m_l < s_l else "3. **엔진 정회전:** 엔진 시동 걸렸구먼!"
             
            # [최종 결론 생성] - 여기서부터 177번 줄까지 빳빳하게 갈아 끼우시게!
-           # 221-242: 최종 결론 생성 (시간 보정 점수 반영 및 분할 매매 전략)
             if p >= up_b or rsi_val >= 60:
                 final_adv = f"💰 **[최종 결론]** 거래강도({vol_strength:.0f}점). 탐욕의 끝자락일세. **분할 매도**하여 수익을 챙기시게!"
-
-            elif m_l < s_1 or p < defense_line:
-            # 150점이 넘으면 거래량이 실린 위험 신호로 판단하네
+        
+            elif m_l < s_l or p < defense_line:
+            # 150점이 넘으면 경고등(🚨)을 켜고, 아니면 일반 관망(🧐)으로 표시하네
                 if vol_strength > 150:
                     final_adv = f"🚨 **[최종 결론]** 거래량({vol_strength:.0f}점) 실린 폭락세일세! **무조건 관망하고 소나기를 피하시게!**"
                 else:
@@ -247,17 +214,15 @@ if symbol:
 
             elif p <= (defense_line * 1.01): # 성벽 근처 바닥권
                 if vol_strength > 150:
-                    final_adv = f"🔥 **[최종 결론]** 거래량({vol_strength:.0f}점) 실린 진짜 바닥권일세! **강력 분할 매수** 시점이네!"
+                    final_adv = f"🔥 **[최종 결론]** 거래량({vol_strength:.0f}점) 실린 진짜 바닥권일세! **강력 분할 매수**하시게!"
                 else:
                     final_adv = f"🛡️ **[최종 결론]** 거래강도({vol_strength:.0f}점). 공포의 바닥권이나 기세가 약하네. **천천히 분할 매수**하시게!"
-
+        
             elif rsi_val <= 35:
-                final_adv = f"💎 **[최종 결론]** 거래강도({vol_strength:.0f}점). 지표 온도가 냉골일세. **정찰병 파견(분할 매수)**으로 대응하시게!"
-
+                final_adv = f"🛡️ **[최종 결론]** 거래강도({vol_strength:.0f}점). 지표 온도가 냉골일세. **분할 매수**로 대응하시게!"
+            
             else:
                 final_adv = f"📈 **[최종 결론]** 거래강도({vol_strength:.0f}점). 추세 살아있구먼. 성벽 사수 확인하며 **보유(홀딩)**하시게!"
-
-            st.info(final_adv)
             # --- 필살 전략 박스 출력부 (자네 양식 그대로일세) ---
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
