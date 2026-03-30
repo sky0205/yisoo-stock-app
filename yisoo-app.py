@@ -206,24 +206,23 @@ if symbol:
                 # --- [204행 시작] 미장 판별 및 거래강도 수치 보정 ---
     # 종목코드가 숫자 6자리가 아니면 미장으로 간주하네
                 # 1. 미장/국장 판별 및 거래강도 보정
-                # 1. 미장/국장 판별 및 거래강도 보정
                 t_str = str(ticker_symbol) if 'ticker_symbol' in locals() else ""
                 is_us_market = not (t_str.isdigit() and len(t_str) == 6)
-    
+
                 if is_us_market and vol_strength > 300:
                     import math
                     vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
                     vol_strength = min(vol_strength, 300)
 
-    # 2. 통합 결론 도출
+    # 1. 결론 도출 (if-else 줄을 똑같이 맞추시게)
                 if m_l < s_l or p < defense_line:
                     diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
                     final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. 칼 뽑지 말고 성벽 회복 전까지 **무조건 관망!**"
                 else:
                     final_adv = f"🚀 **[최종 결론]** 거래강도({vol_strength:.0f}점). 성벽 위 안착 및 기세가 빳빳하네! **정찰대 진격 가능**할세."
 
-    # 3. 최종 화면 출력 (따옴표 짝을 완벽하게 맞췄네!)
-                # 3. 최종 화면 출력 (이수 할배의 빳빳한 마지막 도장!)
+    # 2. 화면 출력 (이 줄은 위 if문보다 '왼쪽으로 네 칸' 더 나와야 하네!)
+    # 즉, 210행의 t_str과 똑같은 세로선에 서야 화면에 나옵니다.
                 st.markdown(f"""
                 <div class='trend-card'>
                     <div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
