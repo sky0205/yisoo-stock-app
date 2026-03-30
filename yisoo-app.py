@@ -201,7 +201,7 @@ if symbol:
 
                 # 1. 미장/국장 판별 및 거래강도 보정
                 # 1. 미장/국장 판별 및 거래강도 보정
-    t_str = str(ticker_symbol) if 'ticker_symbol' in locals() else ""
+                t_str = str(ticker_symbol) if 'ticker_symbol' in locals() else ""
                 is_us_market = not (t_str.isdigit() and len(t_str) == 6)
 
                 if is_us_market and vol_strength > 300:
