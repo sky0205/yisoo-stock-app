@@ -125,7 +125,8 @@ if symbol:
 
         # 98-99: 거래량 데이터
             # [핵심 수술] 오늘 실시간 거래량과 5일 평균 거래량 추출
-            v_curr = float(ticker.fast_info.last_volume) if hasattr(ticker, 'fast_info') else float(df['Volume'].iloc[-1])
+            # [긴급 수술] df에서 가져오지 말고 ticker 자체 정보에서 '오늘'치만 낚아채네
+            v_curr = float(ticker.info.get('volume', 0)) if is_kr else float(ticker.fast_info.last_volume)
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
