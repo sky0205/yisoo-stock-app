@@ -146,26 +146,36 @@ if symbol:
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
             adv3 = f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네! 절대 속지 마시게!" if m_l < s_l else "3. **엔진 정회전:** 엔진 시동 걸렸구먼!"
             
-            # [수술] 엔진 상태와 성벽 사수 여부를 결론에 정직하게 반영하네
-            if p >= up_b or rsi_val >= 60:
-                final_adv = f"💰 **[최종 결론]** 거래강도({vol_strength:.0f}점). 탐욕의 끝자락일세. **분할 매도**하여 수익을 챙기시게!"
-            
-            # 엔진은 도는데(m_l > s_l) 성벽이 무너진 경우 (헛바퀴)
-            elif m_l > s_l and p < defense_line:
-                final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). 엔진은 정회전이나 성벽이 함락됐네. **관망하며 성벽 회복을 기다리시게!**"
-            
-            # 엔진이 실제로 역회전(m_l < s_l) 중인 경우
-            elif m_l < s_l:
-                final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). 엔진 역회전 중이니 절대 칼 뽑지 마시게. **무조건 관망일세!**"
-            
-            # 성벽 근처 바닥권 (보따리 풀 기회)
-            elif p <= (defense_line * 1.01):
-                tag = "🔥" if vol_strength > 130 else "🛡️"
-                final_adv = f"{tag} **[최종 결론]** 거래강도({vol_strength:.0f}점). 진짜 바닥권일세! **강력 분할 매수**하시게!"
-                
-            else:
-                final_adv = f"📈 **[최종 결론]** 거래강도({vol_strength:.0f}점). 추세 살아있구먼. 성벽 사수 확인하며 **보유(홀딩)**하시게!"
+            # [최종 수술] 어르신 지침대로 고점 역회전 심화 및 생명선(-3%) 반영하네
+            stop_loss_p = p * 0.97 # 진입가 대비 -3% 생명선 계산
+            m_diff = m_l - s_l     # 현재 엔진 간격
+            m_diff_p = m_p - s_p   # 어제 엔진 간격
 
+            # 1. 꼭대기 구간 (고점 역회전 심화 판정)
+            if p >= up_b or rsi_val >= 60:
+                if m_l < s_l: # 엔진 역회전 포착
+                    if abs(m_diff) > abs(m_diff_p): # 역회전폭 심화 (전량 탈출)
+                        final_adv = f"🚨 **[최종 결론]** 고점서 엔진 역회전 심화! 세력이 도망가네. **전량 익절**로 현금 사수하시게!"
+                    else: # 역회전폭 감소 (일보 후퇴)
+                        final_adv = f"⚠️ **[최종 결론]** 고점서 엔진 역회전 초입일세. **30~50% 부분 익절**하고 성벽 사수 보시게."
+                else: # 정회전 유지
+                    final_adv = f"💰 **[최종 결론]** 기세 여전하네. **분할 매도**하며 수익 극대화하시게!"
+            
+            # 2. 바닥권 구간 (정회전 시 강력 진격)
+            elif p <= (low_b * 1.02):
+                if m_l > s_l: # 엔진 정회전 시동
+                    final_adv = f"🔥 **[최종 결론]** 진짜 바닥서 엔진 시동 걸렸네! **{format(p, fmt_p)}**서 진격하시되, 생명선({format(stop_loss_p, fmt_p)}) 엄수하시게."
+                else: # 엔진 역회전 유지
+                    final_adv = f"💀 **[최종 결론]** 바닥인 줄 알았더니 엔진 역회전이네! 지하실 더 깊으니 **절대 매수 금지**일세."
+            
+            # 3. 성벽 함락 혹은 엔진 역회전 (중간 지대)
+            elif m_l < s_l or p < defense_line:
+                diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
+                final_adv = f"🧐 **[최종 결론]** {diag} 상태일세. 칼 뽑지 말고 소나기 피하는 게 상책이네. **무조건 관망!**"
+            
+            # 4. 추세 홀딩
+            else:
+                final_adv = f"📈 **[최종 결론]** 추세 유지 중이네. 성벽({format(defense_line, fmt_p)}) 사수 확인하며 느긋하게 홀딩하시게."
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
                 <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)
