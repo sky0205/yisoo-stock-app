@@ -133,20 +133,25 @@ if symbol:
 
             is_opening = 9 <= now_local.hour <= 11
             
-            # [수정] 시초(is_opening)일 때는 강도 점수(vol_strength)를 기준으로 판독하네
-            if is_opening:
-                if vol_strength >= 130: v_label, v_status = "🔥 시초 거래폭발", f"🔥 시초 거래폭발"
-                elif vol_strength >= 80: v_label, v_status = "📈 시초 거래급등", f"📈 시초 거래급등"
-                else: v_label, v_status = "✅ 시초 거래진행", f"✅ 시초 거래진행"
+            # [수정] 어르신의 '평균(50/100/150%) 지침'에 따른 언어 중심 판독 로직
+            if v_ratio < 0.50:
+                v_status = "[기세부족]"
+                v_msg = "아직은 안개뿐이니, 아군 화력을 더 기다리시게."
+            elif v_ratio < 1.00:
+                v_status = "[매집시작]"
+                v_msg = "평균치를 향해 아군 화력이 차오르고 있으니 눈여겨보시게."
+            elif v_ratio < 1.50:
+                v_status = "[주의단계]"
+                v_msg = "평균 화력을 넘어섰구먼! 기세가 충만하니 추세를 타며 소량 대응해 보시게."
             else:
-                v_label = "💤 거래침체" if vol_strength < 70 else "📈 거래증가" if vol_strength < 150 else "🔥 거래폭발"
-                v_status = v_label
+                v_status = "[과열폭발]"
+                v_msg = "화력이 폭발 중일세! 단기 고점의 위험이 있으나, 기세가 범상치 않으니 냉정하게 대응하시게."
 
-            v_adv = f"🔥 **[진짜 상승!]** 거래량 실린 빳빳한 진격일세!" if p_chg > 3 and vol_strength > 130 else f"✅ 현재 거래율 {v_ratio:.1f}%로 세력의 발자국을 추적 중일세."
-            
-            # 화면 출력 (v_status와 v_ratio를 함께 보여주네)
-            st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
+    # [화면 출력 및 최종 결론 전송용 문구 정리]
+            v_adv = f"현재 {v_status} 단계로, {v_msg}"
 
+    # 화면 출력 (모든 수치와 128점 같은 망령된 점수를 싹 걷어냈네)
+            st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status}</div></div>", unsafe_allow_html=True)
             # 신호등
            # --- [141번 줄부터 끝까지 통째로 교체] ---
             v_score = vol_strength
