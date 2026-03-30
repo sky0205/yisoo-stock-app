@@ -199,14 +199,9 @@ if symbol:
                 else: # [바닥 2] 바닥 정회전이나 성벽이 멂 (정찰)
                     final_adv = f"🛡️ **[최종 결론]** 거래강도({vol_strength:.0f}점). 엔진은 도는데 성벽이 아직 멀구먼. 소량 **정찰대**만 보내고 성벽 돌파 보시게."
 
-            # --- 미장 거래강도 수치 보정 (203행 바로 위에 추가) ---
-            # --- [203행 시작] 미장 판별 및 거래강도 수치 보정 ---
-            # --- [204행 시작] 미장 판별 및 거래강도 수치 보정 ---
-    # 변수 이름이 무엇이든 영어가 섞여 있으면 미장으로 판별하네
-                # --- [204행 시작] 미장 판별 및 거래강도 수치 보정 ---
-    # 종목코드가 숫자 6자리가 아니면 미장으로 간주하네
                 # 1. 미장/국장 판별 및 거래강도 보정
-                t_str = str(ticker_symbol) if 'ticker_symbol' in locals() else ""
+                # 1. 미장/국장 판별 및 거래강도 보정
+    t_str = str(ticker_symbol) if 'ticker_symbol' in locals() else ""
                 is_us_market = not (t_str.isdigit() and len(t_str) == 6)
 
                 if is_us_market and vol_strength > 300:
@@ -214,15 +209,14 @@ if symbol:
                     vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
                     vol_strength = min(vol_strength, 300)
 
-    # 1. 결론 도출 (if-else 줄을 똑같이 맞추시게)
+    # 2. 통합 결론 도출 (if-else는 한 식구라네)
                 if m_l < s_l or p < defense_line:
                     diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
                     final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. 칼 뽑지 말고 성벽 회복 전까지 **무조건 관망!**"
                 else:
                     final_adv = f"🚀 **[최종 결론]** 거래강도({vol_strength:.0f}점). 성벽 위 안착 및 기세가 빳빳하네! **정찰대 진격 가능**할세."
 
-    # 2. 화면 출력 (이 줄은 위 if문보다 '왼쪽으로 네 칸' 더 나와야 하네!)
-    # 즉, 210행의 t_str과 똑같은 세로선에 서야 화면에 나옵니다.
+    # 3. 최종 화면 출력 (이 줄의 시작점과 위쪽 t_str의 시작점이 일직선이어야 하네!)
                 st.markdown(f"""
                 <div class='trend-card'>
                     <div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
