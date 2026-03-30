@@ -135,7 +135,7 @@ if symbol:
             # [긴급 수술] 낡은 장부 버리고 fdr의 최신 거래량을 직접 가져오네
             try:
                 # FinanceDataReader로 오늘 장부를 새로고침해서 가져오네
-                df_now = fdr.DataReader(symbol)
+                df_now = fdr.DataReader(symbol, start=datetime.now().strftime('%Y-%m-%d'))
                 v_curr = float(df_now['Volume'].iloc[-1])
                 
                 # 만약 가져온 데이터가 어제 종가라면, 아직 오늘 장부가 안 열린 것이니 0으로 두네
