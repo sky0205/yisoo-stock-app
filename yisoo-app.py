@@ -255,16 +255,15 @@ if symbol:
             adv3 = f"3. [엔진 확인] 엔진이 아직 역회전 중이라네!" if not is_forward else "3. [엔진 정회전] 엔진 시동 걸렸구먼!"
 
             # --- [화면 출력부 2] 필살 대응 전략 카드 (문법 최적화) ---
-            trend_html = f"""
-            <div class='trend-card'>
-                <div class='trend-title'>[필살] {name} 실전 대응 전략</div>
-                <div class='trend-item'>{adv1}</div>
-                <div class='trend-item'>{adv2}</div>
-                <div class='trend-item'>{adv3}</div>
-                <hr style='border:1px solid #FFEBEE;'>
-                <div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div>
-            </div>
-            """
+            trend_html = "<div class='trend-card'>"
+            trend_html += f"<div class='trend-title'>[필살] {name} 실전 대응 전략</div>"
+            trend_html += f"<div class='trend-item'>{adv1}</div>"
+            trend_html += f"<div class='trend-item'>{adv2}</div>"
+            trend_html += f"<div class='trend-item'>{adv3}</div>"
+            trend_html += "<hr style='border:1px solid #FFEBEE;'>"
+            trend_html += f"<div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div>"
+            trend_html += "</div>"
+            
             st.markdown(trend_html, unsafe_allow_html=True)
 
             # 4대 지수 정밀 진단 (원본 문구 완벽 복원)
