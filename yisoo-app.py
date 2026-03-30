@@ -133,25 +133,22 @@ if symbol:
             # [핵심 수술] 오늘 실시간 거래량과 5일 평균 거래량 추출
             # [긴급 수술] df에서 가져오지 말고 ticker 자체 정보에서 '오늘'치만 낚아채네
             # [긴급 수술] 낡은 장부 버리고 fdr의 최신 거래량을 직접 가져오네
-            try:
-                # FinanceDataReader로 오늘 장부를 새로고침해서 가져오네
-                df_now = fdr.DataReader(symbol, start=datetime.now().strftime('%Y-%m-%d'))
-                v_curr = float(df_now['Volume'].iloc[-1])
+            ttry:
+                # 1. 분모: 오늘(iloc[-1])을 제외한 순수 과거 5일 평균 (iloc[-6:-1])
+                v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
                 
-                # 만약 가져온 데이터가 어제 종가라면, 아직 오늘 장부가 안 열린 것이니 0으로 두네
-                if df_now.index[-1].date() < datetime.now().date():
+                # 2. 분자: 오늘 터진 실시간 거래량만 낚아채네
+                df_today = fdr.DataReader(symbol, start=datetime.now().strftime('%Y-%m-%d'))
+                if not df_today.empty:
+                    v_curr = float(df_today['Volume'].iloc[-1])
+                else:
                     v_curr = 0
-            except:
-                v_curr = float(df['Volume'].iloc[-1])
-
-            # 분모(5일 평균)는 과거 기록(df)에서 가져오되, 숫자로 빳빳하게 고정하네
-            v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
-            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
-
-            # 분모(5일 평균)는 변하지 않는 과거 기록이니 그대로 쓰되 숫자로 빳빳하게 고정하네
-            v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
-            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
-
+                
+                # 3. 비율 계산: 이제야 정직한 수치가 나올 걸세
+                v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
+                
+            except Exception as e:
+                v_ratio = 0
         # 98-99: 거래량 점수 계산 기초 데이터
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean()
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 else 0
