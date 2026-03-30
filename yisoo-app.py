@@ -182,36 +182,36 @@ if symbol:
                 s_adv = "• [보유] 탈출 및 진격 기회 대기 / [비보유] 안개 정국, 섣불리 움직이지 마시게."
                 final_adv = f"🧐 **[최종 결론]**. 거래강도({v_score:.0f}점). 지표 혼조세이니 느긋하게 지켜보시게."
 
-            # --- [복구 3] 화면 출력부 (신호등 박스 및 대응 전략 카드 복원) ---
+            # --- [186번 줄부터 213번 줄까지 이 내용으로 대체] ---
+            
+            # 1. 청년의 5단계 신호등 전광판 출력
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
-            # 필살 대응 전략 텍스트 생성
-            adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
-            adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세."
-            adv3 = f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네!" if not is_forward else "3. **엔진 정회전:** 엔진 시동 걸렸구먼!"
-
-            st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
-                <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
-                <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)/div>""", unsafe_allow_html=True)
+            # 2. 하단 3대 기둥 가격 카드 (공략, 수확, 성벽 수치 복구)
             c1, c2, c3 = st.columns(3)
-            with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
-            with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
-            with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c1:
+                st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c2:
+                st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c3:
+                st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # 필살 대응 전략 (냉정 복구)
-            adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
-            adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
-            adv3 = f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네! 절대 속지 마시게!" if m_l < s_l else "3. **엔진 정회전:** 엔진 시동 걸렸구먼!"
+            # 3. 실전 필살 대응 전략 텍스트 준비
+            adv1_t = f"1. [기세] RSI {rsi_val:.2f}로 {'60 돌파! 기세 좋네' if rsi_val >= 60 else '아직 고개 들기 전일세'}."
+            adv2_t = f"2. [성벽] 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세."
+            adv3_t = f"3. [엔진] 엔진 {'정회전 시동 걸렸네!' if is_forward else '아직 역회전 중이라네.'}"
+
+            # 4. 필살 대응 전략 카드 출력 (에러 없는 안전 구조)
+            t_html = "<div class='trend-card'>"
+            t_html += f"<div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>"
+            t_html += f"<div class='trend-item'>{adv1_t}</div>"
+            t_html += f"<div class='trend-item'>{adv2_t}</div>"
+            t_html += f"<div class='trend-item'>{adv3_t}</div>"
+            t_html += "<hr style='border:1px solid #FFEBEE;'>"
+            t_html += f"<div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div>"
+            t_html += "</div>"
             
-            # [최종 수술] 어르신 지침대로 고점 역회전 심화 및 생명선(-3%) 반영하네
-            stop_loss_p = p * 0.97 # 진입가 대비 -3% 생명선 계산
-            m_diff = m_l - s_l     # 현재 엔진 간격
-            m_diff_p = m_p - s_p   # 어제 엔진 간격
-
-            # [최종 수술] 어르신 전용 3X3 필살 대응 로직 (성벽 사수 여부 통합)
-            stop_loss_p = p * 0.97 # 진입가 대비 -3% 생명선
-            m_diff, m_diff_p = (m_l - s_l), (m_p - s_p) # 엔진 간격(입술)
-
+            st.markdown(t_html, unsafe_allow_html=True)
             # --- [최종 결론용 미장 점수 보정] ---
             v_score = vol_strength
             if not is_kr and v_score > 300:
