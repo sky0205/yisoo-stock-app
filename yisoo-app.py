@@ -71,13 +71,22 @@ if symbol:
             df = df.ffill().dropna()
             
             # [현주가 및 실시간 거래량 수술]
-           # --- [74~86번 줄 대체] 네이버(fdr) 전용 실시간 호출 ---
+           # --- [74~84번 줄 교체] 네이버 전용 실시간 안전 로직 ---
             try:
                 # 1. 네이버 서버에서 오늘 실시간 데이터를 가져오네
                 df_today = fdr.DataReader(symbol, start=now_local.strftime('%Y-%m-%d')) if is_kr else ticker.history(period='1d')
+                
+                if not df_today.empty:
+                    p = float(df_today['Close'].iloc[-1])
+                    v_curr = float(df_today['Volume'].iloc[-1])
+                else:
+                    # 오늘 장부가 비었으면 마지막 종가와 거래량 0으로 설정하네
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = 0
             except:
-                # 2. 서버 통신 장애 시 빈 장부로 처리하여 에러를 방지하네
-                df_today = pd.DataFrame()
+                # 2. 서버 통신 장애 시에도 멈추지 않고 마지막 데이터로 대체하네
+                p = float(df['Close'].iloc[-1])
+                v_curr = 0
 
             # 5일 평균 거래량 (분모 격리)
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
