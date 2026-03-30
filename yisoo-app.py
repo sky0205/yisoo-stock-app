@@ -78,7 +78,7 @@ if symbol:
                 
                 if not df_today.empty:
                     p = float(df_today['Close'].iloc[-1])
-                    v_curr = float(df_today['Volume'].iloc[-1])
+                    v_curr = float(df_today['Volume'].sum())
                 else:
                     # 오늘 장부가 비었으면 마지막 종가와 거래량 0으로 설정하네
                     p = float(df['Close'].iloc[-1])
