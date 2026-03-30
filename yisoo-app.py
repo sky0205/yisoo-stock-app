@@ -133,21 +133,17 @@ if symbol:
 
             is_opening = 9 <= now_local.hour <= 11
             
-            # [수정] 어르신의 지침: 전황 수치와 분석 내용을 아주 큼직하게 출력하네
+            # [통합수선] 국장/미장 가리지 않고 어르신의 '수치(v_ratio)' 기준으로만 판독하네
             if v_ratio < 0.50:
-                v_status = "기세부족"
-                v_msg = "아직은 안개뿐이니, 아군 화력을 더 기다리시게."
+                v_status, v_msg = "기세부족", "아직은 안개뿐이니, 아군 화력을 더 기다리시게."
             elif v_ratio < 1.00:
-                v_status = "매집시작"
-                v_msg = "평균치를 향해 아군 화력이 차오르고 있으니 눈여겨보시게."
+                v_status, v_msg = "매집시작", "평균치를 향해 아군 화력이 차오르고 있으니 눈여겨보시게."
             elif v_ratio < 1.50:
-                v_status = "주의단계"
-                v_msg = "평균 화력을 넘어섰구먼! 기세가 충만하니 추세를 타며 소량 대응해 보시게."
+                v_status, v_msg = "주의단계", "평균 화력을 넘어섰구먼! 기세가 충만하니 추세를 타며 소량 대응해 보시게."
             else:
-                v_status = "과열폭발"
-                v_msg = "화력이 폭발 중일세! 단기 고점의 위험이 있으나, 기세가 범상치 않으니 냉정하게 대응하시게."
+                v_status, v_msg = "과열폭발", "화력이 폭발 중일세! 단기 고점의 위험이 있으나, 기세가 범상치 않으니 냉정하게 대응하시게."
 
-        # [1. 전황판 출력] 수치를 32px 대왕 글자로 키워 사령관의 눈을 시원하게 해드리네
+    # [1. 전황판 출력] 국장에서도 32px 대왕 글자로 시원하게 보여주네
             st.markdown(f"""
                 <div style='background-color: #f0f2f6; padding: 20px; border-radius: 10px; border-left: 10px solid #1f77b4;'>
                     <p style='font-size: 20px; margin-bottom: 5px;'>📊 <b>거래량 전황</b></p>
@@ -155,7 +151,7 @@ if symbol:
                 </div>
             """, unsafe_allow_html=True)
 
-        # [2. 분석 내용 출력] 내용도 20px 굵은 글자로 박스 안에 빳빳하게 담아내네
+    # [2. 분석 내용 출력] 20px 굵직한 글자로 국장 전황도 빳빳하게 보고하네
             st.markdown(f"""
                 <div style='background-color: #e1f5fe; padding: 15px; border-radius: 10px; margin-top: 10px;'>
                     <p style='font-size: 20px; line-height: 1.6; color: #01579b; margin: 0;'>
@@ -164,7 +160,7 @@ if symbol:
                 </div>
             """, unsafe_allow_html=True)
 
-        # [3. 최종 결론 전송용 문구 정리]
+    # [3. 최종 결론 전송용 문구 정리]
             v_adv = f"현재 [{v_status}] 단계로, {v_msg}"
             # 신호등
            # --- [141번 줄부터 끝까지 통째로 교체] ---
