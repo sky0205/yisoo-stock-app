@@ -199,7 +199,16 @@ if symbol:
                 else: # [바닥 2] 바닥 정회전이나 성벽이 멂 (정찰)
                     final_adv = f"🛡️ **[최종 결론]** 거래강도({vol_strength:.0f}점). 엔진은 도는데 성벽이 아직 멀구먼. 소량 **정찰대**만 보내고 성벽 돌파 보시게."
 
-            # --- [그 외 중간 지대 및 성벽 함락] ---
+            # --- 미장 거래강도 수치 보정 (203행 바로 위에 추가) ---
+            if is_us_market and vol_strength > 300:
+                import math
+                vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
+                vol_strength = min(vol_strength, 300) # 아무리 터져도 300점까지만!
+# --------------------------------------------------
+
+            elif m_l < s_l or p < defense_line:
+                diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
+                final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. 칼 뽑지 말고 성벽 회복 전까지 **무조건 관망!**"# --- [그 외 중간 지대 및 성벽 함락] ---
             elif m_l < s_l or p < defense_line:
                 diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
                 final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. 칼 뽑지 말고 성벽 회복 전까진 **무조건 관망!**"
