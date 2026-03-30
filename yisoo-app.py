@@ -133,7 +133,7 @@ if symbol:
 
             is_opening = 9 <= now_local.hour <= 11
             
-            # [수정] 어르신의 지침: 전황 옆에는 수치만 큼직하게, 아래 분석 내용(상태 포함) 출력
+            # [수정] 어르신의 지침: 전황 수치와 분석 내용을 아주 큼직하게 출력하네
             if v_ratio < 0.50:
                 v_status = "기세부족"
                 v_msg = "아직은 안개뿐이니, 아군 화력을 더 기다리시게."
@@ -147,11 +147,22 @@ if symbol:
                 v_status = "과열폭발"
                 v_msg = "화력이 폭발 중일세! 단기 고점의 위험이 있으나, 기세가 범상치 않으니 냉정하게 대응하시게."
 
-        # [1. 전황판 출력] 글자 크기를 24px로 키워 사령관의 눈을 시원하게 해드리네
-            st.markdown(f"### 📊 거래량 전황: <span style='font-size:24px; color:#1f77b4;'>{v_ratio:.1f}%</span>", unsafe_allow_html=True)
+        # [1. 전황판 출력] 수치를 32px 대왕 글자로 키워 사령관의 눈을 시원하게 해드리네
+            st.markdown(f"""
+                <div style='background-color: #f0f2f6; padding: 20px; border-radius: 10px; border-left: 10px solid #1f77b4;'>
+                    <p style='font-size: 20px; margin-bottom: 5px;'>📊 <b>거래량 전황</b></p>
+                    <p style='font-size: 32px; font-weight: bold; color: #1f77b4; margin: 0;'>{v_ratio:.1f}%</p>
+                </div>
+            """, unsafe_allow_html=True)
 
-        # [2. 분석 내용 출력] 수치 아래에 상태와 지침을 큼직한 박스에 담아내네
-            st.info(f"현재 [{v_status}] 단계로, {v_msg}")
+        # [2. 분석 내용 출력] 내용도 20px 굵은 글자로 박스 안에 빳빳하게 담아내네
+            st.markdown(f"""
+                <div style='background-color: #e1f5fe; padding: 15px; border-radius: 10px; margin-top: 10px;'>
+                    <p style='font-size: 20px; line-height: 1.6; color: #01579b; margin: 0;'>
+                        현재 <b>[{v_status}]</b> 단계로,<br>{v_msg}
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
 
         # [3. 최종 결론 전송용 문구 정리]
             v_adv = f"현재 [{v_status}] 단계로, {v_msg}"
