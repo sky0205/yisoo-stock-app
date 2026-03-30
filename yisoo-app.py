@@ -89,7 +89,7 @@ if symbol:
                 v_curr = 0
 
             # 5일 평균 거래량 (분모 격리)
-            v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
+            v_avg5 = float(df['Volume'].iloc[-5:].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
             prev_p = float(df['Close'].iloc[-2])
