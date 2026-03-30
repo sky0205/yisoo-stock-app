@@ -131,9 +131,32 @@ if symbol:
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
             # 신호등
-            if p >= up_b or rsi_val >= 60: sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"● {'👺 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 60 else '과열권일세! 수익 챙기시게.'}"
-            elif p <= (low_b * 1.005) or rsi_val <= 35: sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", "● 🧊 바닥권일세. 겁먹지 말고 보따리 푸시게."
-            else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", "● 눈치싸움 중일세. 지표 끝단을 기다리시게."
+            # --- 신호등 및 상황별 조언 로직 (수정본) ---
+
+# 🟢 [매도권/비상] 구간
+            if p >= up_b or rsi_val >= 60:
+                sig, col = "🟢 매도권 진격", "#388E3C"
+    # 어르신의 상황에 따른 쌍방향 조언
+                s_adv = (
+                    "• 🚀 **[보유]** 수익 극대화! 성벽 위에서 빳빳하게 홀딩하시게.\n"
+                    "• 🔥 **[미보유]** 달리는 말일세! 지금이라도 정찰대 투입 적기."
+                )
+
+# 🔴 [매수권/바닥] 구간
+            elif p <= (low_b * 1.005) or rsi_val <= 35:
+                sig, col = "🔴 매수권 진입", "#D32F2F"
+    # 어르신의 상황에 따른 쌍방향 조언
+                s_adv = (
+                    "• 🛡️ **[보유]** 추가 매수 금지! 엔진 돌아설 때까지 자중자애하시게.\n"
+                    "• 👀 **[미보유]** 싸다고 덥석 물면 지하실 구경하네. 관망하시게."
+                )
+
+# 🟡 [관망/대기] 구간
+            else:
+                sig, col = "🟡 관망 및 대기", "#FBC02D"
+                s_adv = "• 🧐 눈치싸움 중일세. 지표 끝단을 기다리며 칼자루만 쥐고 계시게."
+
+# ---------------------------------------
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
             c1, c2, c3 = st.columns(3)
