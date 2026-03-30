@@ -131,9 +131,30 @@ if symbol:
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
             # 신호등
-            if p >= up_b or rsi_val >= 60: sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"● {'👺 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 60 else '과열권일세! 수익 챙기시게.'}"
-            elif p <= (low_b * 1.005) or rsi_val <= 35: sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", "● 🧊 바닥권일세. 겁먹지 말고 보따리 푸시게."
-            else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", "● 눈치싸움 중일세. 지표 끝단을 기다리시게."
+            # [수술] 미장 거래량 점수 보정 (최종 결론용)
+            v_score = vol_strength
+            if not is_kr and v_score > 300:
+                import math
+                v_score = 100 + (math.log10(v_score / 100) * 100)
+                v_score = min(v_score, 300)
+
+            # --- 이수 할배의 5단계 실전 신호등 로직 ---
+            if p < defense_line or (m_l < s_l and p < mid_line):
+                sig, col, s_adv = "💀 퇴각 (매도 2단계)", "#263238", "● 성벽이 무너졌네! 미련 버리고 전원 퇴각(전량 매도)하시게."
+                final_adv = f"💀 **[최종 결론] 퇴각**. 거래강도({v_score:.0f}점). 성벽 함락되었으니 피신이 상책일세!"
+            elif rsi_val >= 70 or p >= up_b:
+                sig, col, s_adv = "💰 수확 (매도 1단계)", "#388E3C", "● 불지옥 문턱일세! 수익금 챙겨서 소량 익절하시게."
+                final_adv = f"💰 **[최종 결론] 수확**. 거래강도({v_score:.0f}점). 과열권이니 분할 매도로 대응하시게."
+            elif m_l > s_l and p >= defense_line and v_score > 100:
+                sig, col, s_adv = "🔥 진격 (매수 2단계)", "#1E88E5", "● 엔진 정회전에 성벽 사수! 본진 투입(전량 매수)하시게."
+                final_adv = f"🔥 **[최종 결론] 진격**. 거래강도({v_score:.0f}점). 기세 빳빳하니 진격의 발판 삼으시게!"
+            elif (rsi_val <= 35 or will_val <= -80) and p <= low_b:
+                sig, col, s_adv = "☘️ 매복 (매수 1단계)", "#D32F2F", "● 개미들 항복한 바닥일세. 정찰대(20~30%) 먼저 보내시게."
+                final_adv = f"☘️ **[최종 결론] 매복**. 거래강도({v_score:.0f}점). 바닥 복귀 신호니 매복 준비하시게."
+            else:
+                sig, col, s_adv = "🧐 지옥행 (관망)", "#FBC02D", "● 고개 들 기미가 없구먼. 절대 손대지 말고 강 건너 불구경하시게."
+                final_adv = f"🧐 **[최종 결론] 지옥행**. 거래강도({v_score:.0f}점). 추세 꺾였으니 관망하며 기다리시게."
+
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
             c1, c2, c3 = st.columns(3)
