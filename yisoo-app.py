@@ -210,10 +210,8 @@ if symbol:
 
                 if is_us_market and vol_strength > 300:
                     import math
-        # 4137점 같은 광기를 200~300점대로 빳빳하게 깎아주기
                     vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
-                    vol_strength = min(vol_strength, 300) 
-    # --------------------------------------------------
+                    vol_strength = min(vol_strength, 300)
 
                 elif m_l < s_l or p < defense_line:
                     diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
