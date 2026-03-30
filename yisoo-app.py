@@ -148,42 +148,42 @@ if symbol:
 
             # --- 어르신 전용 5단계 실전 신호등 로직 (비보유자 첨병 지침 반영) ---
             # --- [수정] 141번 줄부터 대체 ---
-if p < defense_line:
-    sig, col = "💀 퇴각 (매도 2단계)", "#263238"
-    s_adv = "● [보유] 전원 퇴각(전량 매도)! / [비보유] 진입 절대 금지!"
-    final_adv_text = f"💀 **[최종 결론] 퇴각**. 거래강도({v_score:.0f}점). 성벽 함락! 즉시 대피하시게."
+            if p < defense_line:
+                sig, col = "💀 퇴각 (매도 2단계)", "#263238"
+                s_adv = "● [보유] 전원 퇴각(전량 매도)! / [비보유] 진입 절대 금지!"
+                final_adv_text = f"💀 **[최종 결론] 퇴각**. 거래강도({v_score:.0f}점). 성벽 함락! 즉시 대피하시게."
 
-elif rsi_val >= 70 or p >= up_b:
-    if is_forward and v_score > 150: # 정회전 + 거래폭발
-        sig, col = "💰 홀딩 (매도 1단계)", "#388E3C"
-        s_adv = "● [보유] 기세 좋으니 홀딩! / [비보유] 첨병(소량) 진입 가능, 단 3% 하락 시 칼 손절!"
-        final_adv_text = f"💰 **[최종 결론] 수확 대기**. 거래강도({v_score:.0f}점). 정회전 기세 타며 수익 극대화하시게."
-    else: # 역회전 조짐
-        sig, col = "💰 익절 (매도 1단계)", "#E64A19"
-        s_adv = "● [보유] 역회전 감지, 즉시 익절(수익 확정)! / [비보유] 관심 보류."
-        final_adv_text = f"💰 **[최종 결론] 익절**. 거래강도({v_score:.0f}점). 추세 꺾였으니 미련 없이 짐 챙기게."
+            elif rsi_val >= 70 or p >= up_b:
+                if is_forward and v_score > 150: # 정회전 + 거래폭발
+                    sig, col = "💰 홀딩 (매도 1단계)", "#388E3C"
+                    s_adv = "● [보유] 기세 좋으니 홀딩! / [비보유] 첨병(소량) 진입 가능, 단 3% 하락 시 칼 손절!"
+                    final_adv_text = f"💰 **[최종 결론] 수확 대기**. 거래강도({v_score:.0f}점). 정회전 기세 타며 수익 극대화하시게."
+                else: # 역회전 조짐
+                    sig, col = "💰 익절 (매도 1단계)", "#E64A19"
+                    s_adv = "● [보유] 역회전 감지, 즉시 익절(수익 확정)! / [비보유] 관심 보류."
+                    final_adv_text = f"💰 **[최종 결론] 익절**. 거래강도({v_score:.0f}점). 추세 꺾였으니 미련 없이 짐 챙기게."
 
-elif is_forward and p >= defense_line and v_score > 100:
-    sig, col = "🔥 진격 (매수 2단계)", "#1E88E5"
-    s_adv = "● [보유] 홀딩 및 관망 / [비보유] 본진 투입(전량 매수)하여 기세 타시게!"
-    final_adv_text = f"🔥 **[최종 결론] 진격**. 거래강도({v_score:.0f}점). 엔진 정회전에 성벽 안착, 승기를 잡았네."
+            elif is_forward and p >= defense_line and v_score > 100:
+                sig, col = "🔥 진격 (매수 2단계)", "#1E88E5"
+                s_adv = "● [보유] 홀딩 및 관망 / [비보유] 본진 투입(전량 매수)하여 기세 타시게!"
+                final_adv_text = f"🔥 **[최종 결론] 진격**. 거래강도({v_score:.0f}점). 엔진 정회전에 성벽 안착, 승기를 잡았네."
 
-elif (rsi_val <= 35 or will_val <= -80) and p <= low_b:
-    if is_narrowing: # 간극 축소 시
-        sig, col = "☘️ 매복 (매수 1단계)", "#D32F2F"
-        s_adv = "● [보유] 인내하며 사수! / [비보유] 간극 축소 확인, 정찰대(20~30%) 매복시키게."
-        final_adv_text = f"☘️ **[최종 결론] 매복**. 거래강도({v_score:.0f}점). 하락 에너지 소멸 중이니 첨병을 보내게."
-    else: # 간극 확대 시 (역회전 심화)
-        sig, col = "☘️ 인내 (매수 대기)", "#795548"
-        s_adv = "● [보유] 추가 하락 대비 / [비보유] 간극 확대 중이니 아직 칼 뽑지 말고 인내하게."
-        final_adv_text = f"☘️ **[최종 결론] 인내**. 거래강도({v_score:.0f}점). 바닥 밑 지하실 확인 중일세."
+            elif (rsi_val <= 35 or will_val <= -80) and p <= low_b:
+                if is_narrowing: # 간극 축소 시
+                    sig, col = "☘️ 매복 (매수 1단계)", "#D32F2F"
+                    s_adv = "● [보유] 인내하며 사수! / [비보유] 간극 축소 확인, 정찰대(20~30%) 매복시키게."
+                    final_adv_text = f"☘️ **[최종 결론] 매복**. 거래강도({v_score:.0f}점). 하락 에너지 소멸 중이니 첨병을 보내게."
+                else: # 간극 확대 시 (역회전 심화)
+                    sig, col = "☘️ 인내 (매수 대기)", "#795548"
+                    s_adv = "● [보유] 추가 하락 대비 / [비보유] 간극 확대 중이니 아직 칼 뽑지 말고 인내하게."
+                    final_adv_text = f"☘️ **[최종 결론] 인내**. 거래강도({v_score:.0f}점). 바닥 밑 지하실 확인 중일세."
 
-else:
-    sig, col = "🧐 관망 (지옥행 대기)", "#FBC02D"
-    s_adv = "● [보유] 탈출 기회 대기 / [비보유] 강 건너 불구경하듯 절대 칼 뽑지 마시게."
-    final_adv_text = f"🧐 **[최종 결론] 관망**. 거래강도({v_score:.0f}점). 추세 모호하니 섣부른 판단은 금물이네."
+            else:
+                sig, col = "🧐 관망 (지옥행 대기)", "#FBC02D"
+                s_adv = "● [보유] 탈출 기회 대기 / [비보유] 강 건너 불구경하듯 절대 칼 뽑지 마시게."
+                final_adv_text = f"🧐 **[최종 결론] 관망**. 거래강도({v_score:.0f}점). 추세 모호하니 섣부른 판단은 금물이네."
 
-st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
