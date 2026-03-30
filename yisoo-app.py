@@ -133,19 +133,22 @@ if symbol:
             # [핵심 수술] 오늘 실시간 거래량과 5일 평균 거래량 추출
             # [긴급 수술] df에서 가져오지 말고 ticker 자체 정보에서 '오늘'치만 낚아채네
             # [긴급 수술] 낡은 장부 버리고 fdr의 최신 거래량을 직접 가져오네
+            # [긴급 수술] yfinance의 낡은 장부 대신, 국산 장부(fdr)로 분모/분자 통일하네
             try:
-                # 1. 분모: 오늘(iloc[-1])을 제외한 순수 과거 5일 평균 (iloc[-6:-1])
-                v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
+                # 1. 분모: 오늘을 제외한 순수 직전 5거래일 평균 (명시적 날짜 지정)
+                df_past = fdr.DataReader(symbol, 
+                                        start=(datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d'),
+                                        end=(datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d'))
+                v_avg5 = float(df_past['Volume'].tail(5).mean())
                 
-                # 2. 분자: 오늘 터진 실시간 거래량만 낚아채네
+                # 2. 분자: 오늘 터진 실시간 거래량
                 df_today = fdr.DataReader(symbol, start=datetime.now().strftime('%Y-%m-%d'))
-                if not df_today.empty:
-                    v_curr = float(df_today['Volume'].iloc[-1])
-                else:
-                    v_curr = 0
+                v_curr = float(df_today['Volume'].iloc[-1]) if not df_today.empty else 0
                 
-                # 3. 비율 계산: 이제야 정직한 수치가 나올 걸세
+                # 3. 비율: 이제야 20% 내외의 정직한 숫자가 나올 걸세
                 v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
+            except:
+                v_ratio = 0
                 
             except Exception as e:
                 v_ratio = 0
