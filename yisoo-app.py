@@ -101,12 +101,16 @@ if symbol:
             df = df.ffill().dropna()
 
         # 95-97: [핵심 수술] 오늘 가격(p)과 전일 가격(prev_p)을 가져오네
-            p = float(df['Close'].iloc[-1])
-        
-        # 주말/휴일에는 오늘과 어제 데이터가 같을 수 있으니, 한 칸 더 뒤를 보네
+           # [실시간 현주가 수술] yfinance의 fast_info를 써야 실시간 가격이 빳빳하게 나오네
+            try:
+                p = float(ticker.fast_info.last_price)
+            except:
+                p = float(df['Close'].iloc[-1])
+            
+            # 전일 종가와 비교 (주말/휴일 엇박자 방지 로직 유지)
             prev_p = float(df['Close'].iloc[-2])
             if is_kr and p == prev_p and len(df) > 2:
-                prev_p = float(df['Close'].iloc[-3]) # 금요일 vs 목요일 비교!
+                prev_p = float(df['Close'].iloc[-3])
         
         # 101-104: 전일비 금액과 비율을 빳빳하게 계산하네
             p_diff = p - prev_p
