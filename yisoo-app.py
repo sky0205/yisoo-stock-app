@@ -71,25 +71,13 @@ if symbol:
             df = df.ffill().dropna()
             
             # [현주가 및 실시간 거래량 수술]
-           # [수선] 네이버(fdr)가 막히면 야후(yf)로 우회하는 안전 로직
+           # --- [74~86번 줄 대체] 네이버(fdr) 전용 실시간 호출 ---
             try:
-                # 1. 네이버 서버(fdr) 시도
+                # 1. 네이버 서버에서 오늘 실시간 데이터를 가져오네
                 df_today = fdr.DataReader(symbol, start=now_local.strftime('%Y-%m-%d')) if is_kr else ticker.history(period='1d')
-                if df_today.empty: raise Exception("FDR Empty")
             except:
-                # 2. 네이버 실패 시 야후 파이낸스(.KS) 시도 (한국 종목만 해당)
-                if is_kr:
-                    ticker_fallback = yf.Ticker(f"{symbol}.KS")
-                    df_today = ticker_fallback.history(period='1d')
-                else:
-                    df_today = ticker.history(period='1d')
-
-            if not df_today.empty:
-                p = float(df_today['Close'].iloc[-1])
-                v_curr = float(df_today['Volume'].iloc[-1])
-            else:
-                p = float(df['Close'].iloc[-1])
-                v_curr = 0
+                # 2. 서버 통신 장애 시 빈 장부로 처리하여 에러를 방지하네
+                df_today = pd.DataFrame()
 
             # 5일 평균 거래량 (분모 격리)
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
