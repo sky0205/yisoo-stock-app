@@ -118,32 +118,18 @@ if symbol:
             is_opening = 9 <= now_local.hour <= 11
             
             # [수정] 시초(is_opening)일 때는 강도 점수(vol_strength)를 기준으로 판독하네
-            # [최종 수선] 낡은 점수(vol_strength)를 싹 베어내고 어르신의 4단계 수치 판독으로 교체하네
-            if v_ratio < 50:
-                v_status, v_msg = "기세부족", "아직은 안개뿐이니, 아군 화력을 더 기다리시게."
-            elif v_ratio < 100:
-                v_status, v_msg = "매집시작", "평균치를 향해 아군 화력이 차오르고 있으니 눈여겨보시게."
-            elif v_ratio < 150:
-                v_status, v_msg = "주의단계", "평균 화력을 넘어섰구먼! 기세가 충만하니 추세를 타며 소량 대응해 보시게."
+            if is_opening:
+                if vol_strength >= 130: v_label, v_status = "🔥 시초 거래폭발", f"🔥 시초 거래폭발"
+                elif vol_strength >= 80: v_label, v_status = "📈 시초 거래급등", f"📈 시초 거래급등"
+                else: v_label, v_status = "✅ 시초 거래진행", f"✅ 시초 거래진행"
             else:
-                v_status, v_msg = "과열폭발", "화력이 폭발 중일세! 단기 고점의 위험이 있으나, 기세가 범상치 않으니 냉정하게 대응하시게."
+                v_label = "💤 거래침체" if vol_strength < 70 else "📈 거래증가" if vol_strength < 150 else "🔥 거래폭발"
+                v_status = v_label
 
-            # [화면 출력] 사진의 양식을 그대로 쓰되, 글자 크기(font-size)만 빳빳하게 키웠네
-            v_adv = f"✅ 현재 거래율 {v_ratio:.1f}%로 {v_msg}"
+            v_adv = f"🔥 **[진짜 상승!]** 거래량 실린 빳빳한 진격일세!" if p_chg > 3 and vol_strength > 130 else f"✅ 현재 거래율 {v_ratio:.1f}%로 세력의 발자국을 추적 중일세."
             
-            st.markdown(f"""
-                <div class='vol-box'>
-                    <div style='font-size: 32px !important; font-weight: bold; color: #0D47A1; margin-bottom: 10px;'>
-                        📊 거래량 전황: {v_status} ({v_ratio:.1f}%)
-                    </div>
-                    <div class='vol-sub-text' style='font-size: 24px !important; color: #1565C0 !important; font-weight: bold;'>
-                        {v_adv}
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-
-            # 최종 결론 전송용 문구 확정
-            v_adv_final = f"현재 [{v_status}] 단계로, {v_msg}"
+            # 화면 출력 (v_status와 v_ratio를 함께 보여주네)
+            st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
             # 신호등
             if p >= up_b or rsi_val >= 60: sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"● {'👺 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 60 else '과열권일세! 수익 챙기시게.'}"
