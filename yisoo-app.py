@@ -202,8 +202,9 @@ if symbol:
             adv3_t = f"3. [엔진] 엔진 {'정회전 시동 걸렸네!' if is_forward else '아직 역회전 중이라네.'}"
 
             # 4. 필살 대응 전략 카드 출력 (에러 없는 안전 구조)
+            # 4. 필살 대응 전략 카드 출력 (에러 원천 차단)
             t_html = "<div class='trend-card'>"
-            t_html += f"<div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>"
+            t_html += f"<div class='trend-title'>[필살] {name} 실전 대응 전략</div>"
             t_html += f"<div class='trend-item'>{adv1_t}</div>"
             t_html += f"<div class='trend-item'>{adv2_t}</div>"
             t_html += f"<div class='trend-item'>{adv3_t}</div>"
