@@ -225,15 +225,15 @@ if symbol:
     # 3. 최종 화면 출력 (따옴표 짝을 완벽하게 맞췄네!)
                 # 3. 최종 화면 출력 (이수 할배의 빳빳한 마지막 도장!)
                 st.markdown(f"""
-            <div class='trend-card'>
-                <div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
-                <div class='trend-item'>{adv1}</div>
-                <div class='trend-item'>{adv2}</div>
-                <div class='trend-item'>{adv3}</div>
-                <hr style='border:1px solid #FFEBEE;'>
-                <div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div>
-            </div>
-            """, unsafe_allow_html=True)
+                <div class='trend-card'>
+                    <div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
+                    <div class='trend-item'>{adv1}</div>
+                    <div class='trend-item'>{adv2}</div>
+                    <div class='trend-item'>{adv3}</div>
+                    <hr style='border:1px solid #FFEBEE;'>
+                    <div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div>
+                </div>
+                """, unsafe_allow_html=True)
             # 4대 지수 정밀 진단 (원본 문구 완벽 복원)
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
