@@ -202,7 +202,6 @@ if symbol:
             # --- 미장 거래강도 수치 보정 (203행 바로 위에 추가) ---
             # --- [203행 시작] 미장 판별 및 거래강도 수치 보정 ---
             is_us_market = any(c.isalpha() for c in name) if 'name' in locals() else False
-
             if is_us_market and vol_strength > 300:
                 import math
                 vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
