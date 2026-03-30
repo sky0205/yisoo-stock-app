@@ -102,10 +102,16 @@ if symbol:
 
         # 95-97: [핵심 수술] 오늘 가격(p)과 전일 가격(prev_p)을 가져오네
            # [실시간 현주가 수술] yfinance의 fast_info를 써야 실시간 가격이 빳빳하게 나오네
+            # [긴급 수술] yfinance 대신 FinanceDataReader(fdr)를 써서 장부를 직접 낚아채네
             try:
-                p = float(ticker.fast_info.last_price)
+                # 가장 최근의 실제 장부를 가져오기 위해 fdr을 한 번 더 쓰네
+                df_realtime = fdr.DataReader(symbol)
+                p = float(df_realtime['Close'].iloc[-1])
+                # 전일 종가 비교 (실제 실시간 전일비 계산)
+                prev_p = float(df_realtime['Close'].iloc[-2])
             except:
                 p = float(df['Close'].iloc[-1])
+                prev_p = float(df['Close'].iloc[-2])
             
             # 전일 종가와 비교 (주말/휴일 엇박자 방지 로직 유지)
             prev_p = float(df['Close'].iloc[-2])
@@ -126,7 +132,11 @@ if symbol:
         # 98-99: 거래량 데이터
             # [핵심 수술] 오늘 실시간 거래량과 5일 평균 거래량 추출
             # [긴급 수술] df에서 가져오지 말고 ticker 자체 정보에서 '오늘'치만 낚아채네
-            v_curr = float(ticker.info.get('volume', 0)) if is_kr else float(ticker.fast_info.last_volume)
+            # [긴급 수술] 낡은 장부 버리고 fdr의 최신 거래량을 직접 가져오네
+            try:
+                v_curr = float(df_realtime['Volume'].iloc[-1])
+            except:
+                v_curr = float(df['Volume'].iloc[-1])
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
