@@ -71,15 +71,27 @@ if symbol:
         if not df.empty:
             df = df.ffill().dropna()
             
-            # [현주가 및 실시간 거래량 수술]
-            df_today = fdr.DataReader(symbol, start=now_local.strftime('%Y-%m-%d')) if is_kr else ticker.history(period='1d')
-            if not df_today.empty:
-                p = float(df_today['Close'].iloc[-1])
-                v_curr = float(df_today['Volume'].iloc[-1])
+            # [수선] 국장 전날 종가 망령 퇴치 및 실시간 데이터 판독
+            if is_kr:
+                today_str = now_local.strftime('%Y-%m-%d')
+                df_today = fdr.DataReader(symbol, start=today_str)
+                # 오늘 날짜의 데이터가 실제로 찍혀 있을 때만 실시간으로 인정하네
+                if not df_today.empty and df_today.index[-1].strftime('%Y-%m-%d') == today_str:
+                    p = float(df_today['Close'].iloc[-1])
+                    v_curr = float(df_today['Volume'].iloc[-1])
+                else:
+                    # 장전이거나 데이터 집계 전이면 전날 종가로 대기하네
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = 0
             else:
-                p = float(df['Close'].iloc[-1])
-                v_curr = 0
-
+                # 미장(나스닥) 실시간 판독
+                df_today = ticker.history(period='1d')
+                if not df_today.empty:
+                    p = float(df_today['Close'].iloc[-1])
+                    v_curr = float(df_today['Volume'].iloc[-1])
+                else:
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = 0
             # 5일 평균 거래량 (분모 격리)
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
