@@ -26,24 +26,22 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 글로벌 지표 실시간 연동
 def display_global_risk():
     st.markdown("### 🌍 글로벌 시장 및 국채 종합 전황")
     try:
         nasdaq = yf.Ticker("^IXIC").fast_info; sp500 = yf.Ticker("^GSPC").fast_info; tnx = yf.Ticker("^TNX").fast_info 
         n_chg = (nasdaq.last_price / nasdaq.previous_close - 1) * 100
         tnx_val = tnx.last_price; tnx_chg = (tnx_val / tnx.previous_close - 1) * 100
-        
         c1, c2, c3 = st.columns(3)
         c1.metric("나스닥 (NASDAQ)", f"{nasdaq.last_price:,.2f}", f"{n_chg:.2f}%")
         c2.metric("S&P 500 (SPX)", f"{sp500.last_price:,.2f}", f"{(sp500.last_price/sp500.previous_close-1)*100:.2f}%")
         c3.metric("미 국채 10년물 (TNX)", f"{tnx_val:.3f}%", f"{tnx_chg:+.2f}%")
-
-        if tnx_val >= 4.5: advice = "🚨 **[금리 발작: 비상]** 국채 금리가 4.5%를 넘어섰네! 기술주 성벽 무너질 수 있으니 진격을 멈추시게."
-        elif n_chg > 0.5 and tnx_chg < 0: advice = "🔥 **[골디락스 진입]** 지수는 오르고 금리는 내리니 기세 타시게."
-        else: advice = "🧐 **[눈치싸움 중]** 세력들이 간 보고 있구먼. 섣부른 판단은 독이네."
-        st.info(f"🧐 이수 할배의 글로벌 판독: {advice}")
-    except: st.error("⚠️ 글로벌 데이터 호출 불가")
+        
+        if tnx_val >= 4.5: adv = "🚨 **[금리 발작: 비상]** 국채 금리가 4.5%를 넘어섰네! 기술주 성벽 무너질 수 있으니 진격을 멈추시게."
+        elif n_chg > 0.5 and tnx_chg < 0: adv = "🔥 **[골디락스 진입]** 지수는 오르고 금리는 내리니 기세 타시게."
+        else: adv = "🧐 **[눈치싸움 중]** 세력들이 간 보고 있구먼. 섣부른 판단은 독이네."
+        st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
+    except: st.error("⚠️ 데이터 호출 불가")
 
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
@@ -52,76 +50,77 @@ symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "0059
 
 if symbol:
     try:
-        start_date = datetime.now() - timedelta(days=500); end_date = datetime.now()
-        is_kr = symbol.isdigit()
+        start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
+        now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
+        now_local = datetime.now(now_tz)
+
         if is_kr:
-            now_local = datetime.now(pytz.timezone('Asia/Seoul'))
-            ticker_symbol = f"{symbol}.KS"
-            ticker = yf.Ticker(ticker_symbol)
-            df = ticker.history(start=start_date, end=end_date)
+            ticker = yf.Ticker(f"{symbol}.KS")
+            df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             try:
                 df_krx = fdr.StockListing('KRX')
                 name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
             except: name = ticker.info.get('shortName', symbol).split(',')[0]
             currency, fmt_p = "원", ",.0f"
         else:
-            now_local = datetime.now(pytz.timezone('US/Eastern'))
-            ticker = yf.Ticker(symbol); df = ticker.history(start=start_date, end=end_date)
+            ticker = yf.Ticker(symbol); df = ticker.history(start=start_date)
             name = ticker.info.get('shortName', symbol)
             currency, fmt_p = "$", ",.2f"
 
-        is_opening = 9 <= now_local.hour <= 11
-
         if not df.empty:
             df = df.ffill().dropna()
-            # [현재가 사수] yf.fast_info로 실시간 반영 시도
-            try: p = float(ticker.fast_info.last_price)
-            except: p = float(df['Close'].iloc[-1])
             
+            # [현주가 및 실시간 거래량 수술]
+            df_today = fdr.DataReader(symbol, start=now_local.strftime('%Y-%m-%d')) if is_kr else ticker.history(period='1d')
+            if not df_today.empty:
+                p = float(df_today['Close'].iloc[-1])
+                v_curr = float(df_today['Volume'].iloc[-1])
+            else:
+                p = float(df['Close'].iloc[-1])
+                v_curr = 0
+
+            # 5일 평균 거래량 (분모 격리)
+            v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
+            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
+
             prev_p = float(df['Close'].iloc[-2])
             if is_kr and p == prev_p and len(df) > 2: prev_p = float(df['Close'].iloc[-3])
-            
             p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
-            peak_20 = float(df['High'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
 
-            # 기술 지표 계산 (20/2, 14/6, 14/9 기준 엄수)
-            delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-            rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
-            rsi_val, rsi_prev = rsi_series.iloc[-1], rsi_series.iloc[-2]
-            
-            h14, l14 = df['High'].rolling(14).max(), df['Low'].rolling(14).min()
-            will_val = (h14.iloc[-1] - p) / (h14.iloc[-1] - l14.iloc[-1] + 1e-10) * -100
-            
-            macd = df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()
-            signal = macd.ewm(span=9).mean()
-            m_l, s_l, m_p, s_p = macd.iloc[-1], signal.iloc[-1], macd.iloc[-2], signal.iloc[-2]
-            
-            df['MA20'] = df['Close'].rolling(20).mean(); df['Std'] = df['Close'].rolling(20).std()
-            mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
-
-            # 거래량 및 시간 가중치 점수
-            v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean()
-            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 else 0
+            # 시간 보정 로직
             s_h, s_m = (9, 0) if is_kr else (9, 30)
             elapsed = (now_local.hour - s_h) * 60 + (now_local.minute - s_m)
             if now_local.weekday() >= 5 or elapsed > 390: elapsed = 390
             elif elapsed < 10: elapsed = 10
             vol_strength = v_ratio / (elapsed / 390)
 
-            # [출력] 현재주가 전광판
+            # 지표 계산 (엄수)
+            delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+            rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
+            rsi_val, rsi_prev = rsi_series.iloc[-1], rsi_series.iloc[-2]
+            h14, l14 = df['High'].rolling(14).max(), df['Low'].rolling(14).min()
+            will_val = (h14.iloc[-1] - p) / (h14.iloc[-1] - l14.iloc[-1] + 1e-10) * -100
+            macd = df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()
+            sig_line = macd.ewm(span=9).mean()
+            m_l, s_l, m_p, s_p = macd.iloc[-1], sig_line.iloc[-1], macd.iloc[-2], sig_line.iloc[-2]
+            df['MA20'] = df['Close'].rolling(20).mean(); df['Std'] = df['Close'].rolling(20).std()
+            mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
+            peak_20 = float(df['High'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
+
+            # 전광판
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"""<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'>
                 <p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{name} ({symbol})</p>
                 <p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>""", unsafe_allow_html=True)
 
-            # 거래량 전황
+            is_opening = 9 <= now_local.hour <= 11
             v_label = "💤 거래침체" if v_ratio < 100 else "📈 거래증가" if v_ratio < 150 else "🔥 거래폭발"
             v_adv = f"🔥 **[진짜 상승!]** 거래량 실린 빳빳한 진격일세!" if p_chg > 3 and vol_strength > 150 else f"✅ 현재 5일 평균 대비 거래율 {v_ratio:.1f}%로 세력을 추적 중일세."
             st.markdown(f"<div class='vol-box'><div class='vol-main-text'>📊 거래량 전황: {v_label} ({v_ratio:.1f}%)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
             # 신호등
-            if p >= up_b or rsi_val >= 60: sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"● {'👺 불지옥 문턱일세!' if rsi_val >= 60 else '과열권일세! 수익 챙기시게.'}"
+            if p >= up_b or rsi_val >= 60: sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"● {'👺 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 60 else '과열권일세! 수익 챙기시게.'}"
             elif p <= (low_b * 1.005) or rsi_val <= 35: sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", "● 🧊 바닥권일세. 겁먹지 말고 보따리 푸시게."
             else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", "● 눈치싸움 중일세. 지표 끝단을 기다리시게."
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
@@ -131,36 +130,44 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # [핵심] 최종 필살 대응 전략 (냉정하게 판정)
-            adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60 아래일세." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
-            adv2 = f"2. **성벽 사수 확인:** 현재 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세."
-            adv3 = f"3. **엔진 확인:** 엔진이 {'역회전' if m_l < s_l else '정회전'} 중이라네."
+            # 필살 대응 전략 (냉정 복구)
+            adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
+            adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
+            adv3 = f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네! 절대 속지 마시게!" if m_l < s_l else "3. **엔진 정회전:** 엔진 시동 걸렸구먼!"
             
             if p >= up_b or rsi_val >= 60: final_adv = f"💰 **[최종 결론]** 거래강도({vol_strength:.0f}점). 탐욕의 끝자락일세. **분할 매도**하여 수익을 챙기시게!"
-            elif m_l < s_l or p < defense_line: final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). 엔진 역회전 혹은 성벽 위태롭네. **관망하며 소나기를 피하시게!**"
-            elif p <= (defense_line * 1.01): final_adv = f"🔥 **[최종 결론]** 거래강도({vol_strength:.0f}점). 진짜 바닥권일세! **강력 분할 매수**하시게!"
-            else: final_adv = f"📈 **[최종 결론]** 거래강도({vol_strength:.0f}점). 추세 살아있구먼. 성벽 사수하며 **보유(홀딩)**하시게!"
+            elif m_l < s_l or p < defense_line:
+                tag = "🚨" if vol_strength > 150 else "🧐"
+                final_adv = f"{tag} **[최종 결론]** 거래강도({vol_strength:.0f}점). 엔진 역회전 혹은 성벽 위태롭네. **관망하며 기다리시게!**"
+            else: final_adv = f"📈 **[최종 결론]** 거래강도({vol_strength:.0f}점). 추세 살아있구먼. 성벽 사수 확인하며 **보유(홀딩)**하시게!"
 
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
                 <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)
 
-            # [복구 완벽] 4대 지수 상세 분석
+            # 4대 지수 정밀 진단 (원본 문구 완벽 복원)
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
             with i1: # Bollinger
-                bb_diag = "⚠️ **[과열 진입]** 성벽 사수 중이나 온도가 높네. 익절을 권하네." if p >= up_b or rsi_val >= 60 else ("🏰 **[성벽 사수]** 안정적 진격 중일세." if p > mid_line else "🏚️ **[성문 함락]** 성벽 밑일세. 절대 칼 뽑지 마시게.")
+                bb_diag = "⚠️ **[과열 진입]** 성벽 사수 중이나 온도가 높네. 홀딩보다는 수익을 빳빳하게 확정 지으며 다음 성벽을 준비하시게." if p >= up_b or rsi_val >= 60 else ("🏰 **[성벽 사수]** 중앙선 위에서 안정적 진격 중일세. 아직 온도가 적당하니 성벽 무너지기 전까지는 홀딩하시게." if p > mid_line else "🏚️ **[성문 함락]** 성벽 밑일세. 온도가 낮아도 엔진 시동 걸리기 전까지는 절대 칼 뽑지 마시게.")
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
-            with i2: # RSI (다이버전스 정밀 판정)
+            with i2: # RSI
                 is_div = p > prev_p and rsi_val < rsi_prev
-                r_diag = f"● 지수 {rsi_val:.2f}로 **{'👺 불지옥' if rsi_val >= 60 else '🧊 냉골' if rsi_val <= 35 else '중립'}**일세. {'🚨 가짜 상승 주의(배신 포착)!' if is_div else '지표 끝단을 기다리시게.'}"
+                if rsi_val >= 60: r_diag = f"● 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱일세! {'🚨 온도가 식고 있네(배신 포착)! 가짜 상승이니 대피하시게.' if is_div else '천장에 다 왔으니 수익 챙길 채비 하시게.'}"
+                elif rsi_val <= 35: r_diag = f"● 지수 {rsi_val:.2f}로 **🧊 냉골** 바닥일세! 남들 무서워할 때 우리는 냉정하게 보따리 푸시게."
+                else: r_diag = f"● 지수 {rsi_val:.2f}로 중립일세. {'🚨 주가는 오르나 온도가 식고 있네! 눈 부라리고 보시게.' if is_div else '지표 끝단을 기다리시게.'}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
             with i3: # Williams %R
-                w_diag = f"● 지수 {will_val:.2f}로 **{'🧨 천장 광기' if will_val >= -20 else '📉 하락 가속' if will_val <= -65 else '중간 지대'}**일세. {'비수 꽂히기 전에 수확하시게.' if will_val >= -20 else '바닥 확인 전까지 자숙하시게.'}"
+                if will_val >= -20: w_diag = f"● 지수 {will_val:.2f}로 **🧨 천장 광기** 구간일세! 개미들 눈 뒤집혔으니 비수 꽂히기 전에 수확(익절)하시게."
+                elif will_val >= -35: w_diag = f"● 지수 {will_val:.2f}로 **⚠️ 천장 근접** 구간일세! 고점 징후 포착되었으니 눈 부라리고 주시하시게."
+                elif will_val <= -80: w_diag = f"● 지수 {will_val:.2f}로 **🏳️ 개미 항복** 구간일세! 보따리 풀 준비 하시되, 고개 들 때까지 기다리시게."
+                elif will_val <= -65: w_diag = f"● 지수 {will_val:.2f}로 **📉 하락 가속** 구간일세! 바닥 확인 전까지는 절대 칼 뽑지 말고 자숙하시게."
+                else: w_diag = f"● 지수 {will_val:.2f}로 중간 지대일세. 기세가 어느 쪽으로 튈지 냉정하게 지켜보시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
-            with i4: # MACD (회복 탄력성 판정)
-                m_diff, m_diff_prev = m_l - s_l, m_p - s_p
-                m_diag = "● 엔진 **정회전**!" if m_l > s_l else ("● 엔진 **역회전폭 급감**! 시동 채비 하시게." if m_diff > m_diff_prev else "● 엔진 **역회전 심화**! 절대 타지 마시게.")
+            with i4: # MACD
+                m_diff, m_diff_p = m_l - s_l, m_p - s_p
+                if m_l > s_l: m_diag = "● 엔진 **정회전(헛바퀴)** 중일세! 성벽이 무너졌으니 속지 마시게." if p < defense_line else "● 엔진 **정회전** 중일세! 기세 붙었으니 성벽 사수 여부 보며 자신 있게 진격하시게."
+                else: m_diag = "● 엔진 **역회전폭 급감**! 시동 걸 채비 중이니 보따리 챙겨두고 진격 신호를 기다리시게." if m_diff > m_diff_p else "● 엔진 **역회전 심화** 중일세! 거꾸로 도는 차에 올라타면 안 되는 법, 냉정하게 자숙하시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
 
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
