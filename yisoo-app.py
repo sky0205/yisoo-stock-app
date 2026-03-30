@@ -201,30 +201,27 @@ if symbol:
 
                 # 1. 미장/국장 판별 및 거래강도 보정
                 # 1. 미장/국장 판별 및 거래강도 보정
-                # 1. 국장/미장 판별 및 거래강도 보정
-                curr_t = ticker_symbol if 'ticker_symbol' in locals() else ""
-                is_us = not (str(curr_t).isdigit() and len(str(curr_t)) == 6)
-
+                # 1. 미장/국장 판별 및 거래강도 수치 보정
+                is_us = not (str(ticker_symbol).isdigit() and len(str(ticker_symbol)) == 6)
                 if is_us and vol_strength > 300:
                     import math
                     vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
                     vol_strength = min(vol_strength, 300)
 
-    # 2. 통합 결론 생성 (어떤 상황에서도 결론이 만들어지게 함)
+    # 2. 통합 결론 도출 (if/else 줄을 똑같이 맞췄네)
                 if m_l < s_l or p < defense_line:
                     diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
                     f_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. **무조건 관망!**"
                 else:
                     f_adv = f"🚀 **[최종 결론]** 거래강도({vol_strength:.0f}점). 기세가 빳빳하네! **정찰대 진격 가능**일세."
 
-    # 3. [필살 대응 전략] 카드 강제 출력
-    # 이 부분이 빠져있어서 안 보였던 것이니, 무조건 위쪽으로 올렸네!
+    # 3. [필살 대응 전략] 카드 출력 (위쪽 if문과 시작줄을 똑같이 맞췄네)
                 st.markdown(f"""
-                <div class='trend-card' style='background-color: #FFF5F5; padding: 20px; border-radius: 10px; border: 2px solid #FFEBEE; margin-bottom: 20px;'>
+                <div style='background-color: #FFF5F5; padding: 20px; border-radius: 10px; border: 2px solid #FFEBEE; margin-bottom: 20px;'>
                     <div style='font-size: 22px; font-weight: bold; color: #D32F2F; margin-bottom: 15px;'>⚔️ {name} 실전 필살 대응 전략</div>
-                    <div style='font-size: 16px; margin-bottom: 8px;'>• {adv1 if 'adv1' in locals() else '데이터 분석 중...'}</div>
-                    <div style='font-size: 16px; margin-bottom: 8px;'>• {adv2 if 'adv2' in locals() else '시장 흐름 파악 중...'}</div>
-                    <div style='font-size: 16px; margin-bottom: 15px;'>• {adv3 if 'adv3' in locals() else '거래량 확인 중...'}</div>
+                    <div style='font-size: 16px; margin-bottom: 8px;'>• {adv1}</div>
+                    <div style='font-size: 16px; margin-bottom: 8px;'>• {adv2}</div>
+                    <div style='font-size: 16px; margin-bottom: 15px;'>• {adv3}</div>
                     <hr style='border: 0.5px solid #FFEBEE;'>
                     <div style='font-size: 24px; font-weight: bold; color: #B71C1C; margin-top: 15px;'>{f_adv}</div>
                 </div>
