@@ -205,6 +205,7 @@ if symbol:
     # 변수 이름이 무엇이든 영어가 섞여 있으면 미장으로 판별하네
                 # --- [204행 시작] 미장 판별 및 거래강도 수치 보정 ---
     # 종목코드가 숫자 6자리가 아니면 미장으로 간주하네
+                # 1. 미장/국장 판별 및 거래강도 보정
                 t_str = str(ticker_symbol) if 'ticker_symbol' in locals() else ""
                 is_us_market = not (t_str.isdigit() and len(t_str) == 6)
 
@@ -213,14 +214,12 @@ if symbol:
                     vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
                     vol_strength = min(vol_strength, 300)
 
+    # 2. 통합 결론 도출 (이 부분이 국장/미장 모두를 책임지네)
                 if m_l < s_l or p < defense_line:
                     diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
                     final_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. 칼 뽑지 말고 성벽 회복 전까지 **무조건 관망!**"
-
                 else:
                     final_adv = f"🚀 **[최종 결론]** 거래강도({vol_strength:.0f}점). 성벽 위 안착 및 기세가 빳빳하네! **정찰대 진격 가능**할세."
-    # --- [219행 끝] ---
-            st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
                 <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)
 
