@@ -78,11 +78,11 @@ if symbol:
                 
                 if not df_today.empty:
                     p = float(df_today['Close'].iloc[-1])
-                    v_curr = float(df_today['Volume'].sum())
+                    v_curr = ticker.info.get('regularMarketVolume', 0)
         
-        # 83번 줄: 만약 오늘 장부 합계가 0이거나 너무 작으면, 그제야 보험으로 실시간망을 참고하네
-                    if v_curr < 100:
-                        v_curr = ticker.info.get('regularMarketVolume', 0)
+        # 만약 실시간망이 잠시 먹통이라면, 그제야 오늘치 장부의 최댓값(누적치)을 차선책으로 쓰네
+                    if v_curr == 0 or v_curr is None:
+                        v_curr = float(df_today['Volume'].max())
                 else:
                     # 오늘 장부가 비었으면 마지막 종가와 거래량 0으로 설정하네
                     p = float(df['Close'].iloc[-1])
