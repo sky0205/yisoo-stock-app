@@ -199,23 +199,21 @@ if symbol:
                 else: # [바닥 2] 바닥 정회전이나 성벽이 멂 (정찰)
                     final_adv = f"🛡️ **[최종 결론]** 거래강도({vol_strength:.0f}점). 엔진은 도는데 성벽이 아직 멀구먼. 소량 **정찰대**만 보내고 성벽 돌파 보시게."
 
-                # 1. 미장/국장 판별 및 거래강도 보정
-                # 1. 미장/국장 판별 및 거래강도 보정
-                # 1. 미장/국장 판별 및 거래강도 수치 보정
+                ## 1. 미장/국장 판별 및 거래강도 수치 보정
                 is_us = not (str(ticker_symbol).isdigit() and len(str(ticker_symbol)) == 6)
                 if is_us and vol_strength > 300:
                     import math
                     vol_strength = 100 + (math.log10(vol_strength / 100) * 100)
                     vol_strength = min(vol_strength, 300)
 
-    # 2. 통합 결론 도출 (if/else 줄을 똑같이 맞췄네)
+    # 2. 통합 결론 도출 (어떤 상황에서도 f_adv가 만들어지게 함)
                 if m_l < s_l or p < defense_line:
                     diag = "엔진 역회전" if m_l < s_l else "성벽 함락"
                     f_adv = f"🧐 **[최종 결론]** 거래강도({vol_strength:.0f}점). {diag} 상태일세. **무조건 관망!**"
                 else:
                     f_adv = f"🚀 **[최종 결론]** 거래강도({vol_strength:.0f}점). 기세가 빳빳하네! **정찰대 진격 가능**일세."
 
-    # 3. [필살 대응 전략] 카드 출력 (위쪽 if문과 시작줄을 똑같이 맞췄네)
+    # 3. [사라졌던 필승 전략 카드] 강제 출력 (위쪽 if문과 줄을 똑같이 맞췄네!)
                 st.markdown(f"""
                 <div style='background-color: #FFF5F5; padding: 20px; border-radius: 10px; border: 2px solid #FFEBEE; margin-bottom: 20px;'>
                     <div style='font-size: 22px; font-weight: bold; color: #D32F2F; margin-bottom: 15px;'>⚔️ {name} 실전 필살 대응 전략</div>
@@ -226,6 +224,13 @@ if symbol:
                     <div style='font-size: 24px; font-weight: bold; color: #B71C1C; margin-top: 15px;'>{f_adv}</div>
                 </div>
                 """, unsafe_allow_html=True)
+
+    # 4. 보조 지표 (볼린저 등) 하단 출력
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("현재가", f"{p:,}")
+                with col2:
+                    st.metric("거래강도", f"{vol_strength:.2f}")
             # 4대 지수 정밀 진단 (원본 문구 완벽 복원)
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
