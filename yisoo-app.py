@@ -124,8 +124,10 @@ if symbol:
             defense_line = peak_20 * 0.93
 
         # 98-99: 거래량 데이터
-            v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean()
-            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 else 0
+            # [핵심 수술] 오늘 실시간 거래량과 5일 평균 거래량 추출
+            v_curr = float(ticker.fast_info.last_volume) if hasattr(ticker, 'fast_info') else float(df['Volume'].iloc[-1])
+            v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
+            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
         # 98-99: 거래량 점수 계산 기초 데이터
             v_curr = df['Volume'].iloc[-1]; v_avg5 = df['Volume'].iloc[-6:-1].mean()
