@@ -223,15 +223,16 @@ if symbol:
                     final_adv = f"🚀 **[최종 결론]** 거래강도({vol_strength:.0f}점). 성벽 위 안착 및 기세가 빳빳하네! **정찰대 진격 가능**할세."
 
     # 3. 최종 화면 출력 (따옴표 짝을 완벽하게 맞췄네!)
+                # 3. 최종 화면 출력 (이수 할배의 빳빳한 마지막 도장!)
                 st.markdown(f"""
                     <div class='trend-card'>
-                    <div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
-                    <div class='trend-item'>{adv1}</div>
-                    <div class='trend-item'>{adv2}</div>
-                    <div class='trend-item'>{adv3}</div>
-                    <hr style='border:1px solid #FFEBEE;'>
-                    <div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div>
-                </div>
+                        <div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
+                        <div class='trend-item'>{adv1}</div>
+                        <div class='trend-item'>{adv2}</div>
+                        <div class='trend-item'>{adv3}</div>
+                        <hr style='border:1px solid #FFEBEE;'>
+                        <div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div>
+                    </div>
                 """, unsafe_allow_html=True)
             # 4대 지수 정밀 진단 (원본 문구 완벽 복원)
             st.divider()
