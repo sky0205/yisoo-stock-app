@@ -231,7 +231,8 @@ if symbol:
                     st.metric("현재가", f"{p:,}")
                 with col2:
                     st.metric("거래강도", f"{vol_strength:.2f}")
-            # 4대 지수 정밀 진단 (원본 문구 완벽 복원)
+            except Exception as e:
+                st.error(f"장부 기록 중 오류 발생: {e}")# 4대 지수 정밀 진단 (원본 문구 완벽 복원)
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
             with i1: # Bollinger
