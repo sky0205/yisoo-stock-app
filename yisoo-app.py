@@ -67,13 +67,26 @@ if symbol:
             p_text = soup.select_one(".no_today .blind").text.replace(",", "")
         
         # no_info 영역의 모든 숫자(blind 클래스)를 빳빳하게 다 긁어오네
-            prev_p_text = soup.find("th", string="전일").find_next("td").find("span", class_="blind").text.replace(",", "")
-            v_text = soup.find("th", string="거래량").find_next("td").find("span", class_="blind").text.replace(",", "")
-        
-        # 2. 낚아챈 글자를 숫자로 변환하네
-            prev_p = float(prev_p_text)
-            v_curr = float(v_text)
-            p = float(p_text)
+            # [70번 줄 시작] 네이버 장부의 모든 숫자 데이터를 빳빳하게 수거하네
+            try:
+            # 장부 상단의 숫자 덩어리들을 몽땅 리스트로 담네
+                info_area = soup.select_one(".no_info")
+                blind_list = [span.text.replace(",", "") for span in info_area.select(".blind")]
+            
+            # [핵심] 첫 번째(0)가 전일 종가, 여섯 번째(5)가 거래량일세
+                prev_p = float(blind_list[0])
+                v_curr = float(blind_list[5])
+            
+            # 현재가는 간판(.no_today)에서 직접 낚아채네
+                p_text = soup.select_one(".no_today .blind").text.replace(",", "")
+                p = float(p_text)
+            
+            except Exception as e:
+            # [비상시] 네이버가 방해하면 기존 fdr 장부로 즉시 후퇴하네
+                p = float(df['Close'].iloc[-1])
+                prev_p = float(df['Close'].iloc[-2])
+                v_curr = float(df['Volume'].iloc[-1])
+        # [76번 줄 끝] 이제 전일비 계산이 톱니바퀴 맞물리듯 돌아갈 걸세!
             
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             try:
