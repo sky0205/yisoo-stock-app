@@ -57,35 +57,38 @@ if symbol:
         now_local = datetime.now(now_tz)
 
         if is_kr:
-            # [국장 수선] yfinance 대신 네이버 금융에서 빳빳하게 실시간 시세 낚아채기
-            # [60번 줄 시작] 네이버 실시간 보급로 완결판
+            # [60번 줄 시작] 네이버 실시간 보급로 - 사령관의 마지막 승부수
             url = f"https://finance.naver.com/item/main.naver?code={symbol}"
             res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
             soup = BeautifulSoup(res.text, 'html.parser')
         
             try:
-            # 1. 현재가 정조준
+            # 1. 현재가 낚아채기 (가장 큰 간판일세)
                 p_text = soup.select_one(".no_today .blind").text.replace(",", "")
                 p = float(p_text)
             
-            # 2. 전일 종가 및 거래량 정조준 (이름표로 직접 낚기)
-            # '전일' 글자 바로 옆의 숫자가 진짜 어제 종가일세
-                prev_p_text = soup.find("th", string="전일").find_next("td").find("span", class_="blind").text.replace(",", "")
-            # '거래량' 글자 바로 옆의 숫자가 진짜 오늘 거래량일세
-                v_text = soup.find("th", string="거래량").find_next("td").find("span", class_="blind").text.replace(",", "")
+            # 2. 전일 종가 및 거래량 정밀 타격
+            # 숫자들이 모여있는 'no_info' 영역을 통째로 훑네
+                info_area = soup.select_one(".no_info")
+                all_numbers = [span.text.replace(",", "") for span in info_area.select(".blind")]
             
-                prev_p = float(prev_p_text)
-                v_curr = float(v_text)
+            # [판독] 첫 번째(0)가 무조건 전일 종가, 네 번째(3)가 오늘 실시간 거래량일세
+                prev_p = float(all_numbers[0])
+                v_curr = float(all_numbers[3])
+            
+            # 3. 전일비 계산을 위한 빳빳한 기준점 확인
+                p_diff = p - prev_p
+                p_chg = (p_diff / prev_p) * 100
             
             except Exception as e:
-            # 네이버가 방해할 경우를 대비한 비상 탈출구일세
-                st.warning("👵 네이버 장부가 안개에 가렸네. fdr 장부로 대체하네.")
-                df_temp = fdr.DataReader(symbol, start=(datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d'))
+            # 네이버 문이 닫혔을 때만 작동하는 비상 탈출구일세 (경고창 제거함)
+                df_temp = fdr.DataReader(symbol, start=(datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d'))
                 p = float(df_temp['Close'].iloc[-1])
                 prev_p = float(df_temp['Close'].iloc[-2])
                 v_curr = float(df_temp['Volume'].iloc[-1])
+                p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
 
-        # [80번 줄 근처] 낡은 장부 데이터도 일단 챙겨두네
+        # [80번 줄 근처] 이제 아래의 지표 계산 로직(RSI, MACD 등)으로 빳빳하게 이어지네
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
         # [85번 줄 끝] 이제 아래의 지표 계산 로직으로 빳빳하게 이어지네
             try:
