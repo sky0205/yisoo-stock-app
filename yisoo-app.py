@@ -67,7 +67,7 @@ if symbol:
             p_text = soup.select_one(".no_today .blind").text.replace(",", "")
             v_text = soup.select_one(".no_info .blind").find_next("span", class_="blind").text.replace(",", "")
         # [핵심] 네이버 장부 하단에서 '전일 종가'를 찾아내는 로직일세
-            prev_p_text = soup.select(".no_info em .blind")[0].text.replace(",", "")
+            prev_p_text = soup.select_one(".no_info td em .blind").text.replace(",", "")
         
             p = float(p_text)
             v_curr = float(v_text)
