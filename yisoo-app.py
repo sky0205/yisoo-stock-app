@@ -60,17 +60,20 @@ if symbol:
         # 2. 국장(한국) 통신망 수리: 네이버-FDR 이중 그물망
         if is_kr:
             ticker = yf.Ticker(f"{symbol}.KS")
+            # [수정] FDR 데이터를 먼저 빳빳하게 확보하네
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             
             try:
                 # 네이버 실시간/마감 전광판 직접 낚기 (딜레이 해결)
+                import requests
+                from bs4 import BeautifulSoup
                 url = f"https://finance.naver.com/item/main.naver?code={symbol}"
                 res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
                 soup = BeautifulSoup(res.text, 'html.parser')
                 p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
                 v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
             except:
-                # 네이버가 졸고 있으면 예비 장부(df)에서 마지막 숫자를 낚네
+                # 네이버가 졸고 있으면 장부(df)에서 마지막 숫자를 낚네
                 p = float(df['Close'].iloc[-1])
                 v_curr = float(df['Volume'].iloc[-1])
 
@@ -82,7 +85,7 @@ if symbol:
             
             currency, fmt_p = "원", ",.0f"
 
-        # 3. 미장(미국) 통신망 수리: 본장 실시간 대응
+        # 3. 미장(미국) 통신망: 본장 실시간 대응
         else:
             ticker = yf.Ticker(symbol)
             df = ticker.history(start=start_date)
@@ -109,8 +112,8 @@ if symbol:
 
             # 전일비 및 전일가 판독 (밤낮/주말 완벽 대응)
             prev_p = float(df['Close'].iloc[-2])
+            # [핵심] 장 마감 후라면 오늘 종가와 어제 종가를 비교하네
             if is_kr and p == float(df['Close'].iloc[-1]) and len(df) > 2:
-                # 장 마감 후라면 어제 종가와 그저께 종가를 비교하네
                 prev_p = float(df['Close'].iloc[-2])
             
             p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
