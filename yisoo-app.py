@@ -50,46 +50,46 @@ display_global_risk(); st.divider()
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
 if symbol:
-    try:
-        start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
-        now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
-        now_local = datetime.now(now_tz)
+        try:
+            # 1. [수정] 전장 확정 및 시간표 정리
+            start_date = datetime.now() - timedelta(days=500)
+            is_kr = symbol.isdigit()
+            now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
+            now_local = datetime.now(now_tz)
 
-        if is_kr:
-            ticker = yf.Ticker(f"{symbol}.KS")
-            df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
-            try:
-                df_krx = fdr.StockListing('KRX')
-                name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
-            except: name = ticker.info.get('shortName', symbol).split(',')[0]
-            currency, fmt_p = "원", ",.0f"
-        else:
-            ticker = yf.Ticker(symbol); df = ticker.history(start=start_date)
-            name = ticker.info.get('shortName', symbol)
-            currency, fmt_p = "$", ",.2f"
-
-        if not df.empty:
-            df = df.ffill().dropna()
-            
-            # [최종 수술] 장이 닫혔을 때는 어제 거래량을 '100%'로 빳빳하게 가져오네
+            # 2. [수정] 국장(한국) 통신망 수리: 네이버-FDR 이중 그물망
             if is_kr:
-                # [수정] 네이버에서 1초의 시차도 없이 현재가를 직접 낚아채네
-                import requests
-                from bs4 import BeautifulSoup
-                url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
-                soup = BeautifulSoup(res.text, 'html.parser')
-            
-            # 1. [현재가] 실시간 간판에서 직접 낚아채니 시차가 없구먼요
-                p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-            
-            # 2. [거래량] 장부의 4번째(인덱스 3) 숫자를 빳빳하게 낚네
-                v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
-            
-            # 3. [전일가 고수] 어르신이 극찬하신 그 기준점(df 마지막 데이터)일세
-                prev_p = float(df['Close'].iloc[-1])
+                ticker = yf.Ticker(f"{symbol}.KS")
+                # FDR 통신 오류를 대비해 try-except로 빳빳하게 묶었네
+                try:
+                    df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+                except:
+                    # FDR이 뻗으면 야후 파이낸스로 즉시 우회하네
+                    df = ticker.history(start=start_date)
+                
+                try:
+                    import requests
+                    from bs4 import BeautifulSoup
+                    url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+                    res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+                    soup = BeautifulSoup(res.text, 'html.parser')
+                    p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                    v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+                except:
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = float(df['Volume'].iloc[-1])
+
+                try:
+                    df_krx = fdr.StockListing('KRX')
+                    name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
+                except:
+                    name = ticker.info.get('shortName', symbol).split(',')[0]
+                currency, fmt_p = "원", ",.0f"
+
+            # 3. [수정] 미장(미국) 통신망 수리
             else:
-                # 미장(나스닥) 실시간 판독
+                ticker = yf.Ticker(symbol)
+                df = ticker.history(start=start_date)
                 df_today = ticker.history(period='1d')
                 if not df_today.empty:
                     p = float(df_today['Close'].iloc[-1])
@@ -97,14 +97,21 @@ if symbol:
                 else:
                     p = float(df['Close'].iloc[-1])
                     v_curr = float(df['Volume'].iloc[-1])
-            # 5일 평균 거래량 (분모 격리)
-            v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
-            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
+                name = ticker.info.get('shortName', symbol)
+                currency, fmt_p = "$", ",.2f"
 
-            prev_p = float(df['Close'].iloc[-2])
-            if is_kr and p == prev_p and len(df) > 2: prev_p = float(df['Close'].iloc[-3])
-            p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
-
+            # 4. [수정] 데이터 판독 및 전일비 계산
+            if not df.empty:
+                df = df.ffill().dropna()
+                v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
+                v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
+                
+                # 전일비 판독 (밤낮/주말 완벽 대응)
+                prev_p = float(df['Close'].iloc[-2])
+                if is_kr and p == float(df['Close'].iloc[-1]) and len(df) > 2:
+                    prev_p = float(df['Close'].iloc[-2])
+                
+                p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
             # 시간 보정 로직
             s_h, s_m = (9, 0) if is_kr else (9, 30)
             elapsed = (now_local.hour - s_h) * 60 + (now_local.minute - s_m)
