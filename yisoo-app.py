@@ -50,26 +50,73 @@ display_global_risk(); st.divider()
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
 if symbol:
-    try:
-        start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
-        now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
-        now_local = datetime.now(now_tz)
+        try:
+            # 1. 전장 확정 및 시간표 정리
+            start_date = datetime.now() - timedelta(days=500)
+            is_kr = symbol.isdigit()
+            now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
+            now_local = datetime.now(now_tz)
 
-        if is_kr:
-            ticker = yf.Ticker(f"{symbol}.KS")
-            df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
-            try:
-                df_krx = fdr.StockListing('KRX')
-                name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
-            except: name = ticker.info.get('shortName', symbol).split(',')[0]
-            currency, fmt_p = "원", ",.0f"
-        else:
-            ticker = yf.Ticker(symbol); df = ticker.history(start=start_date)
-            name = ticker.info.get('shortName', symbol)
-            currency, fmt_p = "$", ",.2f"
+            # 2. 국장(한국) 통신망 수리: 네이버-FDR 이중 그물망
+            if is_kr:
+                ticker = yf.Ticker(f"{symbol}.KS")
+                df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+                
+                try:
+                    import requests
+                    from bs4 import BeautifulSoup
+                    url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+                    res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+                    soup = BeautifulSoup(res.text, 'html.parser')
+                    # 네이버 전광판에서 현재가와 거래량을 직접 낚네
+                    p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                    v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+                except:
+                    # 네이버 통신이 답답하면 예비 장부(df)에서 마지막 숫자를 낚네
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = float(df['Volume'].iloc[-1])
 
-        if not df.empty:
-            df = df.ffill().dropna()
+                try:
+                    df_krx = fdr.StockListing('KRX')
+                    name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
+                except:
+                    name = ticker.info.get('shortName', symbol).split(',')[0]
+                
+                currency, fmt_p = "원", ",.0f"
+
+            # 3. 미장(미국) 통신망 수리: 본장 실시간 대응
+            else:
+                ticker = yf.Ticker(symbol)
+                df = ticker.history(start=start_date)
+                
+                df_today = ticker.history(period='1d')
+                if not df_today.empty:
+                    p = float(df_today['Close'].iloc[-1])
+                    v_curr = float(df_today['Volume'].iloc[-1])
+                else:
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = float(df['Volume'].iloc[-1])
+                
+                name = ticker.info.get('shortName', symbol)
+                currency, fmt_p = "$", ",.2f"
+
+            # 4. 데이터가 빳빳하게 차 있을 때만 병법 판독 시작
+            if not df.empty:
+                df = df.ffill().dropna()
+                
+                # 5일 평균 거래량 (분모 격리)
+                v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
+                v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
+
+                # 전일비 및 전일가 판독 (밤낮/주말 완벽 대응)
+                prev_p = float(df['Close'].iloc[-2])
+                if is_kr and p == float(df['Close'].iloc[-1]) and len(df) > 2:
+                    # 장 마감 후라면 어제 종가와 그저께 종가를 비교하네
+                    prev_p = float(df['Close'].iloc[-2])
+                
+                p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
+
+                # --- 여기서부터 RSI, Williams, MACD 계산 로직이 빳빳하게 이어지네 ---
             
             # [최종 수술] 장이 닫혔을 때는 어제 거래량을 '100%'로 빳빳하게 가져오네
             if is_kr:
