@@ -71,7 +71,7 @@ if symbol:
         
         # 첫 번째(0)가 전일 종가, 네 번째(3)가 거래량일세
             prev_p = float(info_data[0].text.replace(",", ""))
-            v_curr = float(info_data[3].text.replace(",", ""))
+            v_curr = float(info_data[5].text.replace(",", ""))
             p = float(p_text)
             
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
