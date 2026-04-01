@@ -73,17 +73,21 @@ if symbol:
             
             # [최종 수술] 장이 닫혔을 때는 어제 거래량을 '100%'로 빳빳하게 가져오네
             if is_kr:
-                today_str = now_local.strftime('%Y-%m-%d')
-                df_today = fdr.DataReader(symbol, start=today_str)
-                
-                # 오늘 장 데이터가 실제로 있을 때만 실시간으로 인정하네
-                if not df_today.empty and df_today.index[-1].strftime('%Y-%m-%d') == today_str:
-                    p = float(df_today['Close'].iloc[-1])
-                    v_curr = float(df_today['Volume'].iloc[-1])
-                else:
-                    # 장이 안 열렸으면 어제(df의 마지막 행) 데이터를 가져오네
-                    p = float(df['Close'].iloc[-1])
-                    v_curr = float(df['Volume'].iloc[-1]) # 어제 거래량을 그대로 낚아채네
+                # [수정] 네이버에서 1초의 시차도 없이 현재가를 직접 낚아채네
+                import requests
+                from bs4 import BeautifulSoup
+                url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+                soup = BeautifulSoup(res.text, 'html.parser')
+            
+            # 1. [현재가] 실시간 간판에서 직접 낚아채니 시차가 없구먼요
+                p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+            
+            # 2. [거래량] 장부의 4번째(인덱스 3) 숫자를 빳빳하게 낚네
+                v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+            
+            # 3. [전일가 고수] 어르신이 극찬하신 그 기준점(df 마지막 데이터)일세
+                prev_p = float(df['Close'].iloc[-1])
             else:
                 # 미장(나스닥) 실시간 판독
                 df_today = ticker.history(period='1d')
