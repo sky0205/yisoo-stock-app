@@ -62,16 +62,17 @@ if symbol:
             res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
             soup = BeautifulSoup(res.text, 'html.parser')
             
-            # 65번 줄부터 새로 넣으시게 (전일 종가 추가!)
-        # 현재가, 거래량, 그리고 '전일 종가'까지 3박자를 낚아채네
-            p_text = soup.find("p", {"class": "no_today"}).find("span", {"class": "blind"}).text.replace(",", "")
-            v_text = soup.find("span", string="거래량").find_next("span", {"class": "blind"}).text.replace(",", "")
-        # [핵심] 전일 종가를 낚아채는 가장 확실한 낚싯바늘일세
-            prev_p_text = soup.find("em", {"class": "no_up"}).find_next("span", {"class": "blind"}).text.replace(",", "")
+            # 66번 줄부터 74번 줄까지 이 내용으로 덮어쓰시게!
+        # [수정] 네이버 금융의 구조를 빳빳하게 꿰뚫는 정밀 낚싯바늘일세
+            p_text = soup.select_one(".no_today .blind").text.replace(",", "")
+            v_text = soup.select_one(".no_info .blind").find_next("span", class_="blind").text.replace(",", "")
+        
+        # [핵심] '전일'이라는 글자 바로 옆의 숫자를 가져오는 가장 정직한 로직일세
+            prev_p_text = soup.find("th", string="전일").find_next("td").find("span", class_="blind").text.replace(",", "")
         
             p = float(p_text)
             v_curr = float(v_text)
-            prev_p = float(prev_p_text) # 이제 이 녀석이 전일비를 빳빳하게 살려낼 걸세!
+            prev_p = float(prev_p_text) # 이제 HTS의 18,900원과 아귀가 빳빳하게 맞을 걸세!
             
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             try:
