@@ -249,5 +249,6 @@ if symbol:
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
 
 # [가장 중요] 아래 except는 53행 try와 짝꿍이라 맨 왼쪽 벽에 빳빳하게 붙어야 하네!
-    except Exception as e:
-        st.error(f"👵 아이구! 오류: {e}")
+    # [가장 중요] 아래 except는 맨 왼쪽 벽에 빳빳하게 붙어야 하네!
+except Exception as e:
+    st.error(f"👵 아이구! 오류: {e}")
