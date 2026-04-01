@@ -62,11 +62,16 @@ if symbol:
             res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
             soup = BeautifulSoup(res.text, 'html.parser')
             
-            # 현재가와 거래량 추출
+            # 65번 줄부터 새로 넣으시게 (전일 종가 추가!)
+        # 현재가, 거래량, 그리고 '전일 종가'까지 3박자를 낚아채네
             p_text = soup.select_one(".no_today .blind").text.replace(",", "")
             v_text = soup.select_one(".no_info .blind").find_next("span", class_="blind").text.replace(",", "")
+        # [핵심] 네이버 장부 하단에서 '전일 종가'를 찾아내는 로직일세
+            prev_p_text = soup.select(".no_info em .blind")[0].text.replace(",", "")
+        
             p = float(p_text)
             v_curr = float(v_text)
+            prev_p = float(prev_p_text) # 이 녀석이 있어야 전일비가 계산되네!
             
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             try:
