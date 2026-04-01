@@ -63,12 +63,12 @@ if symbol:
             soup = BeautifulSoup(res.text, 'html.parser')
             
             # 66번 줄부터 74번 줄까지 이 내용으로 덮어쓰시게!
-        # [수정] 글자 이름이 아니라 '표의 칸'을 직접 찌르는 방식일세
+        # [수정] 네이버 장부의 구조를 빳빳하게 꿰뚫는 필살 낚싯바늘일세
             p_text = soup.select_one(".no_today .blind").text.replace(",", "")
-            v_text = soup.select_one(".no_info").select(".blind")[3].text.replace(",", "")
         
-        # [핵심] 네이버 장부 첫 번째 표의 첫 번째 숫자가 무조건 '전일 종가'일세
-            prev_p_text = soup.select_one(".no_info").select(".blind")[0].text.replace(",", "")
+        # 거래량과 전일 종가를 '이름표'로 직접 낚아채네
+            v_text = soup.find("th", string="거래량").find_next("td").find("span", class_="blind").text.replace(",", "")
+            prev_p_text = soup.find("th", string="전일").find_next("td").find("span", class_="blind").text.replace(",", "")
         
             p = float(p_text)
             v_curr = float(v_text)
