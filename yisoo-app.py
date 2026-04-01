@@ -63,16 +63,16 @@ if symbol:
             soup = BeautifulSoup(res.text, 'html.parser')
             
             # 66번 줄부터 74번 줄까지 이 내용으로 덮어쓰시게!
-        # [수정] 네이버 장부의 구조를 빳빳하게 꿰뚫는 필살 낚싯바늘일세
+        # [수정] 네이버 장부 상단의 숫자들을 순서대로 낚아채는 방식일세
             p_text = soup.select_one(".no_today .blind").text.replace(",", "")
         
-        # 거래량과 전일 종가를 '이름표'로 직접 낚아채네
-            v_text = soup.find("th", string="거래량").find_next("td").find("span", class_="blind").text.replace(",", "")
-            prev_p_text = soup.find("th", string="전일").find_next("td").find("span", class_="blind").text.replace(",", "")
+        # no_info 영역의 모든 숫자(blind 클래스)를 빳빳하게 다 긁어오네
+            info_data = soup.select(".no_info .blind")
         
+        # 첫 번째(0)가 전일 종가, 네 번째(3)가 거래량일세
+            prev_p = float(info_data[0].text.replace(",", ""))
+            v_curr = float(info_data[3].text.replace(",", ""))
             p = float(p_text)
-            v_curr = float(v_text)
-            prev_p = float(prev_p_text) # 이제 HTS 수치와 빳빳하게 일치할 걸세!
             
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             try:
