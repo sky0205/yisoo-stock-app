@@ -63,16 +63,16 @@ if symbol:
             soup = BeautifulSoup(res.text, 'html.parser')
             
             # 66번 줄부터 74번 줄까지 이 내용으로 덮어쓰시게!
-        # [수정] 네이버 금융의 구조를 빳빳하게 꿰뚫는 정밀 낚싯바늘일세
+        # [수정] 글자 이름이 아니라 '표의 칸'을 직접 찌르는 방식일세
             p_text = soup.select_one(".no_today .blind").text.replace(",", "")
-            v_text = soup.select_one(".no_info .blind").find_next("span", class_="blind").text.replace(",", "")
+            v_text = soup.select_one(".no_info").select(".blind")[3].text.replace(",", "")
         
-        # [핵심] '전일'이라는 글자 바로 옆의 숫자를 가져오는 가장 정직한 로직일세
-            prev_p_text = soup.find("th", string="전일").find_next("td").find("span", class_="blind").text.replace(",", "")
+        # [핵심] 네이버 장부 첫 번째 표의 첫 번째 숫자가 무조건 '전일 종가'일세
+            prev_p_text = soup.select_one(".no_info").select(".blind")[0].text.replace(",", "")
         
             p = float(p_text)
             v_curr = float(v_text)
-            prev_p = float(prev_p_text) # 이제 HTS의 18,900원과 아귀가 빳빳하게 맞을 걸세!
+            prev_p = float(prev_p_text) # 이제 HTS 수치와 빳빳하게 일치할 걸세!
             
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             try:
