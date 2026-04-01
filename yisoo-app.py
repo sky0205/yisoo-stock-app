@@ -58,37 +58,36 @@ if symbol:
 
         if is_kr:
             # [국장 수선] yfinance 대신 네이버 금융에서 빳빳하게 실시간 시세 낚아채기
+            # [60번 줄 시작] 네이버 실시간 보급로 완결판
             url = f"https://finance.naver.com/item/main.naver?code={symbol}"
             res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
             soup = BeautifulSoup(res.text, 'html.parser')
-            
-            # 66번 줄부터 74번 줄까지 이 내용으로 덮어쓰시게!
-        # [수정] 네이버 장부 상단의 숫자들을 순서대로 낚아채는 방식일세
-            p_text = soup.select_one(".no_today .blind").text.replace(",", "")
         
-        # no_info 영역의 모든 숫자(blind 클래스)를 빳빳하게 다 긁어오네
-            # [70번 줄 시작] 네이버 장부의 모든 숫자 데이터를 빳빳하게 수거하네
             try:
-            # 장부 상단의 숫자 덩어리들을 몽땅 리스트로 담네
-                info_area = soup.select_one(".no_info")
-                blind_list = [span.text.replace(",", "") for span in info_area.select(".blind")]
-            
-            # [핵심] 첫 번째(0)가 전일 종가, 여섯 번째(5)가 거래량일세
-                prev_p = float(blind_list[0])
-                v_curr = float(blind_list[5])
-            
-            # 현재가는 간판(.no_today)에서 직접 낚아채네
+            # 1. 현재가 정조준
                 p_text = soup.select_one(".no_today .blind").text.replace(",", "")
                 p = float(p_text)
             
-            except Exception as e:
-            # [비상시] 네이버가 방해하면 기존 fdr 장부로 즉시 후퇴하네
-                p = float(df['Close'].iloc[-1])
-                prev_p = float(df['Close'].iloc[-2])
-                v_curr = float(df['Volume'].iloc[-1])
-        # [76번 줄 끝] 이제 전일비 계산이 톱니바퀴 맞물리듯 돌아갈 걸세!
+            # 2. 전일 종가 및 거래량 정조준 (이름표로 직접 낚기)
+            # '전일' 글자 바로 옆의 숫자가 진짜 어제 종가일세
+                prev_p_text = soup.find("th", string="전일").find_next("td").find("span", class_="blind").text.replace(",", "")
+            # '거래량' 글자 바로 옆의 숫자가 진짜 오늘 거래량일세
+                v_text = soup.find("th", string="거래량").find_next("td").find("span", class_="blind").text.replace(",", "")
             
+                prev_p = float(prev_p_text)
+                v_curr = float(v_text)
+            
+            except Exception as e:
+            # 네이버가 방해할 경우를 대비한 비상 탈출구일세
+                st.warning("👵 네이버 장부가 안개에 가렸네. fdr 장부로 대체하네.")
+                df_temp = fdr.DataReader(symbol, start=(datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d'))
+                p = float(df_temp['Close'].iloc[-1])
+                prev_p = float(df_temp['Close'].iloc[-2])
+                v_curr = float(df_temp['Volume'].iloc[-1])
+
+        # [80번 줄 근처] 낡은 장부 데이터도 일단 챙겨두네
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+        # [85번 줄 끝] 이제 아래의 지표 계산 로직으로 빳빳하게 이어지네
             try:
                 df_krx = fdr.StockListing('KRX')
                 name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
