@@ -49,27 +49,78 @@ display_global_risk(); st.divider()
 
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
+# [수정된 부분만 빳빳하게 갈아 끼우시게!]
+# symbol 입력 이후의 로직을 아래와 같이 수선했소이다.
+
 if symbol:
     try:
-        start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
+        # 1. 전장 확정 및 시간표 정리
+        start_date = datetime.now() - timedelta(days=500)
+        is_kr = symbol.isdigit()
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
         now_local = datetime.now(now_tz)
 
+        # 2. 국장(한국) 통신망 수리
         if is_kr:
-            ticker = yf.Ticker(f"{symbol}.KS")
+            # 예비 장부(fdr) 먼저 펼치기
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+            ticker = yf.Ticker(f"{symbol}.KS")
+            
+            # [수정] 밤에도 빳빳하게 주가를 부르는 '이중 그물망'
+            try:
+                import requests
+                from bs4 import BeautifulSoup
+                url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+                soup = BeautifulSoup(res.text, 'html.parser')
+                # 실시간 판독 시도
+                p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+            except:
+                # 네이버가 졸고 있으면 장부(df)에서 마지막 숫자를 낚네!
+                p = float(df['Close'].iloc[-1])
+                v_curr = float(df['Volume'].iloc[-1])
+
             try:
                 df_krx = fdr.StockListing('KRX')
                 name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
-            except: name = ticker.info.get('shortName', symbol).split(',')[0]
+            except:
+                name = f"국장 종목({symbol})"
             currency, fmt_p = "원", ",.0f"
+
+        # 3. 미장(미국) 통신망 수리
         else:
-            ticker = yf.Ticker(symbol); df = ticker.history(start=start_date)
+            ticker = yf.Ticker(symbol)
+            df = ticker.history(start=start_date)
+            # [수정] 미장도 데이터가 희미해지지 않게 빳빳하게 호출
+            df_today = ticker.history(period='1d')
+            if not df_today.empty:
+                p = float(df_today['Close'].iloc[-1])
+                v_curr = float(df_today['Volume'].iloc[-1])
+            else:
+                p = float(df['Close'].iloc[-1])
+                v_curr = float(df['Volume'].iloc[-1])
+            
             name = ticker.info.get('shortName', symbol)
             currency, fmt_p = "$", ",.2f"
 
+        # 4. 데이터가 빳빳하게 차 있을 때만 병법 판독 시작
         if not df.empty:
             df = df.ffill().dropna()
+            
+            # 5일 평균 거래량 계산
+            v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
+            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
+
+            # 전일비 계산 (밤에는 마감가 기준으로 빳빳하게)
+            prev_p = float(df['Close'].iloc[-2])
+            # 오늘 종가와 어제 종가가 같으면(장 마감 후) 그 전날과 비교하네
+            if p == float(df['Close'].iloc[-1]) and len(df) > 2:
+                prev_p = float(df['Close'].iloc[-2])
+            
+            p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
+
+            # --- 이후 지표 계산 및 화면 출력 로직은 기존과 동일하게 빳빳하게 작동하네 ---
             
             # [최종 수술] 장이 닫혔을 때는 어제 거래량을 '100%'로 빳빳하게 가져오네
             if is_kr:
