@@ -250,5 +250,5 @@ if symbol:
 
 # [가장 중요] 아래 except는 53행 try와 짝꿍이라 맨 왼쪽 벽에 빳빳하게 붙어야 하네!
     # [가장 중요] 아래 except는 맨 왼쪽 벽에 빳빳하게 붙어야 하네!
-except Exception as e:
-    st.error(f"👵 아이구! 오류: {e}")
+    except Exception as e:
+        st.error(f"👵 아이구! 오류: {e}")
