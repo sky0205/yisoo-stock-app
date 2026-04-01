@@ -67,11 +67,12 @@ if symbol:
             p_text = soup.select_one(".no_today .blind").text.replace(",", "")
         
         # no_info 영역의 모든 숫자(blind 클래스)를 빳빳하게 다 긁어오네
-            info_data = soup.select(".no_info .blind")
+            prev_p_text = soup.find("th", string="전일").find_next("td").find("span", class_="blind").text.replace(",", "")
+            v_text = soup.find("th", string="거래량").find_next("td").find("span", class_="blind").text.replace(",", "")
         
-        # 첫 번째(0)가 전일 종가, 네 번째(3)가 거래량일세
-            prev_p = float(info_data[0].text.replace(",", ""))
-            v_curr = float(info_data[5].text.replace(",", ""))
+        # 2. 낚아챈 글자를 숫자로 변환하네
+            prev_p = float(prev_p_text)
+            v_curr = float(v_text)
             p = float(p_text)
             
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
