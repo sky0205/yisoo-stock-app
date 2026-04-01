@@ -241,10 +241,13 @@ if symbol:
                 elif will_val <= -65: w_diag = f"● 지수 {will_val:.2f}로 **📉 하락 가속** 구간일세! 바닥 확인 전까지는 절대 칼 뽑지 말고 자숙하시게."
                 else: w_diag = f"● 지수 {will_val:.2f}로 중간 지대일세. 기세가 어느 쪽으로 튈지 냉정하게 지켜보시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
-            with i4: # MACD
+        
+            with i4: # MACD (들여쓰기 주의!)
                 m_diff, m_diff_p = m_l - s_l, m_p - s_p
                 if m_l > s_l: m_diag = "● 엔진 **정회전(헛바퀴)** 중일세! 성벽이 무너졌으니 속지 마시게." if p < defense_line else "● 엔진 **정회전** 중일세! 기세 붙었으니 성벽 사수 여부 보며 자신 있게 진격하시게."
                 else: m_diag = "● 엔진 **역회전폭 급감**! 시동 걸 채비 중이니 보따리 챙겨두고 진격 신호를 기다리시게." if m_diff > m_diff_p else "● 엔진 **역회전 심화** 중일세! 거꾸로 도는 차에 올라타면 안 되는 법, 냉정하게 자숙하시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
 
-except Exception as e: st.error(f"👵 아이구! 오류: {e}")
+# [가장 중요] 아래 except는 53행 try와 짝꿍이라 맨 왼쪽 벽에 빳빳하게 붙어야 하네!
+    except Exception as e:
+        st.error(f"👵 아이구! 오류: {e}")
