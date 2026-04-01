@@ -50,69 +50,61 @@ display_global_risk(); st.divider()
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
 if symbol:
-        try:
-            # 1. [수정] 전장 확정 및 시간표 정리 (try 보다 한 칸 안으로!)
-            start_date = datetime.now() - timedelta(days=500)
-            is_kr = symbol.isdigit()
-            now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
-            now_local = datetime.now(now_tz)
+    try:
+        start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
+        now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
+        now_local = datetime.now(now_tz)
 
-            # 2. [수정] 국장(한국) 통신망: 네이버-FDR-yf 삼중 그물망
+        if is_kr:
+            ticker = yf.Ticker(f"{symbol}.KS")
+            df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+            try:
+                df_krx = fdr.StockListing('KRX')
+                name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
+            except: name = ticker.info.get('shortName', symbol).split(',')[0]
+            currency, fmt_p = "원", ",.0f"
+        else:
+            ticker = yf.Ticker(symbol); df = ticker.history(start=start_date)
+            name = ticker.info.get('shortName', symbol)
+            currency, fmt_p = "$", ",.2f"
+
+        if not df.empty:
+            df = df.ffill().dropna()
+            
+            # [최종 수술] 장이 닫혔을 때는 어제 거래량을 '100%'로 빳빳하게 가져오네
             if is_kr:
-                ticker = yf.Ticker(f"{symbol}.KS")
-                try:
-                    # FDR 서버 타임아웃 대비 비상망
-                    df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
-                except:
-                    df = ticker.history(start=start_date)
-                
-                try:
-                    import requests
-                    from bs4 import BeautifulSoup
-                    url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-                    res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
-                    soup = BeautifulSoup(res.text, 'html.parser')
-                    p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-                    v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
-                except:
-                    # 네이버 통신 불능 시 장부(df)에서 낚기
-                    p = float(df['Close'].iloc[-1]) if not df.empty else 0
-                    v_curr = float(df['Volume'].iloc[-1]) if not df.empty else 0
-
-                try:
-                    df_krx = fdr.StockListing('KRX')
-                    name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
-                except:
-                    name = ticker.info.get('shortName', symbol).split(',')[0]
-                currency, fmt_p = "원", ",.0f"
-
-            # 3. [수정] 미장(미국) 통신망: 본장 실시간 대응
+                # [수정] 네이버에서 1초의 시차도 없이 현재가를 직접 낚아채네
+                import requests
+                from bs4 import BeautifulSoup
+                url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+                soup = BeautifulSoup(res.text, 'html.parser')
+            
+            # 1. [현재가] 실시간 간판에서 직접 낚아채니 시차가 없구먼요
+                p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+            
+            # 2. [거래량] 장부의 4번째(인덱스 3) 숫자를 빳빳하게 낚네
+                v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+            
+            # 3. [전일가 고수] 어르신이 극찬하신 그 기준점(df 마지막 데이터)일세
+                prev_p = float(df['Close'].iloc[-1])
             else:
-                ticker = yf.Ticker(symbol)
-                df = ticker.history(start=start_date)
+                # 미장(나스닥) 실시간 판독
                 df_today = ticker.history(period='1d')
                 if not df_today.empty:
                     p = float(df_today['Close'].iloc[-1])
                     v_curr = float(df_today['Volume'].iloc[-1])
                 else:
-                    p = float(df['Close'].iloc[-1]) if not df.empty else 0
-                    v_curr = float(df['Volume'].iloc[-1]) if not df.empty else 0
-                name = ticker.info.get('shortName', symbol)
-                currency, fmt_p = "$", ",.2f"
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = float(df['Volume'].iloc[-1])
+            # 5일 평균 거래량 (분모 격리)
+            v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
+            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # 4. [수정] 데이터 판독 및 전일비 계산
-            if not df.empty:
-                df = df.ffill().dropna()
-                v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
-                v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
-                
-                # 전일비 판독 (밤낮/주말 완벽 대응)
-                prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
-                if is_kr and p == float(df['Close'].iloc[-1]) and len(df) > 2:
-                    prev_p = float(df['Close'].iloc[-2])
-                
-                p_diff = p - prev_p
-                p_chg = (p - prev_p) / (prev_p if prev_p != 0 else 1) * 100
+            prev_p = float(df['Close'].iloc[-2])
+            if is_kr and p == prev_p and len(df) > 2: prev_p = float(df['Close'].iloc[-3])
+            p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
+
             # 시간 보정 로직
             s_h, s_m = (9, 0) if is_kr else (9, 30)
             elapsed = (now_local.hour - s_h) * 60 + (now_local.minute - s_m)
@@ -241,14 +233,10 @@ if symbol:
                 elif will_val <= -65: w_diag = f"● 지수 {will_val:.2f}로 **📉 하락 가속** 구간일세! 바닥 확인 전까지는 절대 칼 뽑지 말고 자숙하시게."
                 else: w_diag = f"● 지수 {will_val:.2f}로 중간 지대일세. 기세가 어느 쪽으로 튈지 냉정하게 지켜보시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
-        
-            with i4: # MACD (들여쓰기 주의!)
+            with i4: # MACD
                 m_diff, m_diff_p = m_l - s_l, m_p - s_p
                 if m_l > s_l: m_diag = "● 엔진 **정회전(헛바퀴)** 중일세! 성벽이 무너졌으니 속지 마시게." if p < defense_line else "● 엔진 **정회전** 중일세! 기세 붙었으니 성벽 사수 여부 보며 자신 있게 진격하시게."
                 else: m_diag = "● 엔진 **역회전폭 급감**! 시동 걸 채비 중이니 보따리 챙겨두고 진격 신호를 기다리시게." if m_diff > m_diff_p else "● 엔진 **역회전 심화** 중일세! 거꾸로 도는 차에 올라타면 안 되는 법, 냉정하게 자숙하시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
 
-# [가장 중요] 아래 except는 53행 try와 짝꿍이라 맨 왼쪽 벽에 빳빳하게 붙어야 하네!
-    # [가장 중요] 아래 except는 맨 왼쪽 벽에 빳빳하게 붙어야 하네!
-    except Exception as e:
-        st.error(f"👵 아이구! 오류: {e}")
+    except Exception as e: st.error(f"👵 아이구! 오류: {e}")
