@@ -162,25 +162,16 @@ if symbol:
             
             # [수정] 시초(is_opening)일 때는 강도 점수(vol_strength)를 기준으로 판독하네
             # [수정] 어르신의 4단계 수치 판독법 (0%는 장전 대기)
-            if v_ratio == 0:
-                v_status, v_msg = "장전 대기", "아직 장이 열리지 않았거나 데이터 집계 전일세. 전열을 가다듬으시게."
-            elif v_ratio < 50:
-                v_status, v_msg = "기세부족", "아직은 안개뿐이니, 아군 화력을 더 기다리시게."
-            elif v_ratio < 100:
-                v_status, v_msg = "매집시작", "평균치를 향해 아군 화력이 차오르고 있으니 눈여겨보시게."
-            elif v_ratio < 150:
-                v_status, v_msg = "주의단계", "평균 화력을 넘어섰구먼! 기세가 충만하니 추세를 타시게."
-            else:
-                v_status, v_msg = "과열폭발", "화력이 폭발 중일세! 냉정하게 대응하시게."
+            
 
             # [화면 출력] 사진의 양식을 유지하되 내용은 빳빳하게 교체하네
             v_adv = f"✅ 현재 **시간 보정 화력 {vol_strength:.1f}%**로 {v_msg}"
             if vol_strength >= 150:
-                st.error(f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}%! 본진 진격 중이오.")
+                v_adv = f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}%! 본진 진격 중이오."
             elif vol_strength >= 80:
-                st.success(f"⚔️ **[정상화력]** 현재 강도 {vol_strength:.1f}%! 기세가 빳빳하구먼.")
+                v_adv = f"⚔️ **[정상화력]** 현재 강도 {vol_strength:.1f}%! 기세가 빳빳하구먼."
             else:
-                st.info(f"🧊 **[거래절벽]** 현재 강도 {vol_strength:.1f}%! 속지 마시게.")
+                v_adv = f"🧊 **[거래절벽]** 현재 강도 {vol_strength:.1f}%! 속지 마시게."
             st.markdown(f"""
                 <div class='vol-box'>
                     <div style='font-size: 32px !important; font-weight: bold; color: #0D47A1; margin-bottom: 10px;'>
