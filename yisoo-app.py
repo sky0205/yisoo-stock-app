@@ -162,7 +162,18 @@ if symbol:
             
             # [수정] 시초(is_opening)일 때는 강도 점수(vol_strength)를 기준으로 판독하네
             # [수정] 어르신의 4단계 수치 판독법 (0%는 장전 대기)
-            
+            # --- [수선] 165번 라인부터 정확하게 입력하시게 ---
+            if vol_strength == 0:
+                v_status, v_msg = "장전 대기", "아직 장이 열리지 않았거나 데이터 집계 전일세. 전열을 가다듬으시게."
+            elif vol_strength < 50:
+                v_status, v_msg = "기세부족", f"아직은 안개뿐이니, 아군 화력을 더 기다리시게. (강도: {vol_strength:.1f}%)"
+            elif vol_strength < 100:
+                v_status, v_msg = "매집시작", f"평균치를 향해 아군 화력이 차오르고 있으니 눈여겨보시게. (강도: {vol_strength:.1f}%)"
+            elif vol_strength < 150:
+                v_status, v_msg = "주의단계", f"평균 화력을 넘어섰구먼! 기세가 충만하니 추세를 타시게. (강도: {vol_strength:.1f}%)"
+            else:
+                v_status, v_msg = "과열폭발", f"화력이 폭발 중일세! 냉정하게 대응하시게. (강도: {vol_strength:.1f}%)"
+            # --- [복구 끝] ---
 
             # [화면 출력] 사진의 양식을 유지하되 내용은 빳빳하게 교체하네
             v_adv = f"✅ 현재 **시간 보정 화력 {vol_strength:.1f}%**로 {v_msg}"
