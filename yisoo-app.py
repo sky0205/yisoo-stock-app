@@ -108,11 +108,29 @@ if symbol:
             if is_kr and p == prev_p and len(df) > 2: prev_p = float(df['Close'].iloc[-3])
             p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
 
-            # 시간 보정 로직
+            # --- [시간 보정 필살기: 국장/미장 겸용] ---
+            import pytz
+            
+            # 1. 현지 시간 및 장 시작 시간 설정
+            tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
+            now_local = datetime.datetime.now(tz)
             s_h, s_m = (9, 0) if is_kr else (9, 30)
-            elapsed = (now_local.hour - s_h) * 60 + (now_local.minute - s_m)
-            if now_local.weekday() >= 5 or elapsed > 390: elapsed = 390
-            elif elapsed < 10: elapsed = 10
+            m_start = now_local.replace(hour=s_h, minute=s_m, second=0, microsecond=0)
+            
+            # 2. 장 시작 후 경과 시간(elapsed) 계산
+            if now_local < m_start:
+                elapsed = 1  # 장 시작 전엔 최소값으로 고정
+            else:
+                elapsed = (now_local - m_start).seconds / 60
+            
+            # 3. 주말이거나 장 종료(390분) 이후면 390으로 고정
+            if now_local.weekday() >= 5 or elapsed > 390:
+                elapsed = 390
+            elif elapsed < 10:
+                elapsed = 10  # 장 초반 10분은 보정 오차 방지용
+            
+            # 4. [최종 핵심] 시간 가중치를 적용한 거래 강도 산출
+            # v_ratio는 이미 105번 라인에서 계산된 '현재/5일평균 * 100' 값임
             vol_strength = v_ratio / (elapsed / 390)
 
             # 지표 계산 (엄수)
