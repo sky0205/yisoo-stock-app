@@ -117,21 +117,27 @@ if symbol:
             s_h, s_m = (9, 0) if is_kr else (9, 30)
             m_start = now_local.replace(hour=s_h, minute=s_m, second=0, microsecond=0)
             
-            # 2. 장 시작 후 경과 시간(elapsed) 계산
+            # 2. 장 시작 후 경과 시간(elapsed) 계산 및 미장 방어
             if now_local < m_start:
-                elapsed = 1  # 장 시작 전엔 최소값으로 고정
+                # [수선] 장 시작 전(프리마켓)에는 보정하지 않고 어제 마감 거래율(v_ratio)만 보여줌
+                vol_strength = v_ratio 
             else:
+                # 현재 시간에서 장 시작 시간을 뺀 '초'를 '분'으로 환산
                 elapsed = (now_local - m_start).seconds / 60
+                
+                # 주말이거나 장 종료(390분) 이후면 마감 수치로 고정
+                if now_local.weekday() >= 5 or elapsed > 390:
+                    elapsed = 390
+                elif elapsed < 10:
+                    # 장 초반 10분은 숫자가 튀는 것을 막기 위해 최소 10분으로 보정
+                    elapsed = 10 
             
-            # 3. 주말이거나 장 종료(390분) 이후면 390으로 고정
-            if now_local.weekday() >= 5 or elapsed > 390:
-                elapsed = 390
-            elif elapsed < 10:
-                elapsed = 10  # 장 초반 10분은 보정 오차 방지용
+                # [핵심] 105번에서 이미 계산된 v_ratio를 시간 가중치로 나누어 진짜 화력 산출
+                vol_strength = v_ratio / (elapsed / 390)
             
-            # 4. [최종 핵심] 시간 가중치를 적용한 거래 강도 산출
-            # v_ratio는 이미 105번 라인에서 계산된 '현재/5일평균 * 100' 값임
-            vol_strength = v_ratio / (elapsed / 390)
+            # [최종 방패] 만약 보정 수치가 1000%를 넘으면 데이터 오류로 간주하고 v_ratio로 강제 환원
+            if vol_strength > 1000:
+                vol_strength = v_ratio
             # 1. 기존 문구 아래에 추가하거나
         
 
