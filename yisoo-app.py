@@ -181,8 +181,9 @@ if symbol:
                 v_status, v_msg = "과열폭발", f"화력이 폭발 중일세! 냉정하게 대응하시게. (강도: {vol_strength:.1f}%)"
             # --- [복구 끝] ---
 
-            # [화면 출력] 사진의 양식을 유지하되 내용은 빳빳하게 교체하네
+            # [최종 수선] 모든 문구의 숫자를 오직 'vol_strength'로만 통일하오!
             v_adv = f"✅ 현재 **시간 보정 화력 {vol_strength:.1f}%**로 {v_msg}"
+            
             if vol_strength >= 150:
                 v_adv = f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}%! 본진 진격 중이오."
             elif vol_strength >= 80:
