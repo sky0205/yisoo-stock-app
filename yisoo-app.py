@@ -119,23 +119,23 @@ if symbol:
             
             # 2. 장 시작 후 경과 시간(elapsed) 계산 및 미장 방어
             if now_local < m_start:
-                # [수선] 장 시작 전(프리마켓)에는 보정하지 않고 어제 마감 거래율(v_ratio)만 보여줌
+                # [방패 1] 장 시작 전(프리마켓 포함)에는 보정하지 않고 생데이터(v_ratio)만 유지
                 vol_strength = v_ratio 
             else:
                 # 현재 시간에서 장 시작 시간을 뺀 '초'를 '분'으로 환산
                 elapsed = (now_local - m_start).seconds / 60
                 
-                # 주말이거나 장 종료(390분) 이후면 마감 수치로 고정
-                if now_local.weekday() >= 5 or elapsed > 390:
+                # [방패 2] 주말(토,일)이거나 장 종료(390분) 이후, 혹은 휴장일 대응
+                if now_local.weekday() >= 5 or elapsed > 390 or v_ratio < 0.01:
                     elapsed = 390
+                # [방패 3] 장 초반 10분간은 오차 방지를 위해 최소 10분으로 고정
                 elif elapsed < 10:
-                    # 장 초반 10분은 숫자가 튀는 것을 막기 위해 최소 10분으로 보정
                     elapsed = 10 
-            
-                # [핵심] 105번에서 이미 계산된 v_ratio를 시간 가중치로 나누어 진짜 화력 산출
+        
+                # [핵심 계산] 현재 거래율을 시간 비율로 나누어 '화력 강도' 산출
                 vol_strength = v_ratio / (elapsed / 390)
-            
-            # [최종 방패] 만약 보정 수치가 1000%를 넘으면 데이터 오류로 간주하고 v_ratio로 강제 환원
+        
+            # [최종 방패] 어떤 경우에도 숫자가 1000%를 넘으면 데이터 오류로 보고 생데이터로 환원
             if vol_strength > 1000:
                 vol_strength = v_ratio
             # 1. 기존 문구 아래에 추가하거나
