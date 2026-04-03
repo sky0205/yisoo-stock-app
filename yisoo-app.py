@@ -182,7 +182,7 @@ if symbol:
                 v_status, v_msg = "과열폭발", "화력이 폭발 중일세! 냉정하게 대응하시게."
 
             # [화면 출력] 사진의 양식을 유지하되 내용은 빳빳하게 교체하네
-            v_adv = f"✅ 현재 거래율 {v_ratio:.1f}%로 {v_msg}"
+            v_adv = f"✅ 현재 **시간 보정 화력 {vol_strength:.1f}%**로 {v_msg}"
             
             st.markdown(f"""
                 <div class='vol-box'>
