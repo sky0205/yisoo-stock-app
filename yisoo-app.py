@@ -182,18 +182,23 @@ if symbol:
 
             # [화면 출력] 사진의 양식을 유지하되 내용은 빳빳하게 교체하네
             v_adv = f"✅ 현재 **시간 보정 화력 {vol_strength:.1f}%**로 {v_msg}"
+            # [단위 수선] %를 떼어내고 사령관님의 '당백 점수'로 변환하오
             if vol_strength >= 150:
-                v_adv = f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}%! 본진 진격 중이오."
+                v_adv = f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}점! 본진 진격 중이오."
+            elif vol_strength >= 100:
+                v_adv = f"🚀 **[매집시작]** 현재 강도 {vol_strength:.1f}점! 화력이 차오르니 눈여겨보시게."
             elif vol_strength >= 80:
-                v_adv = f"⚔️ **[정상화력]** 현재 강도 {vol_strength:.1f}%! 기세가 빳빳하구먼."
+                v_adv = f"⚔️ **[정상화력]** 현재 강도 {vol_strength:.1f}점! 기세가 빳빳하구먼."
             else:
-                v_adv = f"🧊 **[거래절벽]** 현재 강도 {vol_strength:.1f}%! 속지 마시게."
+                v_adv = f"🧊 **[거래절벽]** 현재 강도 {vol_strength:.1f}점! 속지 마시게."
+        
+            # 박스 출력 (제목은 비율%, 내용은 점수!)
             st.markdown(f"""
                 <div class='vol-box'>
                     <div style='font-size: 32px !important; font-weight: bold; color: #0D47A1; margin-bottom: 10px;'>
                         📊 거래량 전황: {v_status} ({v_ratio:.1f}%)
                     </div>
-                    <div class='vol-sub-text' style='font-size: 22px !important; color: #1565C0 !important; font-weight: bold;'>
+                    <div class='vol-sub-text' style='font-size: 22px !important; color: #1565C0 !important;'>
                         {v_adv}
                     </div>
                 </div>
