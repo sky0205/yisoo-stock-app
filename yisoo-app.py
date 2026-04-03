@@ -151,14 +151,6 @@ if symbol:
 
             # 전광판
             st.markdown("### 📊 현재주가현황")
-            st.markdown(f"#### 🚀 **[실시간 화력 판독]** 강도: **{vol_strength:.1f}%**")
-
-            if vol_strength >= 150:
-                st.error(f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}%! 본진 진격 중이오.")
-            elif vol_strength >= 80:
-                st.success(f"⚔️ **[정상화력]** 현재 강도 {vol_strength:.1f}%! 기세가 빳빳하구먼.")
-            else:
-                st.info(f"🧊 **[거래절벽]** 현재 강도 {vol_strength:.1f}%! 속지 마시게.")
             
             # 160번 라인: 기존 코드가 이어서 나오면 되오
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
@@ -183,7 +175,12 @@ if symbol:
 
             # [화면 출력] 사진의 양식을 유지하되 내용은 빳빳하게 교체하네
             v_adv = f"✅ 현재 **시간 보정 화력 {vol_strength:.1f}%**로 {v_msg}"
-            
+            if vol_strength >= 150:
+                st.error(f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}%! 본진 진격 중이오.")
+            elif vol_strength >= 80:
+                st.success(f"⚔️ **[정상화력]** 현재 강도 {vol_strength:.1f}%! 기세가 빳빳하구먼.")
+            else:
+                st.info(f"🧊 **[거래절벽]** 현재 강도 {vol_strength:.1f}%! 속지 마시게.")
             st.markdown(f"""
                 <div class='vol-box'>
                     <div style='font-size: 32px !important; font-weight: bold; color: #0D47A1; margin-bottom: 10px;'>
