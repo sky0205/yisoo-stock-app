@@ -117,25 +117,26 @@ if symbol:
             s_h, s_m = (9, 0) if is_kr else (9, 30)
             m_start = now_local.replace(hour=s_h, minute=s_m, second=0, microsecond=0)
             
-            # 2. 장 시작 후 경과 시간(elapsed) 계산 및 미장 방어
+            # [무적 보강] 2. 장 시작 후 경과 시간(elapsed) 계산 및 미장 방어
             if now_local < m_start:
-                # [방패 1] 장 시작 전(프리마켓 포함)에는 보정하지 않고 생데이터(v_ratio)만 유지
+                # 장 시작 전에는 보정 없이 현재 수치만 유지
                 vol_strength = v_ratio 
             else:
-                # 현재 시간에서 장 시작 시간을 뺀 '초'를 '분'으로 환산
-                elapsed = (now_local - m_start).seconds / 60
+                # 현재 시간에서 장 시작 시간을 뺀 '분' 계산
+                elapsed = (now_local - m_start).total_seconds() / 60
                 
-                # [방패 2] 주말(토,일)이거나 장 종료(390분) 이후, 혹은 휴장일 대응
-                if now_local.weekday() >= 5 or elapsed > 390 or v_ratio < 0.01:
+                # [핵심 보강] 주말, 장 종료 후, 혹은 '거래가 거의 없는 휴장일' 판독
+                # 미장은 휴장이라도 시간이 흐르므로, v_ratio가 1% 미만이면 강제로 하루 전체(390분)로 계산하네
+                if now_local.weekday() >= 5 or elapsed > 390 or v_ratio < 1.0:
                     elapsed = 390
-                # [방패 3] 장 초반 10분간은 오차 방지를 위해 최소 10분으로 고정
+                # 장 초반 10분간은 오차 방지를 위해 최소 10분으로 고정
                 elif elapsed < 10:
                     elapsed = 10 
         
-                # [핵심 계산] 현재 거래율을 시간 비율로 나누어 '화력 강도' 산출
+                # 최종 화력 계산
                 vol_strength = v_ratio / (elapsed / 390)
         
-            # [최종 방패] 어떤 경우에도 숫자가 1000%를 넘으면 데이터 오류로 보고 생데이터로 환원
+            # [최종 확인] 계산된 숫자가 비상식적으로 크면 생데이터로 환원
             if vol_strength > 1000:
                 vol_strength = v_ratio
             # 1. 기존 문구 아래에 추가하거나
