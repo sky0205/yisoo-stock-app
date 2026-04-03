@@ -133,7 +133,7 @@ if symbol:
             # v_ratio는 이미 105번 라인에서 계산된 '현재/5일평균 * 100' 값임
             vol_strength = v_ratio / (elapsed / 390)
             # 1. 기존 문구 아래에 추가하거나
-            st.write(f"🚀 **[실시간 화력 판독]** 현재 시간 보정 거래 강도는 **{vol_strength:.1f}%** 이오.")
+        
 
 # 2. 할배의 냉정 판독까지 곁들이면 금상첨화요!
             if vol_strength >= 150:
@@ -157,6 +157,17 @@ if symbol:
 
             # 전광판
             st.markdown("### 📊 현재주가현황")
+            st.markdown(f"### 🚀 **[실시간 화력 판독]** 시간 보정 거래 강도: **{vol_strength:.1f}%**")
+
+# 만약 할배의 진단 문구도 넣고 싶다면 바로 아래 추가!
+            if vol_strength >= 150:
+                st.error(f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}%! 본진 진격 중이오.")
+            elif vol_strength >= 80:
+                st.success(f"⚔️ **[정상화력]** 현재 강도 {vol_strength:.1f}%! 기세가 빳빳하구먼.")
+            else:
+                st.info(f"🧊 **[거래절벽]** 현재 강도 {vol_strength:.1f}%! 속지 마시게.")
+            
+            # 160번 라인: 기존 코드가 이어서 나오면 되오
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"""<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'>
                 <p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{name} ({symbol})</p>
