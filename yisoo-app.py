@@ -86,17 +86,20 @@ if symbol:
             # 2. [거래량] 장부의 4번째(인덱스 3) 숫자를 빳빳하게 낚네
                 v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
             
-            # 3. [전일가 고수] 어르신이 극찬하신 그 기준점(df 마지막 데이터)일세
+            # 3. [전일가 고수] 어제의 성벽 종가를 절대 기준으로 삼네
                 prev_p = float(df['Close'].iloc[-1])
             else:
-                # 미장(나스닥) 실시간 판독
+            # 미장(나스닥) 실시간 판독 및 전일비 고정
                 df_today = ticker.history(period='1d')
                 if not df_today.empty:
                     p = float(df_today['Close'].iloc[-1])
                     v_curr = float(df_today['Volume'].iloc[-1])
-                else:
-                    p = float(df['Close'].iloc[-1])
-                    v_curr = float(df['Volume'].iloc[-1])
+                # 미장은 본장 시작 전엔 직전 영업일 종가를 써야 하네
+                    prev_p = float(df['Close'].iloc[-1])
+            else:
+                p = float(df['Close'].iloc[-1])
+                v_curr = float(df['Volume'].iloc[-1])
+                prev_p = float(df['Close'].iloc[-2]) # 데이터가 없을 때만 뒤로 가네
             # 5일 평균 거래량 (분모 격리)
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
