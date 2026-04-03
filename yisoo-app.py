@@ -135,13 +135,7 @@ if symbol:
             # 1. 기존 문구 아래에 추가하거나
         
 
-# 2. 할배의 냉정 판독까지 곁들이면 금상첨화요!
-            if vol_strength >= 150:
-                st.error("🔥 **[화력폭발]** 평소 이 시간대보다 훨씬 강한 화력이오! 본진 진격 중일세.")
-            elif vol_strength >= 80:
-                st.success("⚔️ **[정상화력]** 기세가 빳빳하구먼요. 계획대로 밀어붙이시게.")
-            else:
-                st.warning("🧊 **[거래절벽]** 화력이 영 부실하오. 개미들 낚시질이니 속지 마시게.")
+
             # 지표 계산 (엄수)
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
@@ -157,9 +151,8 @@ if symbol:
 
             # 전광판
             st.markdown("### 📊 현재주가현황")
-            st.markdown(f"### 🚀 **[실시간 화력 판독]** 시간 보정 거래 강도: **{vol_strength:.1f}%**")
+            st.markdown(f"#### 🚀 **[실시간 화력 판독]** 강도: **{vol_strength:.1f}%**")
 
-# 만약 할배의 진단 문구도 넣고 싶다면 바로 아래 추가!
             if vol_strength >= 150:
                 st.error(f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}%! 본진 진격 중이오.")
             elif vol_strength >= 80:
