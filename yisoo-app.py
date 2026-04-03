@@ -113,7 +113,7 @@ if symbol:
             
             # 1. 현지 시간 및 장 시작 시간 설정
             tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
-            now_local = datetime.datetime.now(tz)
+            now_local = datetime.now(tz)
             s_h, s_m = (9, 0) if is_kr else (9, 30)
             m_start = now_local.replace(hour=s_h, minute=s_m, second=0, microsecond=0)
             
