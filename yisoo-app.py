@@ -225,36 +225,37 @@ if symbol:
             m_diff_p = m_p - s_p    # 어제 엔진 간격
 
             # --- [1] 고점 및 과열권 전술 (성벽 위 진격) ---
+            # --- [1] 고점 및 과열권 전술 (성벽 위 진격) ---
             if p >= up_b or rsi_val >= 60:
                 if m_l < s_l: # 엔진 역회전 (탈출 신호)
                     if p < defense_line or abs(m_diff) > abs(m_diff_p):
-                        final_adv = f"🚨 **[최종 결론]** 거래량({v_ratio:.1f}%). 성벽({format(defense_line, fmt_p)}) 함락 및 엔진 역회전 심화! **전량 익절**하시게!"
+                        final_adv = f"🚨 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽({format(defense_line, fmt_p)}) 함락 및 엔진 역회전! **무조건 퇴각 및 현금 확보!**"
                     else:
-                        final_adv = f"⚠️ **[최종 결론]** 거래량({v_ratio:.1f}%). 성벽 사수 중이나 엔진 역회전 초입일세. **30~50% 부분 익절**하시게."
-                elif v_ratio >= 150 and p > defense_line: # 거래폭발 + 성벽 사수 (불사조)
-                    final_adv = f"🚀 **[최종 결론]** 거래량({v_ratio:.1f}%). 성벽 딛고 하늘 문이 열렸네! 기세 충만하니 **빳빳하게 홀딩**하시게!"
+                        final_adv = f"⚠️ **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 사수 중이나 엔진 역회전 초입일세. **익절 준비 및 비중 축소!**"
+                elif vol_strength >= 150 and p > defense_line: # 거래강도 폭발 + 성벽 사수 (불사조)
+                    final_adv = f"🚀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 딛고 하늘 문이 열렸네! 기세 충만하니 **비중 유지 및 홀딩!**"
                 else: # 성벽 위 정체 (수확)
-                    final_adv = f"💰 **[최종 결론]** 거래량({v_ratio:.1f}%). 성벽 위나 기세가 약해지네. **야금야금 분할 매도**로 수익 챙기시게."
-
+                    final_adv = f"💰 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 위나 기세가 약해지네. **야금야금 분할 매도 시작!**"
+            
             # --- [2] 바닥권 및 저점 전술 (성벽 탈환 시도) ---
             elif p <= (low_b * 1.02):
                 if m_l < s_l or p < (defense_line * 0.90): # 엔진 역전 또는 지하실 (금지)
-                    final_adv = f"💀 **[최종 결론]** 거래량({v_ratio:.1f}%). 성벽에서 너무 멀고 엔진도 역회전이네. **절대 매수 금지**일세."
-                elif v_ratio >= 100 and p >= (defense_line * 0.95): # 물량 실린 바닥 (진격)
-                    final_adv = f"🔥 **[최종 결론]** 거래량({v_ratio:.1f}%). 진짜 바닥에 물량 실렸고 성벽 탈환 직전이네! **{format(p, fmt_p)}**서 적극 진격하시게! (손절 -3%)"
+                    final_adv = f"💀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽에서 너무 멀고 엔진도 역회전이네. **절대 매수 금지! 지하실 조심!**"
+                elif vol_strength >= 100 and p >= (defense_line * 0.95): # 물량 실린 바닥 (진격)
+                    final_adv = f"🔥 **[최종 결론]** 강도({vol_strength:.1f}점). 진짜 바닥에 물량 실렸고 성벽 탈환 직전이네! **강력 매수 검토!**"
                 else: # 바닥 정회전이나 성벽이 멂 (정찰)
-                    final_adv = f"🛡️ **[최종 결론]** 거래량({v_ratio:.1f}%). 엔진은 도는데 성벽이 아직 멀구먼. 소량 **정찰대**만 보내시게."
-
+                    final_adv = f"🛡️ **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 도는데 성벽이 아직 멀구먼. 소량 **정찰대만 보내시게.**"
+            
             # --- [3] 중간 지대 및 예외 전술 (성벽 사수 및 관망) ---
-            else: # [3] 중간 지대 및 예외 전술 (사령관님의 기존 틀 유지)
-                if m_l < s_l: # 엔진이 거꾸로 돌 때 (우선 판독)
+            else:
+                if m_l < s_l: # 엔진 역회전
                     diag = "엔진 역회전"
                     wait_msg = "엔진 정회전까지" if p >= defense_line else "성벽 회복 전까지"
-                    final_adv = f"🧐 **[최종 결론]** 거래량({v_ratio:.1f}%). {diag} 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
-                elif p < defense_line: # 엔진은 도는데 성벽만 무너졌을 때
-                    final_adv = f"🧐 **[최종 결론]** 거래량({v_ratio:.1f}%). 성벽 함락 상태일세. 칼 뽑지 말고 성벽 회복 전까진 **무조건 관망!**"
+                    final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). {diag} 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
+                elif p < defense_line: # 엔진은 도는데 성벽이 무너졌을 때
+                    final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 함락 상태일세. 칼 뽑지 말고 성벽 회복 전까지 **무조건 관망!**"
                 else: # 성벽 위 + 엔진 정회전 (가장 평온한 상태)
-                    final_adv = f"📈 **[최종 결론]** 거래량({v_ratio:.1f}%). 성벽 위에서 추세 유지 중이네. 성벽 사수 확인하며 **보유(홀딩)**하시게."
+                    final_adv = f"📈 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 위에서 추세 유지 중이네. 성벽 사수 확인하며 **보유(홀딩)하시게.**"
 
             # [화면 출력] 사령관의 최종 공격 명령판
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
