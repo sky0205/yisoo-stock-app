@@ -1,4 +1,3 @@
-
 import streamlit as st
 import FinanceDataReader as fdr
 import yfinance as yf
@@ -117,26 +116,25 @@ if symbol:
             s_h, s_m = (9, 0) if is_kr else (9, 30)
             m_start = now_local.replace(hour=s_h, minute=s_m, second=0, microsecond=0)
             
-            # [휴장일 정밀 타격] 2. 장 시작 후 경과 시간(elapsed) 계산 및 미장 방어
+            # 2. 장 시작 후 경과 시간(elapsed) 계산 및 미장 방어
             if now_local < m_start:
-                # 장 시작 전에는 보정 없이 현재 수치만 유지
+                # [수선] 장 시작 전(프리마켓)에는 보정하지 않고 어제 마감 거래율(v_ratio)만 보여줌
                 vol_strength = v_ratio 
             else:
-                # 현재 시간에서 장 시작 시간을 뺀 '분' 계산
-                elapsed = (now_local - m_start).total_seconds() / 60
+                # 현재 시간에서 장 시작 시간을 뺀 '초'를 '분'으로 환산
+                elapsed = (now_local - m_start).seconds / 60
                 
-                # [핵심] 미장은 휴장이라도 시간이 흐르므로, 
-                # 거래량이 거의 변하지 않거나(v_ratio < 1.0) 시간이 390분을 넘으면 '휴장/종료'로 간주!
-                if elapsed > 390 or v_ratio < 1.0:
+                # 주말이거나 장 종료(390분) 이후면 마감 수치로 고정
+                if now_local.weekday() >= 5 or elapsed > 390:
                     elapsed = 390
-                # 장 초반 10분간은 오차 방지를 위해 최소 10분으로 고정
                 elif elapsed < 10:
+                    # 장 초반 10분은 숫자가 튀는 것을 막기 위해 최소 10분으로 보정
                     elapsed = 10 
-        
-                # 최종 화력 계산 (휴장일엔 분모가 390으로 고정되어 숫자가 안 튀오!)
+            
+                # [핵심] 105번에서 이미 계산된 v_ratio를 시간 가중치로 나누어 진짜 화력 산출
                 vol_strength = v_ratio / (elapsed / 390)
-        
-            # [최종 방어] 숫자가 1000%를 넘으면 데이터 오류로 보고 생데이터 환원
+            
+            # [최종 방패] 만약 보정 수치가 1000%를 넘으면 데이터 오류로 간주하고 v_ratio로 강제 환원
             if vol_strength > 1000:
                 vol_strength = v_ratio
             # 1. 기존 문구 아래에 추가하거나
@@ -182,23 +180,20 @@ if symbol:
                 v_status, v_msg = "과열폭발", f"화력이 폭발 중일세! 냉정하게 대응하시게. (강도: {vol_strength:.1f}%)"
             # --- [복구 끝] ---
 
-            # [최종 수선] 모든 진단 문구의 숫자를 'vol_strength'로 빳빳하게 통일하오!
+            # [화면 출력] 사진의 양식을 유지하되 내용은 빳빳하게 교체하네
+            v_adv = f"✅ 현재 **시간 보정 화력 {vol_strength:.1f}%**로 {v_msg}"
             if vol_strength >= 150:
                 v_adv = f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}%! 본진 진격 중이오."
-            elif vol_strength >= 100:
-                v_adv = f"🚀 **[매집시작]** 현재 강도 {vol_strength:.1f}%! 화력이 차오르니 눈여겨보시게."
             elif vol_strength >= 80:
                 v_adv = f"⚔️ **[정상화력]** 현재 강도 {vol_strength:.1f}%! 기세가 빳빳하구먼."
             else:
                 v_adv = f"🧊 **[거래절벽]** 현재 강도 {vol_strength:.1f}%! 속지 마시게."
-        
-            # 박스 상단 제목의 변수도 반드시 {vol_strength:.1f}로 쓰셔야 하오!
             st.markdown(f"""
                 <div class='vol-box'>
                     <div style='font-size: 32px !important; font-weight: bold; color: #0D47A1; margin-bottom: 10px;'>
-                        📊 거래량 전황: {v_status} ({vol_strength:.1f}%)
+                        📊 거래량 전황: {v_status} ({v_ratio:.1f}%)
                     </div>
-                    <div class='vol-sub-text' style='font-size: 22px !important; color: #1565C0 !important;'>
+                    <div class='vol-sub-text' style='font-size: 22px !important; color: #1565C0 !important; font-weight: bold;'>
                         {v_adv}
                     </div>
                 </div>
