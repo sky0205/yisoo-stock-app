@@ -96,10 +96,10 @@ if symbol:
                     v_curr = float(df_today['Volume'].iloc[-1])
                 # 미장은 본장 시작 전엔 직전 영업일 종가를 써야 하네
                     prev_p = float(df['Close'].iloc[-1])
-            else:
-                p = float(df['Close'].iloc[-1])
-                v_curr = float(df['Volume'].iloc[-1])
-                prev_p = float(df['Close'].iloc[-2]) # 데이터가 없을 때만 뒤로 가네
+                else:
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = float(df['Volume'].iloc[-1])
+                    prev_p = float(df['Close'].iloc[-2]) # 데이터가 없을 때만 뒤로 가네
             # 5일 평균 거래량 (분모 격리)
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
