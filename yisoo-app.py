@@ -181,21 +181,20 @@ if symbol:
                 v_status, v_msg = "과열폭발", f"화력이 폭발 중일세! 냉정하게 대응하시게. (강도: {vol_strength:.1f}%)"
             # --- [복구 끝] ---
 
-            # [최종 수선] 모든 문구의 숫자를 오직 'vol_strength'로만 통일하오!
-            v_adv = f"✅ 현재 **시간 보정 화력 {vol_strength:.1f}%**로 {v_msg}"
-            
+            # [최종 수선] 모든 숫자를 'vol_strength'로 통일하여 상하단을 일치시키네
             if vol_strength >= 150:
                 v_adv = f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}%! 본진 진격 중이오."
             elif vol_strength >= 80:
                 v_adv = f"⚔️ **[정상화력]** 현재 강도 {vol_strength:.1f}%! 기세가 빳빳하구먼."
             else:
                 v_adv = f"🧊 **[거래절벽]** 현재 강도 {vol_strength:.1f}%! 속지 마시게."
+        
             st.markdown(f"""
                 <div class='vol-box'>
                     <div style='font-size: 32px !important; font-weight: bold; color: #0D47A1; margin-bottom: 10px;'>
-                        📊 거래량 전황: {v_status} ({v_ratio:.1f}%)
+                        📊 거래량 전황: {v_status} ({vol_strength:.1f}%)
                     </div>
-                    <div class='vol-sub-text' style='font-size: 22px !important; color: #1565C0 !important; font-weight: bold;'>
+                    <div class='vol-sub-text' style='font-size: 22px !important; color: #1565C0 !important;'>
                         {v_adv}
                     </div>
                 </div>
