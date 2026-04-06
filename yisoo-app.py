@@ -195,10 +195,11 @@ if symbol:
                 v_adv = f"🧊 **[거래절벽]** 현재 강도 {vol_strength:.1f}점! 속지 마시게."
         
             # 박스 출력 (제목은 비율%, 내용은 점수!)
+            # 박스 출력 (기존 180번 라인 부근)
             st.markdown(f"""
                 <div class='vol-box'>
                     <div style='font-size: 32px !important; font-weight: bold; color: #0D47A1; margin-bottom: 10px;'>
-                        📊 거래량 전황: {v_status} ({v_ratio:.1f}%)
+                        📊 거래량 전황: {v_status} ({v_ratio:.1f}% / 5일평균대비)
                     </div>
                     <div class='vol-sub-text' style='font-size: 22px !important; color: #1565C0 !important;'>
                         {v_adv}
