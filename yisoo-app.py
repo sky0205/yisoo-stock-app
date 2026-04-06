@@ -270,12 +270,17 @@ if symbol:
             # 4대 지수 정밀 진단 (원본 문구 완벽 복원)
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
-            with i1: # Bollinger (기세 판독)
-                # [급소] 아까 에러 난 mb 대신, 153번 라인에서 만든 mid_line을 쓰시게!
-                if p >= mid_line: 
-                    bb_diag = "⚠️ **[과열 진입]** 중앙선 위에서 기세 유지 중이나 온도가 높네. 홀딩보다는 수익을 빳빳하게 확정 지으며 다음 성벽을 준비하시게."
-                else:
-                    bb_diag = "🏠 **[기세 둔화]** 중앙선 밑일세. 온도가 낮아도 엔진 시동 전까진 절대 칼 뽑지 마시게."
+            with i1: # Bollinger (기세 및 울타리 판독)
+                if p >= up_b: # 1단계: 천장(상단 밴드) 돌파
+                    bb_diag = "👺 **[천장 돌파]** 울타리 밖으로 기세가 폭발했소! 탐욕이 끝단이니 익절 준비하시게."
+                elif p <= low_b: # 2단계: 바닥(하단 밴드) 돌파
+                    bb_diag = "🧊 **[바닥 돌파]** 지하실까지 밀렸구먼. 겁먹지 말고 엔진 시동을 기다리시게."
+                elif p >= mid_line: # 3단계: 중앙선 위 (안착)
+                    bb_diag = "⚠️ **[과열 진입]** 중앙선 위에서 기세 유지 중이나 온도가 높네. 수익 챙길 준비 하시게."
+                else: # 4단계: 중앙선 밑 (둔화)
+                    bb_diag = "🏠 **[기세 둔화]** 중앙선 밑일세. 온도가 낮아도 절대 칼 뽑지 마시게."
+                
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
                 
                 # 화면에 뿌려주는 부분 (이건 기존 양식 유지)
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
