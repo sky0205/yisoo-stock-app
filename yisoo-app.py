@@ -86,12 +86,12 @@ if symbol:
                     df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
                     today_str = datetime.now(now_tz).strftime('%Y-%m-%d')
                     
-                    # [핵심] 분모(v_base)를 5일 평균치로 고정하네!
+                    # [수선] 여기서 이름을 v_avg5로 확실히 박아두네!
                     if df.index[-1].strftime('%Y-%m-%d') == today_str:
-                        v_base = float(df['Volume'].iloc[-6:-1].mean()) # 오늘 제외 5일 평균
+                        v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) 
                         prev_p = float(df['Close'].iloc[-2])
                     else:
-                        v_base = float(df['Volume'].iloc[-5:].mean()) # 마지막 5일 평균
+                        v_avg5 = float(df['Volume'].iloc[-5:].mean())
                         prev_p = float(df['Close'].iloc[-1])
                     
                     currency, fmt_p = "원", ",.0f"
@@ -167,12 +167,18 @@ if symbol:
 
             # 전광판
             # [수선] 괄호 안에 5일 평균 기준임을 명시하오
+            # [수선] v_ratio 계산 시 v_avg5를 정확히 사용하오
+            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
+            vol_strength = v_ratio 
+
             st.markdown(f"""
                 <div class='vol-box'>
                     <div style='font-size: 32px !important; font-weight: bold; color: #0D47A1; margin-bottom: 10px;'>
                         📊 거래량 전황: {v_status} ({v_ratio:.1f}% / 5일평균대비)
                     </div>
-                    ...
+                    <div class='vol-sub-text' style='font-size: 22px !important; color: #1565C0 !important;'>
+                        {v_adv}
+                    </div>
                 </div>
             """, unsafe_allow_html=True)
             
