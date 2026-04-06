@@ -244,8 +244,8 @@ if symbol:
             elif p <= (low_b * 1.02):
                 if m_l < s_l or p < (defense_line * 0.90): # 엔진 역전 또는 지하실 (금지)
                     final_adv = f"💀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽에서 너무 멀고 엔진도 역회전이네. **절대 매수 금지! 지하실 조심!**"
-                elif vol_strength >= 100 and p >= (defense_line * 0.95): # 물량 실린 바닥 (진격)
-                    final_adv = f"🔥 **[최종 결론]** 강도({vol_strength:.1f}점). 진짜 바닥에 물량 실렸고 성벽 탈환 직전이네! **강력 매수 검토!**"
+                elif vol_strength >= 100 and p >= mid_line: # 물량 실린 바닥 + 중앙선 위 안착
+                    final_adv = f"🔥 **[최종 결론]** 강도({vol_strength:.1f}점). 바닥에 물량 실렸고 **중앙선**까지 빳빳하게 뚫었네! **강력 매수 검토!**"
                 else: # 바닥 정회전이나 성벽이 멂 (정찰)
                     final_adv = f"🛡️ **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 도는데 성벽이 아직 멀구먼. 소량 **정찰대만 보내시게.**"
             
@@ -253,12 +253,15 @@ if symbol:
             else:
                 if m_l < s_l: # 엔진 역회전
                     diag = "엔진 역회전"
-                    wait_msg = "엔진 정회전까지" if p >= defense_line else "성벽 회복 전까지"
+                    # 중앙선 사수 여부에 따라 기다릴 대상을 명확히 하오
+                    wait_msg = "중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지"
                     final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). {diag} 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
-                elif p < defense_line: # 엔진은 도는데 성벽이 무너졌을 때
-                    final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 함락 상태일세. 칼 뽑지 말고 성벽 회복 전까지 **무조건 관망!**"
-                else: # 성벽 위 + 엔진 정회전 (가장 평온한 상태)
-                    final_adv = f"📈 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 위에서 추세 유지 중이네. 성벽 사수 확인하며 **보유(홀딩)하시게.**"
+                
+                elif p < mid_line: # 엔진은 도는데 중앙선 밑으로 기세가 꺾였을 때
+                    final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽은 지키나 **중앙선** 밑으로 기세가 꺾였소. **추가 진격 금지 및 관망!**"
+                    
+                else: # 성벽 위 + 중앙선 위 + 엔진 정회전 (가장 평온한 상태)
+                    final_adv = f"📈 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽과 **중앙선** 위에서 추세 유지 중이네. **보유(홀딩)하시게.**"
 
             # [화면 출력] 사령관의 최종 공격 명령판
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
