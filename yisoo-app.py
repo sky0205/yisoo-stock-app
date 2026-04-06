@@ -73,45 +73,45 @@ if symbol:
             # [최종 수술] 장이 닫혔을 때는 어제 거래량을 '100%'로 빳빳하게 가져오네
             if is_kr:
             # [수정] 네이버에서 1초의 시차도 없이 현재가와 거래량을 정확히 낚아채네
-            import requests
-            from bs4 import BeautifulSoup
-            url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-            res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
-            soup = BeautifulSoup(res.text, 'html.parser')
-            
-            # 1. [현재가] 실시간 간판에서 직접 낚아채니 시차가 없구먼요
-            p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-            
-            # 2. [거래량] 인덱스 대신 '거래량' 글자를 찾아 그 옆의 숫자를 정확히 낚네
-            v_info = soup.select_one(".no_info")
-            v_curr = float(v_info.find("span", string="거래량").find_next("span", class_="blind").text.replace(",", ""))
-            
-            # 3. [전일가 고수] 어제의 성벽 종가를 절대 기준으로 삼네
-            df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
-            # 장 중(오늘 데이터가 포함된 경우)과 장 마감 후를 구분하여 전일가를 산출하오
-            today_str = datetime.now(now_tz).strftime('%Y-%m-%d')
-            if df.index[-1].strftime('%Y-%m-%d') == today_str:
-                prev_p = float(df['Close'].iloc[-2]) # 진짜 전일 종가
-                v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) # 오늘 제외 최근 5일 평균
+                import requests
+                from bs4 import BeautifulSoup
+                url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+                soup = BeautifulSoup(res.text, 'html.parser')
+                
+                # 1. [현재가] 실시간 간판에서 직접 낚아채니 시차가 없구먼요
+                p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                
+                # 2. [거래량] 인덱스 대신 '거래량' 글자를 찾아 그 옆의 숫자를 정확히 낚네
+                v_info = soup.select_one(".no_info")
+                v_curr = float(v_info.find("span", string="거래량").find_next("span", class_="blind").text.replace(",", ""))
+                
+                # 3. [전일가 고수] 어제의 성벽 종가를 절대 기준으로 삼네
+                df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+                # 장 중(오늘 데이터가 포함된 경우)과 장 마감 후를 구분하여 전일가를 산출하오
+                today_str = datetime.now(now_tz).strftime('%Y-%m-%d')
+                if df.index[-1].strftime('%Y-%m-%d') == today_str:
+                    prev_p = float(df['Close'].iloc[-2]) # 진짜 전일 종가
+                    v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) # 오늘 제외 최근 5일 평균
+                else:
+                    prev_p = float(df['Close'].iloc[-1]) # 장 마감 후엔 마지막 데이터가 전일가
+                    v_avg5 = float(df['Volume'].iloc[-5:].mean())
+                
+                currency, fmt_p = "원", ",.0f"
             else:
-                prev_p = float(df['Close'].iloc[-1]) # 장 마감 후엔 마지막 데이터가 전일가
-                v_avg5 = float(df['Volume'].iloc[-5:].mean())
-            
-            currency, fmt_p = "원", ",.0f"
-        else:
-            # 미장(나스닥) 실시간 판독 및 전일비 고정
-            ticker = yf.Ticker(symbol)
-            df = ticker.history(start=start_date)
-            p = ticker.fast_info.last_price
-            v_curr = ticker.fast_info.last_volume
-            prev_p = ticker.fast_info.previous_close
-            v_avg5 = df['Volume'].iloc[-5:].mean()
-            currency, fmt_p = "$", ",.2f"
-
-        # [기준 확립] 이제서야 거래량 비율(v_ratio)이 빳빳하게 계산되네
-        v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
-        p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
-            # --- [시간 보정 필살기: 국장/미장 겸용] ---
+                # 미장(나스닥) 실시간 판독 및 전일비 고정
+                ticker = yf.Ticker(symbol)
+                df = ticker.history(start=start_date)
+                p = ticker.fast_info.last_price
+                v_curr = ticker.fast_info.last_volume
+                prev_p = ticker.fast_info.previous_close
+                v_avg5 = df['Volume'].iloc[-5:].mean()
+                currency, fmt_p = "$", ",.2f"
+    
+            # [기준 확립] 이제서야 거래량 비율(v_ratio)이 빳빳하게 계산되네
+            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
+            p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
+                # --- [시간 보정 필살기: 국장/미장 겸용] ---
             import pytz
             
             # 1. 현지 시간 및 장 시작 시간 설정
