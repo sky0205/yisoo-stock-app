@@ -1,3 +1,5 @@
+
+
 import streamlit as st
 import FinanceDataReader as fdr
 import yfinance as yf
@@ -72,53 +74,42 @@ if symbol:
             
             # [최종 수술] 장이 닫혔을 때는 어제 거래량을 '100%'로 빳빳하게 가져오네
             if is_kr:
-                st.cache_data.clear() 
+                # [수정] 네이버에서 1초의 시차도 없이 현재가를 직접 낚아채네
                 import requests
                 from bs4 import BeautifulSoup
                 url = f"https://finance.naver.com/item/main.naver?code={symbol}"
                 res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
                 soup = BeautifulSoup(res.text, 'html.parser')
-                
-                try:
-                    p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-                    v_curr = float(soup.select_one(".no_info").find("span", string="거래량").find_next("span", class_="blind").text.replace(",", ""))
-                    
-                    df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
-                    today_str = datetime.now(now_tz).strftime('%Y-%m-%d')
-                    
-                    # [수선] 여기서 이름을 v_avg5로 확실히 박아두네!
-                    if df.index[-1].strftime('%Y-%m-%d') == today_str:
-                        v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) 
-                        prev_p = float(df['Close'].iloc[-2])
-                    else:
-                        v_avg5 = float(df['Volume'].iloc[-5:].mean())
-                        prev_p = float(df['Close'].iloc[-1])
-                    
-                    currency, fmt_p = "원", ",.0f"
-                except:
-                    st.error("👵 네이버 파발마가 늦네.")
-                    # 예외 발생 시 기본 데이터로 복구
-                    df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+            
+            # 1. [현재가] 실시간 간판에서 직접 낚아채니 시차가 없구먼요
+                p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+            
+            # 2. [거래량] 장부의 4번째(인덱스 3) 숫자를 빳빳하게 낚네
+                v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+            
+            # 3. [전일가 고수] 어제의 성벽 종가를 절대 기준으로 삼네
+                prev_p = float(df['Close'].iloc[-1])
+            else:
+            # 미장(나스닥) 실시간 판독 및 전일비 고정
+                df_today = ticker.history(period='1d')
+                if not df_today.empty:
+                    p = float(df_today['Close'].iloc[-1])
+                    v_curr = float(df_today['Volume'].iloc[-1])
+                # 미장은 본장 시작 전엔 직전 영업일 종가를 써야 하네
+                    prev_p = float(df['Close'].iloc[-1])
+                else:
                     p = float(df['Close'].iloc[-1])
                     v_curr = float(df['Volume'].iloc[-1])
-                    prev_p = float(df['Close'].iloc[-2])
-                    v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
-                    currency, fmt_p = "원", ",.0f"
-                
-            else:
-                # [미장] 야후 파이낸스
-                ticker = yf.Ticker(symbol)
-                df = ticker.history(start=start_date)
-                p = ticker.fast_info.last_price
-                v_curr = ticker.fast_info.last_volume
-                prev_p = ticker.fast_info.previous_close
-                v_avg5 = df['Volume'].iloc[-5:].mean()
-                currency, fmt_p = "$", ",.2f"
-    
-            # [최종 확정] 
+                    prev_p = float(df['Close'].iloc[-2]) # 데이터가 없을 때만 뒤로 가네
+            # 5일 평균 거래량 (분모 격리)
+            v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
+
+            prev_p = float(df['Close'].iloc[-2])
+            if is_kr and p == prev_p and len(df) > 2: prev_p = float(df['Close'].iloc[-3])
             p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
-                # --- [시간 보정 필살기: 국장/미장 겸용] ---
+
+            # --- [시간 보정 필살기: 국장/미장 겸용] ---
             import pytz
             
             # 1. 현지 시간 및 장 시작 시간 설정
@@ -166,21 +157,15 @@ if symbol:
             peak_20 = float(df['High'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
 
             # 전광판
-            # [수선] 괄호 안에 5일 평균 기준임을 명시하오
-            # [수선] v_ratio 계산 시 v_avg5를 정확히 사용하오
-            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
-            vol_strength = v_ratio 
+            st.markdown("### 📊 현재주가현황")
+            
+            # 160번 라인: 기존 코드가 이어서 나오면 되오
+            display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
+            st.markdown(f"""<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'>
+                <p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{name} ({symbol})</p>
+                <p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>""", unsafe_allow_html=True)
 
-            st.markdown(f"""
-                <div class='vol-box'>
-                    <div style='font-size: 32px !important; font-weight: bold; color: #0D47A1; margin-bottom: 10px;'>
-                        📊 거래량 전황: {v_status} ({v_ratio:.1f}% / 5일평균대비)
-                    </div>
-                    <div class='vol-sub-text' style='font-size: 22px !important; color: #1565C0 !important;'>
-                        {v_adv}
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
+            is_opening = 9 <= now_local.hour <= 11
             
             # [수정] 시초(is_opening)일 때는 강도 점수(vol_strength)를 기준으로 판독하네
             # [수정] 어르신의 4단계 수치 판독법 (0%는 장전 대기)
