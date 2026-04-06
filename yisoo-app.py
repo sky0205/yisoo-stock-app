@@ -72,39 +72,31 @@ if symbol:
             
             # [최종 수술] 장이 닫혔을 때는 어제 거래량을 '100%'로 빳빳하게 가져오네
             if is_kr:
-            # [비책] 과거의 데이터는 잊고 무조건 새로 긁어오게 명령하오
                 st.cache_data.clear() 
-                
                 import requests
                 from bs4 import BeautifulSoup
-                
-                # 네이버 실시간 데이터 낚아채기
                 url = f"https://finance.naver.com/item/main.naver?code={symbol}"
                 res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
                 soup = BeautifulSoup(res.text, 'html.parser')
                 
                 try:
-                    # 1. [현재가]
                     p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                    v_curr = float(soup.select_one(".no_info").find("span", string="거래량").find_next("span", class_="blind").text.replace(",", ""))
                     
-                    # 2. [거래량] '거래량' 글자를 직접 찾아 낚아채는 방식 (가장 정확함)
-                    v_info = soup.select_one(".no_info")
-                    v_curr = float(v_info.find("span", string="거래량").find_next("span", class_="blind").text.replace(",", ""))
-                    
-                    # 3. [데이터 보강] 5일 평균 거래량 산출
                     df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
                     today_str = datetime.now(now_tz).strftime('%Y-%m-%d')
                     
+                    # [핵심] 분모(v_base)를 5일 평균치로 고정하네!
                     if df.index[-1].strftime('%Y-%m-%d') == today_str:
+                        v_base = float(df['Volume'].iloc[-6:-1].mean()) # 오늘 제외 5일 평균
                         prev_p = float(df['Close'].iloc[-2])
-                        v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
                     else:
+                        v_base = float(df['Volume'].iloc[-5:].mean()) # 마지막 5일 평균
                         prev_p = float(df['Close'].iloc[-1])
-                        v_avg5 = float(df['Volume'].iloc[-5:].mean())
                     
                     currency, fmt_p = "원", ",.0f"
-                except Exception as e:
-                    st.error(f"👵 아이구! 네이버 전령이 답이 없네: {e}")
+                except:
+                    st.error("👵 네이버 파발마가 늦네.")
                     # 예외 발생 시 기본 데이터로 복구
                     df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
                     p = float(df['Close'].iloc[-1])
@@ -174,15 +166,15 @@ if symbol:
             peak_20 = float(df['High'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
 
             # 전광판
-            st.markdown("### 📊 현재주가현황")
-            
-            # 160번 라인: 기존 코드가 이어서 나오면 되오
-            display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
-            st.markdown(f"""<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'>
-                <p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{name} ({symbol})</p>
-                <p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>""", unsafe_allow_html=True)
-
-            is_opening = 9 <= now_local.hour <= 11
+            # [수선] 괄호 안에 5일 평균 기준임을 명시하오
+            st.markdown(f"""
+                <div class='vol-box'>
+                    <div style='font-size: 32px !important; font-weight: bold; color: #0D47A1; margin-bottom: 10px;'>
+                        📊 거래량 전황: {v_status} ({v_ratio:.1f}% / 5일평균대비)
+                    </div>
+                    ...
+                </div>
+            """, unsafe_allow_html=True)
             
             # [수정] 시초(is_opening)일 때는 강도 점수(vol_strength)를 기준으로 판독하네
             # [수정] 어르신의 4단계 수치 판독법 (0%는 장전 대기)
