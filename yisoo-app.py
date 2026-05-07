@@ -80,28 +80,37 @@ if symbol:
             except: name = ticker.info.get('shortName', symbol).split(',')[0]
             currency, fmt_p = "원", ",.0f"
             
-            # [수선] 네이버에서 현재가와 전일비를 위한 데이터를 낚아채오
+            # [국장 필살기] 네이버 실시간 낚시
             url = f"https://finance.naver.com/item/main.naver?code={symbol}"
             res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
             soup = BeautifulSoup(res.text, 'html.parser')
             p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
             v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
             
-            # [핵심] 전일 종가는 데이터프레임의 마지막 행을 기준으로 잡되, 장중 중복을 방지하오
+            # [전일비 수선] 국장 전일가 판독
             prev_p = float(df['Close'].iloc[-1])
             if p == prev_p and len(df) > 1:
                 prev_p = float(df['Close'].iloc[-2])
         else:
+            # [미장 필살기] 야후 파이낸스 정밀 판독
             ticker = yf.Ticker(symbol); df = ticker.history(start=start_date)
             name = ticker.info.get('shortName', symbol); currency, fmt_p = "$", ",.2f"
-            df_today = ticker.history(period='1d')
-            if not df_today.empty:
-                p = float(df_today['Close'].iloc[-1])
-                v_curr = float(df_today['Volume'].iloc[-1])
-                prev_p = float(df['Close'].iloc[-1])
-            else:
-                p = float(df['Close'].iloc[-1]); v_curr = float(df['Volume'].iloc[-1])
-                prev_p = float(df['Close'].iloc[-2])
+            
+            # 미장 전일비는 'fast_info'를 써서 빳빳하게 가져오오
+            try:
+                info = ticker.fast_info
+                p = info.last_price
+                v_curr = info.last_volume
+                prev_p = info.previous_close
+            except:
+                df_today = ticker.history(period='1d')
+                if not df_today.empty:
+                    p = float(df_today['Close'].iloc[-1])
+                    v_curr = float(df_today['Volume'].iloc[-1])
+                    prev_p = float(df['Close'].iloc[-1])
+                else:
+                    p = float(df['Close'].iloc[-1]); v_curr = float(df['Volume'].iloc[-1])
+                    prev_p = float(df['Close'].iloc[-2])
 
         if not df.empty:
             df = df.ffill().dropna()
@@ -111,15 +120,17 @@ if symbol:
             # [수선] 실시간 전일비 및 변동률 계산
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
-            # 시간 보정 로직
+            
+            # [시간 보정 로직]
             s_h, s_m = (9, 0) if is_kr else (9, 30)
             m_start = now_local.replace(hour=s_h, minute=s_m, second=0, microsecond=0)
-            if now_local < m_start: vol_strength = v_ratio 
+            
+            if now_local < m_start: 
+                vol_strength = v_ratio 
             else:
                 elapsed = min(390, max(10, (now_local - m_start).seconds / 60))
                 if now_local.weekday() >= 5: elapsed = 390
                 vol_strength = min(1000, v_ratio / (elapsed / 390))
-
             # 지표 계산
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
