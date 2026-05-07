@@ -74,27 +74,43 @@ if symbol:
         if is_kr:
             ticker = yf.Ticker(f"{symbol}.KS")
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
-            df_krx = load_krx_listing()
-            name = df_krx[df_krx['Code'] == symbol]['Name'].values[0] if not df_krx.empty else symbol
+            try:
+                df_krx = load_krx_listing()
+                name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
+            except: name = ticker.info.get('shortName', symbol).split(',')[0]
             currency, fmt_p = "원", ",.0f"
+            
+            # [수선] 네이버에서 현재가와 전일비를 위한 데이터를 낚아채오
             url = f"https://finance.naver.com/item/main.naver?code={symbol}"
             res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
             soup = BeautifulSoup(res.text, 'html.parser')
             p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
             v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+            
+            # [핵심] 전일 종가는 데이터프레임의 마지막 행을 기준으로 잡되, 장중 중복을 방지하오
             prev_p = float(df['Close'].iloc[-1])
+            if p == prev_p and len(df) > 1:
+                prev_p = float(df['Close'].iloc[-2])
         else:
             ticker = yf.Ticker(symbol); df = ticker.history(start=start_date)
             name = ticker.info.get('shortName', symbol); currency, fmt_p = "$", ",.2f"
             df_today = ticker.history(period='1d')
-            p = float(df_today['Close'].iloc[-1]); v_curr = float(df_today['Volume'].iloc[-1]); prev_p = float(df['Close'].iloc[-1])
+            if not df_today.empty:
+                p = float(df_today['Close'].iloc[-1])
+                v_curr = float(df_today['Volume'].iloc[-1])
+                prev_p = float(df['Close'].iloc[-1])
+            else:
+                p = float(df['Close'].iloc[-1]); v_curr = float(df['Volume'].iloc[-1])
+                prev_p = float(df['Close'].iloc[-2])
 
         if not df.empty:
             df = df.ffill().dropna()
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
-            p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
-
+            
+            # [수선] 실시간 전일비 및 변동률 계산
+            p_diff = p - prev_p
+            p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
             # 시간 보정 로직
             s_h, s_m = (9, 0) if is_kr else (9, 30)
             m_start = now_local.replace(hour=s_h, minute=s_m, second=0, microsecond=0)
