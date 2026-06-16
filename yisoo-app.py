@@ -160,24 +160,24 @@ if symbol:
             # 160 # 신호등
     
     # [사령관님 지침] 3대 지표의 최바닥 터치 여부를 실시간 계측 (각각 만족 시 1점 부여)
-    bb_bottom       = 1 if p <= (low_b * 1.005) else 0
-    rsi_bottom      = 1 if rsi_val <= 35 else 0
-    williams_bottom = 1 if williams_r <= -80 else 0
+            bb_bottom       = 1 if p <= (low_b * 1.005) else 0
+            rsi_bottom      = 1 if rsi_val <= 35 else 0
+            williams_bottom = 1 if williams_r <= -80 else 0
     
     # 바닥 터치 점수의 총합 계산 (최대 3점)
-    bottom_score = bb_bottom + rsi_bottom + williams_bottom
+            bottom_score = bb_bottom + rsi_bottom + williams_bottom
 
     # [수정본 161번 라인] 매도권 판단 기준
-    if p >= up_b or rsi_val >= 60:
-        sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {{'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 기세가 완연한 수확기일세.'}}"
+            if p >= up_b or rsi_val >= 60:
+                sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {{'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 기세가 완연한 수확기일세.'}}"
         
     # [수정본 162번 라인] ★ 명장의 핵심 지침: 3대 지표 중 최소 2개 이상 바닥 터치 시 즉각 발동!
-    elif bottom_score >= 2:
-        sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", "• 🧊 다중 바닥 지표 포착! 세력의 탄환을 뺏을 명장의 기습 매수 타이밍이오."
+            elif bottom_score >= 2:
+                sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", "• 🧊 다중 바닥 지표 포착! 세력의 탄환을 뺏을 명장의 기습 매수 타이밍이오."
         
     # [수정본 163번 라인] 예외 구역 (관망 및 대기)
-    else:
-        sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"• 눈치싸움 중일세. 지표 끝단을 기다리시게. (현재 바닥 지표 일치도: {bottom_score}/3)"
+            else:
+                sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"• 눈치싸움 중일세. 지표 끝단을 기다리시게. (현재 바닥 지표 일치도: {bottom_score}/3)"
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
             # 가격 카드
