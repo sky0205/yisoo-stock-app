@@ -159,10 +159,10 @@ if symbol:
 
             # 160 # 신호등
     
-    # [사령관님 지침] 3대 지표의 최바닥 터치 여부를 실시간 계측 (각각 만족 시 1점 부여)
+    # [사령관님 지침] 3대 지표의 최바닥 터치 여부를 실시간 계측 (139번 줄의 will_val 변수 연동)
             bb_bottom       = 1 if p <= (low_b * 1.005) else 0
             rsi_bottom      = 1 if rsi_val <= 35 else 0
-            williams_bottom = 1 if williams_r <= -80 else 0
+            williams_bottom = 1 if will_val <= -80 else 0  # <- 사령관님이 찾아내신 will_val 로 정렬!
     
     # 바닥 터치 점수의 총합 계산 (최대 3점)
             bottom_score = bb_bottom + rsi_bottom + williams_bottom
