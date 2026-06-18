@@ -214,17 +214,17 @@ if symbol:
                     final_adv = f"🔥 **[최종 결론]** 강도({vol_strength:.1f}점). 바닥에 물량 실렸고 중앙선까지 빳빳하게 뚫었네! **강력 매수 검토!**"
                 else:
                     final_adv = f"🛡️ **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 도는데 성벽이 아직 멀구먼. 소량 **정찰대만 보내시게.**"
-            else:
-                if m_l < s_l:
-                    wait_msg = "중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지"
-                    final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
-                # [기존 221~222번 라인을 들어내고 아래 코드를 그대로 덮어쓰기 하십시오]
-            elif p < mid_line:
-            # 사령관님 지침 반영: 중앙선 밑에 있을 때, 실제 성벽(defense_line) 함락 여부를 정직하게 대조하는 분기 수식
-                if p < defense_line:
-                    final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽이 함락되어 지하실 뻘밭일세. **추가 진격 금지 및 관망!**"
                 else:
-                    final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽은 지키나 중앙선 밑으로 기세가 꺾였소. **추가 진격 금지 및 관망!**"
+                    if m_l < s_l:
+                        wait_msg = "중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지"
+                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
+                # [기존 221~222번 라인을 들어내고 아래 코드를 그대로 덮어쓰기 하십시오]
+                elif p < mid_line:
+            # 사령관님 지침 반영: 중앙선 밑에 있을 때, 실제 성벽(defense_line) 함락 여부를 정직하게 대조하는 분기 수식
+                    if p < defense_line:
+                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽이 함락되어 지하실 뻘밭일세. **추가 진격 금지 및 관망!**"
+                    else:
+                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽은 지키나 중앙선 밑으로 기세가 꺾였소. **추가 진격 금지 및 관망!**"
                 else:
                     final_adv = f"📈 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽과 중앙선 위에서 추세 유지 중이네. **보유(홀딩)하시게.**"
 
