@@ -63,51 +63,22 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-# [사령관님 장부의 66번 라인 바로 아랫줄부터 데이터 조회 전까지를 이 코드로 전면 교체하십시오!]
-# ★ 에러 숙청 핵심 1: 기계 놈들이 어떤 구역에서든 다 쳐다볼 수 있게 최상단 전역에 가방들을 공식 출생시킴!
-is_kr = symbol.isdigit() if symbol else False
-symbol_name = symbol 
-name = symbol
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
 if symbol:
-    if is_kr:
-        core_market_vault = {
-            "005930": "삼성전자",
-            "000660": "SK하이닉스",
-            "033100": "제룡전기",
-            "248070": "실리콘투"
-        }
-        
-        if symbol in core_market_vault:
-            symbol_name = core_market_vault[symbol]
-            name = core_market_vault[symbol]
-        else:
-            try:
-                import json
-                import requests
-                
-                nv_url = f"https://polling.finance.naver.com/api/realtime/market/stock/{symbol}"
-                nv_res = requests.get(nv_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
-                kr_full_name = nv_res.json()['result']['areas'][0]['datas'][0]['stockName']
-                
-                if kr_full_name:
-                    symbol_name = kr_full_name
-                    name = kr_full_name
-            except:
-                pass
     try:
-        start_date = datetime.now() - timedelta(days=500)
+        start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
         now_local = datetime.now(now_tz)
-        
+
         if is_kr:
             ticker = yf.Ticker(f"{symbol}.KS")
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+            try:
+                df_krx = load_krx_listing()
+                name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
+            except: name = ticker.info.get('shortName', symbol).split(',')[0]
             currency, fmt_p = "원", ",.0f"
-            
-            # ★ 핵심 타격: 아래쪽 출력 파일이 name을 인지하지 못하는 엇박자를 완전히 방어하기 위해
-            # 사령관님이 78번 줄에서 완성하신 진짜 한글명(name)을 symbol_name 변수로도 더블 장전!
-            symbol_name = name
             
             # [국장 필살기] 네이버 실시간 낚시
             url = f"https://finance.naver.com/item/main.naver?code={symbol}"
@@ -243,21 +214,19 @@ if symbol:
                     final_adv = f"🔥 **[최종 결론]** 강도({vol_strength:.1f}점). 바닥에 물량 실렸고 중앙선까지 빳빳하게 뚫었네! **강력 매수 검토!**"
                 else:
                     final_adv = f"🛡️ **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 도는데 성벽이 아직 멀구먼. 소량 **정찰대만 보내시게.**"
-                # 217번 줄부터 덮어쓰기 하십시오. (앞쪽 들여쓰기 칸수를 빳빳하게 맞춰야 합니다)
-            else:
-        # 사령관님 지침 반영: 중앙선 및 성벽(defense_line) 함락 여부를 순차적으로 정밀 검증하는 무결점 구조
-                if m_l < s_l:
-                    wait_msg = "중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지"
-                    final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전 상태일세. 칼 뽑지 말고 {wait_msg} 전까지 **무조선 관망!**"
-        
-                elif p < defense_line:
-                    final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽이 함락되어 지하실 뻘밭일세. **추가 진격 금지 및 관망!**"
-            
-                elif p < mid_line:
-                    final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽은 지키나 중앙선 밑으로 기세가 꺾였소. **추가 진격 금지 및 관망!**"
-            
                 else:
-                    final_adv = f"📈 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽과 중앙선 위에서 안정적인 추세 유지 중일세. **보유(홀딩)하시게.**"
+                    if m_l < s_l:
+                        wait_msg = "중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지"
+                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
+                # [기존 221~222번 라인을 들어내고 아래 코드를 그대로 덮어쓰기 하십시오]
+                elif p < mid_line:
+            # 사령관님 지침 반영: 중앙선 밑에 있을 때, 실제 성벽(defense_line) 함락 여부를 정직하게 대조하는 분기 수식
+                    if p < defense_line:
+                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽이 함락되어 지하실 뻘밭일세. **추가 진격 금지 및 관망!**"
+                    else:
+                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽은 지키나 중앙선 밑으로 기세가 꺾였소. **추가 진격 금지 및 관망!**"
+                else:
+                    final_adv = f"📈 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽과 중앙선 위에서 추세 유지 중이네. **보유(홀딩)하시게.**"
 
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
@@ -291,3 +260,4 @@ if symbol:
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
 
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
+
