@@ -66,29 +66,30 @@ display_global_risk(); st.divider()
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
 # [사령관님 장부의 69번 라인 'if symbol:' 구역부터 아래쪽을 이 코드로 완전히 갈아 끼우십시오!]
+# [사령관님 장부의 69번 라인 'if symbol:' 구역부터 아래쪽을 이 코드로 완전히 새로 갈아 끼우십시오!]
 if symbol:
-    # ★ 에러 숙청 핵심 1: 최상단 조준경에서 필수 변수들 완벽 부활 선언
     is_kr = symbol.isdigit()
     symbol_name = symbol 
     name = symbol
     
-    # [사령관님 장부의 74번 줄부터 87번 줄까지를 이 코드로 빳빳하게 대체하십시오!]
+    if is_kr:
+        core_market_vault = {
+            "005930": "삼성전자",
+            "000660": "SK하이닉스",
+            "033100": "제룡전기",
+            "248070": "실리콘투"
+        }
+        
         if symbol in core_market_vault:
-            # 1차 토치카: 사령관님 주력 4대 종목은 통신망 불능 시에도 100% 한글 보장!
             symbol_name = core_market_vault[symbol]
             name = core_market_vault[symbol]
         else:
-            # 2차 전선: 4대 종목 외에 수천 개 국장 전 종목은 무거운 FDR을 버리고
-            # 네이버 금융 실시간 경량 API를 직통으로 조준격파하여 한글명을 핀포인트로 탈취하오!
             try:
                 import json
                 import requests
                 
-                # 입력된 단 하나의 티커번호로 네이버 실시간 기지 기습 타격
                 nv_url = f"https://polling.finance.naver.com/api/realtime/market/stock/{symbol}"
                 nv_res = requests.get(nv_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
-                
-                # 네이버 정식 장부에서 순도 100% 우리말 종목명을 적출해 변수 가방에 강제 장전!
                 kr_full_name = nv_res.json()['result']['areas'][0]['datas'][0]['stockName']
                 
                 if kr_full_name:
