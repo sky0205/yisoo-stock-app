@@ -66,10 +66,10 @@ display_global_risk(); st.divider()
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
 # [사령관님 장부의 68번 라인 'if symbol:' 구역부터 아래쪽을 이 코드로 완전히 갈아 끼우십시오!]
+# [사령관님 장부의 69번 라인 'if symbol:' 구역부터 아래쪽을 이 코드로 완전히 갈아 끼우십시오!]
 if symbol:
-    # ★ 에러 숙청 핵심: 기계 놈이 딴소리 못 하도록 최상단 조준경에서 'name' 가방을 공식 출생시킴!
-    # [사령관님 장부의 71번 라인부터 83번 라인까지를 이 수식으로 빳빳하게 대체하십시오]
-    # ★ 에러 숙청 핵심: 하단 출력부가 목숨처럼 쳐다보는 'symbol_name' 변수를 최상단에서 공식 출생시킴!
+    # ★ 에러 숙청 핵심 1: 기계 놈이 딴소리 못 하도록 최상단 조준경에서 변수들을 공식 출생시킴!
+    is_kr = symbol.isdigit()
     symbol_name = symbol 
     name = symbol
     
@@ -80,11 +80,10 @@ if symbol:
             krx_df = fdr.StockListing('KRX')
             target_name = krx_df[krx_df['Code'] == symbol]['Name'].values
             if len(target_name) > 0:
-                symbol_name = target_name[0] # -> 출력부가 찾는 symbol_name에 "제룡전기" 완벽 안착!
+                symbol_name = target_name[0]  # -> 출력부가 찾는 symbol_name에 "삼성전자" 완벽 안착!
                 name = target_name[0]
         except:
             pass
-
     try:
         start_date = datetime.now() - timedelta(days=500)
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
