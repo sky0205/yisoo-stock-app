@@ -54,7 +54,7 @@ def display_global_risk():
         c1.metric("나스닥 (NASDAQ)", f"{data['n_last']:,.2f}", f"{n_chg:.2f}%")
         c2.metric("S&P 500 (SPX)", f"{data['s_last']:,.2f}", f"{(data['s_last']/data['s_prev']-1)*100:.2f}%")
         c3.metric("미 국채 10년물 (TNX)", f"{tnx_val:.3f}%", f"{tnx_chg:+.2f}%")
-        if tnx_val >= 4.5: adv = "🚨 **[금리 발작: 비상]** 국채 금리 4.5% 돌파! 기술주 성벽 주의하시게."
+        if tnx_val >= 4.5: adv = "🚨 **[금리 발작: 비상]** 국채 금 4.5% 돌파! 기술주 성벽 주의하시게."
         elif n_chg > 0.5 and tnx_chg < 0: adv = "🔥 **[골디락스 진입]** 지수 상승과 금리 하락, 기세 타시게."
         else: adv = "🧐 **[눈치싸움 중]** 세력들이 간 보고 있구먼."
         st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
@@ -65,44 +65,19 @@ display_global_risk(); st.divider()
 
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
-# ★ [에러 숙청 핵심 1] 어떤 구역에서든 완벽 연동되도록 변수들을 최상단 전역에 선언!
-is_kr = symbol.isdigit() if symbol else False
-symbol_name = symbol 
-name = symbol
-
 if symbol:
     try:
-        start_date = datetime.now() - timedelta(days=500)
+        start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
         now_local = datetime.now(now_tz)
 
         if is_kr:
-            # ★ 사령관님 전용 4대 핵심 종목은 통신 불능 상태에서도 100% 한글 보장!
-            core_market_vault = {
-                "005930": "삼성전자",
-                "000660": "SK하이닉스",
-                "033100": "제룡전기",
-                "248070": "실리콘투"
-            }
-            
-            if symbol in core_market_vault:
-                symbol_name = core_market_vault[symbol]
-                name = core_market_vault[symbol]
-            else:
-                # 4대 종목 외 수천 개 국장 전 종목은 네이버 금융 실시간 경량 API로 방화벽 우회 탈취!
-                try:
-                    import json
-                    nv_url = f"https://polling.finance.naver.com/api/realtime/market/stock/{symbol}"
-                    nv_res = requests.get(nv_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
-                    kr_full_name = nv_res.json()['result']['areas'][0]['datas'][0]['stockName']
-                    if kr_full_name:
-                        symbol_name = kr_full_name
-                        name = kr_full_name
-                except:
-                    pass
-
             ticker = yf.Ticker(f"{symbol}.KS")
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+            try:
+                df_krx = load_krx_listing()
+                name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
+            except: name = ticker.info.get('shortName', symbol).split(',')[0]
             currency, fmt_p = "원", ",.0f"
             
             # [국장 필살기] 네이버 실시간 낚시
@@ -120,7 +95,6 @@ if symbol:
             # [미장 필살기] 야후 파이낸스 정밀 판독
             ticker = yf.Ticker(symbol); df = ticker.history(start=start_date)
             name = ticker.info.get('shortName', symbol); currency, fmt_p = "$", ",.2f"
-            symbol_name = name
             
             # 미장 전일비는 'fast_info'를 써서 빳빳하게 가져오오
             try:
@@ -171,10 +145,25 @@ if symbol:
             mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
             defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
-            # 전광판 출력
+            # ★ [사령관님 전용: 전광판 한글화 우회 격파 핵심 진지]
+            final_display_name = name
+            if is_kr:
+                core_vault = {"005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", "248070": "실리콘투"}
+                if symbol in core_vault:
+                    final_display_name = core_vault[symbol]
+                else:
+                    try:
+                        # 무겁고 차단당하는 fdr 대신 네이버 실시간 경량 API로 단 한 개의 명칭만 신속 탈취!
+                        nv_api = f"https://polling.finance.naver.com/api/realtime/market/stock/{symbol}"
+                        nv_res = requests.get(nv_api, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2).json()
+                        final_display_name = nv_res['result']['areas'][0]['datas'][0]['stockName']
+                    except:
+                        final_display_name = name
+
+            # 전광판 출력 (수정된 한글 변수인 final_display_name을 조준 사격하오!)
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
-            st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{symbol_name} ({symbol})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
             # 거래량 박스
             if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}점! 본진 진격 중이오."
@@ -195,7 +184,6 @@ if symbol:
             williams_top = 1 if will_val >= -20 else 0 
             top_score    = bb_top + rsi_top + williams_top
 
-            # ★ [매도/매수/관망 분기점 뼈대 완벽 수리]
             if top_score >= 2:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
             elif bottom_score >= 2:
