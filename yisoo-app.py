@@ -72,29 +72,28 @@ if symbol:
     symbol_name = symbol 
     name = symbol
     
-    if is_kr:
-        # ★ 핵심 전술: 사령관님 전용 초강력 '로컬 한글 명부 토치카' 구축!
-        # 인터넷이 끊어져도, 거래소 서버가 뻗어도 이 4개 종목은 100% 한글 출력을 보장하오!
-        core_market_vault = {
-            "005930": "삼성전자",
-            "000660": "SK하이닉스",
-            "033100": "제룡전기",
-            "248070": "실리콘투"
-        }
-        
-        # 1차 공격: 먼저 사령관님 전용 고유 명부에서 이름을 빛의 속도로 추출
+    # [사령관님 장부의 74번 줄부터 87번 줄까지를 이 코드로 빳빳하게 대체하십시오!]
         if symbol in core_market_vault:
+            # 1차 토치카: 사령관님 주력 4대 종목은 통신망 불능 시에도 100% 한글 보장!
             symbol_name = core_market_vault[symbol]
             name = core_market_vault[symbol]
         else:
-            # 2차 공격: 명부에 없는 기타 국장 종목들은 FDR 기지를 동원해 수집
+            # 2차 전선: 4대 종목 외에 수천 개 국장 전 종목은 무거운 FDR을 버리고
+            # 네이버 금융 실시간 경량 API를 직통으로 조준격파하여 한글명을 핀포인트로 탈취하오!
             try:
-                import FinanceDataReader as fdr
-                krx_df = fdr.StockListing('KRX')
-                target_name = krx_df[krx_df['Code'] == symbol]['Name'].values
-                if len(target_name) > 0:
-                    symbol_name = target_name[0]
-                    name = target_name[0]
+                import json
+                import requests
+                
+                # 입력된 단 하나의 티커번호로 네이버 실시간 기지 기습 타격
+                nv_url = f"https://polling.finance.naver.com/api/realtime/market/stock/{symbol}"
+                nv_res = requests.get(nv_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
+                
+                # 네이버 정식 장부에서 순도 100% 우리말 종목명을 적출해 변수 가방에 강제 장전!
+                kr_full_name = nv_res.json()['result']['areas'][0]['datas'][0]['stockName']
+                
+                if kr_full_name:
+                    symbol_name = kr_full_name
+                    name = kr_full_name
             except:
                 pass
     try:
