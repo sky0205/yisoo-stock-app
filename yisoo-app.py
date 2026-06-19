@@ -65,29 +65,29 @@ display_global_risk(); st.divider()
 
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
 
+# [사령관님 장부의 68번 라인 'if symbol:' 구역부터 아래쪽을 이 코드로 완전히 갈아 끼우십시오!]
 if symbol:
+    # ★ 에러 숙청 핵심: 기계 놈이 딴소리 못 하도록 최상단 조준경에서 'name' 가방을 공식 출생시킴!
+    name = symbol 
+    is_kr = symbol.isdigit()
+    
+    # [FDR 기지 징발] 국장 전 종목의 진짜 한글 이름을 실시간으로 100% 낚아챔
+    if is_kr:
+        try:
+            import FinanceDataReader as fdr
+            krx_df = fdr.StockListing('KRX')
+            target_name = krx_df[krx_df['Code'] == symbol]['Name'].values
+            if len(target_name) > 0:
+                name = target_name[0]  # -> name 가방에 "제룡전기" 완벽 안착!
+        except:
+            pass
+
     try:
-        start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
+        start_date = datetime.now() - timedelta(days=500)
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
         now_local = datetime.now(now_tz)
-
-       # [사령관님 장부의 74번 라인부터 아래쪽 전체를 이 코드로 완전히 새로 덮어쓰기 하십시오!]
-        # ★ [최종 해법] 주가 연산(symbol)은 숫자로 유지하고, 한글명(name)만 완벽히 분리 추출!
-        name = symbol  # 기본값 방어
+        
         if is_kr:
-            try:
-                import FinanceDataReader as fdr
-                # 1. 대한민국 시장 전체의 상장 명부를 실시간 징발
-                krx_df = fdr.StockListing('KRX')
-                # 2. 입력된 숫자(symbol)와 일치하는 종목의 진짜 한글명 적출
-                target_name = krx_df[krx_df['Code'] == symbol]['Name'].values
-                if len(target_name) > 0:
-                    name = target_name[0]  # -> name 가방에 "제룡전기" 완벽 안착!
-            except:
-                pass
-
-        if is_kr:
-            # 주가 수집 기지(yf, fdr)에는 한글이 아닌 원래의 숫자 코드(symbol)를 그대로 주입!
             ticker = yf.Ticker(f"{symbol}.KS")
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             currency, fmt_p = "원", ",.0f"
