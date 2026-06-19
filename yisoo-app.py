@@ -71,31 +71,30 @@ if symbol:
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
         now_local = datetime.now(now_tz)
 
-       # [사령관님 장부의 74번 라인부터 아래쪽을 이 코드로 완전히 새로 덮어쓰기 하십시오!]
-        # ★ [최종 무기] 국장 전 종목의 한글명을 FDR 기지에서 실시간 추출하는 수식
-        # [사령관님 장부의 74번 라인부터 아래쪽을 이 코드로 완전히 새로 덮어쓰기 하십시오!]
-        # ★ [최종 병기] fdr 기지에서 국장 전 종목의 한글명을 찾아 symbol 변수 자체를 덮어씀
+       # [사령관님 장부의 74번 라인부터 아래쪽 전체를 이 코드로 완전히 새로 덮어쓰기 하십시오!]
+        # ★ [최종 해법] 주가 연산(symbol)은 숫자로 유지하고, 한글명(name)만 완벽히 분리 추출!
+        name = symbol  # 기본값 방어
         if is_kr:
             try:
                 import FinanceDataReader as fdr
-                # 1. 대한민국 시장전체의 실시간 상장 명부를 통째로 징발
+                # 1. 대한민국 시장 전체의 상장 명부를 실시간 징발
                 krx_df = fdr.StockListing('KRX')
-                # 2. 입력된 숫자와 일치하는 종목의 진짜 한글명 추출
+                # 2. 입력된 숫자(symbol)와 일치하는 종목의 진짜 한글명 적출
                 target_name = krx_df[krx_df['Code'] == symbol]['Name'].values
                 if len(target_name) > 0:
-                    # 3. [치트키] 아래쪽 출력 파일들이 쳐다보는 symbol 변수 자체를 "제룡전기"로 변경!
-                    symbol = target_name[0]
+                    name = target_name[0]  # -> name 가방에 "제룡전기" 완벽 안착!
             except:
                 pass
 
         if is_kr:
-            # yfinance와 데이터 수집에는 원래의 숫자 코드가 필요하므로 
-            # symbol 대신 입력창에서 추출한 pure_ticker(또는 숫자로 변환된 값)를 사용해 수집해야 안전하오.
-            # 만약 에러가 나면 f"{pure_ticker}.KS"로 받아오도록 방어선 구축
-            pure_code = symbol if symbol.isdigit() else "033100" 
-            ticker = yf.Ticker(f"{pure_code}.KS")
-            df = fdr.DataReader(pure_code, start=start_date.strftime('%Y-%m-%d'))
+            # 주가 수집 기지(yf, fdr)에는 한글이 아닌 원래의 숫자 코드(symbol)를 그대로 주입!
+            ticker = yf.Ticker(f"{symbol}.KS")
+            df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             currency, fmt_p = "원", ",.0f"
+            
+            # ★ 핵심 타격: 아래쪽 출력 파일이 name을 인지하지 못하는 엇박자를 완전히 방어하기 위해
+            # 사령관님이 78번 줄에서 완성하신 진짜 한글명(name)을 symbol_name 변수로도 더블 장전!
+            symbol_name = name
             
             # [국장 필살기] 네이버 실시간 낚시
             url = f"https://finance.naver.com/item/main.naver?code={symbol}"
