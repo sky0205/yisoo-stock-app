@@ -73,22 +73,28 @@ if symbol:
 
        # [사령관님 장부의 74번 라인부터 아래쪽을 이 코드로 완전히 새로 덮어쓰기 하십시오!]
         # ★ [최종 무기] 국장 전 종목의 한글명을 FDR 기지에서 실시간 추출하는 수식
-        name = symbol  # 기본값 방어
+        # [사령관님 장부의 74번 라인부터 아래쪽을 이 코드로 완전히 새로 덮어쓰기 하십시오!]
+        # ★ [최종 병기] fdr 기지에서 국장 전 종목의 한글명을 찾아 symbol 변수 자체를 덮어씀
         if is_kr:
             try:
                 import FinanceDataReader as fdr
-                # 1. 대한민국 시장(KRX) 전체의 실시간 한글 상장 명부를 번개처럼 낚아챔
+                # 1. 대한민국 시장전체의 실시간 상장 명부를 통째로 징발
                 krx_df = fdr.StockListing('KRX')
-                # 2. 사령관님이 입력하신 숫자(symbol)와 일치하는 행의 'Name'(한글명)을 정밀 적출
+                # 2. 입력된 숫자와 일치하는 종목의 진짜 한글명 추출
                 target_name = krx_df[krx_df['Code'] == symbol]['Name'].values
                 if len(target_name) > 0:
-                    name = target_name[0]  # -> "제룡전기", "삼성전자" 등 한글명 완벽 장전!
+                    # 3. [치트키] 아래쪽 출력 파일들이 쳐다보는 symbol 변수 자체를 "제룡전기"로 변경!
+                    symbol = target_name[0]
             except:
                 pass
 
         if is_kr:
-            ticker = yf.Ticker(f"{symbol}.KS")
-            df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+            # yfinance와 데이터 수집에는 원래의 숫자 코드가 필요하므로 
+            # symbol 대신 입력창에서 추출한 pure_ticker(또는 숫자로 변환된 값)를 사용해 수집해야 안전하오.
+            # 만약 에러가 나면 f"{pure_ticker}.KS"로 받아오도록 방어선 구축
+            pure_code = symbol if symbol.isdigit() else "033100" 
+            ticker = yf.Ticker(f"{pure_code}.KS")
+            df = fdr.DataReader(pure_code, start=start_date.strftime('%Y-%m-%d'))
             currency, fmt_p = "원", ",.0f"
             
             # [국장 필살기] 네이버 실시간 낚시
