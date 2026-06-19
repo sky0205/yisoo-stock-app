@@ -73,31 +73,31 @@ if symbol:
 
         # [image_801409.png 장부의 74번 라인 아래를 이 수식으로 빳빳하게 대체하십시오]
        # [image_7fb24a.png 장부의 75번 라인 아래를 이 수식으로 빳빳하게 덮어쓰기 하십시오]
+        # [image_7fb24a.png 장부의 75번 라인 아래를 이 수식으로 들여쓰기 맞춰 덮어쓰기 하십시오]
         if is_kr:
             ticker = yf.Ticker(f"{symbol}.KS")
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             
-            # ★ [사령관님 전용 무조건 전 종목 한글화 치트키]
+            # ★ 에러 숙청 핵심: name 변수와 symbol 변수를 동시에 완벽 장전!
             try:
                 import json
                 import requests
                 
-                # 네이버 금융 실시간 매칭 API에서 한글명을 빛의 속도로 탈취
+                # 네이버 금융 실시간 API 진지 조준
                 nv_url = f"https://polling.finance.naver.com/api/realtime/market/stock/{symbol}"
                 nv_res = requests.get(nv_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
                 nv_data = nv_res.json()
                 
-                # 순도 100% 한글 종목명 적출
-                kr_name = nv_data['result']['areas'][0]['datas'][0]['stockName']
-                
-                # 핵심 수하 제어: 아래쪽 출력 파일이 계속 쳐다보고 있는 'symbol' 변수 자체에
-                # "제룡전기"라는 한글 명칭을 강제로 역주입하여 덮어써버리는 전술이오!
-                symbol = kr_name
+                # 1. 화면 출력부가 애타게 찾고 있는 'name' 변수에 한글명 명백히 장전!
+                name = nv_data['result']['areas'][0]['datas'][0]['stockName']
                 
             except:
-                # 네이버 기지가 막힐 경우에만 기존 번호 유지 방어
-                pass
-                
+                # 네이버 기지 통신 불능 시 야후 백업 장부로 방어
+                name = ticker.info.get('shortName', symbol).split(',')[0]
+            
+            # 2. 혹시나 다른 곳에서 symbol 변수를 쓰더라도 한글이 나오도록 더블 장전!
+            symbol_display = symbol
+            
             currency, fmt_p = "원", ",.0f"
             
             # [국장 필살기] 네이버 실시간 낚시
