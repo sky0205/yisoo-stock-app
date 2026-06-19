@@ -63,15 +63,13 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
+# [사령관님 장부의 66번 라인 바로 아랫줄부터 데이터 조회 전까지를 이 코드로 전면 교체하십시오!]
+# ★ 에러 숙청 핵심 1: 기계 놈들이 어떤 구역에서든 다 쳐다볼 수 있게 최상단 전역에 가방들을 공식 출생시킴!
+is_kr = symbol.isdigit() if symbol else False
+symbol_name = symbol 
+name = symbol
 
-# [사령관님 장부의 69번 라인 'if symbol:' 구역부터 아래쪽을 이 코드로 완전히 갈아 끼우십시오!]
-# [사령관님 장부의 69번 라인 'if symbol:' 구역부터 아래쪽을 이 코드로 완전히 새로 갈아 끼우십시오!]
 if symbol:
-    is_kr = symbol.isdigit()
-    symbol_name = symbol 
-    name = symbol
-    
     if is_kr:
         core_market_vault = {
             "005930": "삼성전자",
