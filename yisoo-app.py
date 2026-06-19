@@ -71,19 +71,20 @@ if symbol:
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
         now_local = datetime.now(now_tz)
 
-       # [사령관님 장부의 74번 라인부터 아래쪽을 이 코드로 완전히 갈아 끼우십시오!]
-        # ★ [수정 핵심] 하부 출력 파일들이 애타게 찾는 'name' 변수를 공식 출생시키는 기지
+       # [사령관님 장부의 74번 라인부터 아래쪽을 이 코드로 완전히 새로 덮어쓰기 하십시오!]
+        # ★ [최종 무기] 국장 전 종목의 한글명을 FDR 기지에서 실시간 추출하는 수식
         name = symbol  # 기본값 방어
-        try:
-            import json
-            import requests
-            # 네이버 금융 실시간 API 진지 조준
-            nv_url = f"https://polling.finance.naver.com/api/realtime/market/stock/{symbol}"
-            nv_res = requests.get(nv_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
-            # 순도 100% 한글 종목명을 name 가방에 빳빳하게 장전!
-            name = nv_res.json()['result']['areas'][0]['datas'][0]['stockName']
-        except:
-            pass
+        if is_kr:
+            try:
+                import FinanceDataReader as fdr
+                # 1. 대한민국 시장(KRX) 전체의 실시간 한글 상장 명부를 번개처럼 낚아챔
+                krx_df = fdr.StockListing('KRX')
+                # 2. 사령관님이 입력하신 숫자(symbol)와 일치하는 행의 'Name'(한글명)을 정밀 적출
+                target_name = krx_df[krx_df['Code'] == symbol]['Name'].values
+                if len(target_name) > 0:
+                    name = target_name[0]  # -> "제룡전기", "삼성전자" 등 한글명 완벽 장전!
+            except:
+                pass
 
         if is_kr:
             ticker = yf.Ticker(f"{symbol}.KS")
