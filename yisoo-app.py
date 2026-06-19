@@ -63,7 +63,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "058610")
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "TSLA")
 
 if symbol:
     try:
@@ -89,8 +89,8 @@ if symbol:
                 prev_p = float(df['Close'].iloc[-2])
         else:
             # [미장 필살기] 야후 파이낸스 정밀 판독
-            ticker = yf.Ticker(symbol); df = ticker.history(start=start_date)
-            name = ticker.info.get('shortName', symbol); currency, fmt_p = "$", ",.2f"
+            ticker = yf.Ticker(symbol.upper()); df = ticker.history(start=start_date)
+            currency, fmt_p = "$", ",.2f"
             
             try:
                 info = ticker.fast_info
@@ -140,8 +140,7 @@ if symbol:
             mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
             defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
-            # ★ [사령관님 전용: 코스닥 및 핵심 전력 명칭 대조 요새]
-            final_display_name = "국내종목"
+            # ★ [사령관님 전용: 글로벌 명칭 완결 통제 기지]
             if is_kr:
                 core_vault = {
                     "005930": "삼성전자", "000660": "SK하이닉스", 
@@ -151,20 +150,34 @@ if symbol:
                 if symbol in core_vault:
                     final_display_name = core_vault[symbol]
                 else:
-                    try:
-                        # 네이버 실시간 블라인드 영역에서 한글 종목명 강제 포획
-                        final_display_name = soup.select_one(".wrap_company h2 a").text.strip()
+                    try: final_display_name = soup.select_one(".wrap_company h2 a").text.strip()
                     except:
                         try:
                             df_krx_backup = load_krx_listing()
                             final_display_name = df_krx_backup[df_krx_backup['Code'] == symbol]['Name'].values[0]
-                        except:
-                            final_display_name = f"국내종목 ({symbol})"
+                        except: final_display_name = f"국내종목 ({symbol})"
+            else:
+                # 미장 종목명 한글 매칭 및 예외 방어선
+                us_vault = {
+                    "TSLA": "테슬라 (Tesla)", "NVDA": "엔비디아 (NVIDIA)", 
+                    "AAPL": "애플 (Apple)", "MSFT": "마이크로소프트", 
+                    "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타"
+                }
+                tk = symbol.upper()
+                if tk in us_vault:
+                    final_display_name = us_vault[tk]
+                else:
+                    try:
+                        # 야후 파이낸스에서 실시간 영문명 압수
+                        raw_name = ticker.info.get('shortName', symbol)
+                        final_display_name = raw_name.split(',')[0].split('Inc')[0].strip()
+                    except:
+                        final_display_name = f"미국종목 ({tk})"
 
             # 전광판 출력
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
-            st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol.upper()})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
             # 거래량 박스
             if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}점! 본진 진격 중이오."
@@ -186,9 +199,8 @@ if symbol:
             top_score    = bb_top + rsi_top + williams_top
 
             # MACD 역회전 및 축소 감지
-            is_engine_reverse = (m_l < s_l)
-            is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev) if 'm_diff_curr' in locals() else False)
             m_diff_curr, m_diff_prev = m_l - s_l, m_p - s_p
+            is_engine_reverse = (m_l < s_l)
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
 
             if top_score >= 2:
