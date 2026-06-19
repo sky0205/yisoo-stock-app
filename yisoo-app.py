@@ -144,28 +144,25 @@ if symbol:
             mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
             defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
-            # ★ [사령관님 지침 반영: 3중 철벽 실리콘투(257720) 핀포인트 포격 진지]
+            # ★ [사령관님 전용: 3중 철벽 실리콘투(257720) 핀포인트 포격 진지]
             final_display_name = name
             if is_kr:
-                # 1단계 사령관님 직통 토치카: 257720 입력 시 무조건 "실리콘투" 출격!
                 core_vault = {"005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", "257720": "실리콘투"}
                 if symbol in core_vault:
                     final_display_name = core_vault[symbol]
                 else:
-                    # 2단계: 네이버 금융 실시간 경량 API 타격!
                     try:
                         nv_api = f"https://polling.finance.naver.com/api/realtime/market/stock/{symbol}"
                         nv_res = requests.get(nv_api, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2).json()
                         final_display_name = nv_res['result']['areas'][0]['datas'][0]['stockName']
                     except:
-                        # 3단계: FDR 장부 백업 조회!
                         try:
                             df_krx_backup = load_krx_listing()
                             final_display_name = df_krx_backup[df_krx_backup['Code'] == symbol]['Name'].values[0]
                         except:
                             final_display_name = f"국내종목 ({symbol})"
 
-            # 전광판 출력 (완벽하게 교정된 final_display_name으로 전면 사격하오!)
+            # 전광판 출력
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
@@ -178,7 +175,7 @@ if symbol:
             
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} ({v_ratio:.1f}% / 5일평균대비)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
-            # 신호등 점수 계측
+            # # 160 # 신호등 점수 계측 (사령관님 개조안 완벽 동조화)
             bb_bottom       = 1 if p <= (low_b * 1.005) else 0
             rsi_bottom      = 1 if rsi_val <= 35 else 0
             williams_bottom = 1 if will_val <= -80 else 0
@@ -189,10 +186,11 @@ if symbol:
             williams_top = 1 if will_val >= -20 else 0 
             top_score    = bb_top + rsi_top + williams_top
 
+            # [최종 개조 구역] ★ 매도/매수 분기점 뼈대 신호등 연동 완료!
             if top_score >= 2:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
             elif bottom_score >= 2:
-                sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", "• 🧊 다중 바닥 지표 포착! 세력의 탄환을 뺏을 명장의 기습 매수 타이밍이오."
+                sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"• 🧊 다중 바닥 지표 포착! 세력의 탄환을 뺏을 명장의 기습 매수 타이밍이오. (매수 지표 일치도: {bottom_score}/3)"
             else:
                 sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"• 눈치싸움 중일세. 지표 끝단을 기다리시게. (바닥동조: {bottom_score}/3 | 과열동조: {top_score}/3)"
             
