@@ -54,7 +54,7 @@ def display_global_risk():
         c1.metric("나스닥 (NASDAQ)", f"{data['n_last']:,.2f}", f"{n_chg:.2f}%")
         c2.metric("S&P 500 (SPX)", f"{data['s_last']:,.2f}", f"{(data['s_last']/data['s_prev']-1)*100:.2f}%")
         c3.metric("미 국채 10년물 (TNX)", f"{tnx_val:.3f}%", f"{tnx_chg:+.2f}%")
-        if tnx_val >= 4.5: adv = "🚨 **[금리 발작: 비상]** 국채 금 4.5% 돌파! 기술주 성벽 주의하시게."
+        if tnx_val >= 4.5: adv = "🚨 **[금리 발작: 비상]** 국채 금리 4.5% 돌파! 기술주 성벽 주의하시게."
         elif n_chg > 0.5 and tnx_chg < 0: adv = "🔥 **[골디락스 진입]** 지수 상승과 금리 하락, 기세 타시게."
         else: adv = "🧐 **[눈치싸움 중]** 세력들이 간 보고 있구먼."
         st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
@@ -63,7 +63,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720")
 
 if symbol:
     try:
@@ -96,7 +96,6 @@ if symbol:
             ticker = yf.Ticker(symbol); df = ticker.history(start=start_date)
             name = ticker.info.get('shortName', symbol); currency, fmt_p = "$", ",.2f"
             
-            # 미장 전일비는 'fast_info'를 써서 빳빳하게 가져오오
             try:
                 info = ticker.fast_info
                 p = info.last_price
@@ -132,7 +131,7 @@ if symbol:
                 if now_local.weekday() >= 5: elapsed = 390
                 vol_strength = min(1000, v_ratio / (elapsed / 390))
             
-            # 지표 계산
+            # 지표 계산 (볼린저 20/2, 윌리엄 14/6, rsi 14/9 기준 준수)
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
             rsi_val, rsi_prev = rsi_series.iloc[-1], rsi_series.iloc[-2]
@@ -145,22 +144,28 @@ if symbol:
             mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
             defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
-            # ★ [사령관님 전용: 전광판 한글화 우회 격파 핵심 진지]
+            # ★ [사령관님 지침 반영: 3중 철벽 실리콘투(257720) 핀포인트 포격 진지]
             final_display_name = name
             if is_kr:
-                core_vault = {"005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", "248070": "실리콘투"}
+                # 1단계 사령관님 직통 토치카: 257720 입력 시 무조건 "실리콘투" 출격!
+                core_vault = {"005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", "257720": "실리콘투"}
                 if symbol in core_vault:
                     final_display_name = core_vault[symbol]
                 else:
+                    # 2단계: 네이버 금융 실시간 경량 API 타격!
                     try:
-                        # 무겁고 차단당하는 fdr 대신 네이버 실시간 경량 API로 단 한 개의 명칭만 신속 탈취!
                         nv_api = f"https://polling.finance.naver.com/api/realtime/market/stock/{symbol}"
                         nv_res = requests.get(nv_api, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2).json()
                         final_display_name = nv_res['result']['areas'][0]['datas'][0]['stockName']
                     except:
-                        final_display_name = name
+                        # 3단계: FDR 장부 백업 조회!
+                        try:
+                            df_krx_backup = load_krx_listing()
+                            final_display_name = df_krx_backup[df_krx_backup['Code'] == symbol]['Name'].values[0]
+                        except:
+                            final_display_name = f"국내종목 ({symbol})"
 
-            # 전광판 출력 (수정된 한글 변수인 final_display_name을 조준 사격하오!)
+            # 전광판 출력 (완벽하게 교정된 final_display_name으로 전면 사격하오!)
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
