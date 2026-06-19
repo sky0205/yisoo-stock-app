@@ -71,13 +71,27 @@ if symbol:
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
         now_local = datetime.now(now_tz)
 
+        # [image_801409.png 장부의 74번 라인 아래를 이 수식으로 빳빳하게 대체하십시오]
         if is_kr:
             ticker = yf.Ticker(f"{symbol}.KS")
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+            
+            # ★ [수정 핵심] 야후 영문 장부를 거부하고, 네이버 실시간 API 기지에서 순수 한글명 강제 탈취
             try:
-                df_krx = load_krx_listing()
-                name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
-            except: name = ticker.info.get('shortName', symbol).split(',')[0]
+                import json
+                import requests
+                
+                # 네이버 금융 실시간 매칭 API 정밀 조준
+                nv_url = f"https://polling.finance.naver.com/api/realtime/market/stock/{symbol}"
+                nv_res = requests.get(nv_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
+                nv_data = nv_res.json()
+                
+                # 네이버 정식 장부에서 한글 종목명만 빳빳하게 적출
+                name = nv_data['result']['areas'][0]['datas'][0]['stockName']
+            except:
+                # 만약 네이버 기지에 안개가 자욱하면, 기존 백업 방식으로 방어
+                name = ticker.info.get('shortName', symbol).split(',')[0]
+                
             currency, fmt_p = "원", ",.0f"
             
             # [국장 필살기] 네이버 실시간 낚시
