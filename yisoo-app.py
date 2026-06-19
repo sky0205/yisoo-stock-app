@@ -63,7 +63,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "TSLA")
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720")
 
 if symbol:
     try:
@@ -157,7 +157,6 @@ if symbol:
                             final_display_name = df_krx_backup[df_krx_backup['Code'] == symbol]['Name'].values[0]
                         except: final_display_name = f"국내종목 ({symbol})"
             else:
-                # 미장 종목명 한글 매칭 및 예외 방어선
                 us_vault = {
                     "TSLA": "테슬라 (Tesla)", "NVDA": "엔비디아 (NVIDIA)", 
                     "AAPL": "애플 (Apple)", "MSFT": "마이크로소프트", 
@@ -168,11 +167,9 @@ if symbol:
                     final_display_name = us_vault[tk]
                 else:
                     try:
-                        # 야후 파이낸스에서 실시간 영문명 압수
                         raw_name = ticker.info.get('shortName', symbol)
                         final_display_name = raw_name.split(',')[0].split('Inc')[0].strip()
-                    except:
-                        final_display_name = f"미국종목 ({tk})"
+                    except: final_display_name = f"미국종목 ({tk})"
 
             # 전광판 출력
             st.markdown("### 📊 현재주가현황")
@@ -228,7 +225,7 @@ if symbol:
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
             adv3 = f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네! 절대 속지 마시게!" if m_l < s_l else "3. **엔진 정회전:** 엔진 시동 걸렸구먼!"
             
-            # 최종 결론 분기 판독
+            # ★ [최종 결론 분기점 뼈대 정밀 교정 영역]
             if p >= up_b or rsi_val >= 60:
                 if m_l < s_l:
                     if p < defense_line or abs(m_diff_curr) > abs(m_diff_prev):
@@ -240,12 +237,16 @@ if symbol:
                 else:
                     final_adv = f"💰 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 위나 기세가 약해지네. **야금야금 분할 매도 시작!**"
             elif p <= (low_b * 1.02):
-                if m_l < s_l or p < (defense_line * 0.90):
-                    final_adv = f"💀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽에서 너무 멀고 엔진도 역회전이네. **절대 매수 금지! 지하실 조심!**"
-                elif vol_strength >= 100 and p >= mid_line:
-                    final_adv = f"🔥 **[최종 결론]** 강도({vol_strength:.1f}점). 바닥에 물량 실렸고 중앙선까지 빳빳하게 뚫었네! **강력 매수 검토!**"
-                else:
-                    final_adv = f"🛡️ **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 도는데 성벽이 아직 멀구먼. 소량 **정찰대만 보내시게.**"
+                if m_l < s_l:  # 실제 실시간 수치가 역회전일 때만 출력!
+                    if p < (defense_line * 0.90):
+                        final_adv = f"💀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽에서 너무 멀고 엔진도 역회전이네. **절대 매수 금지! 지하실 조심!**"
+                    else:
+                        final_adv = f"🛡️ **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 도는데 성벽이 아직 멀구먼. 소량 **정찰대만 보내시게.**"
+                else:  # 실제 실시간 수치가 정회전(헛바퀴) 상태일 때 출력! 완벽 동조화!
+                    if p < defense_line:
+                        final_adv = f"💀 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 정회전(헛바퀴)이나 성벽이 완전히 무너졌네. **절대 매수 금지! 속지 마시게!**"
+                    else:
+                        final_adv = f"🔥 **[최종 결론]** 강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 시동 걸렸고 성벽 사수 중이네! **강력 매수 검토!**"
             else:
                 if m_l < s_l:
                     wait_msg = "중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지"
