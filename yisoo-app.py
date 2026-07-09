@@ -223,8 +223,7 @@ if symbol:
             # 실전 필살 대응 전략 문구
             adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
-            adv3 = f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네! 절대 속지 마시게!" if m_l < s_l else "3. **엔진 정회전:** 엔진 시동 걸렸구먼!"
-            
+            adv3 = f"3. **엔진(MACD) 확인:** 엔진 역회전폭 급감 중이네! 하락이 지쳐서 시동 걸 채비 중이니 눈여겨보시게." if m_l < s_l and abs(m_l - s_l) < abs(m_diff_prev) else (f"3. **엔진(MACD) 확인:** 엔진이 아직 **역회전** 중이라네! 절대 속지 마시게!" if m_l < s_l else f"3. **엔진(MACD) 확인:** 엔진 정회전 완료! 본대 진격의 신호탄이 터졌네.")
             # ★ [최종 결론 분기점 뼈대 정밀 교정 영역]
             if p >= up_b or rsi_val >= 60:
                 if m_l < s_l:
