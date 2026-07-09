@@ -270,7 +270,12 @@ if symbol:
                 if p >= up_b: bb_diag = "👺 **[천장 돌파]** 울타리 밖으로 기세 폭발! 탐욕의 끝단이니 익절하시게."
                 elif p <= low_b: bb_diag = "🧊 **[바닥 돌파]** 지하실까지 밀렸구먼. 엔진 시동을 기다리시게."
                 elif p >= mid_line: bb_diag = "⚠️ **[과열 진입]** 중앙선 위에서 기세 유지 중이나 온도가 높네."
-                else: bb_diag = "🏠 **[기세 둔화]** 중앙선 밑일세. 온도가 낮아도 절대 칼 뽑지 마시게."
+                else:
+            # 중앙선 밑이면서 동시에 RSI가 30 미만이고, Williams %R이 -80 이하일 때
+                if rsi_val < 30 and williams_val <= -80:
+                    bb_diag = "🏹 **[낙폭과대 진격]** 기세는 중앙선 밑이나, 단기 골짜기 바닥일세. 분할 매수 타이밍을 노리시게."
+                else:
+                    bb_diag = "🏠 **[기세 둔화]** 중앙선 밑일세. 온도가 낮아도 절대 칼을 뽑지 마시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             with i2:
                 is_div = p > prev_p and rsi_val < rsi_prev
