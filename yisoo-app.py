@@ -224,47 +224,41 @@ if symbol:
             adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
             adv3 = f"3. **엔진(MACD) 확인:** 냉골 바닥에 엔진 시동 중이네! 소량 분할 매수 시작!" if (rsi_val < 30 and will_val <= -80) and (m_l >= s_l or abs(m_l - s_l) < abs(m_diff_prev)) else (f"3. **엔진(MACD) 확인:** 엔진 **역회전 심화** 중이라네! 거꾸로 도는 차니 절대 속지 마시게!" if m_l < s_l else (f"3. **엔진(MACD) 확인:** 엔진 **정회전(헛바퀴)**이네! 성벽이 무너졌으니 절대 섣불리 속지 마시게." if p < defense_line else f"3. **엔진(MACD) 확인:** 엔진 정회전 완료! 본대 진격의 신호탄이 터졌네."))
-            if p >= up_b or rsi_val >= 60:
-                if m_l < s_l:
-                    if p < defense_line or abs(m_diff_curr) > abs(m_diff_prev):
-                        final_adv = f"💀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽({format(defense_line, fmt_p)}) 함락 및 엔진 역회전! **무조건 퇴각 및 현금 확보!**"
-                    else:
-                        final_adv = f"⚠️ **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 사수 중이나 엔진 역회전 초입일세. **익절 준비 및 비중 축소!**"
-                elif vol_strength >= 150 and p > defense_line:
-                    final_adv = f"🚀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 딛고 하늘 문이 열렸네! 기세 충만하니 **비중 유지 및 홀딩!**"
-                else:
-                    final_adv = f"💰 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 위나 기세가 약해지네. **야금야금 분할 매도 시작!**"
-            elif p <= (low_b * 1.02):
-                if m_l < s_l:  # 실제 실시간 수치가 역회전일 때만 출력!
-                    if p < (defense_line * 0.90):
-                        final_adv = f"💀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽에서 너무 멀고 엔진도 역회전이네. **절대 매수 금지! 지하실 조심!**"
-                    else:
-                        final_adv = f"🛡️ **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 도는데 성벽이 아직 멀구먼. 소량 **정찰대만 보내시게.**"
-                else:  # 실제 실시간 수치가 정회전(헛바퀴) 상태일 때 출력! 완벽 동조화!
-                    if p < defense_line:
-                        final_adv = f"💀 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 정회전(헛바퀴)이나 성벽이 완전히 무너졌네. **절대 매수 금지! 속지 마시게!**"
-                    else:
-                        final_adv = f"🔥 **[최종 결론]** 강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 시동 걸렸고 성벽 사수 중이네! **강력 매수 검토!**"
+            # [형님 필살 핵심 대원칙] 냉골 바닥이면서 동시에 (정회전이거나 역회전 폭이 줄어들 때) ➔ 분할 매수 개시!
+            if (rsi_val < 30 and will_val <= -80) and (m_l >= s_l or abs(m_l - s_l) < abs(m_diff_prev)):
+                final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 정회전 시동 및 단기 골짜기 바닥일세. 소량 **[분할 매수]** 타이밍을 노리시게!"
+    
+    # 위의 매수 조건이 안 맞을 때만 아래의 관망/대기 법도로 진입합니다.
             else:
-                if m_l < s_l:
-        # 엔진 역회전이면서 동시에 RSI와 윌리엄스가 바닥이고, '폭이 급감할 때만' 진격!
-                    # [형님 필살 공식] 냉골 바닥이면서 동시에 (정회전이거나 역회전 폭이 줄어들 때) ➔ 분할 매수 개시!
-                    if (rsi_val < 30 and will_val <= -80) and (m_l >= s_l or abs(m_l - s_l) < abs(m_diff_prev)):
-                        final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 정회전 시동 및 단기 골짜기 바닥일세. 소량 **[분할 매수]** 타이밍을 노리시게!"
-                    else:
-        # 분할 매수 조건이 안 맞을 때 (역회전이 심화 중이거나, 냉골이 아닐 때)
-                        if m_l < s_l:
-                            wait_msg = "엔진 역회전이 진정될 때까지" if abs(m_l - s_l) >= abs(m_diff_prev) else ("중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지")
-                            final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
+        # 1. 주가가 밴드 상단이나 과열권일 때의 기존 법도
+                if p >= up_b or rsi_val >= 60:
+                    if m_l < s_l:
+                        if p < defense_line or abs(m_diff_curr) > abs(m_diff_prev):
+                            final_adv = f"💀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 함락 및 엔진 역회전! **무조건 관망!**"
                         else:
-            # 냉골 바닥이 아닌데 주가가 성벽 아래에서 헛바퀴 돌 때는 철저히 관망!
-                            final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 정회전(헛바퀴)이나 성벽 아래일세. 속지 말고 **추가 진격 금지 및 관망!**"
-                       
-                elif p < mid_line:
-                    if p < defense_line:
-                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽이 함락되어 지하실 뻘밭일세. **추가 진격 금지 및 관망!**"
+                            final_adv = f"⚠️ **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 사수 중이나 엔진 역회전 초입일세. **익절 준비 및 비중 축소!**"
+                    elif vol_strength >= 150 and p > defense_line:
+                        final_adv = f"🚀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 딛고 하늘 문이 열렸네! **비중 유지 및 홀딩!**"
                     else:
-                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽은 지키나 중앙선 밑으로 기세가 꺾였소. **추가 진격 금지 및 관망!**"
+                        final_adv = f"💰 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 위나 기세가 약해지네. **야금야금 분할 매도 시작!**"
+        
+        # 2. 주가가 밴드 하단 근처일 때의 법도 (low_b * 1.02 기준 안쪽 구역)
+                elif p <= (low_b * 1.02):
+                    if m_l < s_l:
+                        wait_msg = "엔진 역회전이 진정될 때까지" if abs(m_l - s_l) >= abs(m_diff_prev) else ("중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지")
+                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
+                    else:
+                        if p < defense_line:
+                            final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 정회전(헛바퀴)이나 성벽 아래일세. 속지 말고 **추가 진격 금지 및 관망!**"
+                        else:
+                            final_adv = f"🔮 **[최종 결론]** 강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 시동 걸렸고 성벽 사수 중이네! **강력 매수 검토!**"
+        
+        # 3. [오류 해결 방패] 상단도 하단도 아닌 평범한 중간 지대(횡보/눈치싸움)일 때!
+                else:
+                    if m_l < s_l:
+                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 중간 지대에서 엔진 역회전 중이네. 기세가 잡힐 때까지 **무조건 관망 및 대기!**"
+                    else:
+                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 중앙선 방향 보며 **무조건 관망 및 대기!**"
                 
 
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
