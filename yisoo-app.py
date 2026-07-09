@@ -248,11 +248,14 @@ if symbol:
                     else:
                         final_adv = f"🔥 **[최종 결론]** 강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 시동 걸렸고 성벽 사수 중이네! **강력 매수 검토!**"
             else:
-                if rsi_val < 30 and will_val <= -80:
-                    final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전이나 단기 골짜기 바닥일세. 소량 **[분할 매수]** 타이밍을 노리시게!"
-                else:
-                    wait_msg = "중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지"
-                    final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
+                if m_l < s_l:
+        # 엔진 역회전이면서 동시에 RSI와 윌리엄스가 골짜기 바닥을 쳤을 때!
+                    if rsi_val < 30 and will_val <= -80:
+                        final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전이나 단기 골짜기 바닥일세. 소량 **[분할 매수]** 타이밍을 노리시게!"
+        # 골짜기 바닥이 아닐 때는 원래대로 관망 군령 선포!
+                    else:
+                        wait_msg = "중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지"
+                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
                 elif p < mid_line:
                     if p < defense_line:
                         final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽이 함락되어 지하실 뻘밭일세. **추가 진격 금지 및 관망!**"
