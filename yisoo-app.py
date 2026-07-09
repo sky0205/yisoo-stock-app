@@ -258,8 +258,7 @@ if symbol:
                         final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽이 함락되어 지하실 뻘밭일세. **추가 진격 금지 및 관망!**"
                     else:
                         final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽은 지키나 중앙선 밑으로 기세가 꺾였소. **추가 진격 금지 및 관망!**"
-                else:
-                    final_adv = f"📈 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽과 중앙선 위에서 추세 유지 중이네. **보유(홀딩)하시게.**"
+                
 
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
