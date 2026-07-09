@@ -275,10 +275,12 @@ if symbol:
                 elif p <= low_b: bb_diag = "🧊 **[바닥 돌파]** 지하실까지 밀렸구먼. 엔진 시동을 기다리시게."
                 elif p >= mid_line: bb_diag = "⚠️ **[과열 진입]** 중앙선 위에서 기세 유지 중이나 온도가 높네."
                 else:
-                    if rsi_val < 30 and will_val <= -80:
-                        bb_diag = "🏹 **[낙폭과대 진격]** 기세는 중앙선 밑이나, 단기 골짜기 바닥일세. 분할 매수 타이밍을 노리시게."
+            # 중앙선 밑이면서 + RSI와 윌리엄스가 바닥이고 + '엔진 역회전 폭까지 줄어들 때'만 분할매수!
+                    if rsi_val < 30 and will_val <= -80 and abs(m_l - s_l) < abs(m_diff_prev):
+                        bb_diag = "🏹 **[낙폭과대 진격]** 기세는 중앙선 밑이나, 단기 골짜기 바닥에 엔진 시동 중일세. 소량 분할 매수 시작!"
+            # 골짜기 바닥이더라도 엔진 역회전이 심화(가속) 중이거나, 조건이 안 맞으면 무조건 관망!
                     else:
-                        bb_diag = "🏠 **[기세 둔화]** 중앙선 밑일세. 온도가 낮아도 절대 칼을 뽑지 마시게."
+                        bb_diag = "🏠 **[기세 둔화]** 중앙선 밑일세. 엔진 역회전 심화 중이거나 온도가 낮으니 절대 칼을 뽑지 마시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             with i2:
                 is_div = p > prev_p and rsi_val < rsi_prev
