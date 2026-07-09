@@ -248,7 +248,9 @@ if symbol:
                     else:
                         final_adv = f"🔥 **[최종 결론]** 강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 시동 걸렸고 성벽 사수 중이네! **강력 매수 검토!**"
             else:
-                if m_l < s_l:
+                if rsi_val < 30 and will_val <= -80:
+                    final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전이나 단기 골짜기 바닥일세. 소량 **[분할 매수]** 타이밍을 노리시게!"
+                else:
                     wait_msg = "중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지"
                     final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
                 elif p < mid_line:
