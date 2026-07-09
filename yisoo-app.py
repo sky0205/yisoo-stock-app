@@ -223,8 +223,7 @@ if symbol:
             # 실전 필살 대응 전략 문구
             adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
-            adv3 = f"3. **엔진(MACD) 확인:** 엔진 역회전폭 급감 중이네! 하락이 지쳐서 시동 걸 채비 중이니 눈여겨보시게." if m_l < s_l and abs(m_l - s_l) < abs(m_diff_prev) else (f"3. **엔진(MACD) 확인:** 엔진 **역회전 심화** 중이라네! 거꾸로 도는 차니 절대 속지 마시게!" if m_l < s_l else f"3. **엔진(MACD) 확인:** 엔진 정회전 완료! 본대 진격의 신호탄이 터졌네.")
-            # ★ [최종 결론 분기점 뼈대 정밀 교정 영역]
+            adv3 = f"3. **엔진(MACD) 확인:** 냉골 바닥에 엔진 시동 중이네! 소량 분할 매수 시작!" if (rsi_val < 30 and will_val <= -80) and (m_l >= s_l or abs(m_l - s_l) < abs(m_diff_prev)) else (f"3. **엔진(MACD) 확인:** 엔진 **역회전 심화** 중이라네! 거꾸로 도는 차니 절대 속지 마시게!" if m_l < s_l else (f"3. **엔진(MACD) 확인:** 엔진 **정회전(헛바퀴)**이네! 성벽이 무너졌으니 절대 섣불리 속지 마시게." if p < defense_line else f"3. **엔진(MACD) 확인:** 엔진 정회전 완료! 본대 진격의 신호탄이 터졌네."))
             if p >= up_b or rsi_val >= 60:
                 if m_l < s_l:
                     if p < defense_line or abs(m_diff_curr) > abs(m_diff_prev):
@@ -249,12 +248,17 @@ if symbol:
             else:
                 if m_l < s_l:
         # 엔진 역회전이면서 동시에 RSI와 윌리엄스가 바닥이고, '폭이 급감할 때만' 진격!
-                    if rsi_val < 30 and will_val <= -80 and abs(m_l - s_l) < abs(m_diff_prev):
-                        final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전이나 단기 골짜기 바닥일세. 소량 **[분할 매수]** 타이밍을 노리시게!"
-        # 만약 역회전이 심화 중이거나 바닥이 아닐 때는 가차 없이 관망 군령 선포!
+                    # [형님 필살 공식] 냉골 바닥이면서 동시에 (정회전이거나 역회전 폭이 줄어들 때) ➔ 분할 매수 개시!
+                    if (rsi_val < 30 and will_val <= -80) and (m_l >= s_l or abs(m_l - s_l) < abs(m_diff_prev)):
+                        final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 정회전 시동 및 단기 골짜기 바닥일세. 소량 **[분할 매수]** 타이밍을 노리시게!"
                     else:
-                        wait_msg = "엔진 역회전이 진정될 때까지" if abs(m_l - s_l) >= abs(m_diff_prev) else ("중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지")
-                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
+        # 분할 매수 조건이 안 맞을 때 (역회전이 심화 중이거나, 냉골이 아닐 때)
+                        if m_l < s_l:
+                            wait_msg = "엔진 역회전이 진정될 때까지" if abs(m_l - s_l) >= abs(m_diff_prev) else ("중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지")
+                            final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
+                        else:
+            # 냉골 바닥이 아닌데 주가가 성벽 아래에서 헛바퀴 돌 때는 철저히 관망!
+                            final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 정회전(헛바퀴)이나 성벽 아래일세. 속지 말고 **추가 진격 금지 및 관망!**"
                        
                 elif p < mid_line:
                     if p < defense_line:
