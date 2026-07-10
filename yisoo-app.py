@@ -294,11 +294,13 @@ if symbol:
             
             with i3:
                 will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
-                if will_val >= -20: w_status = "**🧨 천장 광기**! 비수 꽂히기 전에 수확하시게."
-                elif will_val >= -35: w_status = "**⚠️ 천장 근접**! 고점 징후니 주시하시게."
-                elif will_val <= -80: w_status = "**🏳️ 개미 항복**! 보따리 풀 준비 하시게."
-                elif will_val <= -65: w_status = "**📉 하락 가속**! 절대 칼 뽑지 마시게."
-                else: w_status = "중간 지대일세. 기세를 냉정하게 지켜보시게."
+                
+                if will_val >= -20: will_status = "**🚩 천장 광기**! 비수 꽂히기 전에 수확하시게."
+                elif will_val >= -35: will_status = "**⚠️ 천장 근접**! 고점 징후니 주시하시게."
+                elif will_val <= -80: will_status = "**🏳️ 개미 항복**! 보따리 풀 준비 하시게."
+                elif will_val <= -65: will_status = "**📉 하락 가속**! 절대 칼 뽑지 마시게."
+                else: will_status = "중간 지대일세. 기세를 냉정하게 지켜보시게."
+                
                 w_diag = f"● 지수 {will_val:.2f} ({will_trend})\n\n● {will_status}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
             
