@@ -131,8 +131,12 @@ if symbol:
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
             rsi_val, rsi_prev = rsi_series.iloc[-1], rsi_series.iloc[-2]
+            
             h14, l14 = df['High'].rolling(14).max(), df['Low'].rolling(14).min()
-            will_val = (h14.iloc[-1] - p) / (h14.iloc[-1] - l14.iloc[-1] + 1e-10) * -100
+            # [형님 필살 규칙 개조] 윌리엄스의 실시간 및 어제 수치(will_prev) 연산 체계 구축!
+            will_series = (h14 - df['Close']) / (h14 - l14 + 1e-10) * -100
+            will_val, will_prev = (h14.iloc[-1] - p) / (h14.iloc[-1] - l14.iloc[-1] + 1e-10) * -100, will_series.iloc[-2]
+            
             macd = df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()
             sig_line = macd.ewm(span=9).mean()
             m_l, s_l, m_p, s_p = macd.iloc[-1], sig_line.iloc[-1], macd.iloc[-2], sig_line.iloc[-2]
@@ -224,13 +228,11 @@ if symbol:
             adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
             adv3 = f"3. **엔진(MACD) 확인:** 냉골 바닥에 엔진 시동 중이네! 소량 분할 매수 시작!" if (rsi_val < 30 and will_val <= -80) and (m_l >= s_l or abs(m_l - s_l) < abs(m_diff_prev)) else (f"3. **엔진(MACD) 확인:** 엔진 **역회전 심화** 중이라네! 거꾸로 도는 차니 절대 속지 마시게!" if m_l < s_l else (f"3. **엔진(MACD) 확인:** 엔진 **정회전(헛바퀴)**이네! 성벽이 무너졌으니 절대 섣불리 속지 마시게." if p < defense_line else f"3. **엔진(MACD) 확인:** 엔진 정회전 완료! 본대 진격의 신호탄이 터졌네."))
-            # [형님 필살 핵심 대원칙] 냉골 바닥이면서 동시에 (정회전이거나 역회전 폭이 줄어들 때) ➔ 분할 매수 개시!
+            
+            # [형님 필살 핵심 대원칙 사령탑] 
             if (rsi_val < 30 and will_val <= -80) and (m_l >= s_l or abs(m_l - s_l) < abs(m_diff_prev)):
                 final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 정회전 시동 및 단기 골짜기 바닥일세. 소량 **[분할 매수]** 타이밍을 노리시게!"
-    
-    # 위의 매수 조건이 안 맞을 때만 아래의 관망/대기 법도로 진입합니다.
             else:
-        # 1. 주가가 밴드 상단이나 과열권일 때의 기존 법도
                 if p >= up_b or rsi_val >= 60:
                     if m_l < s_l:
                         if p < defense_line or abs(m_diff_curr) > abs(m_diff_prev):
@@ -241,8 +243,6 @@ if symbol:
                         final_adv = f"🚀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 딛고 하늘 문이 열렸네! **비중 유지 및 홀딩!**"
                     else:
                         final_adv = f"💰 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 위나 기세가 약해지네. **야금야금 분할 매도 시작!**"
-        
-        # 2. 주가가 밴드 하단 근처일 때의 법도 (low_b * 1.02 기준 안쪽 구역)
                 elif p <= (low_b * 1.02):
                     if m_l < s_l:
                         wait_msg = "엔진 역회전이 진정될 때까지" if abs(m_l - s_l) >= abs(m_diff_prev) else ("중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지")
@@ -252,14 +252,11 @@ if symbol:
                             final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 정회전(헛바퀴)이나 성벽 아래일세. 속지 말고 **추가 진격 금지 및 관망!**"
                         else:
                             final_adv = f"🔮 **[최종 결론]** 강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 시동 걸렸고 성벽 사수 중이네! **강력 매수 검토!**"
-        
-        # 3. [오류 해결 방패] 상단도 하단도 아닌 평범한 중간 지대(횡보/눈치싸움)일 때!
                 else:
                     if m_l < s_l:
                         final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 중간 지대에서 엔진 역회전 중이네. 기세가 잡힐 때까지 **무조건 관망 및 대기!**"
                     else:
                         final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 중앙선 방향 보며 **무조건 관망 및 대기!**"
-                
 
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
@@ -268,15 +265,14 @@ if symbol:
             # 지표 상세 진단
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
+            
             with i1:
                 if p >= up_b: bb_diag = "👺 **[천장 돌파]** 울타리 밖으로 기세 폭발! 탐욕의 끝단이니 익절하시게."
                 elif p <= low_b: bb_diag = "🧊 **[바닥 돌파]** 지하실까지 밀렸구먼. 엔진 시동을 기다리시게."
                 elif p >= mid_line: bb_diag = "⚠️ **[과열 진입]** 중앙선 위에서 기세 유지 중이나 온도가 높네."
                 else:
-            # 중앙선 밑이면서 + RSI와 윌리엄스가 바닥이고 + '엔진 역회전 폭까지 줄어들 때'만 분할매수!
                     if rsi_val < 30 and will_val <= -80 and abs(m_l - s_l) < abs(m_diff_prev):
                         bb_diag = "🏹 **[낙폭과대 진격]** 기세는 중앙선 밑이나, 단기 골짜기 바닥에 엔진 시동 중일세. 소량 분할 매수 시작!"
-            # 골짜기 바닥이 아니거나 조건이 안 맞을 때 ➔ 실제 엔진 상태를 보고 문구를 유연하게 분리!
                     else:
                         if m_l < s_l:
                             if abs(m_l - s_l) >= abs(m_diff_prev):
@@ -286,39 +282,26 @@ if symbol:
                         else:
                             bb_diag = "🏠 **[기세 둔화]** 중앙선 밑일세. 엔진 정회전이나 기세가 약하니 절대 칼을 뽑지 마시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
+            
             with i2:
-        # 어제 대비 추세 판독기 빳빳하게 가동!
                 rsi_trend = "▲ 상승" if rsi_val > rsi_prev else ("▼ 하락" if rsi_val < rsi_prev else "─ 변동없음")
                 is_div = p > prev_p and rsi_val < rsi_prev
-        
-        # 권역 판독 및 문구 조합
-                if rsi_val >= 60:
-                    rsi_status = "**👿 불지옥** 문턱! {'🚨 가짜 상승이니 대피하시게.' if is_div else '수익 챙길 채비 하시게.'}"
-                elif rsi_val <= 35:
-                    rsi_status = "**🧊 냉골** 바닥! 냉정하게 보따리 푸시게."
-                else:
-                    rsi_status = f"중립일세. {{'🚨 가짜 기세니 눈 부라리고 보시게.' if is_div else '끝단을 기다리시게.'}}"
-            
-                r_diag = f"● 지수 {rsi_val:.2f} ({rsi_trend})\n\n● {rsi_status}"
+                if rsi_val >= 60: r_status = f"**👺 불지옥** 문턱! {'🚨 가짜 상승이니 대피하시게.' if is_div else '수익 챙길 채비 하시게.'}"
+                elif rsi_val <= 35: r_status = "**🧊 냉골** 바닥! 냉정하게 보따리 푸시게."
+                else: r_status = f"중립일세. {'🚨 가짜 기세니 눈 부라리고 보시게.' if is_div else '끝단을 기다리시게.'}"
+                r_diag = f"● 지수 {rsi_val:.2f} ({rsi_trend})\n\n● {r_status}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
-
-            with i3:
-        # w_prev를 진짜 장부 변수명인 will_val_prev로 바로잡아 추세 판독기를 가동합니다!
-                will_trend = "▲ 상승" if will_val > will_val_prev else ("▼ 하락" if will_val < will_val_prev else "─ 변동없음")
-        
-                if will_val >= -20:
-                    will_status = "**🚩 천장 광기**! 비수 꽂히기 전에 수확하시게."
-                elif will_val >= -35:
-                    will_status = "**⚠️ 천장 근접**! 고점 징후니 주시하시게."
-                elif will_val <= -80:
-                    will_status = "**🏳️ 개미 항복**! 보따리 풀 준비 하시게."
-                elif will_val <= -65:
-                    will_status = "**📉 하락 가속**! 절대 칼 뽑지 마시게."
-                else:
-                    will_status = "중간 지대일세. 기세를 냉정하게 지켜보시게."
             
+            with i3:
+                will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
+                if will_val >= -20: w_status = "**🧨 천장 광기**! 비수 꽂히기 전에 수확하시게."
+                elif will_val >= -35: w_status = "**⚠️ 천장 근접**! 고점 징후니 주시하시게."
+                elif will_val <= -80: w_status = "**🏳️ 개미 항복**! 보따리 풀 준비 하시게."
+                elif will_val <= -65: w_status = "**📉 하락 가속**! 절대 칼 뽑지 마시게."
+                else: w_status = "중간 지대일세. 기세를 냉정하게 지켜보시게."
                 w_diag = f"● 지수 {will_val:.2f} ({will_trend})\n\n● {will_status}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
+            
             with i4:
                 if m_l > s_l: m_diag = "● 엔진 **정회전(헛바퀴)**! 성벽 무너졌으니 속지 마시게." if p < defense_line else "● 엔진 **정회전**! 성벽 사수하며 자신 있게 진격하시게."
                 else: m_diag = "● 엔진 **역회전폭 급감**! 시동 걸 채비 중이니 진격 신호를 기다리시게." if m_diff_curr > m_diff_prev else "● 엔진 **역회전 심화**! 거꾸로 도는 차니 냉정하게 자숙하시게."
