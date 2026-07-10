@@ -287,18 +287,39 @@ if symbol:
                             bb_diag = "🏠 **[기세 둔화]** 중앙선 밑일세. 엔진 정회전이나 기세가 약하니 절대 칼을 뽑지 마시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             with i2:
-                is_div = p > prev_p and rsi_val < rsi_prev
-                if rsi_val >= 60: r_diag = f"● 지수 {rsi_val:.2f}로 **👺 불지옥** 문턱! {'🚨 가짜 상승이니 대피하시게.' if is_div else '수익 챙길 채비 하시게.'}"
-                elif rsi_val <= 35: r_diag = f"● 지수 {rsi_val:.2f}로 **🧊 냉골** 바닥! 냉정하게 보따리 푸시게."
-                else: r_diag = f"● 지수 {rsi_val:.2f}로 중립일세. {'🚨 가짜 기세니 눈 부라리고 보시게.' if is_div else '끝단을 기다리시게.'}"
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
-            with i3:
-                if will_val >= -20: w_diag = f"● 지수 {will_val:.2f}로 **🧨 천장 광기**! 비수 꽂히기 전에 수확하시게."
-                elif will_val >= -35: w_diag = f"● 지수 {will_val:.2f}로 **⚠️ 천장 근접**! 고점 징후니 주시하시게."
-                elif will_val <= -80: w_diag = f"● 지수 {will_val:.2f}로 **🏳️ 개미 항복**! 보따리 풀 준비 하시게."
-                elif will_val <= -65: w_diag = f"● 지수 {will_val:.2f}로 **📉 하락 가속**! 절대 칼 뽑지 마시게."
-                else: w_diag = f"● 지수 {will_val:.2f}로 중간 지대일세. 기세를 냉정하게 지켜보시게."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
+        # 어제 대비 추세 판독기 빳빳하게 가동!
+        rsi_trend = "▲ 상승" if rsi_val > rsi_prev else ("▼ 하락" if rsi_val < rsi_prev else "─ 변동없음")
+        is_div = p > prev_p and rsi_val < rsi_prev
+        
+        # 권역 판독 및 문구 조합
+        if rsi_val >= 60:
+            rsi_status = "**👿 불지옥** 문턱! {'🚨 가짜 상승이니 대피하시게.' if is_div else '수익 챙길 채비 하시게.'}"
+        elif rsi_val <= 35:
+            rsi_status = "**🧊 냉골** 바닥! 냉정하게 보따리 푸시게."
+        else:
+            rsi_status = f"중립일세. {{'🚨 가짜 기세니 눈 부라리고 보시게.' if is_div else '끝단을 기다리시게.'}}"
+            
+        r_diag = f"● 지수 {rsi_val:.2f} ({rsi_trend})\n\n● {rsi_status}"
+        st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
+
+    with i3:
+        # 어제 대비 추세 판독기 빳빳하게 가동!
+        will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
+        
+        # 권역 판독 및 문구 조합
+        if will_val >= -20:
+            will_status = "**🚩 천장 광기**! 비수 꽂히기 전에 수확하시게."
+        elif will_val >= -35:
+            will_status = "**⚠️ 천장 근접**! 고점 징후니 주시하시게."
+        elif will_val <= -80:
+            will_status = "**🏳️ 개미 항복**! 보따리 풀 준비 하시게."
+        elif will_val <= -65:
+            will_status = "**📉 하락 가속**! 절대 칼 뽑지 마시게."
+        else:
+            will_status = "중간 지대일세. 기세를 냉정하게 지켜보시게."
+            
+        w_diag = f"● 지수 {will_val:.2f} ({will_trend})\n\n● {will_status}"
+        st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
             with i4:
                 if m_l > s_l: m_diag = "● 엔진 **정회전(헛바퀴)**! 성벽 무너졌으니 속지 마시게." if p < defense_line else "● 엔진 **정회전**! 성벽 사수하며 자신 있게 진격하시게."
                 else: m_diag = "● 엔진 **역회전폭 급감**! 시동 걸 채비 중이니 진격 신호를 기다리시게." if m_diff_curr > m_diff_prev else "● 엔진 **역회전 심화**! 거꾸로 도는 차니 냉정하게 자숙하시게."
