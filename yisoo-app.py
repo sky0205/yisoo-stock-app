@@ -286,23 +286,25 @@ if symbol:
             with i2:
                 rsi_trend = "▲ 상승" if rsi_val > rsi_prev else ("▼ 하락" if rsi_val < rsi_prev else "─ 변동없음")
                 is_div = p > prev_p and rsi_val < rsi_prev
+                
                 if rsi_val >= 60: r_status = f"**👺 불지옥** 문턱! {'🚨 가짜 상승이니 대피하시게.' if is_div else '수익 챙길 채비 하시게.'}"
                 elif rsi_val <= 35: r_status = "**🧊 냉골** 바닥! 냉정하게 보따리 푸시게."
                 else: r_status = f"중립일세. {'🚨 가짜 기세니 눈 부라리고 보시게.' if is_div else '끝단을 기다리시게.'}"
-                r_diag = f"● 지수 {rsi_val:.2f} ({rsi_trend})\n\n● {r_status}"
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
+                
+                # 큰 숫자 옆에 추세를 붙이고, 하단에 중복되던 지수 한 줄은 삭제했소!
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f} <span style='font-size:25px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>● {r_status}</p></div>", unsafe_allow_html=True)
             
             with i3:
                 will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
                 
-                if will_val >= -20: will_status = "**🚩 천장 광기**! 비수 꽂히기 전에 수확하시게."
-                elif will_val >= -35: will_status = "**⚠️ 천장 근접**! 고점 징후니 주시하시게."
-                elif will_val <= -80: will_status = "**🏳️ 개미 항복**! 보따리 풀 준비 하시게."
-                elif will_val <= -65: will_status = "**📉 하락 가속**! 절대 칼 뽑지 마시게."
-                else: will_status = "중간 지대일세. 기세를 냉정하게 지켜보시게."
+                if will_val >= -20: w_status = "**🚩 천장 광기**! 비수 꽂히기 전에 수확하시게."
+                elif will_val >= -35: w_status = "**⚠️ 천장 근접**! 고점 징후니 주시하시게."
+                elif will_val <= -80: w_status = "**🏳️ 개미 항복**! 보따리 풀 준비 하시게."
+                elif will_val <= -65: w_status = "**📉 하락 가속**! 절대 칼 뽑지 마시게."
+                else: w_status = "중간 지대일세. 기세를 냉정하게 지켜보시게."
                 
-                w_diag = f"● 지수 {will_val:.2f} ({will_trend})\n\n● {will_status}"
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
+                # 큰 숫자 옆에 추세를 붙이고, 하단에 중복되던 지수 한 줄은 삭제했소!
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f} <span style='font-size:25px; color:#333333;'>({will_trend})</span></p><p class='ind-diag'>● {w_status}</p></div>", unsafe_allow_html=True)
             
             with i4:
                 if m_l > s_l: m_diag = "● 엔진 **정회전(헛바퀴)**! 성벽 무너졌으니 속지 마시게." if p < defense_line else "● 엔진 **정회전**! 성벽 사수하며 자신 있게 진격하시게."
