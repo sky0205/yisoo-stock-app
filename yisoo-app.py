@@ -287,23 +287,40 @@ if symbol:
                 rsi_trend = "▲ 상승" if rsi_val > rsi_prev else ("▼ 하락" if rsi_val < rsi_prev else "─ 변동없음")
                 is_div = p > prev_p and rsi_val < rsi_prev
                 
-                if rsi_val >= 60: r_status = f"**👺 불지옥** 문턱! {'🚨 가짜 상승이니 대피하시게.' if is_div else '수익 챙길 채비 하시게.'}"
-                elif rsi_val <= 35: r_status = "**🧊 냉골** 바닥! 냉정하게 보따리 푸시게."
-                else: r_status = f"중립일세. {'🚨 가짜 기세니 눈 부라리고 보시게.' if is_div else '끝단을 기다리시게.'}"
+                # [형님 필살 논리] 냉골 바닥권이더라도 어제 대비 추세를 보고 문구를 완벽하게 분리합니다!
+                if rsi_val >= 60: 
+                    r_status = f"**👿 불지옥** 문턱! {{'🚨 가짜 상승이니 대피하시게.' if is_div else '수익 챙길 채비 하시게.'}}"
+                elif rsi_val <= 35: 
+                    if rsi_val > rsi_prev:
+                        r_status = "**🧊 냉골 바닥**이나, 어제보다 온도가 올라오며 **[지수 개선]** 중일세. 추이를 주시하시게."
+                    else:
+                        r_status = "**🧊 냉골 바닥**일세. 온도가 계속 떨어지며 **[지속 하락]** 중이니 냉정하게 보따리 푸시게."
+                else: 
+                    r_status = f"중립일세. {{'🚨 가짜 기세니 눈 부라리고 보시게.' if is_div else '끝단을 기다리시게.'}}"
                 
-                # 큰 숫자 옆에 추세를 붙이고, 하단에 중복되던 지수 한 줄은 삭제했소!
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f} <span style='font-size:25px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>● {r_status}</p></div>", unsafe_allow_html=True)
             
             with i3:
                 will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
                 
-                if will_val >= -20: w_status = "**🚩 천장 광기**! 비수 꽂히기 전에 수확하시게."
-                elif will_val >= -35: w_status = "**⚠️ 천장 근접**! 고점 징후니 주시하시게."
-                elif will_val <= -80: w_status = "**🏳️ 개미 항복**! 보따리 풀 준비 하시게."
-                elif will_val <= -65: w_status = "**📉 하락 가속**! 절대 칼 뽑지 마시게."
-                else: w_status = "중간 지대일세. 기세를 냉정하게 지켜보시게."
+                # [형님 필살 논리] 윌리엄스 역시 어제 대비 기세를 보고 문구를 정밀하게 발라냅니다!
+                if will_val >= -20: 
+                    w_status = "**🚩 천장 광기**! 비수 꽂히기 전에 수확하시게."
+                elif will_val >= -35: 
+                    w_status = "**⚠️ 천장 근접**! 고점 징후니 주시하시게."
+                elif will_val <= -80: 
+                    if will_val > will_prev:
+                        w_status = "**🏳️ 개미 항복 구역**이나, 기운이 고개를 들며 **[지수 개선]** 중일세. 진격 준비를 고려하시게."
+                    else:
+                        w_status = "**🏳️ 개미 항복 구역**일세. 여전히 밑바닥으로 **[지속 하락]** 중이니 보따리 풀 준비만 하시게."
+                elif will_val <= -65: 
+                    if will_val > will_prev:
+                        w_status = "**📉 낙폭 과대** 구역이나, 어제보다 기세가 올라오며 **[하락 브레이크]**가 잡히고 있소."
+                    else:
+                        w_status = "**📉 하락 가속**! 어제보다 기세가 더 꺾였으니 절대 칼 뽑지 마시게."
+                else: 
+                    w_status = "중간 지대일세. 기세를 냉정하게 지켜보시게."
                 
-                # 큰 숫자 옆에 추세를 붙이고, 하단에 중복되던 지수 한 줄은 삭제했소!
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f} <span style='font-size:25px; color:#333333;'>({will_trend})</span></p><p class='ind-diag'>● {w_status}</p></div>", unsafe_allow_html=True)
             
             with i4:
