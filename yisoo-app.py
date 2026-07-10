@@ -204,12 +204,16 @@ if symbol:
             is_engine_reverse = (m_l < s_l)
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
 
+            # 볼린저가 낙폭과대 진격이거나, MACD가 역회전폭 급감(시동 채비)할 때 기세 개선으로 판단합니다!
+            is_bb_attack = (rsi_val < 30 and will_val <= -80 and abs(m_l - s_l) < abs(m_diff_prev))
+            is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
+
             if top_score >= 2:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
+            elif is_bb_attack or is_macd_turning:
+                sig, col, s_adv = "🔴 [명장의 선취매 타점]", "#D32F2F", "• 🎯 **[기세 개선 포착]** 골짜기 바닥에서 엔진이 시동을 걸며 기운이 돌고 있소! 명장의 날카로운 선취매 타이밍이오!"
             elif bottom_score >= 2:
-                if is_reverse_shrinking:
-                    sig, col, s_adv = "🔴 [명장의 선취매 타점]", "#D32F2F", f"• 🎯 **[필살 변곡점]** 다중 바닥({bottom_score}/3) 상태에서 거꾸로 돌던 엔진의 역회전 폭이 줄어들기 시작했소! 명장의 날카로운 선취매 타이밍이오!"
-                elif is_engine_reverse:
+                if is_engine_reverse:
                     sig, col, s_adv = "🟡 관망 및 대기 (역회전 심화)", "#FBC02D", f"• ⚠️ 다중 바닥 지표({bottom_score}/3)이나 엔진 역회전이 깊어지는 중일세. 칼 뽑지 말고 폭이 줄어들 때까지 대기하시게."
                 else:
                     sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"• 🧊 다중 바닥 및 엔진 정회전 확정 포착! 자신 있게 진격할 타이밍이오. (매수 지표 일치도: {bottom_score}/3)"
@@ -218,43 +222,33 @@ if symbol:
             
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
-            # 가격 카드
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # 실전 필살 대응 전략 문구
             adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
-            adv3 = f"3. **엔진(MACD) 확인:** 냉골 바닥에 엔진 시동 중이네! 소량 분할 매수 시작!" if (rsi_val < 30 and will_val <= -80) and (m_l >= s_l or abs(m_l - s_l) < abs(m_diff_prev)) else (f"3. **엔진(MACD) 확인:** 엔진 **역회전 심화** 중이라네! 거꾸로 도는 차니 절대 속지 마시게!" if m_l < s_l else (f"3. **엔진(MACD) 확인:** 엔진 **정회전(헛바퀴)**이네! 성벽이 무너졌으니 절대 섣불리 속지 마시게." if p < defense_line else f"3. **엔진(MACD) 확인:** 엔진 정회전 완료! 본대 진격의 신호탄이 터졌네."))
             
-            # [형님 필살 핵심 대원칙 사령탑] 
-            if (rsi_val < 30 and will_val <= -80) and (m_l >= s_l or abs(m_l - s_l) < abs(m_diff_prev)):
-                final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 정회전 시동 및 단기 골짜기 바닥일세. 소량 **[분할 매수]** 타이밍을 노리시게!"
+            if is_bb_attack or is_macd_turning:
+                adv3 = "3. **엔진(MACD) 확인:** 골짜기 바닥에 엔진 시동 중이네! 소량 분할 매수 기회를 노리시게."
+                final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 골짜기 바닥에서 엔진이 시동을 걸며 기운이 돌고 있소. 소량 **[분할 매수]** 타이밍을 노리시게!"
             else:
-                if p >= up_b or rsi_val >= 60:
-                    if m_l < s_l:
-                        if p < defense_line or abs(m_diff_curr) > abs(m_diff_prev):
-                            final_adv = f"💀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 함락 및 엔진 역회전! **무조건 관망!**"
-                        else:
-                            final_adv = f"⚠️ **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 사수 중이나 엔진 역회전 초입일세. **익절 준비 및 비중 축소!**"
-                    elif vol_strength >= 150 and p > defense_line:
-                        final_adv = f"🚀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 딛고 하늘 문이 열렸네! **비중 유지 및 홀딩!**"
-                    else:
-                        final_adv = f"💰 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 위나 기세가 약해지네. **야금야금 분할 매도 시작!**"
-                elif p <= (low_b * 1.02):
-                    if m_l < s_l:
+                if m_l < s_l:
+                    adv3 = "3. **엔진(MACD) 확인:** 엔진 **역회전 심화** 중이라네! 거꾸로 도는 차니 절대 속지 마시게!"
+                    if p >= up_b or rsi_val >= 60:
+                        final_adv = f"💀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 함락 및 엔진 역회전! **무조건 관망!**" if p < defense_line else f"⚠️ **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 사수 중이나 엔진 역회전 초입일세. **익절 준비 및 비중 축소!**"
+                    elif p <= (low_b * 1.02):
                         wait_msg = "엔진 역회전이 진정될 때까지" if abs(m_l - s_l) >= abs(m_diff_prev) else ("중앙선 회복 전까지" if p < mid_line else "엔진 정회전까지")
                         final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 역회전 상태일세. 칼 뽑지 말고 {wait_msg} **무조건 관망!**"
                     else:
-                        if p < defense_line:
-                            final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 정회전(헛바퀴)이나 성벽 아래일세. 속지 말고 **추가 진격 금지 및 관망!**"
-                        else:
-                            final_adv = f"🔮 **[최종 결론]** 강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 시동 걸렸고 성벽 사수 중이네! **강력 매수 검토!**"
-                else:
-                    if m_l < s_l:
                         final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 중간 지대에서 엔진 역회전 중이네. 기세가 잡힐 때까지 **무조건 관망 및 대기!**"
+                else:
+                    adv3 = "3. **엔진(MACD) 확인:** 엔진 정회전 완료! 본대 진격의 신호탄이 터졌네."
+                    if p >= up_b or rsi_val >= 60:
+                        final_adv = f"🚀 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 딛고 하늘 문이 열렸네! **비중 유지 및 홀딩!**" if vol_strength >= 150 and p > defense_line else f"💰 **[최종 결론]** 강도({vol_strength:.1f}점). 성벽 위나 기세가 약해지네. **야금야금 분할 매도 시작!**"
+                    elif p <= (low_b * 1.02):
+                        final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진은 정회전(헛바퀴)이나 성벽 아래일세. 속지 말고 **추가 진격 금지 및 관망!**" if p < defense_line else f"🔮 **[최종 결론]** 강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 시동 걸렸고 성벽 사수 중이네! **강력 매수 검토!**"
                     else:
                         final_adv = f"🧐 **[최종 결론]** 강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 중앙선 방향 보며 **무조건 관망 및 대기!**"
 
