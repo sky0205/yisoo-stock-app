@@ -303,8 +303,8 @@ if symbol:
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
 
             with i3:
-        # will_prev를 원래 장부 이름인 w_prev로 바로잡아 추세 판독기를 가동합니다!
-                will_trend = "▲ 상승" if will_val > w_prev else ("▼ 하락" if will_val < w_prev else "─ 변동없음")
+        # w_prev를 진짜 장부 변수명인 will_val_prev로 바로잡아 추세 판독기를 가동합니다!
+                will_trend = "▲ 상승" if will_val > will_val_prev else ("▼ 하락" if will_val < will_val_prev else "─ 변동없음")
         
                 if will_val >= -20:
                     will_status = "**🚩 천장 광기**! 비수 꽂히기 전에 수확하시게."
