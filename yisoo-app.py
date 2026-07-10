@@ -204,35 +204,44 @@ if symbol:
             is_engine_reverse = (m_l < s_l)
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
 
-            # 볼린저가 낙폭과대 진격이거나, MACD가 역회전폭 급감(시동 채비)할 때 기세 개선으로 판단합니다!
+            ## ========================================================
+            # [형님 군령 복구] 지수 2개 이상 도달 대원칙 최우선 적용 사령탑
+            # ========================================================
             is_bb_attack = (rsi_val < 30 and will_val <= -80 and abs(m_l - s_l) < abs(m_diff_prev))
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
+            # 1. [매도 사령탑] 천장 지수 2개 이상 일치 시 가동
             if top_score >= 2:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
-            elif is_bb_attack or is_macd_turning:
-                sig, col, s_adv = "🔴 [명장의 선취매 타점]", "#D32F2F", "• 🎯 **[기세 개선 포착]** 골짜기 바닥에서 엔진이 시동을 걸며 기운이 돌고 있소! 명장의 날카로운 선취매 타이밍이오!"
+            
+            # 2. [매수 사령탑] 형님 명령대로 무조건 바닥 지수 2개 이상 일치할 때만 진입!
             elif bottom_score >= 2:
-                if is_engine_reverse:
+                if is_reverse_shrinking or is_macd_turning:
+                    sig, col, s_adv = "🔴 [명장의 선취매 타점]", "#D32F2F", f"• 🎯 **[필살 변곡점]** 다중 바닥({bottom_score}/3) 상태에서 엔진 역회전 폭이 줄어들기 시작했소! 명장의 날카로운 선취매 타이밍이오!"
+                elif is_engine_reverse:
                     sig, col, s_adv = "🟡 관망 및 대기 (역회전 심화)", "#FBC02D", f"• ⚠️ 다중 바닥 지표({bottom_score}/3)이나 엔진 역회전이 깊어지는 중일세. 칼 뽑지 말고 폭이 줄어들 때까지 대기하시게."
                 else:
                     sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"• 🧊 다중 바닥 및 엔진 정회전 확정 포착! 자신 있게 진격할 타이밍이오. (매수 지표 일치도: {bottom_score}/3)"
+            
+            # 3. [중간 지대 관망 사령탑] 지수 조건 미달 시 무조건 눈치싸움으로 필터링!
             else:
                 sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"• 눈치싸움 중일세. 지표 끝단을 기다리시게. (바닥동조: {bottom_score}/3 | 과열동조: {top_score}/3)"
             
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
+            # 가격 카드 출력 (유지)
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
+            # 실전 필살 대응 전략 세부 문구 수선 (신호등 간판과 100% 동조 완료)
             adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
             
-            if is_bb_attack or is_macd_turning:
-                adv3 = "3. **엔진(MACD) 확인:** 골짜기 바닥에 엔진 시동 중이네! 소량 분할 매수 기회를 노리시게."
-                final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 골짜기 바닥에서 엔진이 시동을 걸며 기운이 돌고 있소. 소량 **[분할 매수]** 타이밍을 노리시게!"
+            if bottom_score >= 2 and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
+                adv3 = "3. **엔진(MACD) 확인:** 다중 바닥 권역에 엔진 시동 중이네! 소량 분할 매수 기회를 노리시게."
+                final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 다중 바닥 권역 확인 및 엔진 시동 완료! 소량 **[분할 매수]** 타이밍을 노리시게!"
             else:
                 if m_l < s_l:
                     adv3 = "3. **엔진(MACD) 확인:** 엔진 **역회전 심화** 중이라네! 거꾸로 도는 차니 절대 속지 마시게!"
