@@ -10,11 +10,15 @@ from bs4 import BeautifulSoup
 import requests
 import time
 
-def get_naver_headers_data(ticker):
+# 13번 줄부터 있던 자리를 아래와 같이 똑같이 고쳐 쓰시면 됩니다!
+def get_stock_data(ticker):
     url = f"https://fchart.stock.naver.com/sise.nhn?timeframe=day&count=6000&requestType=0&symbol={ticker}"
+    
+    # [위장 가면] 사람이 직접 브라우저를 켜고 접속한 것처럼 네이버 놈들을 속이는 철벽 방패
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
+    
     for _ in range(3):
         try:
             response = requests.get(url, headers=headers, timeout=5)
