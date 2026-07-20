@@ -4,21 +4,18 @@ import pandas as pd
 from datetime import datetime, timedelta
 import pytz
 import requests
-from bs4 import BeautifulSoup
 
-# 네이버 차단 우회용 위장 헤더
 NAVER_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Referer': 'https://finance.naver.com/',
     'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7'
 }
 
-# 네이버 모바일 실시간 가격 직통 수집기 (0.8초 타임아웃)
 def get_naver_realtime_price(symbol):
     code_str = str(symbol).zfill(6)
     url = f"https://m.stock.naver.com/api/stock/{code_str}/basic"
     try:
-        res = requests.get(url, headers=NAVER_HEADERS, timeout=0.8)
+        res = requests.get(url, headers=NAVER_HEADERS, timeout=1.0)
         if res.status_code == 200:
             data = res.json()
             p = float(data.get('closePrice', '0').replace(',', ''))
@@ -88,7 +85,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "000100").strip()
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930").strip()
 
 if symbol:
     try:
@@ -114,7 +111,7 @@ if symbol:
             code_str = symbol.zfill(6)
             final_display_name = core_vault.get(code_str, f"국내종목 ({code_str})")
 
-            # 1. 네이버 실시간 API로 정확한 HTS 현재가 낚아채기
+            # 1. 네이버 모바일 실시간 API 우선 타격 (가장 정확한 HTS 현재가)
             live_p, live_diff, live_v, live_name = get_naver_realtime_price(code_str)
             if live_p is not None and live_p > 0:
                 p = live_p
@@ -123,7 +120,7 @@ if symbol:
                 if live_name:
                     final_display_name = live_name
 
-            # 2. 지표 연산을 위한 차트 데이터 수집 (yfinance 양방향)
+            # 2. 지표 연산을 위한 차트 수집 (yfinance 양방향)
             try:
                 tk = yf.Ticker(f"{code_str}.KS")
                 df = tk.history(start=start_date)
@@ -178,6 +175,7 @@ if symbol:
         if p == 0: p = float(df['Close'].iloc[-1])
         if prev_p == 0: prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
+        # 실시간 가격을 차트 마지막 줄에 강제 일치시켜 지표 정밀도 극대화
         df.loc[df.index[-1], 'Close'] = p
         df = df.ffill().dropna()
         
