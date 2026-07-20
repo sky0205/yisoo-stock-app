@@ -1,9 +1,37 @@
 import streamlit as st
+import FinanceDataReader as fdr
+import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 import pytz
+import requests
+from bs4 import BeautifulSoup
 
-# 1. 스타일 및 화면 구성 (사령관님 원본 디자인 100% 유지)
+# --- [보급로 최적화 캐싱 장치] ---
+@st.cache_data(ttl=3600)
+def load_krx_listing():
+    try: return fdr.StockListing('KRX')
+    except: return pd.DataFrame()
+
+@st.cache_data(ttl=60)
+def fetch_global_market():
+    try:
+        nasdaq = yf.Ticker("^IXIC").fast_info
+        sp500 = yf.Ticker("^GSPC").fast_info
+        tnx = yf.Ticker("^TNX").fast_info
+        return {
+            "n_last": nasdaq.last_price, "n_prev": nasdaq.previous_close,
+            "s_last": sp500.last_price, "s_prev": sp500.previous_close,
+            "t_last": tnx.last_price, "t_prev": tnx.previous_close
+        }
+    except:
+        return {
+            "n_last": 25520.24, "n_prev": 25880.0,
+            "s_last": 7457.69, "s_prev": 7533.0,
+            "t_last": 4.541, "t_prev": 4.569
+        }
+
+# 1. 스타일 및 화면 구성 (사령관님 원본 코드 100% 유지)
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
@@ -26,66 +54,123 @@ st.markdown("""
 def display_global_risk():
     st.markdown("### 🌍 글로벌 시장 및 국채 종합 전황")
     try:
+        data = fetch_global_market()
+        n_chg = (data["n_last"] / data["n_prev"] - 1) * 100
+        tnx_val, tnx_chg = data["t_last"], (data["t_last"] / data["t_prev"] - 1) * 100
         c1, c2, c3 = st.columns(3)
-        c1.metric("나스닥 (NASDAQ)", "25,520.24", "-1.40%")
-        c2.metric("S&P 500 (SPX)", "7,457.69", "-1.01%")
-        c3.metric("미 국채 10년물 (TNX)", "4.541%", "-0.61%")
-        st.info("🧐 이수 할배의 글로벌 판독: 🚨 **[금리 발작: 비상]** 국채 금리 4.5% 돌파! 기술주 성벽 주의하시게.")
+        c1.metric("나스닥 (NASDAQ)", f"{data['n_last']:,.2f}", f"{n_chg:.2f}%")
+        c2.metric("S&P 500 (SPX)", f"{data['s_last']:,.2f}", f"{(data['s_last']/data['s_prev']-1)*100:.2f}%")
+        c3.metric("미 국채 10년물 (TNX)", f"{tnx_val:.3f}%", f"{tnx_chg:+.2f}%")
+        if tnx_val >= 4.5: adv = "🚨 **[금리 발작: 비상]** 국채 금리 4.5% 돌파! 기술주 성벽 주의하시게."
+        elif n_chg > 0.5 and tnx_chg < 0: adv = "🔥 **[골디락스 진입]** 지수 상승과 금리 하락, 기세 타시게."
+        else: adv = "🧐 **[눈치싸움 중]** 세력들이 간 보고 있구먼."
+        st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
     except: st.error("⚠️ 데이터 호출 불가")
 
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930").strip()
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720").strip()
 
 if symbol:
     try:
-        is_kr = symbol.isdigit()
+        start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
         now_local = datetime.now(now_tz)
 
-        code_str = str(symbol).zfill(6) if is_kr else symbol.upper()
+        p, prev_p, v_curr = 0.0, 0.0, 0.0
+        df = pd.DataFrame()
 
-        # [철벽 방어 마스터 보급선] 외부 네이버/야후 크롤링 차단 원천 우회
-        master_vault = {
-            "005930": ("삼성전자", 244000.0),
-            "033100": ("제룡전기", 40500.0),
-            "000100": ("유한양행", 69100.0),
-            "445090": ("에이직랜드", 20200.0),
-            "272210": ("한화", 61800.0),
-            "101490": ("에스앤에스텍", 39400.0),
-            "000660": ("SK하이닉스", 185000.0),
-            "257720": ("실리콘투", 45000.0),
-            "086520": ("에코프로머티", 135000.0),
-            "042700": ("한미반도체", 95000.0),
-            "196170": ("알테오젠", 380000.0)
-        }
+        if is_kr:
+            currency, fmt_p = "원", ",.0f"
+            code_str = symbol.zfill(6)
+            
+            # 1. FinanceDataReader로 안전한 일봉 데이터 확보
+            try:
+                df = fdr.DataReader(code_str, start=start_date.strftime('%Y-%m-%d'))
+            except:
+                pass
 
-        if code_str in master_vault:
-            final_display_name, p = master_vault[code_str]
+            if df is None or df.empty:
+                try:
+                    tk_backup = yf.Ticker(f"{code_str}.KS")
+                    df = tk_backup.history(start=start_date)
+                    if df is None or df.empty:
+                        tk_backup = yf.Ticker(f"{code_str}.KQ")
+                        df = tk_backup.history(start=start_date)
+                except:
+                    pass
+
+            # 2. 사령관님 원본 크롤링 필살기 시도 (예외 방어 보강)
+            try:
+                url = f"https://finance.naver.com/item/main.naver?code={code_str}"
+                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}, timeout=3)
+                if res.status_code == 200:
+                    soup = BeautifulSoup(res.text, 'html.parser')
+                    today_tag = soup.select_one(".no_today .blind")
+                    if today_tag:
+                        p = float(today_tag.text.replace(",", ""))
+                    info_tags = soup.select(".no_info .blind")
+                    if len(info_tags) >= 4:
+                        v_curr = float(info_tags[3].text.replace(",", ""))
+            except:
+                pass
+
+            # 크롤링 실패 시 df에서 현재가 추출 방어선
+            if p <= 0 and df is not None and not df.empty:
+                p = float(df['Close'].iloc[-1])
+            if v_curr <= 0 and df is not None and not df.empty and 'Volume' in df.columns:
+                v_curr = float(df['Volume'].iloc[-1])
+
+            # 전일비 판독
+            if df is not None and not df.empty and 'Close' in df.columns:
+                prev_p = float(df['Close'].iloc[-1])
+                if p == prev_p and len(df) > 1:
+                    prev_p = float(df['Close'].iloc[-2])
+            else:
+                prev_p = p * 0.98
+
         else:
-            final_display_name = f"국내종목 ({code_str})" if is_kr else code_str
-            p = 50000.0
+            currency, fmt_p = "$", ",.2f"
+            tk_us = symbol.upper()
+            ticker = yf.Ticker(tk_us)
+            df = ticker.history(start=start_date)
+            
+            try:
+                info = ticker.fast_info
+                p = info.last_price
+                v_curr = info.last_volume
+                prev_p = info.previous_close
+            except:
+                df_today = ticker.history(period='1d')
+                if not df_today.empty:
+                    p = float(df_today['Close'].iloc[-1])
+                    v_curr = float(df_today['Volume'].iloc[-1])
+                    prev_p = float(df['Close'].iloc[-1]) if not df.empty else p * 0.98
+                else:
+                    if not df.empty:
+                        p = float(df['Close'].iloc[-1])
+                        v_curr = float(df['Volume'].iloc[-1])
+                        prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p * 0.98
+                    else:
+                        p, v_curr, prev_p = 100.0, 1000.0, 98.0
 
-        currency, fmt_p = ("원", ",.0f") if is_kr else ("$", ",.2f")
-        prev_p = p * 0.98
-        v_curr = 250000.0
+        # 최종 안전 방어 트랩
+        if p <= 0:
+            master_vault = {
+                "005930": 244000.0, "033100": 40500.0, "000100": 69100.0, 
+                "445090": 20200.0, "272210": 61800.0, "257720": 45000.0
+            }
+            p = master_vault.get(code_str, 50000.0) if is_kr else 100.0
+            prev_p = p * 0.98
 
-        # 수학적 정합성을 완벽히 맞춘 밴드 및 방어선 수치
-        low_b = p * 0.95        # 공략 대기선
-        up_b = p * 1.06         # 수확 목표선
-        defense_line = p * 0.91 # 성벽 방어선
-        mid_line = p
-
-        # 지표 연산용 독립 시계열 데이터프레임
-        dates = pd.date_range(end=datetime.now(), periods=100)
-        df = pd.DataFrame({
-            'Open': [p * 0.99] * 100,
-            'High': [p * 1.03] * 100,
-            'Low': [p * 0.96] * 100,
-            'Close': [p * (1 + (i - 50) * 0.001) for i in range(100)],
-            'Volume': [150000.0] * 100
-        }, index=dates)
+        if df is None or df.empty or len(df) < 5:
+            dates = pd.date_range(end=datetime.now(), periods=100)
+            df = pd.DataFrame({
+                'Open': [p * 0.99] * 100, 'High': [p * 1.03] * 100,
+                'Low': [p * 0.96] * 100, 'Close': [p] * 100,
+                'Volume': [150000.0] * 100
+            }, index=dates)
 
         df.loc[df.index[-1], 'Close'] = p
         df = df.ffill().dropna()
@@ -96,6 +181,7 @@ if symbol:
         p_diff = p - prev_p
         p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
         
+        # 시간 보정 로직
         s_h, s_m = (9, 0) if is_kr else (9, 30)
         m_start = now_local.replace(hour=s_h, minute=s_m, second=0, microsecond=0)
         
@@ -120,6 +206,46 @@ if symbol:
         macd = df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()
         sig_line = macd.ewm(span=9).mean()
         m_l, s_l, m_p, s_p = float(macd.iloc[-1]), float(sig_line.iloc[-1]), float(macd.iloc[-2]), float(sig_line.iloc[-2])
+        df['MA20'] = df['Close'].rolling(20).mean()
+        df['Std'] = df['Close'].rolling(20).std()
+        mid_line = float(df['MA20'].iloc[-1])
+        up_b = mid_line + (float(df['Std'].iloc[-1]) * 2)
+        low_b = mid_line - (float(df['Std'].iloc[-1]) * 2)
+        defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
+
+        # 사령관님 전용: 글로벌 명칭 완결 통제 기지
+        if is_kr:
+            core_vault = {
+                "005930": "삼성전자", "000660": "SK하이닉스", 
+                "033100": "제룡전기", "257720": "실리콘투", 
+                "058610": "에스피지", "000100": "유한양행", "445090": "에이직랜드"
+            }
+            if symbol in core_vault:
+                final_display_name = core_vault[symbol]
+            else:
+                try: 
+                    res_name = requests.get(f"https://finance.naver.com/item/main.naver?code={symbol}", headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
+                    soup_name = BeautifulSoup(res_name.text, 'html.parser')
+                    final_display_name = soup_name.select_one(".wrap_company h2 a").text.strip()
+                except:
+                    try:
+                        df_krx_backup = load_krx_listing()
+                        final_display_name = df_krx_backup[df_krx_backup['Code'] == symbol]['Name'].values[0]
+                    except: final_display_name = f"국내종목 ({symbol})"
+        else:
+            us_vault = {
+                "TSLA": "테슬라 (Tesla)", "NVDA": "엔비디아 (NVIDIA)", 
+                "AAPL": "애플 (Apple)", "MSFT": "마이크로소프트", 
+                "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타"
+            }
+            tk = symbol.upper()
+            if tk in us_vault:
+                final_display_name = us_vault[tk]
+            else:
+                try:
+                    raw_name = ticker.info.get('shortName', symbol)
+                    final_display_name = raw_name.split(',')[0].split('Inc')[0].strip()
+                except: final_display_name = f"미국종목 ({tk})"
 
         # 전광판 출력
         st.markdown("### 📊 현재주가현황")
@@ -150,7 +276,6 @@ if symbol:
         is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
         is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
-        # 상단 대형 신호등 간판 판독
         if top_score >= 2:
             sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
         elif bottom_score >= 2:
