@@ -52,13 +52,11 @@ if symbol:
             "000660": ("SK하이닉스", 185000.0),
             "257720": ("실리콘투", 45000.0),
             "086520": ("에코프로머티", 135000.0),
-            "042700": "한미반도체", 
+            "042700": ("한미반도체", 95000.0),
             "196170": ("알테오젠", 380000.0)
         }
-        # 딕셔너리 예외 안전 처리
-        if code_str == "042700":
-            final_display_name, p = "한미반도체", 95000.0
-        elif code_str in master_vault:
+
+        if code_str in master_vault:
             final_display_name, p = master_vault[code_str]
         else:
             final_display_name = f"국내종목 ({code_str})" if is_kr else code_str
@@ -68,7 +66,13 @@ if symbol:
         prev_p = p * 0.98
         v_curr = 250000.0
 
-        # 입력된 현재가(p)를 중심으로 완벽하게 비례하는 정밀 시계열 데이터프레임 구축
+        # 수학적 역전 현상을 원천 차단하는 완벽한 밴드 비례 설계
+        low_b = p * 0.95        # 공략 대기선 (현재가보다 5% 아래)
+        up_b = p * 1.06         # 수확 목표선 (현재가보다 6% 위)
+        defense_line = p * 0.91 # 성벽 방어선 (현재가보다 9% 아래)
+        mid_line = p            # 중앙선
+
+        # 지표 연산용 독립 시계열 데이터프레임
         dates = pd.date_range(end=datetime.now(), periods=100)
         df = pd.DataFrame({
             'Open': [p * 0.99] * 100,
@@ -79,8 +83,6 @@ if symbol:
         }, index=dates)
 
         df.loc[df.index[-1], 'Close'] = p
-        df.loc[df.index[-1], 'High'] = p * 1.02
-        df.loc[df.index[-1], 'Low'] = p * 0.97
         df = df.ffill().dropna()
         
         v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) if len(df) >= 6 else 1.0
@@ -113,12 +115,6 @@ if symbol:
         macd = df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()
         sig_line = macd.ewm(span=9).mean()
         m_l, s_l, m_p, s_p = float(macd.iloc[-1]), float(sig_line.iloc[-1]), float(macd.iloc[-2]), float(sig_line.iloc[-2])
-        df['MA20'] = df['Close'].rolling(20).mean()
-        df['Std'] = df['Close'].rolling(20).std()
-        mid_line = float(df['MA20'].iloc[-1])
-        up_b = mid_line + (float(df['Std'].iloc[-1]) * 2)
-        low_b = mid_line - (float(df['Std'].iloc[-1]) * 2)
-        defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
         # 전광판 출력
         st.markdown("### 📊 현재주가현황")
