@@ -46,7 +46,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "010140").strip()
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "272210").strip()
 
 if symbol:
     try:
@@ -74,7 +74,7 @@ if symbol:
                 v_curr = float(df['Volume'].iloc[-1]) if 'Volume' in df.columns else 100000.0
                 prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p * 0.98
             else:
-                p, v_curr, prev_p = 21275.0, 150000.0, 22300.0
+                p, v_curr, prev_p = 61800.0, 150000.0, 65500.0
         else:
             currency, fmt_p = "$", ",.2f"
             tk_us = symbol.upper()
@@ -141,20 +141,20 @@ if symbol:
         low_b = mid_line - (float(df['Std'].iloc[-1]) * 2)
         defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
-        # 종목명 중복 오류 원천 박멸 및 정확한 이름 매핑
+        # 사령관님 전용 마스터 종목명 사전 (한화 등 전격 추가 및 중복 원천 차단)
         if is_kr:
             core_vault = {
-                "010140": "삼성중공업", "005930": "삼성전자", "000660": "SK하이닉스", 
-                "033100": "제룡전기", "257720": "실리콘투", "445090": "에이직랜드",
-                "000100": "유한양행", "058610": "에스피지", "035900": "JYP Ent.",
-                "086520": "에코프로머티", "042700": "한미반도체", "196170": "알테오젠"
+                "272210": "한화", "010140": "삼성중공업", "005930": "삼성전자", 
+                "000660": "SK하이닉스", "033100": "제룡전기", "257720": "실리콘투", 
+                "445090": "에이직랜드", "000100": "유한양행", "058610": "에스피지", 
+                "035900": "JYP Ent.", "086520": "에코프로머티", "042700": "한미반도체", "196170": "알테오젠"
             }
             final_display_name = core_vault.get(code_str, f"국내종목 ({code_str})")
         else:
             us_vault = {"TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", "CPNG": "쿠팡", "IONQ": "아이온큐", "NFLX": "넷플릭스"}
             final_display_name = us_vault.get(code_str, code_str)
 
-        # 전광판 출력 (중복 표기 제거 완료)
+        # 전광판 출력 (중복 표기 완전 제거)
         st.markdown("### 📊 현재주가현황")
         display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
         st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({code_str})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
