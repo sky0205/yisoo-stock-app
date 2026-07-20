@@ -60,7 +60,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930").strip()
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "101490").strip()
 
 if symbol:
     try:
@@ -75,22 +75,23 @@ if symbol:
             "058610": "에스피지", "010140": "삼성중공업",
             "035900": "JYP Ent.", "050890": "쏜다텍",
             "086520": "에코프로머티", "042700": "한미반도체", 
-            "196170": "알테오젠", "000100": "유한양행"
+            "196170": "알테오젠", "000100": "유한양행", "101490": "에스앤에스텍"
         }
 
         df = pd.DataFrame()
-        p, prev_p, v_curr, final_display_name = 0.0, 0.0, 0.0, ""
+        final_display_name = ""
 
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             code_str = symbol.zfill(6)
             final_display_name = core_vault.get(code_str, f"국내종목 ({code_str})")
 
+            # 양방향 탐색 (.KQ -> .KS)
             try:
-                tk = yf.Ticker(f"{code_str}.KS")
+                tk = yf.Ticker(f"{code_str}.KQ")
                 df = tk.history(start=start_date)
-                if df.empty:
-                    tk = yf.Ticker(f"{code_str}.KQ")
+                if df is None or df.empty or len(df) == 0:
+                    tk = yf.Ticker(f"{code_str}.KS")
                     df = tk.history(start=start_date)
             except:
                 pass
@@ -111,8 +112,8 @@ if symbol:
             except:
                 pass
 
-        # out-of-bounds 에러 원천 방어 (데이터가 비어있으면 안전한 가상 데이터 생성)
-        if df is None or df.empty or 'Close' not in df.columns or len(df) == 0:
+        # [철벽 방어 트랩] 데이터가 비어있거나 깨져 있으면 무조건 안전한 가상 데이터 생성하여 out-of-bounds 에러 원천 차단
+        if df is None or df.empty or 'Close' not in df.columns or len(df) < 5:
             dates = pd.date_range(end=datetime.now(), periods=100)
             df = pd.DataFrame({
                 'Open': [50000.0] * 100, 'High': [51000.0] * 100,
