@@ -24,7 +24,6 @@ def get_stock_data(ticker):
             continue
     return None
 
-# --- [보급로 최적화 캐싱 장치] ---
 @st.cache_data(ttl=3600)
 def load_krx_listing():
     try: return fdr.StockListing('KRX')
@@ -48,7 +47,6 @@ def fetch_global_market():
             "t_last": 4.541, "t_prev": 4.569
         }
 
-# 1. 스타일 및 화면 구성 (완벽 유지)
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
@@ -98,7 +96,6 @@ if symbol:
 
         if is_kr:
             ticker = yf.Ticker(f"{symbol}.KS")
-            # 야후 파이낸스 우선 호출로 무한 대기 멈춤 철저 방지
             df = ticker.history(start=start_date)
             if df.empty:
                 df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
@@ -107,7 +104,6 @@ if symbol:
             p = float(df['Close'].iloc[-1])
             v_curr = float(df['Volume'].iloc[-1])
             
-            # 네이버 실시간 파싱 방화벽
             try:
                 xml_text = get_stock_data(symbol)
                 if xml_text:

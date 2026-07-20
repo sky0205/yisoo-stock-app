@@ -1,8 +1,6 @@
 streamlit
-FinanceDataReader
+finance-datareader
 yfinance
 pandas
 requests
 beautifulsoup4
-lxml
-pytz
