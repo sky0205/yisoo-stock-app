@@ -5,15 +5,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import pytz
 
-# --- [KRX 전체 종목 사전 메모리 탑재] ---
-@st.cache_data(ttl=86400)
-def load_krx_dict():
-    try:
-        df_krx = fdr.StockListing('KRX')
-        return dict(zip(df_krx['Code'].astype(str).str.zfill(6), df_krx['Name']))
-    except:
-        return {}
-
+# 글로벌 시장 고속 수집
 @st.cache_data(ttl=60)
 def fetch_global_market():
     try:
@@ -70,7 +62,6 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-krx_dict = load_krx_dict()
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720").strip()
 
 if symbol:
@@ -81,23 +72,26 @@ if symbol:
         now_local = datetime.now(now_tz)
         df = pd.DataFrame()
 
+        # 주요 한글 종목 사전
         core_vault = {
             "005930": "삼성전자", "000660": "SK하이닉스", 
             "033100": "제룡전기", "257720": "실리콘투", 
             "058610": "에스피지", "010140": "삼성중공업",
-            "035900": "JYP Ent.", "050890": "쏜다텍"
+            "035900": "JYP Ent.", "050890": "쏜다텍",
+            "086520": "에코프로머티", "042700": "한미반도체", "196170": "알테오젠"
         }
 
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             code_str = symbol.zfill(6)
             
-            # 1. 안전 차트 데이터 수집
+            # 1. FDR 데이터 수집
             try:
                 df = fdr.DataReader(code_str, start=start_date.strftime('%Y-%m-%d'))
             except:
                 pass
 
+            # 2. FDR 실패 시 yfinance 수집
             if df.empty:
                 try:
                     ticker = yf.Ticker(f"{code_str}.KQ")
@@ -108,7 +102,7 @@ if symbol:
                 except:
                     pass
 
-            final_display_name = core_vault.get(code_str, krx_dict.get(code_str, f"국내종목 ({code_str})"))
+            final_display_name = core_vault.get(code_str, f"국내종목 ({code_str})")
         else:
             currency, fmt_p = "$", ",.2f"
             ticker = yf.Ticker(symbol.upper())
@@ -117,11 +111,12 @@ if symbol:
             us_vault = {
                 "TSLA": "테슬라 (Tesla)", "NVDA": "엔비디아 (NVIDIA)", 
                 "AAPL": "애플 (Apple)", "MSFT": "마이크로소프트", 
-                "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타"
+                "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타",
+                "CPNG": "쿠팡 (CooPang)", "IONQ": "아이온큐 (IonQ)", "NFLX": "넷플릭스 (Netflix)"
             }
             final_display_name = us_vault.get(symbol.upper(), symbol.upper())
 
-        # 안정적 주가 및 지표 연산
+        # 데이터가 정상 로드되었을 때만 분석 전광판 생성
         if not df.empty:
             p = float(df['Close'].iloc[-1])
             v_curr = float(df['Volume'].iloc[-1])
