@@ -5,34 +5,45 @@ from datetime import datetime, timedelta
 import pytz
 import requests
 
-NAVER_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Referer': 'https://finance.naver.com/',
-    'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7'
+# 네이버 서버 차단(403)을 완벽히 무력화하는 특급 위장 헤더
+NAVER_BYPASS_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Referer': 'https://m.stock.naver.com/',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+    'Origin': 'https://m.stock.naver.com'
 }
 
-def get_naver_realtime_data(symbol):
+def get_naver_live_data(symbol):
     code_str = str(symbol).zfill(6)
     url = f"https://m.stock.naver.com/api/stock/{code_str}/basic"
     try:
-        res = requests.get(url, headers=NAVER_HEADERS, timeout=1.5)
+        res = requests.get(url, headers=NAVER_BYPASS_HEADERS, timeout=2.0)
         if res.status_code == 200:
             data = res.json()
             p_str = data.get('closePrice', '0').replace(',', '')
             if not p_str:
-                return None, None, None, None
+                return None, None, None, None, None, None
             p = float(p_str)
+            
             diff_str = data.get('compareToPreviousClosePrice', '0').replace(',', '')
             diff = float(diff_str) if diff_str else 0.0
             code_dir = data.get('compareToPreviousPrice', {}).get('code', '3')
             if code_dir in ['4', '5']: diff = -diff
+            
             v_str = data.get('accumulatedTradingVolume', '0').replace(',', '')
             v_curr = float(v_str) if v_str else 0.0
+            
             name = data.get('stockName', None)
-            return p, diff, v_curr, name
+            high_str = data.get('highPrice', '0').replace(',', '')
+            low_str = data.get('lowPrice', '0').replace(',', '')
+            high_p = float(high_str) if high_str else p
+            low_p = float(low_str) if low_str else p
+            
+            return p, diff, v_curr, name, high_p, low_p
     except:
         pass
-    return None, None, None, None
+    return None, None, None, None, None, None
 
 @st.cache_data(ttl=60)
 def fetch_global_market():
@@ -90,7 +101,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "000100").strip()
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "033100").strip()
 
 if symbol:
     try:
@@ -106,16 +117,26 @@ if symbol:
             currency, fmt_p = "원", ",.0f"
             code_str = symbol.zfill(6)
             
-            # 1. 네이버 API에서 실시간 가격, 전일비, 거래량, 진짜 한글 종목명 단칼에 획득
-            live_p, live_diff, live_v, live_name = get_naver_realtime_data(code_str)
+            # 1. 네이버 직통 모바일 API로 실시간 현재가, 전일비, 거래량, 종목명 1순위 수집
+            live_p, live_diff, live_v, live_name, live_h, live_l = get_naver_live_data(code_str)
+            
+            # 2. 지표 연산용 일봉 차트 수집 (yfinance)
+            try:
+                tk = yf.Ticker(f"{code_str}.KS")
+                df = tk.history(start=start_date)
+                if df is None or df.empty:
+                    tk = yf.Ticker(f"{code_str}.KQ")
+                    df = tk.history(start=start_date)
+            except:
+                pass
+
             if live_p is not None and live_p > 0:
                 p = live_p
                 prev_p = p - live_diff if live_diff is not None else p
                 v_curr = live_v if live_v is not None else 0.0
                 if live_name:
                     final_display_name = live_name
-
-            # 만약 네이버 종목명을 못 가져왔으면 기본 사전 또는 종목코드로 대체
+            
             if not final_display_name:
                 core_vault = {
                     "005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", 
@@ -125,16 +146,6 @@ if symbol:
                     "101490": "에스앤에스텍", "272210": "한화", "445090": "에이직랜드"
                 }
                 final_display_name = core_vault.get(code_str, f"국내종목 ({code_str})")
-
-            # 2. 지표 연산을 위한 차트 수집 (양방향 탐색: 코스피 .KS -> 코스닥 .KQ)
-            try:
-                tk = yf.Ticker(f"{code_str}.KS")
-                df = tk.history(start=start_date)
-                if df is None or df.empty:
-                    tk = yf.Ticker(f"{code_str}.KQ")
-                    df = tk.history(start=start_date)
-            except:
-                pass
 
             if p == 0 and not df.empty:
                 p = float(df['Close'].iloc[-1])
@@ -182,7 +193,12 @@ if symbol:
         if p == 0: p = float(df['Close'].iloc[-1])
         if prev_p == 0: prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
+        # 실시간 가격을 차트 마지막 줄에 강제 일치시켜 기술적 지표 정밀도 확보
         df.loc[df.index[-1], 'Close'] = p
+        if live_p is not None and live_p > 0 and 'High' in df.columns and 'Low' in df.columns:
+            df.loc[df.index[-1], 'High'] = max(p, live_h)
+            df.loc[df.index[-1], 'Low'] = min(p, live_l)
+            
         df = df.ffill().dropna()
         
         v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) if len(df) >= 6 else 1.0
@@ -222,7 +238,7 @@ if symbol:
         low_b = mid_line - (float(df['Std'].iloc[-1]) * 2)
         defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
-        # 전광판 출력 (오직 하나의 깔끔한 명칭과 실시간 가격만 출력)
+        # 전광판 출력
         st.markdown("### 📊 현재주가현황")
         display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
         st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol.upper()})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
@@ -361,6 +377,6 @@ if symbol:
         with i4:
             if m_l > s_l: m_diag = "● 엔진 **정회전(헛바퀴)**! 성벽 무너졌으니 속지 마시게." if p < defense_line else "● 엔진 **정회전**! 성벽 사수하며 자신 있게 진격하시게."
             else: m_diag = "● 엔진 **역회전폭 급감**! 시동 걸 채비 중이니 진격 신호를 기다리시게." if m_diff_curr > m_diff_prev else "● 엔진 **역회전 심화**! 거꾸로 도는 차니 냉정하게 자숙하시게."
-            st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=Time)
 
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
