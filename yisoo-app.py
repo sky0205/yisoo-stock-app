@@ -5,7 +5,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 import pytz
 import requests
-from bs4 import BeautifulSoup
 
 # --- [보급로 최적화 캐싱 장치] ---
 @st.cache_data(ttl=3600)
@@ -82,7 +81,7 @@ if symbol:
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             
-            # 1. 차트 데이터 수집 (철벽 3중 보급망)
+            # [1. 차트 데이터 수집]
             try:
                 df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             except:
@@ -107,29 +106,21 @@ if symbol:
             }
             final_display_name = core_vault.get(symbol, None)
 
-            # 2. 네이버 크롤링 (타임아웃 1.5초 + 절대 에러 안 터지게 방어)
+            # [2. 네이버 초경량 시세 수집 (1초 타임아웃 완전 방어)]
             try:
-                url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-                res = requests.get(url, headers=headers, timeout=1.5)
+                url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
+                headers = {'User-Agent': 'Mozilla/5.0'}
+                res = requests.get(url, headers=headers, timeout=1.0)
                 if res.status_code == 200:
-                    soup = BeautifulSoup(res.text, 'html.parser')
-                    no_today = soup.select_one(".no_today .blind")
-                    if no_today:
-                        p = float(no_today.text.replace(",", ""))
-                    
-                    no_info = soup.select(".no_info .blind")
-                    if len(no_info) >= 4:
-                        v_curr = float(no_info[3].text.replace(",", ""))
-                        
+                    data = res.json()
+                    p = float(data.get('closePrice', '0').replace(',', ''))
+                    v_curr = float(data.get('accumulatedTradingVolume', '0').replace(',', ''))
                     if not final_display_name:
-                        name_tag = soup.select_one(".wrap_company h2 a") or soup.select_one(".h_company .wrap_company h2")
-                        if name_tag:
-                            final_display_name = name_tag.text.strip()
+                        final_display_name = data.get('stockName', None)
             except:
                 pass
 
-            # 크롤링 실패시 차트 데이터로 100% 자동 대치
+            # 예외 처리: 차트 데이터로 백업
             if (p is None or p == 0) and not df.empty:
                 p = float(df['Close'].iloc[-1])
             if (v_curr is None or v_curr == 0) and not df.empty:
@@ -166,8 +157,8 @@ if symbol:
             }
             final_display_name = us_vault.get(symbol.upper(), symbol.upper())
 
-        # 데이터가 존재할 때 무조건 화면 그리기
-        if not df.empty and p is not None:
+        # 화면 출력 부분
+        if not df.empty and p is not None and p > 0:
             df.loc[df.index[-1], 'Close'] = p
             df = df.ffill().dropna()
             
