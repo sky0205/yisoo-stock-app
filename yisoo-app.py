@@ -46,11 +46,10 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "000100").strip()
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "010140").strip()
 
 if symbol:
     try:
-        start_date = datetime.now() - timedelta(days=500)
         is_kr = symbol.isdigit()
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
         now_local = datetime.now(now_tz)
@@ -61,13 +60,12 @@ if symbol:
 
         if is_kr:
             currency, fmt_p = "원", ",.0f"
-            # yfinance를 통한 국장 고속 정밀 수집 (.KS / .KQ 양방향 방어)
             try:
                 tk = yf.Ticker(f"{code_str}.KS")
-                df = tk.history(start=start_date)
+                df = tk.history(period="1y")
                 if df is None or df.empty:
                     tk = yf.Ticker(f"{code_str}.KQ")
-                    df = tk.history(start=start_date)
+                    df = tk.history(period="1y")
             except:
                 pass
 
@@ -76,12 +74,12 @@ if symbol:
                 v_curr = float(df['Volume'].iloc[-1]) if 'Volume' in df.columns else 100000.0
                 prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p * 0.98
             else:
-                p, v_curr, prev_p = 69100.0, 150000.0, 67700.0
+                p, v_curr, prev_p = 21275.0, 150000.0, 22300.0
         else:
             currency, fmt_p = "$", ",.2f"
             tk_us = symbol.upper()
             ticker = yf.Ticker(tk_us)
-            df = ticker.history(start=start_date)
+            df = ticker.history(period="1y")
             try:
                 info = ticker.fast_info
                 p = info.last_price
@@ -106,7 +104,6 @@ if symbol:
         df.loc[df.index[-1], 'Close'] = p
         df = df.ffill().dropna()
 
-        # 실시간 수치 및 변동폭 산출
         p_diff = p - prev_p
         p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0.0
 
@@ -123,7 +120,6 @@ if symbol:
             if now_local.weekday() >= 5: elapsed = 390
             vol_strength = min(1000, v_ratio / (elapsed / 390))
 
-        # 기술적 지표 정밀 산출 (볼린저 20/2, 윌리엄 14/6, RSI 14/9 준수)
         delta = df['Close'].diff()
         gain = (delta.where(delta > 0, 0)).rolling(14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
@@ -145,21 +141,23 @@ if symbol:
         low_b = mid_line - (float(df['Std'].iloc[-1]) * 2)
         defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
-        # 종목명 매칭 통제 기지
+        # 종목명 중복 오류 원천 박멸 및 정확한 이름 매핑
         if is_kr:
             core_vault = {
-                "000100": "유한양행", "005930": "삼성전자", "000660": "SK하이닉스", 
-                "033100": "제룡전기", "257720": "실리콘투", "445090": "에이직랜드"
+                "010140": "삼성중공업", "005930": "삼성전자", "000660": "SK하이닉스", 
+                "033100": "제룡전기", "257720": "실리콘투", "445090": "에이직랜드",
+                "000100": "유한양행", "058610": "에스피지", "035900": "JYP Ent.",
+                "086520": "에코프로머티", "042700": "한미반도체", "196170": "알테오젠"
             }
             final_display_name = core_vault.get(code_str, f"국내종목 ({code_str})")
         else:
-            us_vault = {"TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", "CPNG": "쿠팡"}
+            us_vault = {"TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", "CPNG": "쿠팡", "IONQ": "아이온큐", "NFLX": "넷플릭스"}
             final_display_name = us_vault.get(code_str, code_str)
 
-        # 전광판 출력
+        # 전광판 출력 (중복 표기 제거 완료)
         st.markdown("### 📊 현재주가현황")
         display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
-        st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol.upper()})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({code_str})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
         # 거래량 박스
         if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}점! 본진 진격 중이오."
