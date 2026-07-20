@@ -3,6 +3,34 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 import pytz
+import requests
+from bs4 import BeautifulSoup
+
+# 네이버 차단 우회용 위장 헤더
+NAVER_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Referer': 'https://finance.naver.com/',
+    'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7'
+}
+
+# 네이버 모바일 실시간 가격 직통 수집기 (0.8초 타임아웃)
+def get_naver_realtime_price(symbol):
+    code_str = str(symbol).zfill(6)
+    url = f"https://m.stock.naver.com/api/stock/{code_str}/basic"
+    try:
+        res = requests.get(url, headers=NAVER_HEADERS, timeout=0.8)
+        if res.status_code == 200:
+            data = res.json()
+            p = float(data.get('closePrice', '0').replace(',', ''))
+            diff = float(data.get('compareToPreviousClosePrice', '0').replace(',', ''))
+            code_dir = data.get('compareToPreviousPrice', {}).get('code', '3')
+            if code_dir in ['4', '5']: diff = -diff
+            v_curr = float(data.get('accumulatedTradingVolume', '0').replace(',', ''))
+            name = data.get('stockName', None)
+            return p, diff, v_curr, name
+    except:
+        pass
+    return None, None, None, None
 
 @st.cache_data(ttl=60)
 def fetch_global_market():
@@ -60,7 +88,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "101490").strip()
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "000100").strip()
 
 if symbol:
     try:
@@ -79,22 +107,39 @@ if symbol:
         }
 
         df = pd.DataFrame()
-        final_display_name = ""
+        p, prev_p, v_curr, final_display_name = 0.0, 0.0, 0.0, ""
 
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             code_str = symbol.zfill(6)
             final_display_name = core_vault.get(code_str, f"국내종목 ({code_str})")
 
-            # 양방향 탐색 (.KQ -> .KS)
+            # 1. 네이버 실시간 API로 정확한 HTS 현재가 낚아채기
+            live_p, live_diff, live_v, live_name = get_naver_realtime_price(code_str)
+            if live_p is not None and live_p > 0:
+                p = live_p
+                prev_p = p - live_diff if live_diff is not None else p
+                v_curr = live_v if live_v is not None else 0.0
+                if live_name:
+                    final_display_name = live_name
+
+            # 2. 지표 연산을 위한 차트 데이터 수집 (yfinance 양방향)
             try:
-                tk = yf.Ticker(f"{code_str}.KQ")
+                tk = yf.Ticker(f"{code_str}.KS")
                 df = tk.history(start=start_date)
-                if df is None or df.empty or len(df) == 0:
-                    tk = yf.Ticker(f"{code_str}.KS")
+                if df is None or df.empty:
+                    tk = yf.Ticker(f"{code_str}.KQ")
                     df = tk.history(start=start_date)
             except:
                 pass
+
+            # 네이버 실시간 가격을 못 가져왔으면 차트 종가로 대체
+            if p == 0 and not df.empty:
+                p = float(df['Close'].iloc[-1])
+            if prev_p == 0 and not df.empty:
+                prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
+            if v_curr == 0 and not df.empty:
+                v_curr = float(df['Volume'].iloc[-1])
         else:
             currency, fmt_p = "$", ",.2f"
             tk_us = symbol.upper()
@@ -109,21 +154,29 @@ if symbol:
             try:
                 ticker = yf.Ticker(tk_us)
                 df = ticker.history(start=start_date)
+                info = ticker.fast_info
+                p = float(info.last_price)
+                v_curr = float(info.last_volume)
+                prev_p = float(info.previous_close)
             except:
-                pass
+                if not df.empty:
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = float(df['Volume'].iloc[-1])
+                    prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
-        # [철벽 방어 트랩] 데이터가 비어있거나 깨져 있으면 무조건 안전한 가상 데이터 생성하여 out-of-bounds 에러 원천 차단
+        # 철벽 방어 트랩 (out-of-bounds 에러 방지)
         if df is None or df.empty or 'Close' not in df.columns or len(df) < 5:
             dates = pd.date_range(end=datetime.now(), periods=100)
             df = pd.DataFrame({
-                'Open': [50000.0] * 100, 'High': [51000.0] * 100,
-                'Low': [49000.0] * 100, 'Close': [50000.0] * 100,
-                'Volume': [100000.0] * 100
+                'Open': [p if p > 0 else 50000.0] * 100,
+                'High': [p if p > 0 else 51000.0] * 100,
+                'Low': [p if p > 0 else 49000.0] * 100,
+                'Close': [p if p > 0 else 50000.0] * 100,
+                'Volume': [v_curr if v_curr > 0 else 100000.0] * 100
             }, index=dates)
 
-        p = float(df['Close'].iloc[-1])
-        v_curr = float(df['Volume'].iloc[-1]) if 'Volume' in df.columns else 10000.0
-        prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
+        if p == 0: p = float(df['Close'].iloc[-1])
+        if prev_p == 0: prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
         df.loc[df.index[-1], 'Close'] = p
         df = df.ffill().dropna()
