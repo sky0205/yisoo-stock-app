@@ -70,7 +70,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720")
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720").strip()
 
 if symbol:
     try:
@@ -78,62 +78,77 @@ if symbol:
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
         now_local = datetime.now(now_tz)
 
+        df = pd.DataFrame()
+        p, v_curr = 0.0, 0.0
+
         if is_kr:
-            ticker = yf.Ticker(f"{symbol}.KS")
-            df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             currency, fmt_p = "원", ",.0f"
+            # 1차 시도: FinanceDataReader
+            try:
+                df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+            except:
+                pass
             
-            # [국장 실시간 가격 크롤링]
-            url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-            res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
-            soup = BeautifulSoup(res.text, 'html.parser')
-            p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-            v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+            # 2차 시도: 만약 비어있으면 야후 파이낸스 백업 (.KS 및 .KQ)
+            if df.empty:
+                try:
+                    df = yf.Ticker(f"{symbol}.KS").history(start=start_date)
+                    if df.empty:
+                        df = yf.Ticker(f"{symbol}.KQ").history(start=start_date)
+                except:
+                    pass
+
+            # 실시간 가격 크롤링 (네이버)
+            try:
+                url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
+                soup = BeautifulSoup(res.text, 'html.parser')
+                p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+            except:
+                if not df.empty:
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = float(df['Volume'].iloc[-1])
         else:
-            # [미장 실시간 가격 판독]
-            ticker = yf.Ticker(symbol.upper()); df = ticker.history(start=start_date)
             currency, fmt_p = "$", ",.2f"
-            
+            ticker = yf.Ticker(symbol.upper())
+            df = ticker.history(start=start_date)
             try:
                 info = ticker.fast_info
                 p = info.last_price
                 v_curr = info.last_volume
             except:
-                df_today = ticker.history(period='1d')
-                if not df_today.empty:
-                    p = float(df_today['Close'].iloc[-1])
-                    v_curr = float(df_today['Volume'].iloc[-1])
-                else:
+                if not df.empty:
                     p = float(df['Close'].iloc[-1])
                     v_curr = float(df['Volume'].iloc[-1])
 
-        if not df.empty:
+        if df.empty:
+            st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인하거나 잠시 후 다시 시도해 주시게.")
+        else:
             df = df.ffill().dropna()
             df.index = pd.to_datetime(df.index)
             today_date = pd.Timestamp(now_local.date())
 
-            # ★ [핵심 정밀 동기화] 실시간 가격(p)을 데이터프레임 마지막 행에 실시간 반영하여 지표 왜곡 원천 차단
+            # ★ [핵심 정밀 동기화] 실시간 가격(p) 반영
             if today_date in df.index:
                 df.loc[today_date, 'Close'] = p
                 df.loc[today_date, 'Volume'] = v_curr
                 if p > df.loc[today_date, 'High']: df.loc[today_date, 'High'] = p
                 if p < df.loc[today_date, 'Low']: df.loc[today_date, 'Low'] = p
-                prev_p = float(df['Close'].shift(1).iloc[-1])
+                prev_p = float(df['Close'].shift(1).iloc[-1]) if len(df) > 1 else p
             else:
                 new_row = pd.DataFrame({
                     'Open': [p], 'High': [p], 'Low': [p], 'Close': [p], 'Volume': [v_curr]
                 }, index=[today_date])
                 df = pd.concat([df, new_row])
-                prev_p = float(df['Close'].iloc[-2])
+                prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
-            v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
+            v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) if len(df) >= 6 else float(df['Volume'].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
             
-            # [정확한 전일비 및 변동률 계산]
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
             
-            # [시간 보정 로직]
             s_h, s_m = (9, 0) if is_kr else (9, 30)
             m_start = now_local.replace(hour=s_h, minute=s_m, second=0, microsecond=0)
             
@@ -144,7 +159,6 @@ if symbol:
                 if now_local.weekday() >= 5: elapsed = 390
                 vol_strength = min(1000, v_ratio / (elapsed / 390))
             
-            # 실시간 동기화된 데이터 기반 지표 산출 (볼린저 20/2, 윌리엄 14/6, rsi 14/9 기준)
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
             rsi_val, rsi_prev = rsi_series.iloc[-1], rsi_series.iloc[-2]
@@ -159,15 +173,12 @@ if symbol:
             
             df['MA20'] = df['Close'].rolling(20).mean(); df['Std'] = df['Close'].rolling(20).std()
             mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
-            defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
+            defense_link_idx = min(21, len(df))
+            defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
-            # ★ [사령관님 전용: 글로벌 명칭 완결 통제 기지]
+            # 종목 이름 판독
             if is_kr:
-                core_vault = {
-                    "005930": "삼성전자", "000660": "SK하이닉스", 
-                    "033100": "제룡전기", "257720": "실리콘투", 
-                    "058610": "에스피지"
-                }
+                core_vault = {"005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", "257720": "실리콘투", "058610": "에스피지"}
                 if symbol in core_vault:
                     final_display_name = core_vault[symbol]
                 else:
@@ -178,11 +189,7 @@ if symbol:
                             final_display_name = df_krx_backup[df_krx_backup['Code'] == symbol]['Name'].values[0]
                         except: final_display_name = f"국내종목 ({symbol})"
             else:
-                us_vault = {
-                    "TSLA": "테슬라 (Tesla)", "NVDA": "엔비디아 (NVIDIA)", 
-                    "AAPL": "애플 (Apple)", "MSFT": "마이크로소프트", 
-                    "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타"
-                }
+                us_vault = {"TSLA": "테슬라 (Tesla)", "NVDA": "엔비디아 (NVIDIA)", "AAPL": "애플 (Apple)", "MSFT": "마이크로소프트", "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타"}
                 tk = symbol.upper()
                 if tk in us_vault:
                     final_display_name = us_vault[tk]
@@ -216,14 +223,11 @@ if symbol:
             williams_top = 1 if will_val >= -20 else 0 
             top_score    = bb_top + rsi_top + williams_top
 
-            # MACD 역회전 및 축소 감지
             m_diff_curr, m_diff_prev = m_l - s_l, m_p - s_p
             is_engine_reverse = (m_l < s_l)
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
-
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
-            # 1. 상단 대형 신호등 간판 판독
             if top_score >= 2:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
             elif bottom_score >= 2:
@@ -238,13 +242,12 @@ if symbol:
             
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
-            # 가격 카드 출력 (공략대기선, 수확목표선, 성벽)
+            # 가격 카드 출력
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # 2. 실전 필살 대응 전략 문구 세부 조율
             adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
             
