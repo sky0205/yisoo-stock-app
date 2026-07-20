@@ -8,10 +8,10 @@ import requests
 NAVER_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Referer': 'https://finance.naver.com/',
-    'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en-US;q=0.7'
+    'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7'
 }
 
-def get_naver_realtime_price(symbol):
+def get_naver_realtime_data(symbol):
     code_str = str(symbol).zfill(6)
     url = f"https://m.stock.naver.com/api/stock/{code_str}/basic"
     try:
@@ -90,7 +90,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "445090").strip()
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "000100").strip()
 
 if symbol:
     try:
@@ -106,44 +106,42 @@ if symbol:
             currency, fmt_p = "원", ",.0f"
             code_str = symbol.zfill(6)
             
-            # 1. 기술적 지표 계산용 야후 차트 데이터 먼저 수집 (양방향 탐색: 코스닥 .KQ -> 코스피 .KS)
-            try:
-                tk = yf.Ticker(f"{code_str}.KQ")
-                df = tk.history(start=start_date)
-                if df is None or df.empty:
-                    tk = yf.Ticker(f"{code_str}.KS")
-                    df = tk.history(start=start_date)
-            except:
-                pass
-
-            # 2. 네이버 모바일 API와 야후 최신 종가를 비교하여 더 신뢰할 수 있는 실시간 가격 채택
-            live_p, live_diff, live_v, live_name = get_naver_realtime_price(code_str)
-            yf_p = float(df['Close'].iloc[-1]) if not df.empty else 0.0
-
-            # 만약 네이버 가격이 야후 종가와 너무 터무니없이 차이나거나 누락되면 야후 최신 종가 우선 적용
+            # 1. 네이버 API에서 실시간 가격, 전일비, 거래량, 진짜 한글 종목명 단칼에 획득
+            live_p, live_diff, live_v, live_name = get_naver_realtime_data(code_str)
             if live_p is not None and live_p > 0:
                 p = live_p
                 prev_p = p - live_diff if live_diff is not None else p
                 v_curr = live_v if live_v is not None else 0.0
                 if live_name:
                     final_display_name = live_name
-            elif yf_p > 0:
-                p = yf_p
-                prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
-                v_curr = float(df['Volume'].iloc[-1]) if 'Volume' in df.columns else 0.0
 
-            # 종목명이 없으면 yfinance info에서 보완
-            if not final_display_name or final_display_name.startswith("국내종목"):
-                try:
-                    info_tk = yf.Ticker(f"{code_str}.KQ")
-                    final_display_name = info_tk.info.get('longName') or info_tk.info.get('shortName')
-                    if not final_display_name:
-                        info_tk = yf.Ticker(f"{code_str}.KS")
-                        final_display_name = info_tk.info.get('longName') or info_tk.info.get('shortName')
-                except:
-                    pass
+            # 만약 네이버 종목명을 못 가져왔으면 기본 사전 또는 종목코드로 대체
             if not final_display_name:
-                final_display_name = f"국내종목 ({code_str})"
+                core_vault = {
+                    "005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", 
+                    "257720": "실리콘투", "058610": "에스피지", "010140": "삼성중공업",
+                    "035900": "JYP Ent.", "050890": "쏜다텍", "086520": "에코프로머티", 
+                    "042700": "한미반도체", "196170": "알테오젠", "000100": "유한양행", 
+                    "101490": "에스앤에스텍", "272210": "한화", "445090": "에이직랜드"
+                }
+                final_display_name = core_vault.get(code_str, f"국내종목 ({code_str})")
+
+            # 2. 지표 연산을 위한 차트 수집 (양방향 탐색: 코스피 .KS -> 코스닥 .KQ)
+            try:
+                tk = yf.Ticker(f"{code_str}.KS")
+                df = tk.history(start=start_date)
+                if df is None or df.empty:
+                    tk = yf.Ticker(f"{code_str}.KQ")
+                    df = tk.history(start=start_date)
+            except:
+                pass
+
+            if p == 0 and not df.empty:
+                p = float(df['Close'].iloc[-1])
+            if prev_p == 0 and not df.empty:
+                prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
+            if v_curr == 0 and not df.empty:
+                v_curr = float(df['Volume'].iloc[-1])
         else:
             currency, fmt_p = "$", ",.2f"
             tk_us = symbol.upper()
@@ -224,7 +222,7 @@ if symbol:
         low_b = mid_line - (float(df['Std'].iloc[-1]) * 2)
         defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
-        # 전광판 출력
+        # 전광판 출력 (오직 하나의 깔끔한 명칭과 실시간 가격만 출력)
         st.markdown("### 📊 현재주가현황")
         display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
         st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol.upper()})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
