@@ -74,7 +74,7 @@ if symbol:
             "033100": "제룡전기", "257720": "실리콘투", 
             "058610": "에스피지", "010140": "삼성중공업",
             "035900": "JYP Ent.", "050890": "쏜다텍",
-            "086520": "E코프로머티", "042700": "한미반도체", 
+            "086520": "에코프로머티", "042700": "한미반도체", 
             "196170": "알테오젠", "000100": "유한양행"
         }
 
@@ -86,7 +86,6 @@ if symbol:
             code_str = symbol.zfill(6)
             final_display_name = core_vault.get(code_str, f"국내종목 ({code_str})")
 
-            # yfinance 단일 안정선으로 국장 데이터 수집 (차단 및 멈춤 원천 방지)
             try:
                 tk = yf.Ticker(f"{code_str}.KS")
                 df = tk.history(start=start_date)
@@ -112,22 +111,19 @@ if symbol:
             except:
                 pass
 
-        # 백지 멈춤 방어 더미 트랩
-        if df.empty:
+        # out-of-bounds 에러 원천 방어 (데이터가 비어있으면 안전한 가상 데이터 생성)
+        if df is None or df.empty or 'Close' not in df.columns or len(df) == 0:
             dates = pd.date_range(end=datetime.now(), periods=100)
             df = pd.DataFrame({
-                'Open': [10000.0] * 100, 'High': [10000.0] * 100,
-                'Low': [10000.0] * 100, 'Close': [10000.0] * 100,
-                'Volume': [1000.0] * 100
+                'Open': [50000.0] * 100, 'High': [51000.0] * 100,
+                'Low': [49000.0] * 100, 'Close': [50000.0] * 100,
+                'Volume': [100000.0] * 100
             }, index=dates)
 
         p = float(df['Close'].iloc[-1])
-        v_curr = float(df['Volume'].iloc[-1])
+        v_curr = float(df['Volume'].iloc[-1]) if 'Volume' in df.columns else 10000.0
         prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
-        # ========================================================
-        # 강제 전광판 및 신호등 출력부
-        # ========================================================
         df.loc[df.index[-1], 'Close'] = p
         df = df.ffill().dropna()
         
