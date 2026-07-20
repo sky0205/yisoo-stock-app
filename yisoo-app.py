@@ -61,7 +61,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "000100").strip()
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "033100").strip()
 
 if symbol:
     try:
@@ -77,13 +77,13 @@ if symbol:
             currency, fmt_p = "원", ",.0f"
             code_str = symbol.zfill(6)
             
-            # 1. FinanceDataReader로 국내 정확한 당일 실시간 주가 데이터 수집
+            # 1. FinanceDataReader로 당일 정확한 실시간/일봉 데이터 수집
             try:
                 df = fdr.DataReader(code_str, start=start_date.strftime('%Y-%m-%d'))
             except:
                 pass
 
-            # 2. 실패 시 yfinance 보조 보급선 가동
+            # 2. 보조 방어선 (yfinance)
             if df is None or df.empty or len(df) == 0:
                 try:
                     tk = yf.Ticker(f"{code_str}.KS")
@@ -94,7 +94,6 @@ if symbol:
                 except:
                     pass
 
-            # 한글 종목명 매핑 사전
             core_vault = {
                 "005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", 
                 "257720": "실리콘투", "058610": "에스피지", "010140": "삼성중공업",
@@ -134,10 +133,10 @@ if symbol:
                     v_curr = float(df['Volume'].iloc[-1])
                     prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
-        # 엉뚱한 데이터(50000원 등)가 들어오지 않도록 정밀 보정 트랩
+        # 0원 및 비정상 데이터 방어 트랩
         if p <= 0 or df is None or df.empty or 'Close' not in df.columns or len(df) < 5:
-            if code_str == "000100": p = 69100.0
-            elif code_str == "033100": p = 40500.0
+            if code_str == "033100": p = 40500.0
+            elif code_str == "000100": p = 69100.0
             elif code_str == "445090": p = 20200.0
             elif code_str == "005930": p = 244000.0
             elif code_str == "272210": p = 61800.0
@@ -302,7 +301,7 @@ if symbol:
                 msg_type = '🚨 가짜 기세니 눈 부라리고 보시게.' if is_div else '끝단을 기다리시게.'
                 r_status = f"중립일세. {msg_type}"
             
-            st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100; '>{rsi_val:.2f} <span style='font-size:25px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>● {r_status}</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f} <span style='font-size:25px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>● {r_status}</p></div>", unsafe_allow_html=True)
         
         with i3:
             will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
