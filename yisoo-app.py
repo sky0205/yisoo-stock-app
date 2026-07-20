@@ -84,7 +84,8 @@ symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "2577
 
 if symbol:
     try:
-        start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
+        start_date = datetime.now() - timedelta(days=500)
+        is_kr = symbol.isdigit()
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
         now_local = datetime.now(now_tz)
 
@@ -93,28 +94,35 @@ if symbol:
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             currency, fmt_p = "원", ",.0f"
             
-            # 위장 가면 함수를 사용하여 네이버 차단막 완벽 돌파!
-            xml_text = get_stock_data(symbol)
-            if xml_text:
-                soup = BeautifulSoup(xml_text, 'xml')
-                items = soup.find_all('item')
-                data_list = []
-                for item in items:
-                    data_list.append(item['data'].split('|'))
-                df_real = pd.DataFrame(data_list, columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
-                df_real['Close'] = df_real['Close'].astype(float)
-                df_real['Volume'] = df_real['Volume'].astype(float)
-                p = float(df_real['Close'].iloc[-1])
-                v_curr = float(df_real['Volume'].iloc[-1])
-            else:
-                p = float(df['Close'].iloc[-1])
-                v_curr = float(df['Volume'].iloc[-1])
+            # 초기화 안전장치 탑재
+            p = float(df['Close'].iloc[-1])
+            v_curr = float(df['Volume'].iloc[-1])
+            
+            # ★ 철벽 방화벽: 네이버 장부가 꼬여도 엔진이 절대 뻗지 않도록 통제함
+            try:
+                xml_text = get_stock_data(symbol)
+                if xml_text:
+                    soup = BeautifulSoup(xml_text, 'html.parser')
+                    items = soup.find_all('item')
+                    data_list = []
+                    for item in items:
+                        if item.get('data'):
+                            data_list.append(item['data'].split('|'))
+                    if data_list:
+                        df_real = pd.DataFrame(data_list, columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
+                        df_real['Close'] = df_real['Close'].astype(float)
+                        df_real['Volume'] = df_real['Volume'].astype(float)
+                        p = float(df_real['Close'].iloc[-1])
+                        v_curr = float(df_real['Volume'].iloc[-1])
+            except:
+                pass
                 
             prev_p = float(df['Close'].iloc[-1])
             if p == prev_p and len(df) > 1:
                 prev_p = float(df['Close'].iloc[-2])
         else:
-            ticker = yf.Ticker(symbol.upper()); df = ticker.history(start=start_date)
+            ticker = yf.Ticker(symbol.upper())
+            df = ticker.history(start=start_date)
             currency, fmt_p = "$", ",.2f"
             
             try:
@@ -129,7 +137,8 @@ if symbol:
                     v_curr = float(df_today['Volume'].iloc[-1])
                     prev_p = float(df['Close'].iloc[-1])
                 else:
-                    p = float(df['Close'].iloc[-1]); v_curr = float(df['Volume'].iloc[-1])
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = float(df['Volume'].iloc[-1])
                     prev_p = float(df['Close'].iloc[-2])
 
         if not df.empty:
@@ -150,7 +159,9 @@ if symbol:
                 if now_local.weekday() >= 5: elapsed = 390
                 vol_strength = min(1000, v_ratio / (elapsed / 390))
             
-            delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+            delta = df['Close'].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
             rsi_val, rsi_prev = rsi_series.iloc[-1], rsi_series.iloc[-2]
             
@@ -161,8 +172,11 @@ if symbol:
             macd = df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()
             sig_line = macd.ewm(span=9).mean()
             m_l, s_l, m_p, s_p = macd.iloc[-1], sig_line.iloc[-1], macd.iloc[-2], sig_line.iloc[-2]
-            df['MA20'] = df['Close'].rolling(20).mean(); df['Std'] = df['Close'].rolling(20).std()
-            mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
+            df['MA20'] = df['Close'].rolling(20).mean()
+            df['Std'] = df['Close'].rolling(20).std()
+            mid_line = df['MA20'].iloc[-1]
+            up_b = mid_line + (df['Std'].iloc[-1] * 2)
+            low_b = mid_line - (df['Std'].iloc[-1] * 2)
             defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
             if is_kr:
