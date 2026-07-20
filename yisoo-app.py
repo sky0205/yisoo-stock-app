@@ -1,55 +1,31 @@
 import streamlit as st
+import FinanceDataReader as fdr
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 import pytz
 import requests
 import json
-from bs4 import BeautifulSoup
 
-# --- [네이버 모바일 초고속 실시간 엔진 (0.2초 폭속)] ---
-def get_naver_stock_all(symbol):
+# --- [네이버 모바일 초실시간 직통 API (0.1초)] ---
+def get_naver_realtime_fast(symbol):
     code_str = str(symbol).zfill(6)
+    url = f"https://m.stock.naver.com/api/stock/{code_str}/basic"
     headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)'}
-    
-    p, prev_p, v_curr, name = None, None, None, None
-    
-    # 1. 네이버 모바일 실시간 API 타격
     try:
-        url_basic = f"https://m.stock.naver.com/api/stock/{code_str}/basic"
-        res = requests.get(url_basic, headers=headers, timeout=1.5)
+        res = requests.get(url, headers=headers, timeout=1.5)
         if res.status_code == 200:
             data = res.json()
             p = float(data.get('closePrice', '0').replace(',', ''))
             diff = float(data.get('compareToPreviousClosePrice', '0').replace(',', ''))
             code_dir = data.get('compareToPreviousPrice', {}).get('code', '3')
             if code_dir in ['4', '5']: diff = -diff
-            prev_p = p - diff
             v_curr = float(data.get('accumulatedTradingVolume', '0').replace(',', ''))
             name = data.get('stockName', None)
+            return p, diff, v_curr, name
     except:
         pass
-
-    # 2. 네이버 초고속 차트 API 수집 (300일 치 다이어트)
-    df = pd.DataFrame()
-    try:
-        url_chart = f"https://fchart.stock.naver.com/sise.nhn?timeframe=day&count=350&requestType=0&symbol={code_str}"
-        res_c = requests.get(url_chart, headers=headers, timeout=1.5)
-        if res_c.status_code == 200:
-            soup = BeautifulSoup(res_c.text, 'html.parser')
-            items = soup.find_all('item')
-            data_list = [item['data'].split('|') for item in items if item.get('data')]
-            if data_list:
-                df = pd.DataFrame(data_list, columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
-                df['Close'] = df['Close'].astype(float)
-                df['Open'] = df['Open'].astype(float)
-                df['High'] = df['High'].astype(float)
-                df['Low'] = df['Low'].astype(float)
-                df['Volume'] = df['Volume'].astype(float)
-    except:
-        pass
-
-    return p, prev_p, v_curr, name, df
+    return None, None, None, None
 
 @st.cache_data(ttl=60)
 def fetch_global_market():
@@ -122,17 +98,20 @@ if symbol:
             "033100": "제룡전기", "257720": "실리콘투", 
             "058610": "에스피지", "010140": "삼성중공업",
             "035900": "JYP Ent.", "050890": "쏜다텍",
-            "086520": "에코프로머티", "042700": "한미반도체", "196170": "알테오젠"
+            "086520": "에코프로머티", "042700": "한미반도체", 
+            "196170": "알테오젠", "000100": "유한양행"
         }
 
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             code_str = symbol.zfill(6)
             
-            # [네이버 초고속 엔진 가동]
-            p, prev_p, v_curr, kr_name, df = get_naver_stock_all(code_str)
+            # 1. 차트 데이터 보급선 (FDR -> yfinance 백업)
+            try:
+                df = fdr.DataReader(code_str, start=start_date.strftime('%Y-%m-%d'))
+            except:
+                pass
 
-            # 백업 망 (야후 파이낸스)
             if df.empty:
                 try:
                     ticker = yf.Ticker(f"{code_str}.KQ")
@@ -143,14 +122,18 @@ if symbol:
                 except:
                     pass
 
-            if p is None or p == 0:
+            p, diff, v_curr, kr_name = get_naver_realtime_fast(code_str)
+
+            # 초실시간 모바일 데이터가 포착되었으면 최우선 덮어쓰기!
+            if p is not None and p > 0:
+                prev_p = p - diff if diff is not None else float(df['Close'].iloc[-1])
+            else:
                 p = float(df['Close'].iloc[-1]) if not df.empty else 0.0
-            if v_curr is None or v_curr == 0:
                 v_curr = float(df['Volume'].iloc[-1]) if not df.empty else 0.0
-            if prev_p is None or prev_p == 0:
                 prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
-            final_display_name = core_vault.get(code_str, kr_name if kr_name else f"국내종목 ({code_str})")
+            raw_name = core_vault.get(code_str, kr_name)
+            final_display_name = raw_name if raw_name else f"국내종목"
         else:
             currency, fmt_p = "$", ",.2f"
             ticker = yf.Ticker(symbol.upper())
@@ -174,7 +157,6 @@ if symbol:
             }
             final_display_name = us_vault.get(symbol.upper(), symbol.upper())
 
-        # 데이터 연산 및 전광판 출력
         if not df.empty and p > 0:
             df.loc[df.index[-1], 'Close'] = p
             df = df.ffill().dropna()
@@ -215,7 +197,7 @@ if symbol:
             low_b = mid_line - (df['Std'].iloc[-1] * 2)
             defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
-            # 전광판 출력
+            # 전광판 깔끔한 표기 출사표
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol.upper()})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
