@@ -6,19 +6,14 @@ from datetime import datetime, timedelta
 import pytz
 import requests
 from bs4 import BeautifulSoup
-# 9번 줄 빈 공간에 붙여넣을 알맹이 도면일세
-import requests
 import time
 
-# 13번 줄부터 있던 자리를 아래와 같이 똑같이 고쳐 쓰시면 됩니다!
+# [위장 가면] 사람이 직접 브라우저를 켜고 접속한 것처럼 네이버 놈들을 속이는 철벽 방패
 def get_stock_data(ticker):
     url = f"https://fchart.stock.naver.com/sise.nhn?timeframe=day&count=6000&requestType=0&symbol={ticker}"
-    
-    # [위장 가면] 사람이 직접 브라우저를 켜고 접속한 것처럼 네이버 놈들을 속이는 철벽 방패
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
-    
     for _ in range(3):
         try:
             response = requests.get(url, headers=headers, timeout=5)
@@ -28,6 +23,7 @@ def get_stock_data(ticker):
             time.sleep(1)
             continue
     return None
+
 # --- [보급로 최적화 캐싱 장치] ---
 @st.cache_data(ttl=3600)
 def load_krx_listing():
@@ -97,19 +93,27 @@ if symbol:
             df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             currency, fmt_p = "원", ",.0f"
             
-            # [국장 필살기] 네이버 실시간 낚시
-            url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-            res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
-            soup = BeautifulSoup(res.text, 'html.parser')
-            p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-            v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
-            
-            # [전일비 수선] 국장 전일가 판독
+            # 위장 가면 함수를 사용하여 네이버 차단막 완벽 돌파!
+            xml_text = get_stock_data(symbol)
+            if xml_text:
+                soup = BeautifulSoup(xml_text, 'xml')
+                items = soup.find_all('item')
+                data_list = []
+                for item in items:
+                    data_list.append(item['data'].split('|'))
+                df_real = pd.DataFrame(data_list, columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
+                df_real['Close'] = df_real['Close'].astype(float)
+                df_real['Volume'] = df_real['Volume'].astype(float)
+                p = float(df_real['Close'].iloc[-1])
+                v_curr = float(df_real['Volume'].iloc[-1])
+            else:
+                p = float(df['Close'].iloc[-1])
+                v_curr = float(df['Volume'].iloc[-1])
+                
             prev_p = float(df['Close'].iloc[-1])
             if p == prev_p and len(df) > 1:
                 prev_p = float(df['Close'].iloc[-2])
         else:
-            # [미장 필살기] 야후 파이낸스 정밀 판독
             ticker = yf.Ticker(symbol.upper()); df = ticker.history(start=start_date)
             currency, fmt_p = "$", ",.2f"
             
@@ -133,11 +137,9 @@ if symbol:
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
             
-            # [수선] 실시간 전일비 및 변동률 계산
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
             
-            # [시간 보정 로직]
             s_h, s_m = (9, 0) if is_kr else (9, 30)
             m_start = now_local.replace(hour=s_h, minute=s_m, second=0, microsecond=0)
             
@@ -148,13 +150,11 @@ if symbol:
                 if now_local.weekday() >= 5: elapsed = 390
                 vol_strength = min(1000, v_ratio / (elapsed / 390))
             
-            # 지표 계산 (볼린저 20/2, 윌리엄 14/6, rsi 14/9 기준 준수)
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
             rsi_val, rsi_prev = rsi_series.iloc[-1], rsi_series.iloc[-2]
             
             h14, l14 = df['High'].rolling(14).max(), df['Low'].rolling(14).min()
-            # [형님 필살 규칙 개조] 윌리엄스의 실시간 및 어제 수치(will_prev) 연산 체계 구축!
             will_series = (h14 - df['Close']) / (h14 - l14 + 1e-10) * -100
             will_val, will_prev = (h14.iloc[-1] - p) / (h14.iloc[-1] - l14.iloc[-1] + 1e-10) * -100, will_series.iloc[-2]
             
@@ -165,7 +165,6 @@ if symbol:
             mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
             defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
-            # ★ [사령관님 전용: 글로벌 명칭 완결 통제 기지]
             if is_kr:
                 core_vault = {
                     "005930": "삼성전자", "000660": "SK하이닉스", 
@@ -175,12 +174,10 @@ if symbol:
                 if symbol in core_vault:
                     final_display_name = core_vault[symbol]
                 else:
-                    try: final_display_name = soup.select_one(".wrap_company h2 a").text.strip()
-                    except:
-                        try:
-                            df_krx_backup = load_krx_listing()
-                            final_display_name = df_krx_backup[df_krx_backup['Code'] == symbol]['Name'].values[0]
-                        except: final_display_name = f"국내종목 ({symbol})"
+                    try:
+                        df_krx_backup = load_krx_listing()
+                        final_display_name = df_krx_backup[df_krx_backup['Code'] == symbol]['Name'].values[0]
+                    except: final_display_name = f"국내종목 ({symbol})"
             else:
                 us_vault = {
                     "TSLA": "테슬라 (Tesla)", "NVDA": "엔비디아 (NVIDIA)", 
@@ -196,12 +193,10 @@ if symbol:
                         final_display_name = raw_name.split(',')[0].split('Inc')[0].strip()
                     except: final_display_name = f"미국종목 ({tk})"
 
-            # 전광판 출력
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol.upper()})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
-            # 거래량 박스
             if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 **[화력폭발]** 현재 강도 {vol_strength:.1f}점! 본진 진격 중이오."
             elif vol_strength >= 100: v_status, v_adv = "매집시작", f"🚀 **[매집시작]** 현재 강도 {vol_strength:.1f}점! 화력이 차오르네."
             elif vol_strength >= 80: v_status, v_adv = "정상화력", f"⚔️ **[정상화력]** 현재 강도 {vol_strength:.1f}점! 기세가 빳빳하구먼."
@@ -209,7 +204,6 @@ if symbol:
             
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} ({v_ratio:.1f}% / 5일평균대비)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
-            # 신호등 점수 계측
             bb_bottom       = 1 if p <= (low_b * 1.005) else 0
             rsi_bottom      = 1 if rsi_val <= 35 else 0
             williams_bottom = 1 if will_val <= -80 else 0
@@ -220,18 +214,13 @@ if symbol:
             williams_top = 1 if will_val >= -20 else 0 
             top_score    = bb_top + rsi_top + williams_top
 
-            # MACD 역회전 및 축소 감지
             m_diff_curr, m_diff_prev = m_l - s_l, m_p - s_p
             is_engine_reverse = (m_l < s_l)
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
 
-          # ========================================================
-            # [최종 완전체] 지수 미달 시에도 엔진 상태를 100% 동조하는 사령탑
-            # ========================================================
             is_bb_attack = (rsi_val < 30 and will_val <= -80 and abs(m_l - s_l) < abs(m_diff_prev))
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
-            # 1. 상단 대형 신호등 간판 판독
             if top_score >= 2:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
             elif bottom_score >= 2:
@@ -246,22 +235,18 @@ if symbol:
             
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
-            # 가격 카드 출력 (유지)
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # 2. 실전 필살 대응 전략 문구 세부 조율
             adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
             
-            # [모순 해결의 핵심] 지수가 미달이더라도 엔진 상태를 칼같이 발라냅니다!
             if bottom_score >= 2 and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
                 adv3 = "3. **엔진(MACD) 확인:** 다중 바닥 권역에 엔진 시동 중이네! 소량 분할 매수 기회를 노리시게."
                 final_adv = f"🏹 **[최종 결론]** 강도({vol_strength:.1f}점). 다중 바닥 권역 확인 및 엔진 시동 완료! 소량 **[분할 매수]** 타이밍을 노리시게!"
             else:
-                # 중간 지대(횡보/눈치싸움)일 때 엔진 판독기 정밀화
                 if m_l < s_l:
                     if is_macd_turning:
                         adv3 = "3. **엔진(MACD) 확인:** 엔진 **역회전폭 급감** 중이라네! 시동 걸 채비 중이니 진격 신호를 기다리시게."
@@ -282,7 +267,6 @@ if symbol:
                 <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
                 <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)
 
-            # 지표 상세 진단
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
             
@@ -307,23 +291,21 @@ if symbol:
                 rsi_trend = "▲ 상승" if rsi_val > rsi_prev else ("▼ 하락" if rsi_val < rsi_prev else "─ 변동없음")
                 is_div = p > prev_p and rsi_val < rsi_prev
                 
-                # [형님 필살 논리] 냉골 바닥권이더라도 어제 대비 추세를 보고 문구를 완벽하게 분리합니다!
                 if rsi_val >= 60: 
-                    r_status = f"**👿 불지옥** 문턱! {{'🚨 가짜 상승이니 대피하시게.' if is_div else '수익 챙길 채비 하시게.'}}"
+                    r_status = f"**👿 불지옥** 문턱! {'🚨 가짜 상승이니 대피하시게.' if is_div else '수익 챙길 채비 하시게.'}"
                 elif rsi_val <= 35: 
                     if rsi_val > rsi_prev:
                         r_status = "**🧊 냉골 바닥**이나, 어제보다 온도가 올라오며 **[지수 개선]** 중일세. 추이를 주시하시게."
                     else:
                         r_status = "**🧊 냉골 바닥**일세. 온도가 계속 떨어지며 **[지속 하락]** 중이니 냉정하게 보따리 푸시게."
                 else: 
-                    r_status = f"중립일세. {{'🚨 가짜 기세니 눈 부라리고 보시게.' if is_div else '끝단을 기다리시게.'}}"
+                    r_status = f"중립일세. {'🚨 가짜 기세니 눈 부라리고 보시게.' if is_div else '끝단을 기다리시게.'}"
                 
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f} <span style='font-size:25px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>● {r_status}</p></div>", unsafe_allow_html=True)
             
             with i3:
                 will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
                 
-                # [형님 필살 논리] 윌리엄스 역시 어제 대비 기세를 보고 문구를 정밀하게 발라냅니다!
                 if will_val >= -20: 
                     w_status = "**🚩 천장 광기**! 비수 꽂히기 전에 수확하시게."
                 elif will_val >= -35: 
