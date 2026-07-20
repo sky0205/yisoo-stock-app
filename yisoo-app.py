@@ -4,13 +4,15 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 import pytz
-import requests
 
-# --- [보급로 최적화 캐싱 장치] ---
-@st.cache_data(ttl=3600)
-def load_krx_listing():
-    try: return fdr.StockListing('KRX')
-    except: return pd.DataFrame()
+# --- [KRX 전체 종목 사전 메모리 탑재] ---
+@st.cache_data(ttl=86400)
+def load_krx_dict():
+    try:
+        df_krx = fdr.StockListing('KRX')
+        return dict(zip(df_krx['Code'].astype(str).str.zfill(6), df_krx['Name']))
+    except:
+        return {}
 
 @st.cache_data(ttl=60)
 def fetch_global_market():
@@ -68,6 +70,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
+krx_dict = load_krx_dict()
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720").strip()
 
 if symbol:
@@ -78,77 +81,38 @@ if symbol:
         now_local = datetime.now(now_tz)
         df = pd.DataFrame()
 
+        core_vault = {
+            "005930": "삼성전자", "000660": "SK하이닉스", 
+            "033100": "제룡전기", "257720": "실리콘투", 
+            "058610": "에스피지", "010140": "삼성중공업",
+            "035900": "JYP Ent.", "050890": "쏜다텍"
+        }
+
         if is_kr:
             currency, fmt_p = "원", ",.0f"
+            code_str = symbol.zfill(6)
             
-            # [1. 차트 데이터 수집]
+            # 1. 안전 차트 데이터 수집
             try:
-                df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+                df = fdr.DataReader(code_str, start=start_date.strftime('%Y-%m-%d'))
             except:
                 pass
 
             if df.empty:
                 try:
-                    ticker = yf.Ticker(f"{symbol}.KS")
+                    ticker = yf.Ticker(f"{code_str}.KQ")
                     df = ticker.history(start=start_date)
                     if df.empty:
-                        ticker = yf.Ticker(f"{symbol}.KQ")
+                        ticker = yf.Ticker(f"{code_str}.KS")
                         df = ticker.history(start=start_date)
                 except:
                     pass
 
-            p, v_curr = None, None
-            core_vault = {
-                "005930": "삼성전자", "000660": "SK하이닉스", 
-                "033100": "제룡전기", "257720": "실리콘투", 
-                "058610": "에스피지", "010140": "삼성중공업",
-                "035900": "JYP Ent.", "050890": "쏜다텍"
-            }
-            final_display_name = core_vault.get(symbol, None)
-
-            # [2. 네이버 초경량 시세 수집 (1초 타임아웃 완전 방어)]
-            try:
-                url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
-                headers = {'User-Agent': 'Mozilla/5.0'}
-                res = requests.get(url, headers=headers, timeout=1.0)
-                if res.status_code == 200:
-                    data = res.json()
-                    p = float(data.get('closePrice', '0').replace(',', ''))
-                    v_curr = float(data.get('accumulatedTradingVolume', '0').replace(',', ''))
-                    if not final_display_name:
-                        final_display_name = data.get('stockName', None)
-            except:
-                pass
-
-            # 예외 처리: 차트 데이터로 백업
-            if (p is None or p == 0) and not df.empty:
-                p = float(df['Close'].iloc[-1])
-            if (v_curr is None or v_curr == 0) and not df.empty:
-                v_curr = float(df['Volume'].iloc[-1])
-            if not final_display_name:
-                try:
-                    df_krx = load_krx_listing()
-                    final_display_name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
-                except:
-                    final_display_name = f"국내종목 ({symbol})"
-
-            prev_p = float(df['Close'].iloc[-1]) if not df.empty else p
-            if p == prev_p and len(df) > 1:
-                prev_p = float(df['Close'].iloc[-2])
+            final_display_name = core_vault.get(code_str, krx_dict.get(code_str, f"국내종목 ({code_str})"))
         else:
             currency, fmt_p = "$", ",.2f"
             ticker = yf.Ticker(symbol.upper())
             df = ticker.history(start=start_date)
-            
-            try:
-                info = ticker.fast_info
-                p = info.last_price
-                v_curr = info.last_volume
-                prev_p = info.previous_close
-            except:
-                p = float(df['Close'].iloc[-1]) if not df.empty else 0.0
-                v_curr = float(df['Volume'].iloc[-1]) if not df.empty else 0.0
-                prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
             us_vault = {
                 "TSLA": "테슬라 (Tesla)", "NVDA": "엔비디아 (NVIDIA)", 
@@ -157,9 +121,12 @@ if symbol:
             }
             final_display_name = us_vault.get(symbol.upper(), symbol.upper())
 
-        # 화면 출력 부분
-        if not df.empty and p is not None and p > 0:
-            df.loc[df.index[-1], 'Close'] = p
+        # 안정적 주가 및 지표 연산
+        if not df.empty:
+            p = float(df['Close'].iloc[-1])
+            v_curr = float(df['Volume'].iloc[-1])
+            prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
+
             df = df.ffill().dropna()
             
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) if len(df) >= 6 else 1.0
