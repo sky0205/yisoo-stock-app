@@ -1,10 +1,11 @@
 import streamlit as st
+import FinanceDataReader as fdr
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 import pytz
+import requests
 
-# 글로벌 시장 고속 수집
 @st.cache_data(ttl=60)
 def fetch_global_market():
     try:
@@ -61,7 +62,7 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720").strip()
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930").strip()
 
 if symbol:
     try:
@@ -87,15 +88,46 @@ if symbol:
             code_str = symbol.zfill(6)
             final_display_name = core_vault.get(code_str, f"국내종목 ({code_str})")
 
-            # yfinance로만 국장 수집 (블록 우회)
+            # 1. 네이버 모바일 API로 HTS 실시간 가격 먼저 타격 (0.6초 제한)
             try:
-                ticker = yf.Ticker(f"{code_str}.KQ")
-                df = ticker.history(start=start_date)
-                if df.empty:
-                    ticker = yf.Ticker(f"{code_str}.KS")
-                    df = ticker.history(start=start_date)
+                url_m = f"https://m.stock.naver.com/api/stock/{code_str}/basic"
+                res_m = requests.get(url_m, headers={'User-Agent': 'Mozilla/5.0'}, timeout=0.6)
+                if res_m.status_code == 200:
+                    d_m = res_m.json()
+                    p = float(d_m.get('closePrice', '0').replace(',', ''))
+                    diff = float(d_m.get('compareToPreviousClosePrice', '0').replace(',', ''))
+                    c_dir = d_m.get('compareToPreviousPrice', {}).get('code', '3')
+                    if c_dir in ['4', '5']: diff = -diff
+                    prev_p = p - diff
+                    v_curr = float(d_m.get('accumulatedTradingVolume', '0').replace(',', ''))
+                    if code_str not in core_vault and d_m.get('stockName'):
+                        final_display_name = d_m.get('stockName')
             except:
                 pass
+
+            # 2. 기술적 지표 연산을 위한 차트 데이터 수집 (FDR)
+            try:
+                df = fdr.DataReader(code_str, start=start_date.strftime('%Y-%m-%d'))
+            except:
+                pass
+
+            if df.empty:
+                try:
+                    tk_kr = yf.Ticker(f"{code_str}.KQ")
+                    df = tk_kr.history(start=start_date)
+                    if df.empty:
+                        tk_kr = yf.Ticker(f"{code_str}.KS")
+                        df = tk_kr.history(start=start_date)
+                except:
+                    pass
+
+            # 만약 네이버 실시간 가격을 못 가져왔으면 차트 종가로 대체
+            if p == 0 and not df.empty:
+                p = float(df['Close'].iloc[-1])
+            if prev_p == 0 and not df.empty:
+                prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
+            if v_curr == 0 and not df.empty:
+                v_curr = float(df['Volume'].iloc[-1])
         else:
             currency, fmt_p = "$", ",.2f"
             tk_us = symbol.upper()
@@ -110,25 +142,29 @@ if symbol:
             try:
                 ticker = yf.Ticker(tk_us)
                 df = ticker.history(start=start_date)
+                info = ticker.fast_info
+                p = float(info.last_price)
+                v_curr = float(info.last_volume)
+                prev_p = float(info.previous_close)
             except:
-                pass
+                if not df.empty:
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = float(df['Volume'].iloc[-1])
+                    prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
-        # 백지 방어 더미 트랩
         if df.empty:
             dates = pd.date_range(end=datetime.now(), periods=100)
             df = pd.DataFrame({
-                'Open': [10000.0] * 100, 'High': [10000.0] * 100,
-                'Low': [10000.0] * 100, 'Close': [10000.0] * 100,
-                'Volume': [1000.0] * 100
+                'Open': [p if p > 0 else 10000.0] * 100,
+                'High': [p if p > 0 else 10000.0] * 100,
+                'Low': [p if p > 0 else 10000.0] * 100,
+                'Close': [p if p > 0 else 10000.0] * 100,
+                'Volume': [v_curr if v_curr > 0 else 1000.0] * 100
             }, index=dates)
 
-        p = float(df['Close'].iloc[-1])
-        v_curr = float(df['Volume'].iloc[-1])
-        prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
+        if p == 0: p = float(df['Close'].iloc[-1])
+        if prev_p == 0: prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
-        # ========================================================
-        # 강제 전광판 및 신호등 출력부
-        # ========================================================
         df.loc[df.index[-1], 'Close'] = p
         df = df.ffill().dropna()
         
