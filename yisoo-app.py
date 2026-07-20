@@ -69,17 +69,20 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720")
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720").strip()
 
 if symbol:
     try:
-        start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
+        start_date = datetime.now() - timedelta(days=500)
+        is_kr = symbol.isdigit()
         now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
         now_local = datetime.now(now_tz)
         df = pd.DataFrame()
 
         if is_kr:
-            # 1. 일봉 차트 데이터 수집 (안전망 연쇄 적용)
+            currency, fmt_p = "원", ",.0f"
+            
+            # 1. 차트 데이터 수집 (철벽 3중 보급망)
             try:
                 df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             except:
@@ -95,9 +98,6 @@ if symbol:
                 except:
                     pass
 
-            currency, fmt_p = "원", ",.0f"
-            
-            # 2. 실시간 크롤링 (타임아웃 2초 + 예외 완전 방어)
             p, v_curr = None, None
             core_vault = {
                 "005930": "삼성전자", "000660": "SK하이닉스", 
@@ -107,13 +107,13 @@ if symbol:
             }
             final_display_name = core_vault.get(symbol, None)
 
+            # 2. 네이버 크롤링 (타임아웃 1.5초 + 절대 에러 안 터지게 방어)
             try:
                 url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-                res = requests.get(url, headers=headers, timeout=2.0)
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                res = requests.get(url, headers=headers, timeout=1.5)
                 if res.status_code == 200:
                     soup = BeautifulSoup(res.text, 'html.parser')
-                    
                     no_today = soup.select_one(".no_today .blind")
                     if no_today:
                         p = float(no_today.text.replace(",", ""))
@@ -128,16 +128,16 @@ if symbol:
                             final_display_name = name_tag.text.strip()
             except:
                 pass
-                
-            # 예외 처리: 크롤링 누락 시 차트 최신값으로 자동 보완
-            if p is None and not df.empty:
+
+            # 크롤링 실패시 차트 데이터로 100% 자동 대치
+            if (p is None or p == 0) and not df.empty:
                 p = float(df['Close'].iloc[-1])
-            if v_curr is None and not df.empty:
+            if (v_curr is None or v_curr == 0) and not df.empty:
                 v_curr = float(df['Volume'].iloc[-1])
             if not final_display_name:
                 try:
-                    df_krx_backup = load_krx_listing()
-                    final_display_name = df_krx_backup[df_krx_backup['Code'] == symbol]['Name'].values[0]
+                    df_krx = load_krx_listing()
+                    final_display_name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
                 except:
                     final_display_name = f"국내종목 ({symbol})"
 
@@ -145,8 +145,9 @@ if symbol:
             if p == prev_p and len(df) > 1:
                 prev_p = float(df['Close'].iloc[-2])
         else:
-            ticker = yf.Ticker(symbol.upper()); df = ticker.history(start=start_date)
             currency, fmt_p = "$", ",.2f"
+            ticker = yf.Ticker(symbol.upper())
+            df = ticker.history(start=start_date)
             
             try:
                 info = ticker.fast_info
@@ -154,8 +155,9 @@ if symbol:
                 v_curr = info.last_volume
                 prev_p = info.previous_close
             except:
-                p = float(df['Close'].iloc[-1]); v_curr = float(df['Volume'].iloc[-1])
-                prev_p = float(df['Close'].iloc[-2])
+                p = float(df['Close'].iloc[-1]) if not df.empty else 0.0
+                v_curr = float(df['Volume'].iloc[-1]) if not df.empty else 0.0
+                prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
             us_vault = {
                 "TSLA": "테슬라 (Tesla)", "NVDA": "엔비디아 (NVIDIA)", 
@@ -164,6 +166,7 @@ if symbol:
             }
             final_display_name = us_vault.get(symbol.upper(), symbol.upper())
 
+        # 데이터가 존재할 때 무조건 화면 그리기
         if not df.empty and p is not None:
             df.loc[df.index[-1], 'Close'] = p
             df = df.ffill().dropna()
@@ -184,7 +187,9 @@ if symbol:
                 if now_local.weekday() >= 5: elapsed = 390
                 vol_strength = min(1000, v_ratio / (elapsed / 390))
             
-            delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+            delta = df['Close'].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
             rsi_val, rsi_prev = rsi_series.iloc[-1], rsi_series.iloc[-2]
             
@@ -195,8 +200,11 @@ if symbol:
             macd = df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()
             sig_line = macd.ewm(span=9).mean()
             m_l, s_l, m_p, s_p = macd.iloc[-1], sig_line.iloc[-1], macd.iloc[-2], sig_line.iloc[-2]
-            df['MA20'] = df['Close'].rolling(20).mean(); df['Std'] = df['Close'].rolling(20).std()
-            mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
+            df['MA20'] = df['Close'].rolling(20).mean()
+            df['Std'] = df['Close'].rolling(20).std()
+            mid_line = df['MA20'].iloc[-1]
+            up_b = mid_line + (df['Std'].iloc[-1] * 2)
+            low_b = mid_line - (df['Std'].iloc[-1] * 2)
             defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
             # 전광판 출력
