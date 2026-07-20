@@ -1,11 +1,8 @@
 import streamlit as st
-import FinanceDataReader as fdr
 import yfinance as yf
 import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 import pytz
-import requests
 
 # 글로벌 시장 고속 수집
 @st.cache_data(ttl=60)
@@ -90,45 +87,15 @@ if symbol:
             code_str = symbol.zfill(6)
             final_display_name = core_vault.get(code_str, f"국내종목 ({code_str})")
 
-            # [1단계 안전 통로] 네이버 모바일 API (0.5초 제한)
+            # yfinance로만 국장 수집 (블록 우회)
             try:
-                url_m = f"https://m.stock.naver.com/api/stock/{code_str}/basic"
-                res_m = requests.get(url_m, headers={'User-Agent': 'Mozilla/5.0'}, timeout=0.5)
-                if res_m.status_code == 200:
-                    d_m = res_m.json()
-                    p = float(d_m.get('closePrice', '0').replace(',', ''))
-                    diff = float(d_m.get('compareToPreviousClosePrice', '0').replace(',', ''))
-                    c_dir = d_m.get('compareToPreviousPrice', {}).get('code', '3')
-                    if c_dir in ['4', '5']: diff = -diff
-                    prev_p = p - diff
-                    v_curr = float(d_m.get('accumulatedTradingVolume', '0').replace(',', ''))
-                    if code_str not in core_vault and d_m.get('stockName'):
-                        final_display_name = d_m.get('stockName')
+                ticker = yf.Ticker(f"{code_str}.KQ")
+                df = ticker.history(start=start_date)
+                if df.empty:
+                    ticker = yf.Ticker(f"{code_str}.KS")
+                    df = ticker.history(start=start_date)
             except:
                 pass
-
-            # [2단계 안전 통로] FinanceDataReader
-            try:
-                df = fdr.DataReader(code_str, start=start_date.strftime('%Y-%m-%d'))
-            except:
-                pass
-
-            # [3단계 안전 통로] yfinance
-            if df.empty:
-                try:
-                    tk_kr = yf.Ticker(f"{code_str}.KQ")
-                    df = tk_kr.history(start=start_date)
-                    if df.empty:
-                        tk_kr = yf.Ticker(f"{code_str}.KS")
-                        df = tk_kr.history(start=start_date)
-                except:
-                    pass
-
-            # 수치 보완 트랩
-            if not df.empty:
-                if p == 0: p = float(df['Close'].iloc[-1])
-                if prev_p == 0: prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
-                if v_curr == 0: v_curr = float(df['Volume'].iloc[-1])
         else:
             currency, fmt_p = "$", ",.2f"
             tk_us = symbol.upper()
@@ -143,32 +110,24 @@ if symbol:
             try:
                 ticker = yf.Ticker(tk_us)
                 df = ticker.history(start=start_date)
-                info = ticker.fast_info
-                p = float(info.last_price)
-                v_curr = float(info.last_volume)
-                prev_p = float(info.previous_close)
             except:
-                if not df.empty:
-                    p = float(df['Close'].iloc[-1])
-                    v_curr = float(df['Volume'].iloc[-1])
-                    prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
+                pass
 
-        # 백지 먹통 방지 더미 데이터 생성 트랩
+        # 백지 방어 더미 트랩
         if df.empty:
             dates = pd.date_range(end=datetime.now(), periods=100)
             df = pd.DataFrame({
-                'Open': [p if p > 0 else 10000.0] * 100,
-                'High': [p if p > 0 else 10000.0] * 100,
-                'Low': [p if p > 0 else 10000.0] * 100,
-                'Close': [p if p > 0 else 10000.0] * 100,
-                'Volume': [v_curr if v_curr > 0 else 1000.0] * 100
+                'Open': [10000.0] * 100, 'High': [10000.0] * 100,
+                'Low': [10000.0] * 100, 'Close': [10000.0] * 100,
+                'Volume': [1000.0] * 100
             }, index=dates)
 
-        if p == 0: p = float(df['Close'].iloc[-1])
-        if prev_p == 0: prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
+        p = float(df['Close'].iloc[-1])
+        v_curr = float(df['Volume'].iloc[-1])
+        prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
         # ========================================================
-        # 무조건 아래쪽 화면을 100% 띄워내는 강제 출력부
+        # 강제 전광판 및 신호등 출력부
         # ========================================================
         df.loc[df.index[-1], 'Close'] = p
         df = df.ffill().dropna()
@@ -210,7 +169,7 @@ if symbol:
         low_b = mid_line - (float(df['Std'].iloc[-1]) * 2)
         defense_line = float(df['High'].iloc[-21:-1].max()) * 0.93
 
-        # 1. 전광판 출력
+        # 전광판 출력
         st.markdown("### 📊 현재주가현황")
         display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
         st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol.upper()})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
