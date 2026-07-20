@@ -46,7 +46,7 @@ if symbol:
 
         code_str = str(symbol).zfill(6) if is_kr else symbol.upper()
 
-        # [NEW 마스터 장부] 사령관님 실전 종목 완벽 탑재 (에이직랜드 20,200원 포함)
+        # [사령관님 실전 마스터 보급선] 
         master_vault = {
             "445090": ("에이직랜드", 20200.0),
             "005930": ("삼성전자", 244000.0),
@@ -76,13 +76,13 @@ if symbol:
         prev_p = p * 0.985
         v_curr = 280000.0
 
-        # 수학적 오차 및 역전이 절대 발생하지 않는 정밀 밴드선 설계
-        low_b = p * 0.95        # 공략 대기선 (현재가 아래)
-        up_b = p * 1.06         # 수확 목표선 (현재가 위)
-        defense_line = p * 0.91 # 성벽 방어선 (현재가 아래)
+        # 수학적 역전 절대 없는 밴드선 칼 고정
+        low_b = p * 0.95        # 공략 대기선
+        up_b = p * 1.06         # 수확 목표선
+        defense_line = p * 0.91 # 성벽 방어선
         mid_line = p
 
-        # 독립형 정밀 시계열 데이터프레임 (지표 100% 정상 연산 보장)
+        # 독립 고속 시계열 데이터프레임
         dates = pd.date_range(end=datetime.now(), periods=100)
         df = pd.DataFrame({
             'Open': [p * 0.99] * 100,
@@ -111,7 +111,7 @@ if symbol:
             if now_local.weekday() >= 5: elapsed = 390
             vol_strength = min(1000, v_ratio / (elapsed / 390))
         
-        # 4대 기술적 지표 산출
+        # 4대 지표 산출
         delta = df['Close'].diff()
         gain = (delta.where(delta > 0, 0)).rolling(14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
@@ -126,7 +126,7 @@ if symbol:
         sig_line = macd.ewm(span=9).mean()
         m_l, s_l, m_p, s_p = float(macd.iloc[-1]), float(sig_line.iloc[-1]), float(macd.iloc[-2]), float(sig_line.iloc[-2])
 
-        # 전광판 출력 (종목명 중복 오류 영구 차단)
+        # 전광판 출력
         st.markdown("### 📊 현재주가현황")
         display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
         st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({code_str})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
