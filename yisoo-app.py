@@ -1,11 +1,56 @@
 import streamlit as st
-import FinanceDataReader as fdr
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 import pytz
+import requests
+import json
+from bs4 import BeautifulSoup
 
-# 글로벌 시장 고속 수집
+# --- [네이버 모바일 초고속 실시간 엔진 (0.2초 폭속)] ---
+def get_naver_stock_all(symbol):
+    code_str = str(symbol).zfill(6)
+    headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)'}
+    
+    p, prev_p, v_curr, name = None, None, None, None
+    
+    # 1. 네이버 모바일 실시간 API 타격
+    try:
+        url_basic = f"https://m.stock.naver.com/api/stock/{code_str}/basic"
+        res = requests.get(url_basic, headers=headers, timeout=1.5)
+        if res.status_code == 200:
+            data = res.json()
+            p = float(data.get('closePrice', '0').replace(',', ''))
+            diff = float(data.get('compareToPreviousClosePrice', '0').replace(',', ''))
+            code_dir = data.get('compareToPreviousPrice', {}).get('code', '3')
+            if code_dir in ['4', '5']: diff = -diff
+            prev_p = p - diff
+            v_curr = float(data.get('accumulatedTradingVolume', '0').replace(',', ''))
+            name = data.get('stockName', None)
+    except:
+        pass
+
+    # 2. 네이버 초고속 차트 API 수집 (300일 치 다이어트)
+    df = pd.DataFrame()
+    try:
+        url_chart = f"https://fchart.stock.naver.com/sise.nhn?timeframe=day&count=350&requestType=0&symbol={code_str}"
+        res_c = requests.get(url_chart, headers=headers, timeout=1.5)
+        if res_c.status_code == 200:
+            soup = BeautifulSoup(res_c.text, 'html.parser')
+            items = soup.find_all('item')
+            data_list = [item['data'].split('|') for item in items if item.get('data')]
+            if data_list:
+                df = pd.DataFrame(data_list, columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
+                df['Close'] = df['Close'].astype(float)
+                df['Open'] = df['Open'].astype(float)
+                df['High'] = df['High'].astype(float)
+                df['Low'] = df['Low'].astype(float)
+                df['Volume'] = df['Volume'].astype(float)
+    except:
+        pass
+
+    return p, prev_p, v_curr, name, df
+
 @st.cache_data(ttl=60)
 def fetch_global_market():
     try:
@@ -72,7 +117,6 @@ if symbol:
         now_local = datetime.now(now_tz)
         df = pd.DataFrame()
 
-        # 주요 한글 종목 사전
         core_vault = {
             "005930": "삼성전자", "000660": "SK하이닉스", 
             "033100": "제룡전기", "257720": "실리콘투", 
@@ -85,13 +129,10 @@ if symbol:
             currency, fmt_p = "원", ",.0f"
             code_str = symbol.zfill(6)
             
-            # 1. FDR 데이터 수집
-            try:
-                df = fdr.DataReader(code_str, start=start_date.strftime('%Y-%m-%d'))
-            except:
-                pass
+            # [네이버 초고속 엔진 가동]
+            p, prev_p, v_curr, kr_name, df = get_naver_stock_all(code_str)
 
-            # 2. FDR 실패 시 yfinance 수집
+            # 백업 망 (야후 파이낸스)
             if df.empty:
                 try:
                     ticker = yf.Ticker(f"{code_str}.KQ")
@@ -102,11 +143,28 @@ if symbol:
                 except:
                     pass
 
-            final_display_name = core_vault.get(code_str, f"국내종목 ({code_str})")
+            if p is None or p == 0:
+                p = float(df['Close'].iloc[-1]) if not df.empty else 0.0
+            if v_curr is None or v_curr == 0:
+                v_curr = float(df['Volume'].iloc[-1]) if not df.empty else 0.0
+            if prev_p is None or prev_p == 0:
+                prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
+
+            final_display_name = core_vault.get(code_str, kr_name if kr_name else f"국내종목 ({code_str})")
         else:
             currency, fmt_p = "$", ",.2f"
             ticker = yf.Ticker(symbol.upper())
             df = ticker.history(start=start_date)
+
+            try:
+                info = ticker.fast_info
+                p = info.last_price
+                v_curr = info.last_volume
+                prev_p = info.previous_close
+            except:
+                p = float(df['Close'].iloc[-1]) if not df.empty else 0.0
+                v_curr = float(df['Volume'].iloc[-1]) if not df.empty else 0.0
+                prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
             us_vault = {
                 "TSLA": "테슬라 (Tesla)", "NVDA": "엔비디아 (NVIDIA)", 
@@ -116,12 +174,9 @@ if symbol:
             }
             final_display_name = us_vault.get(symbol.upper(), symbol.upper())
 
-        # 데이터가 정상 로드되었을 때만 분석 전광판 생성
-        if not df.empty:
-            p = float(df['Close'].iloc[-1])
-            v_curr = float(df['Volume'].iloc[-1])
-            prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
-
+        # 데이터 연산 및 전광판 출력
+        if not df.empty and p > 0:
+            df.loc[df.index[-1], 'Close'] = p
             df = df.ffill().dropna()
             
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) if len(df) >= 6 else 1.0
