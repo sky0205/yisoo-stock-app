@@ -192,9 +192,12 @@ if symbol:
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
             # 이평선 배열 판독 (정배열 / 역배열)
-            if p > mid_line and mid_line > ma60_val and ma60_val > ma120_val:
+            is_bullish = (p > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
+            is_bearish = (p < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
+
+            if is_bullish:
                 trend_status = "🔥 **[대세 정배열]** 우상향 성벽 구축 중"
-            elif p < mid_line and mid_line < ma60_val and ma60_val < ma120_val:
+            elif is_bearish:
                 trend_status = "⚠️ **[대세 역배열]** 지하실 향하는 하락 추세"
             else:
                 trend_status = "⚖️ **[추세 혼조/횡보]** 방향 탐색 중"
@@ -271,7 +274,7 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선 (볼린저상단)</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # 실전 필살 대응 전략 (이평선 누락 방지를 위해 adv3, adv4로 분리 배치)
+            # 실전 필살 대응 전략 
             adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
             adv3 = f"3. **중장기 추세 진단:** {trend_status} (20일선: {mid_line:,.0f} | 60일선: {ma60_val:,.0f} | 120일선: {ma120_val:,.0f})"
@@ -295,6 +298,10 @@ if symbol:
                         final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 엔진은 정회전(헛바퀴)이나 성벽 아래일세. 속지 말고 **추가 진격 금지 및 관망!**" if p < defense_line else f"🔮 **[최종 결론]** 보정강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 시동 걸렸고 성벽 사수 중이네! **강력 매수 검토!**"
                     else:
                         final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 중앙선 방향 보며 **무조건 관망 및 대기!**"
+
+            # ★ [냉정 분석 필터] 대세 역배열(하락 추세)일 때 매수/진격 결론을 강력하게 차단하고 경고 발령
+            if is_bearish:
+                final_adv = f"🚨 **[냉정 경고]** 현재 **[대세 역배열(하락 추세)]** 구간이네! 단기 바닥이나 변곡점 신호에 속아 진격하면 지하실로 끌려가니 **무조건 관망 및 반등 시 탈출!**"
 
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div>
