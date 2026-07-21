@@ -80,16 +80,15 @@ if symbol:
 
         df = pd.DataFrame()
         p, v_curr = 0.0, 0.0
+        us_prev_p = None
 
         if is_kr:
             currency, fmt_p = "원", ",.0f"
-            # 1차 시도: FinanceDataReader
             try:
                 df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
             except:
                 pass
             
-            # 2차 시도: 만약 비어있으면 야후 파이낸스 백업 (.KS 및 .KQ)
             if df.empty:
                 try:
                     df = yf.Ticker(f"{symbol}.KS").history(start=start_date)
@@ -98,7 +97,6 @@ if symbol:
                 except:
                     pass
 
-            # 실시간 가격 크롤링 (네이버)
             try:
                 url = f"https://finance.naver.com/item/main.naver?code={symbol}"
                 res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
@@ -117,31 +115,43 @@ if symbol:
                 info = ticker.fast_info
                 p = info.last_price
                 v_curr = info.last_volume
+                us_prev_p = info.previous_close # 미장 전용 전일 종가 안전 확보
             except:
-                if not df.empty:
-                    p = float(df['Close'].iloc[-1])
-                    v_curr = float(df['Volume'].iloc[-1])
+                pass
+            
+            if p == 0.0 and not df.empty:
+                p = float(df['Close'].iloc[-1])
+                v_curr = float(df['Volume'].iloc[-1])
 
         if df.empty:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인하거나 잠시 후 다시 시도해 주시게.")
         else:
             df = df.ffill().dropna()
-            df.index = pd.to_datetime(df.index)
-            today_date = pd.Timestamp(now_local.date())
+            # 타임존 충돌 방지를 위해 인덱스를 순수 날짜(date)로 표준화
+            df.index = pd.to_datetime(df.index).date
+            today_date = now_local.date()
 
-            # ★ [핵심 정밀 동기화] 실시간 가격(p) 반영
+            # ★ [전일비 왜곡 원천 차단] 미장은 fast_info의 전일 종가 우선 확보, 국장은 이전 행 종가 확정
+            if not is_kr and us_prev_p and us_prev_p > 0:
+                prev_p = us_prev_p
+            else:
+                if today_date in df.index:
+                    temp_df = df.loc[df.index < today_date]
+                    prev_p = float(temp_df['Close'].iloc[-1]) if not temp_df.empty else float(df['Close'].iloc[0])
+                else:
+                    prev_p = float(df['Close'].iloc[-1]) if len(df) > 0 else p
+
+            # ★ [실시간 가격 반영]
             if today_date in df.index:
                 df.loc[today_date, 'Close'] = p
                 df.loc[today_date, 'Volume'] = v_curr
                 if p > df.loc[today_date, 'High']: df.loc[today_date, 'High'] = p
                 if p < df.loc[today_date, 'Low']: df.loc[today_date, 'Low'] = p
-                prev_p = float(df['Close'].shift(1).iloc[-1]) if len(df) > 1 else p
             else:
                 new_row = pd.DataFrame({
                     'Open': [p], 'High': [p], 'Low': [p], 'Close': [p], 'Volume': [v_curr]
                 }, index=[today_date])
                 df = pd.concat([df, new_row])
-                prev_p = float(df['Close'].iloc[-2]) if len(df) > 1 else p
 
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) if len(df) >= 6 else float(df['Volume'].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
