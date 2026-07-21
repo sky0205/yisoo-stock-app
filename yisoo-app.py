@@ -115,7 +115,7 @@ if symbol:
                 info = ticker.fast_info
                 p = info.last_price
                 v_curr = info.last_volume
-                us_prev_p = info.previous_close # 미장 전용 전일 종가 안전 확보
+                us_prev_p = info.previous_close
             except:
                 pass
             
@@ -127,11 +127,9 @@ if symbol:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인하거나 잠시 후 다시 시도해 주시게.")
         else:
             df = df.ffill().dropna()
-            # 타임존 충돌 방지를 위해 인덱스를 순수 날짜(date)로 표준화
             df.index = pd.to_datetime(df.index).date
             today_date = now_local.date()
 
-            # ★ [전일비 왜곡 원천 차단] 미장은 fast_info의 전일 종가 우선 확보, 국장은 이전 행 종가 확정
             if not is_kr and us_prev_p and us_prev_p > 0:
                 prev_p = us_prev_p
             else:
@@ -141,7 +139,6 @@ if symbol:
                 else:
                     prev_p = float(df['Close'].iloc[-1]) if len(df) > 0 else p
 
-            # ★ [실시간 가격 반영]
             if today_date in df.index:
                 df.loc[today_date, 'Close'] = p
                 df.loc[today_date, 'Volume'] = v_curr
@@ -181,10 +178,26 @@ if symbol:
             sig_line = macd.ewm(span=9).mean()
             m_l, s_l, m_p, s_p = macd.iloc[-1], sig_line.iloc[-1], macd.iloc[-2], sig_line.iloc[-2]
             
-            df['MA20'] = df['Close'].rolling(20).mean(); df['Std'] = df['Close'].rolling(20).std()
+            # 단기/중장기 이동평균선 산출 (20일, 60일, 120일)
+            df['MA20'] = df['Close'].rolling(20).mean()
+            df['MA60'] = df['Close'].rolling(60).mean()
+            df['MA120'] = df['Close'].rolling(120).mean()
+            df['Std'] = df['Close'].rolling(20).std()
+            
             mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
+            ma60_val = df['MA60'].iloc[-1] if len(df) >= 60 else mid_line
+            ma120_val = df['MA120'].iloc[-1] if len(df) >= 120 else mid_line
+            
             defense_link_idx = min(21, len(df))
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
+
+            # 이평선 배열 판독 (정배열 / 역배열)
+            if p > mid_line and mid_line > ma60_val and ma60_val > ma120_val:
+                trend_status = "🔥 **[대세 정배열]** 우상향 성벽 구축 중"
+            elif p < mid_line and mid_line < ma60_val and ma60_val < ma120_val:
+                trend_status = "⚠️ **[대세 역배열]** 지하실 향하는 하락 추세"
+            else:
+                trend_status = "⚖️ **[추세 혼조/횡보]** 방향 탐색 중"
 
             # 종목 이름 판독
             if is_kr:
@@ -252,28 +265,30 @@ if symbol:
             
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
-            # 가격 카드 출력
+            # 가격 카드 출력 (공략대기선, 수확목표선, 성벽)
             c1, c2, c3 = st.columns(3)
-            with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
-            with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선 (볼린저하단)</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선 (볼린저상단)</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
+            # 실전 필살 대응 전략 (이평선 누락 방지를 위해 adv3, adv4로 분리 배치)
             adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
+            adv3 = f"3. **중장기 추세 진단:** {trend_status} (20일선: {mid_line:,.0f} | 60일선: {ma60_val:,.0f} | 120일선: {ma120_val:,.0f})"
             
             if bottom_score >= 2 and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
-                adv3 = "3. **엔진(MACD) 확인:** 다중 바닥 권역에 엔진 시동 중이네! 소량 분할 매수 기회를 노리시게."
+                adv4 = "4. **엔진(MACD) 확인:** 다중 바닥 권역에 엔진 시동 중이네! 소량 분할 매수 기회를 노리시게."
                 final_adv = f"🏹 **[최종 결론]** 보정강도({vol_strength:.1f}점). 다중 바닥 권역 확인 및 엔진 시동 완료! 소량 **[분할 매수]** 타이밍을 노리시게!"
             else:
                 if m_l < s_l:
                     if is_macd_turning:
-                        adv3 = "3. **엔진(MACD) 확인:** 엔진 **역회전폭 급감** 중이라네! 시동 걸 채비 중이니 진격 신호를 기다리시게."
+                        adv4 = "4. **엔진(MACD) 확인:** 엔진 **역회전폭 급감** 중이라네! 시동 걸 채비 중이니 진격 신호를 기다리시게."
                         final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 중간 지대에서 엔진 역회전폭 급감 중이네. 기세가 완전히 잡힐 때까지 **무조건 관망 및 대기!**"
                     else:
-                        adv3 = "3. **엔진(MACD) 확인:** 엔진 **역회전 심화** 중이라네! 거꾸로 도는 차니 절대 속지 마시게."
+                        adv4 = "4. **엔진(MACD) 확인:** 엔진 **역회전 심화** 중이라네! 거꾸로 도는 차니 절대 속지 마시게."
                         final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 중간 지대에서 엔진 역회전 심화 중이네. 기세가 잡힐 때까지 **무조건 관망 및 대기!**"
                 else:
-                    adv3 = "3. **엔진(MACD) 확인:** 엔진 정회전 완료! 본대 진격의 신호탄이 터졌네."
+                    adv4 = "4. **엔진(MACD) 확인:** 엔진 정회전 완료! 본대 진격의 신호탄이 터졌네."
                     if p >= up_b or rsi_val >= 60:
                         final_adv = f"🚀 **[최종 결론]** 보정강도({vol_strength:.1f}점). 성벽 딛고 하늘 문이 열렸네! **비중 유지 및 홀딩!**" if vol_strength >= 150 and p > defense_line else f"💰 **[최종 결론]** 보정강도({vol_strength:.1f}점). 성벽 위나 기세가 약해지네. **야금야금 분할 매도 시작!**"
                     elif p <= (low_b * 1.02):
@@ -282,7 +297,10 @@ if symbol:
                         final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 중앙선 방향 보며 **무조건 관망 및 대기!**"
 
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
-                <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
+                <div class='trend-item'>{adv1}</div>
+                <div class='trend-item'>{adv2}</div>
+                <div class='trend-item'>{adv3}</div>
+                <div class='trend-item'>{adv4}</div>
                 <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)
 
             # 지표 상세 진단
