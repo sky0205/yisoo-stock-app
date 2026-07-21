@@ -254,17 +254,23 @@ if symbol:
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
+            # ★ [신호등 동기화] 대세 역배열일 때는 바닥 신호가 떠도 매수 불을 끄고 주의 경고로 전환
             if top_score >= 2:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
             elif bottom_score >= 2:
-                if is_reverse_shrinking or is_macd_turning:
+                if is_bearish:
+                    sig, col, s_adv = "🟡 관망 및 대기 (역배열 주의)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 **[대세 역배열]** 구간이오! 지하실 낙하산이니 절대 선취매 금지!"
+                elif is_reverse_shrinking or is_macd_turning:
                     sig, col, s_adv = "🔴 [명장의 선취매 타점]", "#D32F2F", f"• 🎯 **[필살 변곡점]** 다중 바닥({bottom_score}/3) 상태에서 엔진 역회전 폭이 줄어들기 시작했소! 명장의 날카로운 선취매 타이밍이오!"
                 elif is_engine_reverse:
                     sig, col, s_adv = "🟡 관망 및 대기 (역회전 심화)", "#FBC02D", f"• ⚠️ 다중 바닥 지표({bottom_score}/3)이나 엔진 역회전이 깊어지는 중일세. 칼 뽑지 말고 폭이 줄어들 때까지 대기하시게."
                 else:
                     sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"• 🧊 다중 바닥 및 엔진 정회전 확정 포착! 자신 있게 진격할 타이밍이오. (매수 지표 일치도: {bottom_score}/3)"
             else:
-                sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"• 눈치싸움 중일세. 지표 끝단을 기다리시게. (바닥동조: {bottom_score}/3 | 과열동조: {top_score}/3)"
+                if is_bearish:
+                    sig, col, s_adv = "🟡 관망 및 대기 (역배열 하락중)", "#FBC02D", f"• ⚠️ 대세 역배열 하락 추세 중이네. 무조건 자숙하시게."
+                else:
+                    sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"• 눈치싸움 중일세. 지표 끝단을 기다리시게. (바닥동조: {bottom_score}/3 | 과열동조: {top_score}/3)"
             
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
@@ -299,7 +305,7 @@ if symbol:
                     else:
                         final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 중앙선 방향 보며 **무조건 관망 및 대기!**"
 
-            # ★ [냉정 분석 필터] 대세 역배열(하락 추세)일 때 매수/진격 결론을 강력하게 차단하고 경고 발령
+            # ★ [냉정 분석 필터] 대세 역배열(하락 추세)일 때 최종 결론 차단 및 경고 발령
             if is_bearish:
                 final_adv = f"🚨 **[냉정 경고]** 현재 **[대세 역배열(하락 추세)]** 구간이네! 단기 바닥이나 변곡점 신호에 속아 진격하면 지하실로 끌려가니 **무조건 관망 및 반등 시 탈출!**"
 
