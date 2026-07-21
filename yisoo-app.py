@@ -19,12 +19,48 @@ def fetch_global_market():
     sp500 = yf.Ticker("^GSPC").fast_info
     dow = yf.Ticker("^DJI").fast_info
     tnx = yf.Ticker("^TNX").fast_info
+    usdkrw = yf.Ticker("USDKRW=X").fast_info
     return {
         "n_last": nasdaq.last_price, "n_prev": nasdaq.previous_close,
         "s_last": sp500.last_price, "s_prev": sp500.previous_close,
         "d_last": dow.last_price, "d_prev": dow.previous_close,
-        "t_last": tnx.last_price, "t_prev": tnx.previous_close
+        "t_last": tnx.last_price, "t_prev": tnx.previous_close,
+        "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
+
+# 국장 외인·기관 수급 동향 파악 함수 (네이버 금융 연동)
+def fetch_kr_investor_trend(symbol):
+    try:
+        url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+        res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        
+        # 투자자별 매매동향 테이블 파악 시도
+        # 안전하게 텍스트 전체에서 외국인/기관 매매 성향 키워드 추출
+        body_text = soup.get_text()
+        
+        # 기본값
+        frgn_status = "외인 수급 중립"
+        inst_status = "기관 수급 중립"
+        is_double_sell = False
+        
+        # 간단 키워드 감지 로직
+        if "외국인" in body_text and "순매도" in body_text:
+            frgn_status = "외인 순매도 기조"
+        elif "외국인" in body_text and "순매수" in body_text:
+            frgn_status = "외인 순매수 유입"
+            
+        if "기관" in body_text and "순매도" in body_text:
+            inst_status = "기관 순매도 기조"
+        elif "기관" in body_text and "순매수" in body_text:
+            inst_status = "기관 순매수 유입"
+            
+        if "순매도" in frgn_status and "순매도" in inst_status:
+            is_double_sell = True
+            
+        return f"{frgn_status} / {inst_status}", is_double_sell
+    except:
+        return "수급 집계 데이터 대기 중", False
 
 # 1. 스타일 및 화면 구성 (완벽 유지)
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
@@ -47,23 +83,32 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 def display_global_risk():
-    st.markdown("### 🌍 글로벌 4대 지수 및 국채 종합 전황")
+    st.markdown("### 🌍 글로벌 5대 지수 및 환율·국채 종합 전황")
     try:
         data = fetch_global_market()
         n_chg = (data["n_last"] / data["n_prev"] - 1) * 100
         s_chg = (data["s_last"] / data["s_prev"] - 1) * 100
         d_chg = (data["d_last"] / data["d_prev"] - 1) * 100
         tnx_val, tnx_chg = data["t_last"], (data["t_last"] / data["t_prev"] - 1) * 100
+        u_val, u_chg = data["u_last"], (data["u_last"] / data["u_prev"] - 1) * 100
         
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3, c4, c5 = st.columns(5)
         c1.metric("나스닥 (NASDAQ)", f"{data['n_last']:,.2f}", f"{n_chg:+.2f}%")
         c2.metric("S&P 500 (SPX)", f"{data['s_last']:,.2f}", f"{s_chg:+.2f}%")
         c3.metric("다우존스 (DJI)", f"{data['d_last']:,.2f}", f"{d_chg:+.2f}%")
         c4.metric("미 국채 10년 (TNX)", f"{tnx_val:.3f}%", f"{tnx_chg:+.2f}%")
+        c5.metric("원/달러 환율", f"{u_val:,.2f}원", f"{u_chg:+.2f}%")
         
-        if tnx_val >= 4.5: adv = "🚨 **[금리 발작: 비상]** 국채 금리 4.5% 돌파! 기술주 성벽 주의하시게."
-        elif n_chg > 0.5 and tnx_chg < 0: adv = "🔥 **[골디락스 진입]** 지수 상승과 금리 하락, 기세 타시게."
-        else: adv = "🧐 **[눈치싸움 중]** 세력들이 간 보고 있구먼."
+        macro_alerts = []
+        if tnx_val >= 4.5: macro_alerts.append("🚨 [금리 발작] 국채 금리 4.5% 돌파!")
+        if u_val >= 1400: macro_alerts.append("🚨 [환율 비상] 원/달러 환율 1400원대 진입, 외인 이탈 주의!")
+        
+        if macro_alerts:
+            adv = " ".join(macro_alerts)
+        elif n_chg > 0.5 and tnx_chg < 0:
+            adv = "🔥 **[골디락스 진입]** 지수 상승과 금리 하락, 기세 타시게."
+        else:
+            adv = "🧐 **[눈치싸움 중]** 세력들이 간 보고 있구먼."
         st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
@@ -81,6 +126,7 @@ if symbol:
         df = pd.DataFrame()
         p, v_curr = 0.0, 0.0
         us_prev_p = None
+        investor_summary, is_double_sell = "해외 종목 (수급 집계 외)", False
 
         if is_kr:
             currency, fmt_p = "원", ",.0f"
@@ -107,6 +153,9 @@ if symbol:
                 if not df.empty:
                     p = float(df['Close'].iloc[-1])
                     v_curr = float(df['Volume'].iloc[-1])
+            
+            # 수급 동향 파악 호출
+            investor_summary, is_double_sell = fetch_kr_investor_trend(symbol)
         else:
             currency, fmt_p = "$", ",.2f"
             ticker = yf.Ticker(symbol.upper())
@@ -230,6 +279,10 @@ if symbol:
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol.upper()})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
+            # 수급 현황 서브 배너 (국장 전용)
+            if is_kr:
+                st.markdown(f"<div style='background-color:#E8F5E9; padding:12px 20px; border-radius:10px; border:2px solid #66BB6A; margin: 10px 0;'><p style='font-size:18px; color:#2E7D32; font-weight:bold; margin:0;'>🏛️ 세력 수급 동향 (외인·기관): {investor_summary}</p></div>", unsafe_allow_html=True)
+
             # 거래량 박스
             if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 **[화력폭발]** 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
             elif vol_strength >= 100: v_status, v_adv = "매집시작", f"🚀 **[매집시작]** 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
@@ -254,12 +307,13 @@ if symbol:
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
-            # ★ [신호등 동기화] 대세 역배열일 때는 바닥 신호가 떠도 매수 불을 끄고 주의 경고로 전환
+            # ★ [신호등 동기화] 대세 역배열이거나 외인·기관 쌍끌이 매도 시 바닥 신호 차단
             if top_score >= 2:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
             elif bottom_score >= 2:
-                if is_bearish:
-                    sig, col, s_adv = "🟡 관망 및 대기 (역배열 주의)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 **[대세 역배열]** 구간이오! 지하실 낙하산이니 절대 선취매 금지!"
+                if is_bearish or is_double_sell:
+                    reason = "대세 역배열" if is_bearish else "외인·기관 쌍끌이 매도"
+                    sig, col, s_adv = "🟡 관망 및 대기 (수급·추세 주의)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 **[{reason}]** 포착! 세력이 던지는 판이므로 진격 금지!"
                 elif is_reverse_shrinking or is_macd_turning:
                     sig, col, s_adv = "🔴 [명장의 선취매 타점]", "#D32F2F", f"• 🎯 **[필살 변곡점]** 다중 바닥({bottom_score}/3) 상태에서 엔진 역회전 폭이 줄어들기 시작했소! 명장의 날카로운 선취매 타이밍이오!"
                 elif is_engine_reverse:
@@ -267,8 +321,8 @@ if symbol:
                 else:
                     sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"• 🧊 다중 바닥 및 엔진 정회전 확정 포착! 자신 있게 진격할 타이밍이오. (매수 지표 일치도: {bottom_score}/3)"
             else:
-                if is_bearish:
-                    sig, col, s_adv = "🟡 관망 및 대기 (역배열 하락중)", "#FBC02D", f"• ⚠️ 대세 역배열 하락 추세 중이네. 무조건 자숙하시게."
+                if is_bearish or is_double_sell:
+                    sig, col, s_adv = "🟡 관망 및 대기 (하락/이탈 주의)", "#FBC02D", f"• ⚠️ 추세 하락 혹은 수급 이탈 중이네. 무조건 자숙하시게."
                 else:
                     sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"• 눈치싸움 중일세. 지표 끝단을 기다리시게. (바닥동조: {bottom_score}/3 | 과열동조: {top_score}/3)"
             
@@ -305,9 +359,11 @@ if symbol:
                     else:
                         final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 중앙선 방향 보며 **무조건 관망 및 대기!**"
 
-            # ★ [냉정 분석 필터] 대세 역배열(하락 추세)일 때 최종 결론 차단 및 경고 발령
+            # ★ [냉정 분석 필터] 대세 역배열 혹은 외인·기관 쌍끌이 매도 시 최종 결론 차단 및 경고 발령
             if is_bearish:
                 final_adv = f"🚨 **[냉정 경고]** 현재 **[대세 역배열(하락 추세)]** 구간이네! 단기 바닥이나 변곡점 신호에 속아 진격하면 지하실로 끌려가니 **무조건 관망 및 반등 시 탈출!**"
+            elif is_double_sell:
+                final_adv = f"🚨 **[수급 경고]** 현재 외인과 기관이 **[쌍끌이 순매도]**로 물량을 던지는 중이네! 세력이 이탈하는 종목이니 바닥 신호에 속지 말고 **무조건 관망!**"
 
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
                 <div class='trend-item'>{adv1}</div>
