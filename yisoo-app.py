@@ -28,24 +28,9 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
-# ★ 네이버 금융 일별 시세 및 외인/기관 수급 장부 강제 획득 함수 (백도어 방식)
+# ★ 네이버 금융 수급 장부 획득 함수 (차단 시 안전 방어형)
 @st.cache_data(ttl=60)
 def fetch_kr_investor_trend(symbol):
-    try:
-        # 네이버 금융 시세/수급 모바일 API 우회 접근
-        url = f"https://m.stock.naver.com/api/item/retention/{symbol}.json"
-        headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'}
-        res = requests.get(url, headers=headers, timeout=5)
-        if res.status_code == 200:
-            data = res.json()
-            # 데이터에서 일별 수급 리스트 추출 시도
-            if 'dealTrendList' in data:
-                df_deal = pd.DataFrame(data['dealTrendList'])
-                return df_deal
-    except:
-        pass
-    
-    # 백도어 실패 시 기존 웹 페이지 테이블 파싱 재시도
     try:
         url = f"https://finance.naver.com/item/frgn.naver?code={symbol}"
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
@@ -58,7 +43,6 @@ def fetch_kr_investor_trend(symbol):
                     return t
     except Exception as e:
         pass
-        
     return None
 
 # 1. 스타일 및 화면 구성
@@ -308,16 +292,14 @@ if symbol:
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
-            # ★ 국내 종목 수급 동향 테이블 안전 출력 장치
+            # ★ [수정완료] 혼선을 주는 가격 표(Open/High/Low) 대신, 수급 장부 연동 실패 시 깔끔하게 경고 문구만 띄우도록 수정
             if is_kr:
                 st.markdown("#### 👥 실시간 종목 수급 동향 (외인·기관 매매동향)")
                 inv_df = fetch_kr_investor_trend(symbol)
                 if inv_df is not None and not inv_df.empty:
                     st.dataframe(inv_df.head(7), use_container_width=True)
                 else:
-                    # 웹 스크래핑이 막힐 경우를 대비해 FinanceDataReader의 최근 시세 내역으로 대체 표출하여 공백 방지
-                    st.warning("⚠️ 네이버 수급 장부 직접 연동이 일시 차단되어 최근 가격 변동성 데이터로 대체합니다.")
-                    st.dataframe(df[['Open', 'High', 'Low', 'Close', 'Volume']].tail(5), use_container_width=True)
+                    st.warning("⚠️ 네이버 수급 장부 서버의 보안 방패(차단)로 인해 현재 외인·기관 실시간 수급 동향을 불러올 수 없습니다. (가격 변동 데이터로 대체하지 않고 깔끔하게 비워둡니다.)")
 
             if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
             elif vol_strength >= 100: v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
@@ -420,7 +402,7 @@ if symbol:
 </div>
 <hr style='border:1px solid #FFEBEE; margin: 20px 0;'>
 <div class='final-msg'>
-{final_adv.replace('<b>', '').replace('</b>', '').replace('<i>', '').replace('icon', '')}
+{final_adv.replace('<b>', '').replace('</b>', '').replace('<i>', '').replace('</i>', '')}
 </div>
 </div>""", unsafe_allow_html=True)
 
