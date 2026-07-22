@@ -3,7 +3,7 @@ import FinanceDataReader as fdr
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
-import pytz
+from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
 
@@ -28,7 +28,7 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
-# 1. 스타일 및 화면 구성 (최종 결론 폰트 크기를 항목 제목과 같은 24px 및 붉은색으로 통일)
+# 1. 스타일 및 화면 구성
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
@@ -69,7 +69,6 @@ def display_global_risk():
         if tnx_val >= 4.5: 
             macro_alerts.append(f"🚨 [금리 발작] 국채 금리 {tnx_val:.3f}% 돌파!")
         
-        # 환율 임계점 세분화 진단 로직 (1,500원대 대공황 비상 구간 신설)
         if u_val >= 1500:
             macro_alerts.append(f"☠️ [환율 대공황 비상] 원/달러 {u_val:,.2f}원! 1,500원선 완전 붕괴! 과거 1,550원 악몽 재현, 국가 경제 및 증시 전면 초토화 경보!")
         elif u_val >= 1480:
@@ -101,7 +100,7 @@ symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "2577
 if symbol:
     try:
         start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
-        now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
+        now_tz = ZoneInfo('Asia/Seoul') if is_kr else ZoneInfo('America/New_York')
         now_local = datetime.now(now_tz)
 
         df = pd.DataFrame()
@@ -204,7 +203,6 @@ if symbol:
             sig_line = macd.ewm(span=9).mean()
             m_l, s_l, m_p, s_p = macd.iloc[-1], sig_line.iloc[-1], macd.iloc[-2], sig_line.iloc[-2]
             
-            # 이동평균선 산출 (5일, 20일, 60일, 120일)
             df['MA5'] = df['Close'].rolling(5).mean()
             df['MA20'] = df['Close'].rolling(20).mean()
             df['MA60'] = df['Close'].rolling(60).mean()
@@ -227,7 +225,6 @@ if symbol:
             elif is_bearish: trend_status = "⚠️ <b>[대세 역배열]</b> 지하실 향하는 하락 추세"
             else: trend_status = "⚖️ <b>[추세 혼조/횡보]</b> 방향 탐색 중"
 
-            # 종목 이름 판독
             if is_kr:
                 core_vault = {"005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", "257720": "실리콘투", "058610": "에스피지"}
                 final_display_name = core_vault.get(symbol, f"국내종목 ({symbol})")
@@ -247,12 +244,10 @@ if symbol:
                 tk = symbol.upper()
                 final_display_name = us_vault.get(tk, f"미국종목 ({tk})")
 
-            # 전광판 출력
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol.upper()})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
-            # 거래량 박스
             if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
             elif vol_strength >= 100: v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
             elif vol_strength >= 80: v_status, v_adv = "정상화력", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점! 기세가 빳빳하구먼."
@@ -260,7 +255,6 @@ if symbol:
             
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
-            # 신호등 점수 계측
             bb_bottom       = 1 if p <= (low_b * 1.005) else 0
             rsi_bottom      = 1 if rsi_val <= 35 else 0
             williams_bottom = 1 if will_val <= -80 else 0
@@ -291,13 +285,11 @@ if symbol:
             
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
-            # 가격 카드 출력
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선 (볼린저하단)</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선 (볼린저상단)</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-           # 성벽 사수 정밀 판독 로직 (5일선 안착 여부와 조화롭게 수정)
             if p >= defense_line:
                 if p >= prev_p and p >= ma5_val:
                     def_status = f"성벽({format(defense_line, fmt_p)}) 위에서 5일선 기세를 타고 <b>위로 진격 중</b>이네! 든든한 방어선을 등지고 계속 밀어붙이시게."
@@ -312,7 +304,6 @@ if symbol:
                     else:
                         def_status = f"성벽({format(defense_line, fmt_p)}) 아래로 함락된 채 기세마저 <b>밑으로 처박히고 있네</b>! 절대 칼을 뽑지 마시게."
 
-            # 최종 결론 도출 (매도권/과열권 판독 로직 완벽 연동)
             if top_score >= 2 or p >= up_b * 0.99 or rsi_val >= 60:
                 if vol_strength >= 150 and p > defense_line:
                     final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 화력 폭발하며 수확 목표선 도달! <b>비중 유지 및 홀딩!</b>"
@@ -333,17 +324,15 @@ if symbol:
                         final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진은 정회전이나 성벽 아래일세. <b>추가 진격 금지 및 관망!</b>" if p < defense_line else f"🔮 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 및 5일선 사수 중이네! <b>강력 매수 검토!</b>"
                     else:
                         final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. <b>무조건 관망 및 대기!</b>"
+
             if is_bearish:
                 final_adv = f"🚨 <b>[냉정 경고]</b> 현재 <b>[대세 역배열(하락 추세)]</b> 구간이네! 단기 바닥 신호에 속아 진격하면 지하실로 끌려가니 <b>무조건 관망 및 반등 시 탈출!</b>"
 
-            # -------------------------------------------------------------
-            # ★ [실전 필살 대응 전략] HTML 가독성 극대화 출력 (.final-msg 폰트 크기 24px 일치)
-            # -------------------------------------------------------------
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
 <div style='margin-bottom: 20px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>1. 단기 생명선(5일선) 사수</span><br>
-<span style='color: #333333; font-weight: bold; font-size: 20px;'>현재가({p:,.0f})가 5일선({ma5_val:,.0f}) {'아래로 이탈했으니 기세가 꺾였구먼.' if not is_ma5_safe else '위에 안착하여 단기 전투선이 살아있네.'}</span>
+<span style='color: #333333; font-weight: bold; font-size: 20px;'>현재가({p:,.2f})가 5일선({ma5_val:,.2f}) {'아래로 이탈했으니 기세가 꺾였구먼.' if not is_ma5_safe else '위에 안착하여 단기 전투선이 살아있네.'}</span>
 </div>
 <div style='margin-bottom: 20px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>2. 성벽 사수 확인</span><br>
@@ -351,7 +340,7 @@ if symbol:
 </div>
 <div style='margin-bottom: 20px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>3. 중장기 추세 진단</span><br>
-<span style='color: #333333; font-weight: bold; font-size: 20px;'>{trend_status} (5일선: {ma5_val:,.0f} | 20일선: {mid_line:,.0f} | 60일선: {ma60_val:,.0f} | 120일선: {ma120_val:,.0f})</span>
+<span style='color: #333333; font-weight: bold; font-size: 20px;'>{trend_status} (5일선: {ma5_val:,.2f} | 20일선: {mid_line:,.2f} | 60일선: {ma60_val:,.2f} | 120일선: {ma120_val:,.2f})</span>
 </div>
 <div style='margin-bottom: 25px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>4. 엔진(MACD) 확인</span><br>
@@ -363,7 +352,6 @@ if symbol:
 </div>
 </div>""", unsafe_allow_html=True)
 
-            # 지표 상세 진단
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
             
