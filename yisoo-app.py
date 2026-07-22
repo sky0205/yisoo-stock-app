@@ -28,7 +28,23 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
-# 1. 스타일 및 화면 구성 (신호등 박스 내부 글자색 강제 백색 고정 적용)
+# ★ 국내 종목 실시간 외인/기관 수급 장부 털어오기 보급로
+@st.cache_data(ttl=60)
+def fetch_kr_investor_trend(symbol):
+    try:
+        url = f"https://finance.naver.com/item/frgn.naver?code={symbol}"
+        res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
+        tables = pd.read_html(res.text)
+        for t in tables:
+            # 수급 데이터 테이블 판별 (컬럼에 기관이나 외국인이 포함된 경우)
+            cols_str = "".join([str(c) for c in t.columns])
+            if "기관" in cols_str or "외국인" in cols_str:
+                return t
+    except:
+        pass
+    return None
+
+# 1. 스타일 및 화면 구성
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
@@ -263,19 +279,24 @@ if symbol:
                 }
                 tk = symbol.upper()
                 kor_name = us_vault.get(tk, None)
-                
                 if not kor_name:
                     try:
                         info_dict = ticker.info
                         kor_name = info_dict.get('longName', info_dict.get('shortName', tk))
                     except:
                         kor_name = tk
-                        
                 final_display_name = f"{kor_name} ({tk})"
 
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
+
+            # ★ 국내 종목일 경우 실시간 외인/기관 수급 현황판 추가 표출
+            if is_kr:
+                inv_df = fetch_kr_investor_trend(symbol)
+                if inv_df is not None and not inv_df.empty:
+                    st.markdown("#### 👥 실시간 종목 수급 동향 (외인·기관 매매동향)")
+                    st.dataframe(inv_df.head(5), use_container_width=True)
 
             if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
             elif vol_strength >= 100: v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
