@@ -28,33 +28,40 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
-# 국장 외인·기관 수급 동향 파악 함수 (네이버 금융 연동)
+# 국장 외인·기관 수급 동향 정밀 타격 파악 함수
 def fetch_kr_investor_trend(symbol):
     try:
         url = f"https://finance.naver.com/item/main.naver?code={symbol}"
         res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
         soup = BeautifulSoup(res.text, 'html.parser')
         
-        # 투자자별 매매동향 테이블 파악 시도
-        # 안전하게 텍스트 전체에서 외국인/기관 매매 성향 키워드 추출
-        body_text = soup.get_text()
+        # 투자자별 매매동향 요약 영역 또는 테이블 요소를 정밀 타격
+        # 네이버 금융 메인 하단의 투자자별 매매동향 표(table.tb_type1 등)의 텍스트를 추출
+        investor_area = soup.select("table.tb_type1")
+        target_text = ""
+        if investor_area:
+            target_text = investor_area[0].get_text()
+        else:
+            target_text = soup.get_text() # 백업용 전체 텍스트
         
-        # 기본값
         frgn_status = "외인 수급 중립"
         inst_status = "기관 수급 중립"
         is_double_sell = False
         
-        # 간단 키워드 감지 로직
-        if "외국인" in body_text and "순매도" in body_text:
-            frgn_status = "외인 순매도 기조"
-        elif "외국인" in body_text and "순매수" in body_text:
-            frgn_status = "외인 순매수 유입"
-            
-        if "기관" in body_text and "순매도" in body_text:
-            inst_status = "기관 순매도 기조"
-        elif "기관" in body_text and "순매수" in body_text:
-            inst_status = "기관 순매수 유입"
-            
+        # 외국인 순매수/순매도 세부 판정
+        if "외국인" in target_text:
+            if "매도" in target_text and ("순매도" in target_text or "-" in target_text):
+                frgn_status = "외인 순매도 기조"
+            elif "매수" in target_text or "순매수" in target_text:
+                frgn_status = "외인 순매수 유입"
+                
+        # 기관 순매수/순매도 세부 판정
+        if "기관" in target_text:
+            if "매도" in target_text and ("순매도" in target_text or "-" in target_text):
+                inst_status = "기관 순매도 기조"
+            elif "매수" in target_text or "순매수" in target_text:
+                inst_status = "기관 순매수 유입"
+                
         if "순매도" in frgn_status and "순매도" in inst_status:
             is_double_sell = True
             
@@ -154,7 +161,7 @@ if symbol:
                     p = float(df['Close'].iloc[-1])
                     v_curr = float(df['Volume'].iloc[-1])
             
-            # 수급 동향 파악 호출
+            # 정밀 타격 수급 동향 파악 호출
             investor_summary, is_double_sell = fetch_kr_investor_trend(symbol)
         else:
             currency, fmt_p = "$", ",.2f"
