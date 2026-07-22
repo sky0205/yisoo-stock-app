@@ -28,7 +28,7 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
-# 1. 스타일 및 화면 구성 (최종 결론 전용 클래스 추가)
+# 1. 스타일 및 화면 구성 (최종 결론 폰트 크기를 위쪽 내용과 동일한 20px로 정돈)
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
@@ -44,7 +44,7 @@ st.markdown("""
     .ind-box { background-color: #FFFFFF; padding: 22px; border-radius: 15px; border: 2.5px solid #90A4AE; min-height: 520px; margin-bottom: 15px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); }
     .ind-title { font-size: 26px !important; color: #1976D2 !important; border-bottom: 2px solid #EEEEEE; padding-bottom: 10px; margin-bottom: 15px; }
     .ind-diag { font-size: 20px !important; color: #333333 !important; line-height: 1.8; background-color: #FDFDFD; padding: 15px; border-radius: 10px; border-left: 8px solid #D32F2F; }
-    .final-msg { color: #D32F2F !important; font-size: 32px !important; font-weight: 900 !important; line-height: 1.5 !important; }
+    .final-msg { color: #D32F2F !important; font-size: 20px !important; font-weight: 900 !important; line-height: 1.6 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -282,7 +282,7 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선 (볼린저상단)</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # 성벽 사수 정밀 판독 로직 (별표 대신 HTML <b> 태그 적용)
+            # 성벽 사수 정밀 판독 로직
             if p >= defense_line:
                 if p >= prev_p and p >= ma5_val:
                     def_status = f"성벽({format(defense_line, fmt_p)}) 위에서 5일선 기세를 타고 <b>위로 진격 중</b>이네! 든든한 방어선을 등지고 계속 밀어붙이시게."
@@ -317,7 +317,7 @@ if symbol:
                 final_adv = f"🚨 <b>[냉정 경고]</b> 현재 <b>[대세 역배열(하락 추세)]</b> 구간이네! 단기 바닥 신호에 속아 진격하면 지하실로 끌려가니 <b>무조건 관망 및 반등 시 탈출!</b>"
 
             # -------------------------------------------------------------
-            # ★ [실전 필살 대응 전략] HTML 가독성 극대화 출력 (.final-msg 클래스 적용)
+            # ★ [실전 필살 대응 전략] HTML 가독성 극대화 출력 (.final-msg 폰트 크기 20px 통일)
             # -------------------------------------------------------------
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
