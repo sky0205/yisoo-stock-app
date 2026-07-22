@@ -348,17 +348,27 @@ if symbol:
             i1, i2, i3, i4 = st.columns(4)
             
             with i1:
-                if p >= up_b: bb_diag = "👺 <b>[천장 돌파]</b> 울타리 밖으로 기세 폭발! 탐욕의 끝단이니 익절하시게."
-                elif p <= low_b: bb_diag = "🧊 <b>[바닥 돌파]</b> 지하실까지 밀렸구먼. 엔진 시동을 기다리시게."
-                elif p >= mid_line: bb_diag = "⚠️ <b>[과열 진입]</b> 중앙선 위에서 기세 유지 중이나 온도가 높네."
+                if p >= up_b: 
+                    bb_diag = "👺 <b>[천장 돌파]</b> 울타리 밖으로 기세 폭발! 탐욕의 끝단이니 익절하시게."
+                elif p <= low_b: 
+                    bb_diag = "🧊 <b>[바닥 돌파]</b> 지하실까지 밀렸구먼. 엔진 시동을 기다리시게."
+                elif p >= mid_line: 
+                    if is_ma5_safe:
+                        bb_diag = "🔥 <b>[중앙선 안착]</b> 중앙선 위이자 5일선 사수 중! 기세가 살아있네."
+                    else:
+                        bb_diag = "⚠️ <b>[과열 진입]</b> 중앙선 위이나 5일선 아래로 이탈했으니 주의하시게."
                 else:
-                    if rsi_val < 30 and will_val <= -80 and is_ma5_safe and abs(m_l - s_l) < abs(m_diff_prev):
-                        bb_diag = "🏹 <b>[낙폭과대 진격]</b> 5일선 사수하며 골짜기 바닥에 엔진 시동 중! 소량 분할 매수 시작!"
+                    # 중앙선 아래일 때의 정밀 판독
+                    if is_ma5_safe:
+                        bb_diag = "🏹 <b>[중앙선 아래 반격]</b> 중앙선 밑이나 5일선 사수하며 고개 드는 중! 반전 주시."
                     else:
                         if m_l < s_l:
-                            if abs(m_l - s_l) >= abs(m_diff_prev): bb_diag = "🏠 <b>[기세 둔화]</b> 중앙선 밑일세. 엔진 역회전 심화 중이니 절대 칼을 뽑지 마시게."
-                            else: bb_diag = "🏠 <b>[기세 둔화]</b> 중앙선 밑일세. 엔진 역회전폭 급감 중이나 5일선 회복을 기다리시게."
-                        else: bb_diag = "🏠 <b>[기세 둔화]</b> 중앙선 밑일세. 엔진 정회전이나 기세가 약하니 절대 칼을 뽑지 마시게."
+                            if abs(m_l - s_l) >= abs(m_diff_prev): 
+                                bb_diag = "🏠 <b>[기세 둔화]</b> 중앙선 밑 + 5일선 이탈. 엔진 역회전 심화 중이니 대기하시게."
+                            else: 
+                                bb_diag = "🏠 <b>[기세 둔화]</b> 중앙선 밑 + 5일선 이탈. 엔진 역회전폭 급감 중이니 회복을 기다리시게."
+                        else: 
+                            bb_diag = "🏠 <b>[기세 둔화]</b> 중앙선 밑이나 엔진 정회전 중. 기세를 냉정하게 보시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             
             with i2:
