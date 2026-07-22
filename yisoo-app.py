@@ -372,7 +372,7 @@ if symbol:
                     {final_adv}
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)  # <-- 이 부분이 빠져 있었던 것이니 꼭 확인하시게!
             # 지표 상세 진단
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
