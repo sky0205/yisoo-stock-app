@@ -319,6 +319,9 @@ if symbol:
             # ★ [실전 필살 대응 전략] HTML 가독성 극대화 출력 (오류 원천 차단)
             # -------------------------------------------------------------
             # 들여쓰기 공백을 완전히 제거하여 마크다운 코드 블록 오인식을 원천 차단한 HTML 출력
+            # -------------------------------------------------------------
+            # ★ [실전 필살 대응 전략] HTML 가독성 극대화 출력 (최종 결론 대폭 확대)
+            # -------------------------------------------------------------
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
 <div style='margin-bottom: 20px;'>
@@ -338,8 +341,8 @@ if symbol:
 <span style='color: #333333; font-weight: bold; font-size: 20px;'>{'다중 바닥 권역 + 5일선 사수 상태에서 엔진 시동 중이네! 소량 분할 매수 기회.' if (bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l)) else ('바닥 지표는 들어왔으나 5일선 아래에 처박혀 있소. 회복 대기!' if (not is_ma5_safe and bottom_score >= 2) else (('엔진 역회전폭 급감 중이네! 시동 걸 채비 중이니 대기하시게.' if is_macd_turning else '엔진 역회전 심화 중이네! 거꾸로 도는 차니 절대 속지 마시게.') if m_l < s_l else '엔진 정회전 완료! 본대 진격 신호탄이 터졌네.'))}</span>
 </div>
 <hr style='border:1px solid #FFEBEE; margin: 20px 0;'>
-<div style='color: #D32F2F; font-size: 24px !important; font-weight: 900; line-height: 1.5;'>
-{final_adv}
+<div style='color: #D32F2F; font-size: 32px !important; font-weight: 900; line-height: 1.5;'>
+{final_adv.replace('**', '')}
 </div>
 </div>""", unsafe_allow_html=True)
             # 지표 상세 진단
