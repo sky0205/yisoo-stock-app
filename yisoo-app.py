@@ -298,10 +298,10 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선 (볼린저상단)</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # 실전 필살 대응 전략 
+            # 실전 필살 대응 전략 (120일선 복원 완료)
             adv1 = f"1. **단기 생명선(5일선) 사수:** 현재가({p:,.0f})가 5일선({ma5_val:,.0f}) {'아래로 이탈했으니 기세가 꺾였구먼.' if not is_ma5_safe else '위에 안착하여 단기 전투선이 살아있네.'}"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
-            adv3 = f"3. **중장기 추세 진단:** {trend_status} (5일선: {ma5_val:,.0f} | 20일선: {mid_line:,.0f} | 60일선: {ma60_val:,.0f})"
+            adv3 = f"3. **중장기 추세 진단:** {trend_status} (5일선: {ma5_val:,.0f} | 20일선: {mid_line:,.0f} | 60일선: {ma60_val:,.0f} | 120일선: {ma120_val:,.0f})"
             
             if bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
                 adv4 = "4. **엔진(MACD) 확인:** 다중 바닥 권역 + 5일선 사수 상태에서 엔진 시동 중이네! 소량 분할 매수 기회."
