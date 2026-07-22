@@ -312,8 +312,13 @@ if symbol:
                     else:
                         def_status = f"성벽({format(defense_line, fmt_p)}) 아래로 함락된 채 기세마저 <b>밑으로 처박히고 있네</b>! 절대 칼을 뽑지 마시게."
 
-            # 최종 결론 도출
-            if bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
+            # 최종 결론 도출 (매도권/과열권 판독 로직 완벽 연동)
+            if top_score >= 2 or p >= up_b * 0.99 or rsi_val >= 60:
+                if vol_strength >= 150 and p > defense_line:
+                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 화력 폭발하며 수확 목표선 도달! <b>비중 유지 및 홀딩!</b>"
+                else:
+                    final_adv = f"💰 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 과열권 및 수확기 진입! <b>욕심 버리고 야금야금 분할 익절 시작!</b>"
+            elif bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
                 final_adv = f"🏹 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 <b>5일선({ma5_val:,.0f}) 안착 완료</b>! 소량 <b>[분할 매수]</b> 타이밍이오!"
             else:
                 if not is_ma5_safe and bottom_score >= 2:
@@ -324,13 +329,10 @@ if symbol:
                     else:
                         final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 중간 지대에서 엔진 역회전 심화 중이네. <b>무조건 관망 및 대기!</b>"
                 else:
-                    if p >= up_b or rsi_val >= 60:
-                        final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 딛고 하늘 문이 열렸네! <b>비중 유지 및 홀딩!</b>" if vol_strength >= 150 and p > defense_line else f"💰 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 위나 기세가 약해지네. <b>야금야금 분할 매도 시작!</b>"
-                    elif p <= (low_b * 1.02):
+                    if p <= (low_b * 1.02):
                         final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진은 정회전이나 성벽 아래일세. <b>추가 진격 금지 및 관망!</b>" if p < defense_line else f"🔮 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 및 5일선 사수 중이네! <b>강력 매수 검토!</b>"
                     else:
                         final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. <b>무조건 관망 및 대기!</b>"
-
             if is_bearish:
                 final_adv = f"🚨 <b>[냉정 경고]</b> 현재 <b>[대세 역배열(하락 추세)]</b> 구간이네! 단기 바닥 신호에 속아 진격하면 지하실로 끌려가니 <b>무조건 관망 및 반등 시 탈출!</b>"
 
