@@ -28,7 +28,7 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
-# 1. 스타일 및 화면 구성 (최종 결론 클래스를 대제목과 동일한 32px 및 붉은색으로 일치)
+# 1. 스타일 및 화면 구성 (최종 결론 폰트 크기를 위쪽 항목 제목과 동일한 24px로 통일)
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
@@ -44,7 +44,7 @@ st.markdown("""
     .ind-box { background-color: #FFFFFF; padding: 22px; border-radius: 15px; border: 2.5px solid #90A4AE; min-height: 520px; margin-bottom: 15px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); }
     .ind-title { font-size: 26px !important; color: #1976D2 !important; border-bottom: 2px solid #EEEEEE; padding-bottom: 10px; margin-bottom: 15px; }
     .ind-diag { font-size: 20px !important; color: #333333 !important; line-height: 1.8; background-color: #FDFDFD; padding: 15px; border-radius: 10px; border-left: 8px solid #D32F2F; }
-    .final-msg { color: #D32F2F !important; font-size: 32px !important; font-weight: 900 !important; line-height: 1.5 !important; }
+    .final-msg { color: #D32F2F !important; font-size: 24px !important; font-weight: 900 !important; line-height: 1.5 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -317,7 +317,7 @@ if symbol:
                 final_adv = f"🚨 <b>[냉정 경고]</b> 현재 <b>[대세 역배열(하락 추세)]</b> 구간이네! 단기 바닥 신호에 속아 진격하면 지하실로 끌려가니 <b>무조건 관망 및 반등 시 탈출!</b>"
 
             # -------------------------------------------------------------
-            # ★ [실전 필살 대응 전략] HTML 가독성 극대화 출력 (.final-msg 폰트 32px 및 붉은색 대제목 톤 일치)
+            # ★ [실전 필살 대응 전략] HTML 가독성 극대화 출력 (.final-msg 폰트 크기 24px 통일)
             # -------------------------------------------------------------
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
