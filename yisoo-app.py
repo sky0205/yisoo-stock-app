@@ -99,13 +99,19 @@ symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "2577
 
 if symbol:
     try:
-        start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
+        # 서머타임 충돌 시각(DST gap) 에러를 원천 차단하는 안전 시간 설정
+        try:
+            start_date = datetime.now() - timedelta(days=500)
+        except Exception:
+            start_date = datetime.now(ZoneInfo('UTC')) - timedelta(days=500)
+            
+        is_kr = symbol.isdigit()
         
-        # 서머타임 빈 시간대 에러를 피하기 위한 안전 장치 적용
         try:
             now_tz = ZoneInfo('Asia/Seoul') if is_kr else ZoneInfo('America/New_York')
             now_local = datetime.now(now_tz)
         except Exception:
+            # 시스템 시각이 서머타임 사각지대에 걸릴 경우 UTC 기준으로 안전 우회
             utc_now = datetime.now(ZoneInfo('UTC'))
             now_local = utc_now.astimezone(ZoneInfo('Asia/Seoul') if is_kr else ZoneInfo('America/New_York'))
 
@@ -141,7 +147,14 @@ if symbol:
         else:
             currency, fmt_p = "$", ",.2f"
             ticker = yf.Ticker(symbol.upper())
-            df = ticker.history(start=start_date)
+            
+            # 외부 라이브러리(yfinance)의 서머타임/pytz 충돌 에러 방어용 안전 장치
+            try:
+                df = ticker.history(start=start_date)
+            except Exception:
+                # 에러 발생 시 데이터프레임 무결성 유지를 위한 재시도 또는 빈 방어선 구축
+                df = ticker.history(period="1y")
+                
             try:
                 info = ticker.fast_info
                 p = info.last_price
@@ -153,7 +166,6 @@ if symbol:
             if p == 0.0 and not df.empty:
                 p = float(df['Close'].iloc[-1])
                 v_curr = float(df['Volume'].iloc[-1])
-
         if df.empty:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인하거나 잠시 후 다시 시도해 주시게.")
         else:
