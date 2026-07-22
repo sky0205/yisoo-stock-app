@@ -69,11 +69,13 @@ def display_global_risk():
         if tnx_val >= 4.5: 
             macro_alerts.append(f"🚨 [금리 발작] 국채 금리 {tnx_val:.3f}% 돌파!")
         
-        # 환율 임계점 세분화 진단 로직 반영
-        if u_val >= 1480:
-            macro_alerts.append(f"☠️ [환율 초비상] 원/달러 {u_val:,.2f}원! 1,480원 임계점 폭풍 압박, 외인 자금 대이탈 경보!")
+        # 환율 임계점 세분화 진단 로직 (1,500원대 대공황 비상 구간 신설)
+        if u_val >= 1500:
+            macro_alerts.append(f"☠️ [환율 대공황 비상] 원/달러 {u_val:,.2f}원! 1,500원선 완전 붕괴! 과거 1,550원 악몽 재현, 국가 경제 및 증시 전면 초토화 경보!")
+        elif u_val >= 1480:
+            macro_alerts.append(f"☠️ [환율 초비상] 원/달러 {u_val:,.2f}원! 1,480원 임계점 폭풍 돌파, 외인 자금 대이탈 경보!")
         elif u_val >= 1450:
-            macro_alerts.append(f"🚨 [환율 격랑] 원/달러 {u_val:,.2f}원! 1,450원선 마지노선 위협!")
+            macro_alerts.append(f"🚨 [환율 격랑] 원/달러 {u_val:,.2f}원! 1,480원 고지를 목전에 둔 마지노선 위협!")
         elif u_val >= 1400:
             macro_alerts.append(f"⚠️ [환율 경계] 원/달러 {u_val:,.2f}원! 1,400원대 고착화 주의!")
         
@@ -361,7 +363,6 @@ if symbol:
             i1, i2, i3, i4 = st.columns(4)
             
             with i1:
-                # 5일선 안착 여부와 볼린저 밴드 위치가 완벽히 동기화된 정밀 진단
                 if p >= up_b: 
                     bb_diag = "👺 <b>[천장 돌파]</b> 울타리 밖으로 기세 폭발! 탐욕의 끝단이니 익절하시게."
                 elif p <= low_b: 
