@@ -100,8 +100,14 @@ symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "2577
 if symbol:
     try:
         start_date = datetime.now() - timedelta(days=500); is_kr = symbol.isdigit()
-        now_tz = ZoneInfo('Asia/Seoul') if is_kr else ZoneInfo('America/New_York')
-        now_local = datetime.now(now_tz)
+        
+        # 서머타임 빈 시간대 에러를 피하기 위한 안전 장치 적용
+        try:
+            now_tz = ZoneInfo('Asia/Seoul') if is_kr else ZoneInfo('America/New_York')
+            now_local = datetime.now(now_tz)
+        except Exception:
+            utc_now = datetime.now(ZoneInfo('UTC'))
+            now_local = utc_now.astimezone(ZoneInfo('Asia/Seoul') if is_kr else ZoneInfo('America/New_York'))
 
         df = pd.DataFrame()
         p, v_curr = 0.0, 0.0
