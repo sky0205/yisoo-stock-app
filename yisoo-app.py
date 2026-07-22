@@ -28,7 +28,7 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
-# 1. 스타일 및 화면 구성 (최종 결론 폰트 크기를 위쪽 항목 제목과 동일한 24px로 통일)
+# 1. 스타일 및 화면 구성 (최종 결론 폰트 크기를 항목 제목과 같은 24px 및 붉은색으로 통일)
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
@@ -66,8 +66,21 @@ def display_global_risk():
         c5.metric("원/달러 환율", f"{u_val:,.2f}원", f"{u_chg:+.2f}%")
         
         macro_alerts = []
-        if tnx_val >= 4.5: macro_alerts.append("🚨 [금리 발작] 국채 금리 4.5% 돌파!")
-        if u_val >= 1400: macro_alerts.append("🚨 [환율 비상] 원/달러 환율 1400원대 진입, 외인 이탈 주의!")
+        if tnx_val >= 4.5: 
+            macro_alerts.append(f"🚨 [금리 발작] 국채 금리 {tnx_val:.3f}% 돌파!")
+        
+        # 환율 임계점 세분화 진단 로직 반영
+        if u_val >= 1480:
+            macro_alerts.append(f"☠️ [환율 초비상] 원/달러 {u_val:,.2f}원! 1,480원 임계점 폭풍 압박, 외인 자금 대이탈 경보!")
+        elif u_val >= 1450:
+            macro_alerts.append(f"🚨 [환율 격랑] 원/달러 {u_val:,.2f}원! 1,450원선 마지노선 위협!")
+        elif u_val >= 1400:
+            macro_alerts.append(f"⚠️ [환율 경계] 원/달러 {u_val:,.2f}원! 1,400원대 고착화 주의!")
+        
+        if u_chg > 0.3:
+            macro_alerts.append(f"📈 [환율 급등] 오늘 환율 {u_chg:+.2f}% 치솟는 중!")
+        elif u_chg < -0.3:
+            macro_alerts.append(f"📉 [환율 안정] 환율 {u_chg:+.2f}% 진정세.")
         
         if macro_alerts:
             adv = " ".join(macro_alerts)
@@ -317,7 +330,7 @@ if symbol:
                 final_adv = f"🚨 <b>[냉정 경고]</b> 현재 <b>[대세 역배열(하락 추세)]</b> 구간이네! 단기 바닥 신호에 속아 진격하면 지하실로 끌려가니 <b>무조건 관망 및 반등 시 탈출!</b>"
 
             # -------------------------------------------------------------
-            # ★ [실전 필살 대응 전략] HTML 가독성 극대화 출력 (.final-msg 폰트 크기 24px 통일)
+            # ★ [실전 필살 대응 전략] HTML 가독성 극대화 출력 (.final-msg 폰트 크기 24px 일치)
             # -------------------------------------------------------------
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
@@ -348,6 +361,7 @@ if symbol:
             i1, i2, i3, i4 = st.columns(4)
             
             with i1:
+                # 5일선 안착 여부와 볼린저 밴드 위치가 완벽히 동기화된 정밀 진단
                 if p >= up_b: 
                     bb_diag = "👺 <b>[천장 돌파]</b> 울타리 밖으로 기세 폭발! 탐욕의 끝단이니 익절하시게."
                 elif p <= low_b: 
@@ -358,7 +372,6 @@ if symbol:
                     else:
                         bb_diag = "⚠️ <b>[과열 진입]</b> 중앙선 위이나 5일선 아래로 이탈했으니 주의하시게."
                 else:
-                    # 중앙선 아래일 때의 정밀 판독
                     if is_ma5_safe:
                         bb_diag = "🏹 <b>[중앙선 아래 반격]</b> 중앙선 밑이나 5일선 사수하며 고개 드는 중! 반전 주시."
                     else:
