@@ -28,23 +28,37 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
-# ★ 네이버 금융 수급 장부 튼튼하게 긁어오기 (오류 원천 차단형)
+# ★ 네이버 금융 일별 시세 및 외인/기관 수급 장부 강제 획득 함수 (백도어 방식)
 @st.cache_data(ttl=60)
 def fetch_kr_investor_trend(symbol):
+    try:
+        # 네이버 금융 시세/수급 모바일 API 우회 접근
+        url = f"https://m.stock.naver.com/api/item/retention/{symbol}.json"
+        headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'}
+        res = requests.get(url, headers=headers, timeout=5)
+        if res.status_code == 200:
+            data = res.json()
+            # 데이터에서 일별 수급 리스트 추출 시도
+            if 'dealTrendList' in data:
+                df_deal = pd.DataFrame(data['dealTrendList'])
+                return df_deal
+    except:
+        pass
+    
+    # 백도어 실패 시 기존 웹 페이지 테이블 파싱 재시도
     try:
         url = f"https://finance.naver.com/item/frgn.naver?code={symbol}"
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         res = requests.get(url, headers=headers, timeout=5)
         tables = pd.read_html(res.text)
-        
         for t in tables:
-            # 표의 컬럼이나 내용 중에 날짜/기관/외국인이 포함된 알짜배기 표 색출
             t_str = str(t)
             if "기관" in t_str or "외국인" in t_str or "날짜" in t_str:
-                if len(t) > 2: # 데이터가 어느 정도 쌓인 표일 것
+                if len(t) > 2:
                     return t
     except Exception as e:
-        print(f"수급 로딩 에러: {e}")
+        pass
+        
     return None
 
 # 1. 스타일 및 화면 구성
@@ -294,15 +308,16 @@ if symbol:
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
-            # ★ 국내 종목일 경우 실시간 외인/기관 수급 현황판 무조건 강제 표출 장치
+            # ★ 국내 종목 수급 동향 테이블 안전 출력 장치
             if is_kr:
                 st.markdown("#### 👥 실시간 종목 수급 동향 (외인·기관 매매동향)")
                 inv_df = fetch_kr_investor_trend(symbol)
                 if inv_df is not None and not inv_df.empty:
-                    # 보기 좋게 상단 7줄만 깔끔하게 정돈해서 출력
                     st.dataframe(inv_df.head(7), use_container_width=True)
                 else:
-                    st.info("ℹ️ 현재 네이버 수급 장부를 가져오는 중이거나 장 휴식/데이터 갱신 중이오.")
+                    # 웹 스크래핑이 막힐 경우를 대비해 FinanceDataReader의 최근 시세 내역으로 대체 표출하여 공백 방지
+                    st.warning("⚠️ 네이버 수급 장부 직접 연동이 일시 차단되어 최근 가격 변동성 데이터로 대체합니다.")
+                    st.dataframe(df[['Open', 'High', 'Low', 'Close', 'Volume']].tail(5), use_container_width=True)
 
             if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
             elif vol_strength >= 100: v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
@@ -405,7 +420,7 @@ if symbol:
 </div>
 <hr style='border:1px solid #FFEBEE; margin: 20px 0;'>
 <div class='final-msg'>
-{final_adv.replace('<b>', '').replace('</b>', '').replace('<i>', '').replace('</i>', '')}
+{final_adv.replace('<b>', '').replace('</b>', '').replace('<i>', '').replace('icon', '')}
 </div>
 </div>""", unsafe_allow_html=True)
 
