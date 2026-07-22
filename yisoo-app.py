@@ -189,22 +189,25 @@ if symbol:
             sig_line = macd.ewm(span=9).mean()
             m_l, s_l, m_p, s_p = macd.iloc[-1], sig_line.iloc[-1], macd.iloc[-2], sig_line.iloc[-2]
             
-            # 단기/중장기 이동평균선 산출 (20일, 60일, 120일)
+            # 단기/중장기 이동평균선 산출 (5일, 20일, 60일, 120일)
+            df['MA5'] = df['Close'].rolling(5).mean()
             df['MA20'] = df['Close'].rolling(20).mean()
             df['MA60'] = df['Close'].rolling(60).mean()
             df['MA120'] = df['Close'].rolling(120).mean()
             df['Std'] = df['Close'].rolling(20).std()
             
             mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
+            ma5_val = df['MA5'].iloc[-1] if len(df) >= 5 else mid_line
             ma60_val = df['MA60'].iloc[-1] if len(df) >= 60 else mid_line
             ma120_val = df['MA120'].iloc[-1] if len(df) >= 120 else mid_line
             
             defense_link_idx = min(21, len(df))
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
-            # 이평선 배열 판독 (정배열 / 역배열)
+            # 이평선 배열 판독 (정배열 / 역배열 및 5일선 사수 여부)
             is_bullish = (p > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
             is_bearish = (p < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
+            is_ma5_safe = (p >= ma5_val)
 
             if is_bullish:
                 trend_status = "🔥 **[대세 정배열]** 우상향 성벽 구축 중"
@@ -265,21 +268,25 @@ if symbol:
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
-            # ★ [신호등 동기화] 대세 역배열 시 바닥 신호 차단
+            # ★ [신호등 동기화] 대세 역배열이거나 단기 5일선 이탈 시 바닥 신호 차단
             if top_score >= 2:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
             elif bottom_score >= 2:
                 if is_bearish:
                     sig, col, s_adv = "🟡 관망 및 대기 (역배열 주의)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 **[대세 역배열]** 구간이오! 지하실 낙하산이니 절대 선취매 금지!"
+                elif not is_ma5_safe:
+                    sig, col, s_adv = "🟡 관망 및 대기 (5일선 이탈)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 단기 생명선 **[5일선 이탈]** 상태이오! 단기 기세가 꺾였으니 5일선 회복을 기다리시게."
                 elif is_reverse_shrinking or is_macd_turning:
-                    sig, col, s_adv = "🔴 [명장의 선취매 타점]", "#D32F2F", f"• 🎯 **[필살 변곡점]** 다중 바닥({bottom_score}/3) 상태에서 엔진 역회전 폭이 줄어들기 시작했소! 명장의 날카로운 선취매 타이밍이오!"
+                    sig, col, s_adv = "🔴 [명장의 선취매 타점]", "#D32F2F", f"• 🎯 **[필살 변곡점]** 다중 바닥({bottom_score}/3) + 5일선 사수 상태에서 엔진 역회전 폭이 줄어들기 시작했소!"
                 elif is_engine_reverse:
-                    sig, col, s_adv = "🟡 관망 및 대기 (역회전 심화)", "#FBC02D", f"• ⚠️ 다중 바닥 지표({bottom_score}/3)이나 엔진 역회전이 깊어지는 중일세. 칼 뽑지 말고 폭이 줄어들 때까지 대기하시게."
+                    sig, col, s_adv = "🟡 관망 및 대기 (역회전 심화)", "#FBC02D", f"• ⚠️ 다중 바닥 지표({bottom_score}/3)이나 엔진 역회전이 깊어지는 중일세. 폭이 줄어들 때까지 대기하시게."
                 else:
-                    sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"• 🧊 다중 바닥 및 엔진 정회전 확정 포착! 자신 있게 진격할 타이밍이오. (매수 지표 일치도: {bottom_score}/3)"
+                    sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"• 🧊 다중 바닥, 5일선 사수 및 엔진 정회전 확정 포착! 자신 있게 진격할 타이밍이오."
             else:
                 if is_bearish:
-                    sig, col, s_adv = "🟡 관망 및 대기 (하락/역배열 중)", "#FBC02D", f"• ⚠️ 대세 역배열 하락 추세 중이네. 무조건 자숙하시게."
+                    sig, col, s_adv = "🟡 관망 및 대기 (역배열 하락중)", "#FBC02D", f"• ⚠️ 대세 역배열 하락 추세 중이네. 무조건 자숙하시게."
+                elif not is_ma5_safe:
+                    sig, col, s_adv = "🟡 관망 및 대기 (5일선 아래)", "#FBC02D", f"• ⚠️ 단기 전투선인 5일선 아래에서 기세가 허덕이는 중이네. 눈치 보며 대기하시게."
                 else:
                     sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"• 눈치싸움 중일세. 지표 끝단을 기다리시게. (바닥동조: {bottom_score}/3 | 과열동조: {top_score}/3)"
             
@@ -292,31 +299,34 @@ if symbol:
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
             # 실전 필살 대응 전략 
-            adv1 = f"1. **진격 금지:** RSI가 {rsi_val:.2f}로 아직 60을 향해 고개를 들지 않았네. 섣불리 뛰어들지 마시게." if rsi_val < 60 else "1. **기세 타기:** RSI가 60을 돌파하며 불이 붙었구먼!"
+            adv1 = f"1. **단기 생명선(5일선) 사수:** 현재가({p:,.0f})가 5일선({ma5_val:,.0f}) {'아래로 이탈했으니 기세가 꺾였구먼.' if not is_ma5_safe else '위에 안착하여 단기 전투선이 살아있네.'}"
             adv2 = f"2. **성벽 사수 확인:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세. {'함락됐으니 지하실 조심하시게.' if p < defense_line else '사수 중이니 진격의 발판 삼으시게.'}"
-            adv3 = f"3. **중장기 추세 진단:** {trend_status} (20일선: {mid_line:,.0f} | 60일선: {ma60_val:,.0f} | 120일선: {ma120_val:,.0f})"
+            adv3 = f"3. **중장기 추세 진단:** {trend_status} (5일선: {ma5_val:,.0f} | 20일선: {mid_line:,.0f} | 60일선: {ma60_val:,.0f})"
             
-            if bottom_score >= 2 and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
-                adv4 = "4. **엔진(MACD) 확인:** 다중 바닥 권역에 엔진 시동 중이네! 소량 분할 매수 기회를 노리시게."
-                final_adv = f"🏹 **[최종 결론]** 보정강도({vol_strength:.1f}점). 다중 바닥 권역 확인 및 엔진 시동 완료! 소량 **[분할 매수]** 타이밍을 노리시게!"
+            if bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
+                adv4 = "4. **엔진(MACD) 확인:** 다중 바닥 권역 + 5일선 사수 상태에서 엔진 시동 중이네! 소량 분할 매수 기회."
+                final_adv = f"🏹 **[최종 결론]** 보정강도({vol_strength:.1f}점). 다중 바닥 및 **5일선({ma5_val:,.0f}) 안착 완료**! 소량 **[분할 매수]** 타이밍이오!"
             else:
-                if m_l < s_l:
+                if not is_ma5_safe and bottom_score >= 2:
+                    adv4 = "4. **엔진(MACD) 확인:** 바닥 지표는 들어왔으나 5일선 아래에 처박혀 있소. 회복 대기!"
+                    final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 바닥 지표는 좋으나 단기 5일선 아래라 **가짜 반등 우려! 무조건 5일선 회복 때까지 대기!**"
+                elif m_l < s_l:
                     if is_macd_turning:
-                        adv4 = "4. **엔진(MACD) 확인:** 엔진 **역회전폭 급감** 중이라네! 시동 걸 채비 중이니 진격 신호를 기다리시게."
-                        final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 중간 지대에서 엔진 역회전폭 급감 중이네. 기세가 완전히 잡힐 때까지 **무조건 관망 및 대기!**"
+                        adv4 = "4. **엔진(MACD) 확인:** 엔진 **역회전폭 급감** 중이네! 시동 걸 채비 중이니 대기하시게."
+                        final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 중간 지대에서 엔진 역회전폭 급감 중이네. 기세가 잡힐 때까지 **무조건 관망 및 대기!**"
                     else:
-                        adv4 = "4. **엔진(MACD) 확인:** 엔진 **역회전 심화** 중이라네! 거꾸로 도는 차니 절대 속지 마시게."
+                        adv4 = "4. **엔진(MACD) 확인:** 엔진 **역회전 심화** 중이네! 거꾸로 도는 차니 절대 속지 마시게."
                         final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 중간 지대에서 엔진 역회전 심화 중이네. 기세가 잡힐 때까지 **무조건 관망 및 대기!**"
                 else:
-                    adv4 = "4. **엔진(MACD) 확인:** 엔진 정회전 완료! 본대 진격의 신호탄이 터졌네."
+                    adv4 = "4. **엔진(MACD) 확인:** 엔진 정회전 완료! 본대 진격 신호탄이 터졌네."
                     if p >= up_b or rsi_val >= 60:
                         final_adv = f"🚀 **[최종 결론]** 보정강도({vol_strength:.1f}점). 성벽 딛고 하늘 문이 열렸네! **비중 유지 및 홀딩!**" if vol_strength >= 150 and p > defense_line else f"💰 **[최종 결론]** 보정강도({vol_strength:.1f}점). 성벽 위나 기세가 약해지네. **야금야금 분할 매도 시작!**"
                     elif p <= (low_b * 1.02):
-                        final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 엔진은 정회전(헛바퀴)이나 성벽 아래일세. 속지 말고 **추가 진격 금지 및 관망!**" if p < defense_line else f"🔮 **[최종 결론]** 보정강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 시동 걸렸고 성벽 사수 중이네! **강력 매수 검토!**"
+                        final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 엔진은 정회전이나 성벽 아래일세. 속지 말고 **추가 진격 금지 및 관망!**" if p < defense_line else f"🔮 **[최종 결론]** 보정강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 및 5일선 사수 중이네! **강력 매수 검토!**"
                     else:
                         final_adv = f"🧐 **[최종 결론]** 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 중앙선 방향 보며 **무조건 관망 및 대기!**"
 
-            # ★ [냉정 분석 필터] 대세 역배열 시 최종 결론 차단 및 경고 발령
+            # ★ [냉정 분석 필터] 대세 역배열 혹은 5일선 이탈 시 최종 결론 차단 및 경고 발령
             if is_bearish:
                 final_adv = f"🚨 **[냉정 경고]** 현재 **[대세 역배열(하락 추세)]** 구간이네! 단기 바닥이나 변곡점 신호에 속아 진격하면 지하실로 끌려가니 **무조건 관망 및 반등 시 탈출!**"
 
@@ -336,14 +346,14 @@ if symbol:
                 elif p <= low_b: bb_diag = "🧊 **[바닥 돌파]** 지하실까지 밀렸구먼. 엔진 시동을 기다리시게."
                 elif p >= mid_line: bb_diag = "⚠️ **[과열 진입]** 중앙선 위에서 기세 유지 중이나 온도가 높네."
                 else:
-                    if rsi_val < 30 and will_val <= -80 and abs(m_l - s_l) < abs(m_diff_prev):
-                        bb_diag = "🏹 **[낙폭과대 진격]** 기세는 중앙선 밑이나, 단기 골짜기 바닥에 엔진 시동 중일세. 소량 분할 매수 시작!"
+                    if rsi_val < 30 and will_val <= -80 and is_ma5_safe and abs(m_l - s_l) < abs(m_diff_prev):
+                        bb_diag = "🏹 **[낙폭과대 진격]** 5일선 사수하며 골짜기 바닥에 엔진 시동 중! 소량 분할 매수 시작!"
                     else:
                         if m_l < s_l:
                             if abs(m_l - s_l) >= abs(m_diff_prev):
                                 bb_diag = "🏠 **[기세 둔화]** 중앙선 밑일세. 엔진 역회전 심화 중이니 절대 칼을 뽑지 마시게."
                             else:
-                                bb_diag = "🏠 **[기세 둔화]** 중앙선 밑일세. 엔진 역회전폭 급감 중이나 지표 미달이니 진격 신호를 기다리시게."
+                                bb_diag = "🏠 **[기세 둔화]** 중앙선 밑일세. 엔진 역회전폭 급감 중이나 5일선 회복을 기다리시게."
                         else:
                             bb_diag = "🏠 **[기세 둔화]** 중앙선 밑일세. 엔진 정회전이나 기세가 약하니 절대 칼을 뽑지 마시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
@@ -356,7 +366,7 @@ if symbol:
                     r_status = f"**👿 불지옥** 문턱! {'🚨 가짜 상승이니 대피하시게.' if is_div else '수익 챙길 채비 하시게.'}"
                 elif rsi_val <= 35: 
                     if rsi_val > rsi_prev:
-                        r_status = "**🧊 냉골 바닥**이나, 어제보다 온도가 올라오며 **[지수 개선]** 중일세. 추이를 주시하시게."
+                        r_status = "**🧊 냉골 바닥**이나, 온도가 올라오며 **[지수 개선]** 중일세. 5일선 안착을 주시하시게."
                     else:
                         r_status = "**🧊 냉골 바닥**일세. 온도가 계속 떨어지며 **[지속 하락]** 중이니 냉정하게 보따리 푸시게."
                 else: 
@@ -378,7 +388,7 @@ if symbol:
                         w_status = "**🏳️ 개미 항복 구역**일세. 여전히 밑바닥으로 **[지속 하락]** 중이니 보따리 풀 준비만 하시게."
                 elif will_val <= -65: 
                     if will_val > will_prev:
-                        w_status = "**📉 낙폭 과대** 구역이나, 어제보다 기세가 올라오며 **[하락 브레이크]**가 잡히고 있소."
+                        w_status = "**📉 낙폭 과대** 구역이나, 기세가 올라오며 **[하락 브레이크]**가 잡히고 있소."
                     else:
                         w_status = "**📉 하락 가속**! 어제보다 기세가 더 꺾였으니 절대 칼 뽑지 마시게."
                 else: 
