@@ -342,13 +342,37 @@ if symbol:
             if is_bearish:
                 final_adv = f"🚨 **[냉정 경고]** 현재 **[대세 역배열(하락 추세)]** 구간이네! 단기 바닥이나 변곡점 신호에 속아 진격하면 지하실로 끌려가니 **무조건 관망 및 반등 시 탈출!**"
 
-            st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
-                <div class='trend-item'>{adv1}</div>
-                <div class='trend-item'>{adv2}</div>
-                <div class='trend-item'>{adv3}</div>
-                <div class='trend-item'>{adv4}</div>
-                <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)
-
+            st.markdown(f"""
+            <div class='trend-card'>
+                <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
+                
+                <div class='trend-item' style='margin-bottom: 15px;'>
+                    <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>1. 단기 생명선(5일선) 사수:</span><br>
+                    <span style='color: #333333; font-weight: bold; font-size: 20px;'>현재가({p:,.0f})가 5일선({ma5_val:,.0f}) {'아래로 이탈했으니 기세가 꺾였구먼.' if not is_ma5_safe else '위에 안착하여 단기 전투선이 살아있네.'}</span>
+                </div>
+                
+                <div class='trend-item' style='margin-bottom: 15px;'>
+                    <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>2. 성벽 사수 확인:</span><br>
+                    <span style='color: #333333; font-weight: bold; font-size: 20px;'>{def_status}</span>
+                </div>
+                
+                <div class='trend-item' style='margin-bottom: 15px;'>
+                    <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>3. 중장기 추세 진단:</span><br>
+                    <span style='color: #333333; font-weight: bold; font-size: 20px;'>{trend_status} (5일선: {ma5_val:,.0f} | 20일선: {mid_line:,.0f} | 60일선: {ma60_val:,.0f} | 120일선: {ma120_val:,.0f})</span>
+                </div>
+                
+                <div class='trend-item' style='margin-bottom: 20px;'>
+                    <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>4. 엔진(MACD) 확인:</span><br>
+                    <span style='color: #333333; font-weight: bold; font-size: 20px;'>{'다중 바닥 권역 + 5일선 사수 상태에서 엔진 시동 중이네! 소량 분할 매수 기회.' if (bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l)) else ('바닥 지표는 들어왔으나 5일선 아래에 처박혀 있소. 회복 대기!' if (not is_ma5_safe and bottom_score >= 2) else (('엔진 역회전폭 급감 중이네! 시동 걸 채비 중이니 대기하시게.' if is_macd_turning else '엔진 역회전 심화 중이네! 거꾸로 도는 차니 절대 속지 마시게.') if m_l < s_l else '엔진 정회전 완료! 본대 진격 신호탄이 터졌네.'))}</span>
+                </div>
+                
+                <hr style='border:1px solid #FFEBEE; margin: 15px 0;'>
+                
+                <div class='trend-item' style='color: #D32F2F; font-size: 25px !important; font-weight: 900;'>
+                    {final_adv}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             # 지표 상세 진단
             st.divider()
             i1, i2, i3, i4 = st.columns(4)
