@@ -297,17 +297,20 @@ if symbol:
             with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선 (볼린저상단)</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
-            # 성벽 사수 정밀 판독 로직
+           # 성벽 사수 정밀 판독 로직 (5일선 안착 여부와 조화롭게 수정)
             if p >= defense_line:
                 if p >= prev_p and p >= ma5_val:
                     def_status = f"성벽({format(defense_line, fmt_p)}) 위에서 5일선 기세를 타고 <b>위로 진격 중</b>이네! 든든한 방어선을 등지고 계속 밀어붙이시게."
                 else:
                     def_status = f"성벽({format(defense_line, fmt_p)}) 위에는 있으나 단기 기세가 <b>아래로 꺾이는 중</b>일세. 방어선을 예의주시하시게."
             else:
-                if p > prev_p and p >= ma5_val and m_l >= s_l:
-                    def_status = f"성벽({format(defense_line, fmt_p)}) 아래(지하실)이나, 5일선을 탈환하고 엔진 시동을 걸며 <b>성벽 탈환을 위해 반격 중</b>이네! 반전의 불씨를 지켜보시게."
+                if is_ma5_safe:
+                    def_status = f"성벽({format(defense_line, fmt_p)}) 아래에 있으나, 단기 5일선<b>(생명선)을 사수하며 성벽 탈환을 위한 반격의 시동</b>을 거는 중이네!"
                 else:
-                    def_status = f"성벽({format(defense_line, fmt_p)}) 아래로 함락된 채 기세마저 <b>밑으로 처박히고 있네</b>! 절대 칼을 뽑지 마시게."
+                    if p > prev_p and m_l >= s_l:
+                        def_status = f"성벽({format(defense_line, fmt_p)}) 아래(지하실)이나, 엔진 시동을 걸며 <b>반격 중</b>이네! 반전의 불씨를 지켜보시게."
+                    else:
+                        def_status = f"성벽({format(defense_line, fmt_p)}) 아래로 함락된 채 기세마저 <b>밑으로 처박히고 있네</b>! 절대 칼을 뽑지 마시게."
 
             # 최종 결론 도출
             if bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
