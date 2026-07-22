@@ -28,7 +28,7 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
-# 1. 스타일 및 화면 구성
+# 1. 스타일 및 화면 구성 (신호등 박스 내부 글자색 강제 백색 고정 적용)
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
@@ -37,6 +37,7 @@ st.markdown("""
     .vol-box { background-color: #E3F2FD; padding: 25px; border-radius: 15px; border: 4px solid #1E88E5; margin-bottom: 20px; }
     .vol-sub-text { font-size: 20px !important; color: #1565C0 !important; line-height: 1.6; background-color: #FFFFFF; padding: 12px; border-radius: 8px; border-left: 6px solid #1E88E5; }
     .signal-box { padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); }
+    .signal-box * { color: #FFFFFF !important; }
     .signal-text { font-size: 65px !important; font-weight: 900 !important; color: #FFFFFF !important; }
     .trend-card { background-color: #FFFFFF; padding: 30px; border-radius: 20px; border: 5px solid #D32F2F; margin: 20px 0; }
     .trend-title { font-size: 32px !important; color: #D32F2F !important; border-bottom: 3px solid #FFEBEE; padding-bottom: 12px; margin-bottom: 20px; }
@@ -99,7 +100,6 @@ symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "2577
 
 if symbol:
     try:
-        # 서머타임 충돌 시각(DST gap) 에러를 원천 차단하는 안전 시간 설정
         try:
             start_date = datetime.now() - timedelta(days=500)
         except Exception:
@@ -111,7 +111,6 @@ if symbol:
             now_tz = ZoneInfo('Asia/Seoul') if is_kr else ZoneInfo('America/New_York')
             now_local = datetime.now(now_tz)
         except Exception:
-            # 시스템 시각이 서머타임 사각지대에 걸릴 경우 UTC 기준으로 안전 우회
             utc_now = datetime.now(ZoneInfo('UTC'))
             now_local = utc_now.astimezone(ZoneInfo('Asia/Seoul') if is_kr else ZoneInfo('America/New_York'))
 
@@ -148,11 +147,9 @@ if symbol:
             currency, fmt_p = "$", ",.2f"
             ticker = yf.Ticker(symbol.upper())
             
-            # 외부 라이브러리(yfinance)의 서머타임/pytz 충돌 에러 방어용 안전 장치
             try:
                 df = ticker.history(start=start_date)
             except Exception:
-                # 에러 발생 시 데이터프레임 무결성 유지를 위한 재시도 또는 빈 방어선 구축
                 df = ticker.history(period="1y")
                 
             try:
@@ -166,6 +163,7 @@ if symbol:
             if p == 0.0 and not df.empty:
                 p = float(df['Close'].iloc[-1])
                 v_curr = float(df['Volume'].iloc[-1])
+
         if df.empty:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인하거나 잠시 후 다시 시도해 주시게.")
         else:
@@ -258,13 +256,26 @@ if symbol:
                             final_display_name = df_krx_backup[df_krx_backup['Code'] == symbol]['Name'].values[0]
                         except: pass
             else:
-                us_vault = {"TSLA": "테슬라 (Tesla)", "NVDA": "엔비디아 (NVIDIA)", "AAPL": "애플 (Apple)", "MSFT": "마이크로소프트", "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타"}
+                us_vault = {
+                    "TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", 
+                    "MSFT": "마이크로소프트", "AMZN": "아마존", "GOOGL": "알파벳A", 
+                    "META": "메타", "IONQ": "아이온큐", "CPNG": "쿠팡", "NFLX": "넷플릭스"
+                }
                 tk = symbol.upper()
-                final_display_name = us_vault.get(tk, f"미국종목 ({tk})")
+                kor_name = us_vault.get(tk, None)
+                
+                if not kor_name:
+                    try:
+                        info_dict = ticker.info
+                        kor_name = info_dict.get('longName', info_dict.get('shortName', tk))
+                    except:
+                        kor_name = tk
+                        
+                final_display_name = f"{kor_name} ({tk})"
 
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
-            st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} ({symbol.upper()})</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
             if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
             elif vol_strength >= 100: v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
@@ -293,7 +304,8 @@ if symbol:
             elif bottom_score >= 2:
                 if is_bearish: sig, col, s_adv = "🟡 관망 및 대기 (역배열 주의)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 <b>[대세 역배열]</b> 구간이오!"
                 elif not is_ma5_safe: sig, col, s_adv = "🟡 관망 및 대기 (5일선 이탈)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 단기 생명선 <b>[5일선 이탈]</b> 상태이오!"
-                elif is_reverse_shrinking or is_macd_turning: sig, col, s_adv = "🔴 [명장의 선취매 타점]", "#D32F2F", f"• 🎯 <b>[필살 변곡점]</b> 다중 바닥({bottom_score}/3) + 5일선 사수!"
+                elif is_reverse_shrinking or is_macd_turning: 
+                    sig, col, s_adv = "🎯 [명장의 선취매 타점]", "#E65100", f"• 🔥 <b>[필살 변곡점 포착]</b> 다중 바닥({bottom_score}/3) + 5일선 사수 완벽 일치!"
                 elif is_engine_reverse: sig, col, s_adv = "🟡 관망 및 대기 (역회전 심화)", "#FBC02D", f"• ⚠️ 다중 바닥 지표({bottom_score}/3)이나 엔진 역회전 심화 중."
                 else: sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"• 🧊 다중 바닥, 5일선 사수 및 엔진 정회전 확정!"
             else:
@@ -301,7 +313,7 @@ if symbol:
                 elif not is_ma5_safe: sig, col, s_adv = "🟡 관망 및 대기 (5일선 아래)", "#FBC02D", f"• ⚠️ 단기 전투선인 5일선 아래에서 기세 허덕이는 중."
                 else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"• 눈치싸움 중일세. (바닥동조: {bottom_score}/3 | 과열동조: {top_score}/3)"
             
-            st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선 (볼린저하단)</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
@@ -328,7 +340,7 @@ if symbol:
                 else:
                     final_adv = f"💰 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 과열권 및 수확기 진입! <b>욕심 버리고 야금야금 분할 익절 시작!</b>"
             elif bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
-                final_adv = f"🏹 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 <b>5일선({ma5_val:,.0f}) 안착 완료</b>! 소량 <b>[분할 매수]</b> 타이밍이오!"
+                final_adv = f"🏹 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 <b>5일선({ma5_val:{fmt_p}}) 안착 완료</b>! 소량 <b>[분할 매수]</b> 타이밍이오!"
             else:
                 if not is_ma5_safe and bottom_score >= 2:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 좋으나 단기 5일선 아래라 <b>가짜 반등 우려! 무조건 5일선 회복 때까지 대기!</b>"
@@ -350,7 +362,7 @@ if symbol:
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
 <div style='margin-bottom: 20px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>1. 단기 생명선(5일선) 사수</span><br>
-<span style='color: #333333; font-weight: bold; font-size: 20px;'>현재가({p:,.2f})가 5일선({ma5_val:,.2f}) {'아래로 이탈했으니 기세가 꺾였구먼.' if not is_ma5_safe else '위에 안착하여 단기 전투선이 살아있네.'}</span>
+<span style='color: #333333; font-weight: bold; font-size: 20px;'>현재가({p:{fmt_p}})가 5일선({ma5_val:{fmt_p}}) {'아래로 이탈했으니 기세가 꺾였구먼.' if not is_ma5_safe else '위에 안착하여 단기 전투선이 살아있네.'}</span>
 </div>
 <div style='margin-bottom: 20px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>2. 성벽 사수 확인</span><br>
@@ -358,7 +370,7 @@ if symbol:
 </div>
 <div style='margin-bottom: 20px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>3. 중장기 추세 진단</span><br>
-<span style='color: #333333; font-weight: bold; font-size: 20px;'>{trend_status} (5일선: {ma5_val:,.2f} | 20일선: {mid_line:,.2f} | 60일선: {ma60_val:,.2f} | 120일선: {ma120_val:,.2f})</span>
+<span style='color: #333333; font-weight: bold; font-size: 20px;'>{trend_status} (5일선: {ma5_val:{fmt_p}} | 20일선: {mid_line:{fmt_p}} | 60일선: {ma60_val:{fmt_p}} | 120일선: {ma120_val:{fmt_p}})</span>
 </div>
 <div style='margin-bottom: 25px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>4. 엔진(MACD) 확인</span><br>
