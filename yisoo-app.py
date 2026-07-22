@@ -28,43 +28,48 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
-# 국장 외인·기관 수급 동향 정밀 타격 파악 함수
+# 국장 외인·기관 수급 동향 정밀 타격 파악 함수 (테이블 파싱 정교화)
 def fetch_kr_investor_trend(symbol):
     try:
-        url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-        res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
-        soup = BeautifulSoup(res.text, 'html.parser')
+        url = f"https://finance.naver.com/item/frgn.naver?code={symbol}"
+        tables = pd.read_html(url, encoding='euc-kr')
         
-        # 투자자별 매매동향 요약 영역 또는 테이블 요소를 정밀 타격
-        # 네이버 금융 메인 하단의 투자자별 매매동향 표(table.tb_type1 등)의 텍스트를 추출
-        investor_area = soup.select("table.tb_type1")
-        target_text = ""
-        if investor_area:
-            target_text = investor_area[0].get_text()
-        else:
-            target_text = soup.get_text() # 백업용 전체 텍스트
+        df_target = None
+        for df in tables:
+            df_str = str(df.values)
+            if '외국인' in df_str and '기관' in df_str:
+                df_target = df
+                break
         
-        frgn_status = "외인 수급 중립"
-        inst_status = "기관 수급 중립"
-        is_double_sell = False
-        
-        # 외국인 순매수/순매도 세부 판정
-        if "외국인" in target_text:
-            if "매도" in target_text and ("순매도" in target_text or "-" in target_text):
-                frgn_status = "외인 순매도 기조"
-            elif "매수" in target_text or "순매수" in target_text:
-                frgn_status = "외인 순매수 유입"
-                
-        # 기관 순매수/순매도 세부 판정
-        if "기관" in target_text:
-            if "매도" in target_text and ("순매도" in target_text or "-" in target_text):
-                inst_status = "기관 순매도 기조"
-            elif "매수" in target_text or "순매수" in target_text:
-                inst_status = "기관 순매수 유입"
-                
-        if "순매도" in frgn_status and "순매도" in inst_status:
-            is_double_sell = True
+        if df_target is None and len(tables) > 0:
+            df_target = tables[0]
             
+        if isinstance(df_target.columns, pd.MultiIndex):
+            df_target.columns = [col[-1] for col in df_target.columns]
+            
+        frgn_col = [c for c in df_target.columns if '외국인' in str(c)]
+        inst_col = [c for c in df_target.columns if '기관' in str(c)]
+        
+        frgn_val = 0
+        inst_val = 0
+        
+        import re
+        if frgn_col and len(df_target) > 0:
+            val_str = str(df_target.iloc[0][frgn_col[0]]).replace(',', '')
+            numbers = re.findall(r'-?\d+', val_str)
+            if numbers:
+                frgn_val = int(numbers[-1])
+                
+        if inst_col and len(df_target) > 0:
+            val_str = str(df_target.iloc[0][inst_col[0]]).replace(',', '')
+            numbers = re.findall(r'-?\d+', val_str)
+            if numbers:
+                inst_val = int(numbers[-1])
+        
+        frgn_status = f"외인 순매수 (+{frgn_val:,}주)" if frgn_val > 0 else (f"외인 순매도 ({frgn_val:,}주)" if frgn_val < 0 else "외인 수급 중립")
+        inst_status = f"기관 순매수 (+{inst_val:,}주)" if inst_val > 0 else (f"기관 순매도 ({inst_val:,}주)" if inst_val < 0 else "기관 수급 중립")
+        
+        is_double_sell = (frgn_val < 0 and inst_val < 0)
         return f"{frgn_status} / {inst_status}", is_double_sell
     except:
         return "수급 집계 데이터 대기 중", False
