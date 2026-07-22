@@ -28,24 +28,7 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
-# ★ 네이버 금융 수급 장부 획득 함수 (차단 시 안전 방어형)
-@st.cache_data(ttl=60)
-def fetch_kr_investor_trend(symbol):
-    try:
-        url = f"https://finance.naver.com/item/frgn.naver?code={symbol}"
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        res = requests.get(url, headers=headers, timeout=5)
-        tables = pd.read_html(res.text)
-        for t in tables:
-            t_str = str(t)
-            if "기관" in t_str or "외국인" in t_str or "날짜" in t_str:
-                if len(t) > 2:
-                    return t
-    except Exception as e:
-        pass
-    return None
-
-# 1. 스타일 및 화면 구성
+# 1. 스타일 및 화면 구성 (신호등 박스 내부 글자색 강제 백색 고정 적용)
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
@@ -291,15 +274,6 @@ if symbol:
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
-
-            # ★ [수정완료] 혼선을 주는 가격 표(Open/High/Low) 대신, 수급 장부 연동 실패 시 깔끔하게 경고 문구만 띄우도록 수정
-            if is_kr:
-                st.markdown("#### 👥 실시간 종목 수급 동향 (외인·기관 매매동향)")
-                inv_df = fetch_kr_investor_trend(symbol)
-                if inv_df is not None and not inv_df.empty:
-                    st.dataframe(inv_df.head(7), use_container_width=True)
-                else:
-                    st.warning("⚠️ 네이버 수급 장부 서버의 보안 방패(차단)로 인해 현재 외인·기관 실시간 수급 동향을 불러올 수 없습니다. (가격 변동 데이터로 대체하지 않고 깔끔하게 비워둡니다.)")
 
             if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
             elif vol_strength >= 100: v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
