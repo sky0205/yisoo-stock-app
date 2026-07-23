@@ -353,11 +353,11 @@ if symbol:
             else:
                 if is_ma5_safe:
                     def_status = f"성벽({defense_line:{fmt_p}}) 아래에 있으나, 단기 5일선<b>(생명선)을 사수</b>하며 성벽 탈환을 위한 반격의 시동을 거는 중이네!"
-            else:
-                if p > prev_p and m_l >= s_l:
-                    def_status = f"성벽({defense_line:{fmt_p}}) 아래(지하실)이나, 엔진 시동을 걸며 <b>지하실 탈출 시도 중</b>이네!"
                 else:
-                    def_status = f"성벽({defense_line:{fmt_p}}) 아래로 함락된 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지 마시게.</b>"
+                    if p > prev_p and m_l >= s_l:
+                        def_status = f"성벽({defense_line:{fmt_p}}) 아래(지하실)이나, 엔진 시동을 걸며 <b>지하실 탈출 시도 중</b>이네!"
+                    else:
+                        def_status = f"성벽({defense_line:{fmt_p}}) 아래로 함락된 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지 마시게.</b>"
             if top_score >= 2 or p >= up_b * 0.99 or rsi_val >= 60:
                 if vol_strength >= 150 and p > defense_line:
                     final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 화력 폭발하며 수확 목표선 도달! <b>비중 유지 및 홀딩!</b>"
