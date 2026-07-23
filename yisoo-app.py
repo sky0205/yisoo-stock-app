@@ -46,7 +46,6 @@ st.markdown("""
     .ind-title { font-size: 26px !important; color: #1976D2 !important; border-bottom: 2px solid #EEEEEE; padding-bottom: 10px; margin-bottom: 15px; }
     .ind-diag { font-size: 20px !important; color: #333333 !important; line-height: 1.8; background-color: #FDFDFD; padding: 15px; border-radius: 10px; border-left: 8px solid #D32F2F; }
     .final-msg { color: #D32F2F !important; font-size: 24px !important; font-weight: 900 !important; line-height: 1.5 !important; }
-    .market-tag { background-color: #0D47A1; color: #FFFFFF !important; padding: 4px 12px; border-radius: 6px; font-size: 18px; margin-left: 10px; display: inline-block; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -101,7 +100,7 @@ col_input, col_btn = st.columns([4, 1])
 with col_input:
     symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720").strip()
 with col_btn:
-    st.write("") # 위치 맞춤용
+    st.write("") 
     if st.button("🔄 실시간 시세 재조회"):
         st.rerun()
 
@@ -120,33 +119,6 @@ if symbol:
         except Exception:
             utc_now = datetime.now(ZoneInfo('UTC'))
             now_local = utc_now.astimezone(ZoneInfo('Asia/Seoul') if is_kr else ZoneInfo('America/New_York'))
-
-        curr_hour = now_local.hour
-        curr_min = now_local.minute
-        curr_time_val = curr_hour * 100 + curr_min
-
-        if is_kr:
-            if curr_time_val < 800:
-                m_tag = "🌙 장개장 전"
-            elif 800 <= curr_time_val < 900:
-                m_tag = "🌅 장전 시간외 (프리장)"
-            elif 900 <= curr_time_val <= 1530:
-                m_tag = "☀️ 정규장 실시간"
-            elif 1530 < curr_time_val <= 2000:
-                m_tag = "🌆 장후 시간외 / 대체거래소"
-            else:
-                m_tag = "🌙 장마감 완료"
-        else:
-            if curr_time_val < 400:
-                m_tag = "🌙 장개장 전"
-            elif 400 <= curr_time_val < 930:
-                m_tag = "🌅 미장 프리장 (Pre-Market)"
-            elif 930 <= curr_time_val <= 1600:
-                m_tag = "☀️ 미장 정규장 (Regular)"
-            elif 1600 < curr_time_val <= 2000:
-                m_tag = "🌆 미장 애프터마켓 (Post-Market)"
-            else:
-                m_tag = "🌙 장마감 완료"
 
         df = pd.DataFrame()
         p, v_curr = 0.0, 0.0
@@ -167,7 +139,7 @@ if symbol:
                 except:
                     pass
 
-            # ★ [가장 검증되고 안정적인 정규장 직통 파싱 (원상복구)]
+            # ★ [가장 검증되고 안정적인 정규장 직통 파싱]
             try:
                 url = f"https://finance.naver.com/item/main.naver?code={symbol}"
                 res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1)
@@ -316,7 +288,10 @@ if symbol:
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
-            if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
+            # 거래량 화력 상충 보정 (역배열 고려)
+            if is_bearish and vol_strength >= 100:
+                v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열 과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 거래량 주의."
+            elif vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
             elif vol_strength >= 100: v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
             elif vol_strength >= 80: v_status, v_adv = "정상화력", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점! 기세가 빳빳하구먼."
             else: v_status, v_adv = "기세부족", f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! 속지 마시게."
@@ -397,6 +372,18 @@ if symbol:
             if is_bearish:
                 final_adv = f"🚨 <b>[냉정 경고]</b> 현재 <b>[대세 역배열(하락 추세)]</b> 구간이네! 단기 바닥 신호에 속아 진격하면 지하실로 끌려가니 <b>무조건 관망 및 반등 시 탈출!</b>"
 
+            # MACD 상충 보정 멘트 생성 (대응전략 4번 영역)
+            if m_l > s_l:
+                if p < defense_line:
+                    macd_strategy_msg = "엔진 정회전이나 성벽 아래(지하실)이므로 헛바퀴 주의! 성벽 회복 전까진 추격 금지."
+                else:
+                    macd_strategy_msg = "엔진 정회전 완료! 성벽을 등지고 본대 진격 신호탄이 터졌네."
+            else:
+                if is_macd_turning:
+                    macd_strategy_msg = "엔진 역회전폭 급감 중이네! 시동 걸 채비 중이니 회복을 관망하시게."
+                else:
+                    macd_strategy_msg = "엔진 역회전 심화 중이네! 거꾸로 도는 차니 절대 칼을 뽑지 마시게."
+
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
 <div style='margin-bottom: 20px;'>
@@ -413,7 +400,7 @@ if symbol:
 </div>
 <div style='margin-bottom: 25px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>4. 엔진(MACD) 확인</span><br>
-<span style='color: #333333; font-weight: bold; font-size: 20px;'>{'다중 바닥 권역 + 5일선 사수 상태에서 엔진 시동 중이네! 소량 분할 매수 기회.' if (bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l)) else ('바닥 지표는 들어왔으나 5일선 아래에 처박혀 있소. 회복 대기!' if (not is_ma5_safe and bottom_score >= 2) else (('엔진 역회전폭 급감 중이네! 시동 걸 채비 중이니 대기하시게.' if is_macd_turning else '엔진 역회전 심화 중이네! 거꾸로 도는 차니 절대 속지 마시게.') if m_l < s_l else '엔진 정회전 완료! 본대 진격 신호탄이 터졌네.'))}</span>
+<span style='color: #333333; font-weight: bold; font-size: 20px;'>{macd_strategy_msg}</span>
 </div>
 <hr style='border:1px solid #FFEBEE; margin: 20px 0;'>
 <div class='final-msg'>
@@ -431,20 +418,14 @@ if symbol:
                     bb_diag = "🧊 <b>[바닥 돌파]</b> 지하실까지 밀렸구먼. 엔진 시동을 기다리시게."
                 elif p >= mid_line: 
                     if is_ma5_safe:
-                        bb_diag = "🔥 <b>[중앙선 안착]</b> 중앙선 위이자 5일선 사수 중! 기세가 살아있네."
+                        bb_diag = "🔥 <b>[중앙선 안착]</b> 중앙선 위이자 5 destruction선 사수 중! 기세가 살아있네."
                     else:
-                        bb_diag = "⚠️ <b>[과열 진입]</b> 중앙선 위이나 5일선 아래로 이탈했으니 주의하시게."
+                        bb_diag = "⚠️ <b>[과열 경계]</b> 중앙선 위이나 5일선 아래로 이탈했으니 주의하시게."
                 else:
                     if is_ma5_safe:
-                        bb_diag = "🏹 <b>[중앙선 아래 반격]</b> 중앙선 밑이나 5일선 사수하며 고개 드는 중! 반전 주시."
+                        bb_diag = "🏹 <b>[중앙선 아래 반격]</b> 중앙선 밑이나 5일선 사수하며 반격 시도 중! 회복 추이 주시."
                     else:
-                        if m_l < s_l:
-                            if abs(m_l - s_l) >= abs(m_diff_prev): 
-                                bb_diag = "🏠 <b>[기세 둔화]</b> 중앙선 밑 + 5일선 이탈. 엔진 역회전 심화 중이니 대기하시게."
-                            else: 
-                                bb_diag = "🏠 <b>[기세 둔화]</b> 중앙선 밑 + 5일선 이탈. 엔진 역회전폭 급감 중이니 회복을 기다리시게."
-                        else: 
-                            bb_diag = "🏠 <b>[기세 둔화]</b> 중앙선 밑이나 엔진 정회전 중. 기세를 냉정하게 보시게."
+                        bb_diag = "🏠 <b>[기세 둔화]</b> 중앙선 및 5일선 모두 이탈. 관망 및 대기가 상책이오."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             
             with i2:
@@ -474,8 +455,10 @@ if symbol:
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f} <span style='font-size:25px; color:#333333;'>({will_trend})</span></p><p class='ind-diag'>● {w_status}</p></div>", unsafe_allow_html=True)
             
             with i4:
-                if m_l > s_l: m_diag = "● 엔진 <b>정회전(헛바퀴)</b>! 성벽 무너졌으니 속지 마시게." if p < defense_line else "● 엔진 <b>정회전</b>! 성벽 사수하며 자신 있게 진격하시게."
-                else: m_diag = "● 엔진 <b>역회전폭 급감</b>! 시동 걸 채비 중." if m_diff_curr > m_diff_prev else "● 엔진 <b>역회전 심화</b>! 자숙하시게."
+                if m_l > s_l: 
+                    m_diag = "● 엔진 <b>정회전(헛바퀴)</b>! 성벽 아래이므로 속지 마시게." if p < defense_line else "● 엔진 <b>정회전</b>! 성벽 사수하며 자신 있게 진격하시게."
+                else: 
+                    m_diag = "● 엔진 <b>역회전폭 급감</b>! 시동 걸 채비 중." if m_diff_curr > m_diff_prev else "● 엔진 <b>역회전 심화</b>! 자숙하시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
 
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
