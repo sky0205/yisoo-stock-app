@@ -167,33 +167,34 @@ if symbol:
                 except:
                     pass
 
-           # ★ [시간외 단일가 직통 API 파싱 보급로]
+           # ★ [네이버 실시간 폴링 API 직통 보급로: 시간외 단일가(ovtPrc) 100% 실시간 연동]
             try:
-                # 1. 기본 실시간 시세 수집
-                api_url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
-                res = requests.get(api_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2).json()
+                # 네이버 웹/모바일 공통 실시간 직통 폴링 API
+                poll_url = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{symbol}"
+                res = requests.get(poll_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2).json()
                 
-                p = float(str(res.get('nowPrice', '0')).replace(",", ""))
-                v_curr = float(str(res.get('accumulatedTradingVolume', 0)).replace(",", ""))
+                stock_data = res['result']['areas'][0]['datas'][0]
                 
-                diff_price = float(str(res.get('compareToPreviousPrice', 0)).replace(",", ""))
-                ratio_str = str(res.get('fluctuationsRatio', '0'))
-                prev_p = p + diff_price if ('-' in ratio_str or float(ratio_str) < 0) else p - diff_price
-
-                # 2. 장후 시간외/대체거래소 시간(15:30~20:00)일 때 '시간외 단일가 직통 API' 조준
-                curr_time_val = now_local.hour * 100 + now_local.minute
-                if 1530 <= curr_time_val <= 2000:
-                    try:
-                        ot_api = f"https://m.stock.naver.com/api/stock/{symbol}/price/overtime"
-                        ot_res = requests.get(ot_api, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2).json()
-                        
-                        # 가장 최근 시간외 체결 내역에서 단가(closePrice) 추출
-                        if isinstance(ot_res, list) and len(ot_res) > 0:
-                            ot_p = ot_res[0].get('closePrice', None)
-                            if ot_p:
-                                p = float(str(ot_p).replace(",", ""))
-                    except:
-                        pass
+                # 1. 기본 정규장 현재가/종가 (nv)
+                p = float(stock_data.get('nv', 0))
+                
+                # 2. 장후 시간외/대체거래소 시간외 단일가(ovtPrc) 존재 여부 체크
+                ovt_p = stock_data.get('ovtPrc', 0)
+                if ovt_p and float(ovt_p) > 0:
+                    p = float(ovt_p) # 시간외 단일가 발생 시 최우선 반영!
+                
+                # 3. 실시간 누적 거래량 (aq)
+                v_curr = float(stock_data.get('aq', 0))
+                
+                # 4. 전일 종가 정밀 역산 (정규장가 nv - 변동액 cv)
+                reg_p = float(stock_data.get('nv', p))
+                diff_v = float(stock_data.get('cv', 0))
+                rf = str(stock_data.get('rf', '3')) # 4, 5: 하락 / 1, 2: 상승
+                
+                if rf in ['4', '5']:
+                    prev_p = reg_p + diff_v
+                else:
+                    prev_p = reg_p - diff_v
             except:
                 if not df.empty:
                     p = float(df['Close'].iloc[-1])
