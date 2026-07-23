@@ -233,8 +233,8 @@ if symbol:
             defense_link_idx = min(21, len(df))
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
-            is_bullish = (p > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
-            is_bearish = (p < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
+            is_bullish = (ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
+            is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
             is_ma5_safe = (p >= ma5_val)
 
             if is_bullish: trend_status = "🔥 <b>[대세 정배열]</b> 우상향 성벽 구축 중"
