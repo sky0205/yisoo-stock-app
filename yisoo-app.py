@@ -167,32 +167,31 @@ if symbol:
                 except:
                     pass
 
-           # ★ [장후 시간외 단일가 직통 수집 보급로]
+           # ★ [시간외 단일가 직통 API 파싱 보급로]
             try:
-                # 1. 먼저 실시간 기본 시세 수집
+                # 1. 기본 실시간 시세 수집
                 api_url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
                 res = requests.get(api_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2).json()
                 
                 p = float(str(res.get('nowPrice', '0')).replace(",", ""))
                 v_curr = float(str(res.get('accumulatedTradingVolume', 0)).replace(",", ""))
                 
-                # 전일비 계산용
                 diff_price = float(str(res.get('compareToPreviousPrice', 0)).replace(",", ""))
                 ratio_str = str(res.get('fluctuationsRatio', '0'))
                 prev_p = p + diff_price if ('-' in ratio_str or float(ratio_str) < 0) else p - diff_price
 
-                # 2. 장후 시간외/대체거래소 시간(15:30~20:00)일 경우 시간외 단일가 체결창 직접 조준 파싱
+                # 2. 장후 시간외/대체거래소 시간(15:30~20:00)일 때 '시간외 단일가 직통 API' 조준
                 curr_time_val = now_local.hour * 100 + now_local.minute
                 if 1530 <= curr_time_val <= 2000:
                     try:
-                        ot_url = f"https://finance.naver.com/item/sise_time1.naver?code={symbol}&thistime={now_local.strftime('%Y%m%d%H%M%S')}&option=overtime"
-                        ot_res = requests.get(ot_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
-                        ot_soup = BeautifulSoup(ot_res.text, 'html.parser')
+                        ot_api = f"https://m.stock.naver.com/api/stock/{symbol}/price/overtime"
+                        ot_res = requests.get(ot_api, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2).json()
                         
-                        # 가장 최근 시간외 체결가 추출
-                        first_row_price = ot_soup.select_one("tr td:nth-child(2) span")
-                        if first_row_price and first_row_price.text.strip():
-                            p = float(first_row_price.text.replace(",", ""))
+                        # 가장 최근 시간외 체결 내역에서 단가(closePrice) 추출
+                        if isinstance(ot_res, list) and len(ot_res) > 0:
+                            ot_p = ot_res[0].get('closePrice', None)
+                            if ot_p:
+                                p = float(str(ot_p).replace(",", ""))
                     except:
                         pass
             except:
