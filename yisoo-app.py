@@ -46,6 +46,7 @@ st.markdown("""
     .ind-title { font-size: 26px !important; color: #1976D2 !important; border-bottom: 2px solid #EEEEEE; padding-bottom: 10px; margin-bottom: 15px; }
     .ind-diag { font-size: 20px !important; color: #333333 !important; line-height: 1.8; background-color: #FDFDFD; padding: 15px; border-radius: 10px; border-left: 8px solid #D32F2F; }
     .final-msg { color: #D32F2F !important; font-size: 24px !important; font-weight: 900 !important; line-height: 1.5 !important; }
+    .market-tag { background-color: #0D47A1; color: #FFFFFF !important; padding: 4px 12px; border-radius: 6px; font-size: 18px; margin-left: 10px; display: inline-block; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -114,6 +115,34 @@ if symbol:
             utc_now = datetime.now(ZoneInfo('UTC'))
             now_local = utc_now.astimezone(ZoneInfo('Asia/Seoul') if is_kr else ZoneInfo('America/New_York'))
 
+        # ★ [프리장 / 정규장 / 장후 마켓 상태 자동 판정]
+        curr_hour = now_local.hour
+        curr_min = now_local.minute
+        curr_time_val = curr_hour * 100 + curr_min
+
+        if is_kr:
+            if curr_time_val < 800:
+                m_tag = "🌙 장개장 전"
+            elif 800 <= curr_time_val < 900:
+                m_tag = "🌅 장전 시간외 (프리장)"
+            elif 900 <= curr_time_val <= 1530:
+                m_tag = "☀️ 정규장 실시간"
+            elif 1530 < curr_time_val <= 2000:
+                m_tag = "🌆 장후 시간외 / 대체거래소"
+            else:
+                m_tag = "🌙 장마감 완료"
+        else:
+            if curr_time_val < 400:
+                m_tag = "🌙 장개장 전"
+            elif 400 <= curr_time_val < 930:
+                m_tag = "🌅 미장 프리장 (Pre-Market)"
+            elif 930 <= curr_time_val <= 1600:
+                m_tag = "☀️ 미장 정규장 (Regular)"
+            elif 1600 < curr_time_val <= 2000:
+                m_tag = "🌆 미장 애프터마켓 (Post-Market)"
+            else:
+                m_tag = "🌙 장마감 완료"
+
         df = pd.DataFrame()
         p, v_curr = 0.0, 0.0
         us_prev_p = None
@@ -133,7 +162,6 @@ if symbol:
                 except:
                     pass
 
-            # ★ [국장: 프리장 및 장후 시간외 실시간 파싱]
             try:
                 url = f"https://finance.naver.com/item/main.naver?code={symbol}"
                 res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
@@ -153,7 +181,6 @@ if symbol:
             except Exception:
                 df = ticker.history(period="1y")
                 
-            # ★ [미장: 프리장/애프터마켓 실시간 주가 파싱]
             try:
                 info = ticker.fast_info
                 p = getattr(info, 'last_price', float(df['Close'].iloc[-1]))
@@ -199,7 +226,6 @@ if symbol:
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
             
-            # ★ [시간 보정: 국장(08:00~20:00, 720분) & 미장(04:00~20:00, 960분) 프리장/애프터마켓 완벽 연동]
             if is_kr:
                 s_h, s_m = 8, 0
                 total_minutes = 720
@@ -242,7 +268,6 @@ if symbol:
             defense_link_idx = min(21, len(df))
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
-            # ★ [버그 수정 완료] 현재가 p 제외, 순수 이동평균선(ma5_val) 배열로만 칼같이 정배열/역배열 판정
             is_bullish = (ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
             is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
             is_ma5_safe = (p >= ma5_val)
@@ -281,9 +306,10 @@ if symbol:
                         kor_name = tk
                 final_display_name = f"{kor_name} ({tk})"
 
+            # ★ [현재주가현황에 프리장/정규장/장후 상태 태그(m_tag) 시각화 적용]
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
-            st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} <span class='market-tag'>{m_tag}</span></p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
             if vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
             elif vol_strength >= 100: v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
