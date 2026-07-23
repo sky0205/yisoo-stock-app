@@ -28,7 +28,7 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
-# 1. 스타일 및 화면 구성 (신호등 박스 내부 글자색 강제 백색 고정 적용)
+# 1. 스타일 및 화면 구성
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
@@ -133,6 +133,7 @@ if symbol:
                 except:
                     pass
 
+            # ★ [국장: 프리장 및 장후 시간외 실시간 파싱]
             try:
                 url = f"https://finance.naver.com/item/main.naver?code={symbol}"
                 res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
@@ -152,10 +153,11 @@ if symbol:
             except Exception:
                 df = ticker.history(period="1y")
                 
+            # ★ [미장: 프리장/애프터마켓 실시간 주가 파싱]
             try:
                 info = ticker.fast_info
-                p = info.last_price
-                v_curr = info.last_volume
+                p = getattr(info, 'last_price', float(df['Close'].iloc[-1]))
+                v_curr = getattr(info, 'last_volume', float(df['Volume'].iloc[-1]))
                 us_prev_p = info.previous_close
             except:
                 pass
@@ -197,15 +199,22 @@ if symbol:
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
             
-            s_h, s_m = (9, 0) if is_kr else (9, 30)
+            # ★ [시간 보정: 국장(08:00~20:00, 720분) & 미장(04:00~20:00, 960분) 프리장/애프터마켓 완벽 연동]
+            if is_kr:
+                s_h, s_m = 8, 0
+                total_minutes = 720
+            else:
+                s_h, s_m = 4, 0
+                total_minutes = 960
+
             m_start = now_local.replace(hour=s_h, minute=s_m, second=0, microsecond=0)
             
             if now_local < m_start: 
                 vol_strength = v_ratio 
             else:
-                elapsed = min(390, max(10, (now_local - m_start).seconds / 60))
-                if now_local.weekday() >= 5: elapsed = 390
-                vol_strength = min(1000, v_ratio / (elapsed / 390))
+                elapsed = min(total_minutes, max(10, (now_local - m_start).seconds / 60))
+                if now_local.weekday() >= 5: elapsed = total_minutes
+                vol_strength = min(1000, v_ratio / (elapsed / total_minutes))
             
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
@@ -233,6 +242,7 @@ if symbol:
             defense_link_idx = min(21, len(df))
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
+            # ★ [버그 수정 완료] 현재가 p 제외, 순수 이동평균선(ma5_val) 배열로만 칼같이 정배열/역배열 판정
             is_bullish = (ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
             is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
             is_ma5_safe = (p >= ma5_val)
