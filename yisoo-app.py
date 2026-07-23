@@ -168,16 +168,29 @@ if symbol:
                     pass
 
             # ★ [파싱 응답 속도 최적화: timeout=1 초 적용]
+            # ★ [네이버 실시간 시세 API 직통 보급로: 장전/장후 시간외 시세 완벽 반영]
             try:
-                url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1)
-                soup = BeautifulSoup(res.text, 'html.parser')
-                p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-                v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+                api_url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
+                res = requests.get(api_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1).json()
+                
+                # 장후 시간외/대체거래소 시세가 있으면 최우선 반영, 없으면 실시간가 반영
+                if 'overTimePriceDetails' in res and res['overTimePriceDetails']:
+                    p = float(res['overTimePriceDetails']['nowPrice'].replace(",", ""))
+                else:
+                    p = float(res['nowPrice'].replace(",", ""))
+                
+                v_curr = float(res['accumulatedTradingVolume'].replace(",", ""))
             except:
-                if not df.empty:
-                    p = float(df['Close'].iloc[-1])
-                    v_curr = float(df['Volume'].iloc[-1])
+                try:
+                    url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+                    res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1)
+                    soup = BeautifulSoup(res.text, 'html.parser')
+                    p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                    v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+                except:
+                    if not df.empty:
+                        p = float(df['Close'].iloc[-1])
+                        v_curr = float(df['Volume'].iloc[-1])
         else:
             currency, fmt_p = "$", ",.2f"
             ticker = yf.Ticker(symbol.upper())
