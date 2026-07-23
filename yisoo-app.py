@@ -167,43 +167,40 @@ if symbol:
                 except:
                     pass
 
-           # ★ [KRX + NXT(대체거래소) 통합 직통 보급로: NXT 시세 최우선 파싱]
+           # ★ [KRX + NXT(대체거래소) 실시간 시세 완벽 정밀 파싱]
             try:
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                     'Referer': 'https://finance.naver.com/'
                 }
                 
-                # 1. NXT(넥스트레이드 대체거래소) 실시간 API 조준
-                nxt_url = f"https://polling.finance.naver.com/api/realtime/nxt/stock/{symbol}"
-                nxt_p = 0.0
-                try:
-                    nxt_res = requests.get(nxt_url, headers=headers, timeout=1.5).json()
-                    nxt_data = nxt_res['result']['areas'][0]['datas'][0]
-                    nxt_p = float(nxt_data.get('nv', 0)) # NXT 실시간 체결가
-                except:
-                    pass
-
-                # 2. KRX(한국거래소) 기본 실시간/시간외 API 조준
+                # 기본 KRX 시세 정보 호출
                 poll_url = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{symbol}"
-                res = requests.get(poll_url, headers=headers, timeout=1.5).json()
+                res = requests.get(poll_url, headers=headers, timeout=2).json()
                 stock_data = res['result']['areas'][0]['datas'][0]
                 
                 krx_p = float(stock_data.get('nv', 0))
                 ovt_p = float(stock_data.get('ovtPrc', 0)) if stock_data.get('ovtPrc') else 0.0
-
-                # 3. 우선순위 판정: NXT 체결가 > 시간외 단일가(ovtPrc) > KRX 정규장가(nv)
-                if nxt_p > 0:
-                    p = nxt_p  # 사령관님이 보신 NXT(대체거래소) 23,500원 최우선 반영!
-                elif ovt_p > 0:
-                    p = ovt_p
-                else:
-                    p = krx_p
-
-                # 실시간 누적 거래량
                 v_curr = float(stock_data.get('aq', 0))
-                
-                # 전일 종가 정밀 산출
+
+                # 기본값 설정
+                p = ovt_p if ovt_p > 0 else krx_p
+
+                # NXT(대체거래소) 시세 호출 시도 (15:30~20:00 시간외/대체거래소 시간)
+                curr_time_val = now_local.hour * 100 + now_local.minute
+                if 1530 <= curr_time_val <= 2000:
+                    try:
+                        nxt_url = f"https://polling.finance.naver.com/api/realtime/nxt/stock/{symbol}"
+                        nxt_res = requests.get(nxt_url, headers=headers, timeout=2).json()
+                        if 'result' in nxt_res and 'areas' in nxt_res['result']:
+                            nxt_data = nxt_res['result']['areas'][0]['datas'][0]
+                            nxt_nv = float(nxt_data.get('nv', 0))
+                            if nxt_nv > 0:
+                                p = nxt_nv # 사령관님이 확인하신 NXT 단가(23,500원) 최우선 반영!
+                    except:
+                        pass
+
+                # 전일비 정밀 산출
                 diff_v = float(stock_data.get('cv', 0))
                 rf = str(stock_data.get('rf', '3'))
                 prev_p = (krx_p + diff_v) if rf in ['4', '5'] else (krx_p - diff_v)
