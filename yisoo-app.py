@@ -167,35 +167,44 @@ if symbol:
                 except:
                     pass
 
-           # ★ [네이버 웹 정밀 파싱: 장후 시간외 단일가 및 정규장 현재가 완벽 타겟팅]
+           # ★ [네이버 실시간 시세 API 직통 연동: 장전/정규장/장후 시간외 단가 100% 정밀 파싱]
             try:
-                url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
-                soup = BeautifulSoup(res.text, 'html.parser')
+                # 네이버 모바일 실시간 기본 API (가장 빠르고 정확함)
+                api_url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
+                res = requests.get(api_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2).json()
                 
-                # 1. 장후 시간외 단일가 수치 체크
-                over_elem = soup.select_one(".rate_info .first .blind")
+                # 1. 정규장 및 기본 현재가 추출
+                raw_now_p = str(res.get('nowPrice', '0')).replace(",", "")
+                p = float(raw_now_p) if raw_now_p != '0' else float(df['Close'].iloc[-1])
                 
-                # 2. 정규장 현재가 파싱
-                today_elem = soup.select_one(".no_today .blind")
-                
-                if over_elem and over_elem.text.strip():
-                    p = float(over_elem.text.replace(",", ""))
-                elif today_elem and today_elem.text.strip():
-                    p = float(today_elem.text.replace(",", ""))
-                else:
-                    p = float(df['Close'].iloc[-1]) if not df.empty else 0.0
+                # 2. 장후 시간외 / 대체거래소 단가 존재 여부 정밀 확인
+                over_time = res.get('overTimePriceDetails', None)
+                if over_time and isinstance(over_time, dict):
+                    ot_price = over_time.get('nowPrice', None)
+                    if ot_price:
+                        p = float(str(ot_price).replace(",", ""))
+                elif over_time and isinstance(over_time, list) and len(over_time) > 0:
+                    ot_price = over_time[0].get('nowPrice', None)
+                    if ot_price:
+                        p = float(str(ot_price).replace(",", ""))
 
-                # 거래량 파싱
-                vol_elem = soup.select(".no_info .blind")
-                if len(vol_elem) >= 4:
-                    v_curr = float(vol_elem[3].text.replace(",", ""))
+                # 3. 실시간 거래량
+                v_curr = float(str(res.get('accumulatedTradingVolume', 0)).replace(",", ""))
+                
+                # 4. 전일 대비 변동폭 및 변동률 기반 전일 종가 정밀 산출
+                diff_price = float(str(res.get('compareToPreviousPrice', 0)).replace(",", ""))
+                ratio_str = str(res.get('fluctuationsRatio', '0'))
+                
+                if '-' in ratio_str or float(ratio_str) < 0:
+                    prev_p = p + diff_price
                 else:
-                    v_curr = float(df['Volume'].iloc[-1]) if not df.empty else 0.0
+                    prev_p = p - diff_price
+                    
             except:
                 if not df.empty:
                     p = float(df['Close'].iloc[-1])
                     v_curr = float(df['Volume'].iloc[-1])
+                    prev_p = float(df['Close'].iloc[-2]) if len(df) >= 2 else p
         else:
             currency, fmt_p = "$", ",.2f"
             ticker = yf.Ticker(symbol.upper())
