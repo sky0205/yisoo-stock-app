@@ -204,22 +204,24 @@ if symbol:
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
             
+            # ★ [국내/미국 거래량 시간보정 계산 정밀 보정]
             if is_kr:
-                s_h, s_m = 8, 0
-                total_minutes = 720
+                # 한국 정규장: 09:00 ~ 15:30 (총 390분)
+                m_start = now_local.replace(hour=9, minute=0, second=0, microsecond=0)
+                m_end = now_local.replace(hour=15, minute=30, second=0, microsecond=0)
+                total_minutes = 390
             else:
-                s_h, s_m = 4, 0
-                total_minutes = 960
+                # 미국 정규장: 09:30 ~ 16:00 (총 390분)
+                m_start = now_local.replace(hour=9, minute=30, second=0, microsecond=0)
+                m_end = now_local.replace(hour=16, minute=0, second=0, microsecond=0)
+                total_minutes = 390
 
-            m_start = now_local.replace(hour=s_h, minute=s_m, second=0, microsecond=0)
-            
-            if now_local < m_start: 
-                vol_strength = v_ratio 
-            else:
-                elapsed = min(total_minutes, max(10, (now_local - m_start).seconds / 60))
-                if now_local.weekday() >= 5: elapsed = total_minutes
+            # 정규장 진행 중일 때만 시간보정 적용, 장 시작 전/후에는 하루 전체 비율(v_ratio) 그대로 적용
+            if m_start <= now_local <= m_end and now_local.weekday() < 5:
+                elapsed = max(10, (now_local - m_start).seconds / 60)
                 vol_strength = min(1000, v_ratio / (elapsed / total_minutes))
-            
+            else:
+                vol_strength = v_ratio  # 장 마감 후 또는 장전에는 시차 착시 없이 마감 거래량 비율 그대로 사용!
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
             rsi_val, rsi_prev = rsi_series.iloc[-1], rsi_series.iloc[-2]
