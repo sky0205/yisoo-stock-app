@@ -418,7 +418,7 @@ if symbol:
                     bb_diag = "🧊 <b>[바닥 돌파]</b> 지하실까지 밀렸구먼. 엔진 시동을 기다리시게."
                 elif p >= mid_line: 
                     if is_ma5_safe:
-                        bb_diag = "🔥 <b>[중앙선 안착]</b> 중앙선 위이자 5 destruction선 사수 중! 기세가 살아있네."
+                        bb_diag = "🔥 <b>[중앙선 안착]</b> 중앙선 위이자 5일선 사수 중! 기세가 살아있네."
                     else:
                         bb_diag = "⚠️ <b>[과열 경계]</b> 중앙선 위이나 5일선 아래로 이탈했으니 주의하시게."
                 else:
