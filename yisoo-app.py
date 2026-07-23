@@ -358,26 +358,35 @@ if symbol:
                         def_status = f"성벽({defense_line:{fmt_p}}) 아래(지하실)이나, 엔진 시동을 걸며 <b>지하실 탈출 시도 중</b>이네!"
                     else:
                         def_status = f"성벽({defense_line:{fmt_p}}) 아래로 함락된 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지 마시게.</b>"
+            # --- [신규 추가] 추세 눌림목 매수 조건 정의 ---
+            is_trend_buy = (p >= defense_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0)
+
+# --- 최종 결론(final_adv) 로직 교체 ---
             if top_score >= 2 or p >= up_b * 0.99 or rsi_val >= 60:
                 if vol_strength >= 150 and p > defense_line:
-                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 화력 폭발하며 수확 목표선 도달! <b>비중 유지 및 홀딩!</b>"
+                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 화력 폭발하며 성벽 돌파 중! 목표선 근처 분할 익절 준비하시게."
                 else:
-                    final_adv = f"💰 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 과열권 및 수확기 진입! <b>욕심 버리고 야금야금 분할 익절 시작!</b>"
+                    final_adv = f"💰 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 과열권 및 수학기 진입! 욕심 버리고 야금야금 분할 익절 시작!"
+
+            elif is_trend_buy:
+                final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 탈환 후 눌림목 안착 완료! <b>[추세 진격 타점]</b>이시네, 본대 진격 준비하시게!"
+
             elif bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
-                final_adv = f"🏹 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 <b>5일선({ma5_val:{fmt_p}}) 안착 완료</b>! 소량 <b>[분할 매수]</b> 타이밍이오!"
+                final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 5일선 안착 포착! <b>[바닥 선취매 타점]</b>이시네, 소량 진격하시게!"
+
             else:
                 if not is_ma5_safe and bottom_score >= 2:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 좋으나 단기 5일선 아래라 <b>가짜 반등 우려! 무조건 5일선 회복 때까지 대기!</b>"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 들어왔으나 5일선 이탈 중일세. 무조건 관망 및 대기!"
                 elif m_l < s_l:
                     if is_macd_turning:
-                        final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 중간 지대에서 엔진 역회전폭 급감 중이네. <b>무조건 관망 및 대기!</b>"
+                        final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 중간 지대에서 엔진 회복 시도 중일세. 5일선 사수 여부 관망하시게!"
                     else:
-                        final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 중간 지대에서 엔진 역회전 심화 중이네. <b>무조건 관망 및 대기!</b>"
+                        final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 중간 지대이나 엔진 역회전 중일세. 무조건 관망 및 대기!"
                 else:
                     if p <= (low_b * 1.02):
-                        final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진은 정회전이나 성벽 아래일세. <b>추가 진격 금지 및 관망!</b>" if p < defense_line else f"🔮 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥권에서 엔진 정회전 및 5일선 사수 중이네! <b>강력 매수 검토!</b>"
+                        final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진은 살았으나 볼린저 하단 근접 중일세. 바닥 안착 관망하시게!"
                     else:
-                        final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. <b>무조건 관망 및 대기!</b>"
+                        final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 무조건 관망 및 대기!"
 
             if is_bearish:
                 final_adv = f"🚨 <b>[냉정 경고]</b> 현재 <b>[대세 역배열(하락 추세)]</b> 구간이네! 단기 바닥 신호에 속아 진격하면 지하실로 끌려가니 <b>무조건 관망 및 반등 시 탈출!</b>"
