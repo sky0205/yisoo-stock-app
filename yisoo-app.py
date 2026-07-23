@@ -7,13 +7,13 @@ from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
 
-# --- [보급로 최적화 캐싱 장치] ---
+# --- [보급로 최적화 캐싱 장치: 반응속도 극대화 조율] ---
 @st.cache_data(ttl=3600)
 def load_krx_listing():
     try: return fdr.StockListing('KRX')
     except: return pd.DataFrame()
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=10) # 10초 단위로 신선도 유지
 def fetch_global_market():
     nasdaq = yf.Ticker("^IXIC").fast_info
     sp500 = yf.Ticker("^GSPC").fast_info
@@ -97,7 +97,13 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36056")
 display_global_risk(); st.divider()
 
-symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720").strip()
+col_input, col_btn = st.columns([4, 1])
+with col_input:
+    symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720").strip()
+with col_btn:
+    st.write("") # 위치 맞춤용
+    if st.button("🔄 실시간 시세 재조회"):
+        st.rerun()
 
 if symbol:
     try:
@@ -115,7 +121,6 @@ if symbol:
             utc_now = datetime.now(ZoneInfo('UTC'))
             now_local = utc_now.astimezone(ZoneInfo('Asia/Seoul') if is_kr else ZoneInfo('America/New_York'))
 
-        # ★ [프리장 / 정규장 / 장후 마켓 상태 자동 판정]
         curr_hour = now_local.hour
         curr_min = now_local.minute
         curr_time_val = curr_hour * 100 + curr_min
@@ -162,9 +167,10 @@ if symbol:
                 except:
                     pass
 
+            # ★ [파싱 응답 속도 최적화: timeout=1 초 적용]
             try:
                 url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
+                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1)
                 soup = BeautifulSoup(res.text, 'html.parser')
                 p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
                 v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
@@ -282,7 +288,7 @@ if symbol:
                 if symbol not in core_vault:
                     try:
                         url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-                        res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
+                        res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1)
                         soup = BeautifulSoup(res.text, 'html.parser')
                         final_display_name = soup.select_one(".wrap_company h2 a").text.strip()
                     except:
@@ -306,7 +312,6 @@ if symbol:
                         kor_name = tk
                 final_display_name = f"{kor_name} ({tk})"
 
-            # ★ [현재주가현황에 프리장/정규장/장후 상태 태그(m_tag) 시각화 적용]
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name} <span class='market-tag'>{m_tag}</span></p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
