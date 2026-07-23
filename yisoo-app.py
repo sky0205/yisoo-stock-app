@@ -167,39 +167,34 @@ if symbol:
                 except:
                     pass
 
-           # ★ [네이버 실시간 시세 API 직통 연동: 장전/정규장/장후 시간외 단가 100% 정밀 파싱]
+           # ★ [장후 시간외 단일가 직통 수집 보급로]
             try:
-                # 네이버 모바일 실시간 기본 API (가장 빠르고 정확함)
+                # 1. 먼저 실시간 기본 시세 수집
                 api_url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
                 res = requests.get(api_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2).json()
                 
-                # 1. 정규장 및 기본 현재가 추출
-                raw_now_p = str(res.get('nowPrice', '0')).replace(",", "")
-                p = float(raw_now_p) if raw_now_p != '0' else float(df['Close'].iloc[-1])
-                
-                # 2. 장후 시간외 / 대체거래소 단가 존재 여부 정밀 확인
-                over_time = res.get('overTimePriceDetails', None)
-                if over_time and isinstance(over_time, dict):
-                    ot_price = over_time.get('nowPrice', None)
-                    if ot_price:
-                        p = float(str(ot_price).replace(",", ""))
-                elif over_time and isinstance(over_time, list) and len(over_time) > 0:
-                    ot_price = over_time[0].get('nowPrice', None)
-                    if ot_price:
-                        p = float(str(ot_price).replace(",", ""))
-
-                # 3. 실시간 거래량
+                p = float(str(res.get('nowPrice', '0')).replace(",", ""))
                 v_curr = float(str(res.get('accumulatedTradingVolume', 0)).replace(",", ""))
                 
-                # 4. 전일 대비 변동폭 및 변동률 기반 전일 종가 정밀 산출
+                # 전일비 계산용
                 diff_price = float(str(res.get('compareToPreviousPrice', 0)).replace(",", ""))
                 ratio_str = str(res.get('fluctuationsRatio', '0'))
-                
-                if '-' in ratio_str or float(ratio_str) < 0:
-                    prev_p = p + diff_price
-                else:
-                    prev_p = p - diff_price
-                    
+                prev_p = p + diff_price if ('-' in ratio_str or float(ratio_str) < 0) else p - diff_price
+
+                # 2. 장후 시간외/대체거래소 시간(15:30~20:00)일 경우 시간외 단일가 체결창 직접 조준 파싱
+                curr_time_val = now_local.hour * 100 + now_local.minute
+                if 1530 <= curr_time_val <= 2000:
+                    try:
+                        ot_url = f"https://finance.naver.com/item/sise_time1.naver?code={symbol}&thistime={now_local.strftime('%Y%m%d%H%M%S')}&option=overtime"
+                        ot_res = requests.get(ot_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
+                        ot_soup = BeautifulSoup(ot_res.text, 'html.parser')
+                        
+                        # 가장 최근 시간외 체결가 추출
+                        first_row_price = ot_soup.select_one("tr td:nth-child(2) span")
+                        if first_row_price and first_row_price.text.strip():
+                            p = float(first_row_price.text.replace(",", ""))
+                    except:
+                        pass
             except:
                 if not df.empty:
                     p = float(df['Close'].iloc[-1])
