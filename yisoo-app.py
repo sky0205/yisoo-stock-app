@@ -250,9 +250,16 @@ if symbol:
             is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
             is_ma5_safe = (p >= ma5_val)
 
-            if is_bullish: trend_status = "🔥 <b>[대세 정배열]</b> 우상향 성벽 구축 중"
-            elif is_bearish: trend_status = "⚠️ <b>[대세 역배열]</b> 지하실 향하는 하락 추세"
-            else: trend_status = "⚖️ <b>[추세 혼조/횡보]</b> 방향 탐색 중"
+            if is_bullish:
+                trend_status = "🔥 <b>[대세 정배열]</b> 완벽한 우상향 성벽 구축 완료"
+            elif is_bearish:
+                trend_status = "⚠️ <b>[대세 역배열]</b> 지하실 향하는 하락 추세"
+            elif ma5_val > mid_line:
+                trend_status = "🌱 <b>[단기 반등 초입]</b> 5일선이 20일선 돌파! 상방 반전 시도 중"
+            elif ma5_val < mid_line:
+                trend_status = "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려 숨고르기 중"
+            else:
+                trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
 
             if is_kr:
                 core_vault = {"005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", "257720": "실리콘투", "058610": "에스피지"}
