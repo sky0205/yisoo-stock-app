@@ -167,43 +167,46 @@ if symbol:
                 except:
                     pass
 
-           # ★ [KRX + NXT(대체거래소) 실시간 시세 완벽 정밀 파싱]
+           # ★ [KRX + NXT 대체거래소/시간외 강제 직통 파싱 보급로]
             try:
                 headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Referer': 'https://finance.naver.com/'
+                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+                    'Referer': f'https://m.stock.naver.com/domestic/stock/{symbol}/total'
                 }
                 
-                # 기본 KRX 시세 정보 호출
-                poll_url = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{symbol}"
-                res = requests.get(poll_url, headers=headers, timeout=2).json()
-                stock_data = res['result']['areas'][0]['datas'][0]
+                # 1. 네이버 모바일 통합 데이터 API 호출
+                api_url = f"https://m.stock.naver.com/api/stock/{symbol}/integration"
+                res = requests.get(api_url, headers=headers, timeout=2).json()
                 
-                krx_p = float(stock_data.get('nv', 0))
-                ovt_p = float(stock_data.get('ovtPrc', 0)) if stock_data.get('ovtPrc') else 0.0
-                v_curr = float(stock_data.get('aq', 0))
+                # 기본 KRX 종가/현재가
+                krx_p = float(str(res.get('nowPrice', '0')).replace(",", ""))
+                v_curr = float(str(res.get('accumulatedTradingVolume', 0)).replace(",", ""))
+                
+                # NXT 대체거래소 단가 체크 (nxtPrice / overTimePriceDetails / totalInfos 탐색)
+                nxt_p = 0.0
+                
+                # 통합 정보 내 NXT 데이터 추출
+                if 'totalInfos' in res:
+                    for info in res['totalInfos']:
+                        if info.get('code') == 'NXT' or '대체' in info.get('key', '') or 'NXT' in info.get('key', ''):
+                            nxt_p = float(str(info.get('value', '0')).replace(",", ""))
+                            break
+                            
+                # 시간외 단일가 데이터 추출
+                if nxt_p == 0.0 and 'overTimePriceDetails' in res and res['overTimePriceDetails']:
+                    ot = res['overTimePriceDetails']
+                    if isinstance(ot, dict) and ot.get('nowPrice'):
+                        nxt_p = float(str(ot['nowPrice']).replace(",", ""))
+                    elif isinstance(ot, list) and len(ot) > 0 and ot[0].get('nowPrice'):
+                        nxt_p = float(str(ot[0]['nowPrice']).replace(",", ""))
 
-                # 기본값 설정
-                p = ovt_p if ovt_p > 0 else krx_p
-
-                # NXT(대체거래소) 시세 호출 시도 (15:30~20:00 시간외/대체거래소 시간)
-                curr_time_val = now_local.hour * 100 + now_local.minute
-                if 1530 <= curr_time_val <= 2000:
-                    try:
-                        nxt_url = f"https://polling.finance.naver.com/api/realtime/nxt/stock/{symbol}"
-                        nxt_res = requests.get(nxt_url, headers=headers, timeout=2).json()
-                        if 'result' in nxt_res and 'areas' in nxt_res['result']:
-                            nxt_data = nxt_res['result']['areas'][0]['datas'][0]
-                            nxt_nv = float(nxt_data.get('nv', 0))
-                            if nxt_nv > 0:
-                                p = nxt_nv # 사령관님이 확인하신 NXT 단가(23,500원) 최우선 반영!
-                    except:
-                        pass
+                # 최종 현재가 결정 (NXT 단가 우선 반영)
+                p = nxt_p if nxt_p > 0 else krx_p
 
                 # 전일비 정밀 산출
-                diff_v = float(stock_data.get('cv', 0))
-                rf = str(stock_data.get('rf', '3'))
-                prev_p = (krx_p + diff_v) if rf in ['4', '5'] else (krx_p - diff_v)
+                diff_v = float(str(res.get('compareToPreviousPrice', 0)).replace(",", ""))
+                ratio_s = str(res.get('fluctuationsRatio', '0'))
+                prev_p = p + diff_v if ('-' in ratio_s or float(ratio_s) < 0) else p - diff_p
 
             except:
                 if not df.empty:
