@@ -169,23 +169,36 @@ if symbol:
 
             # ★ [파싱 응답 속도 최적화: timeout=1 초 적용]
             # ★ [네이버 실시간 시세 API 직통 보급로: 장전/장후 시간외 시세 완벽 반영]
+           # ★ [네이버 통합 파싱 보급로: 시간외 단일가 / 실시간 현재가 완벽 타겟팅]
             try:
+                # 1차 시도: 네이버 모바일 통합 API 파싱
                 api_url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
-                res = requests.get(api_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1).json()
+                res = requests.get(api_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2).json()
                 
-                # 장후 시간외/대체거래소 시세가 있으면 최우선 반영, 없으면 실시간가 반영
-                if 'overTimePriceDetails' in res and res['overTimePriceDetails']:
-                    p = float(res['overTimePriceDetails']['nowPrice'].replace(",", ""))
+                # 장후 시간외 데이터 구조 정밀 체크
+                over_time = res.get('overTimePriceDetails', None)
+                if over_time and isinstance(over_time, dict) and over_time.get('nowPrice'):
+                    p = float(str(over_time['nowPrice']).replace(",", ""))
+                elif over_time and isinstance(over_time, list) and len(over_time) > 0:
+                    p = float(str(over_time[0].get('nowPrice', res.get('nowPrice'))).replace(",", ""))
                 else:
-                    p = float(res['nowPrice'].replace(",", ""))
+                    p = float(str(res.get('nowPrice')).replace(",", ""))
                 
-                v_curr = float(res['accumulatedTradingVolume'].replace(",", ""))
+                v_curr = float(str(res.get('accumulatedTradingVolume', 0)).replace(",", ""))
             except:
                 try:
+                    # 2차 예비 보급로: PC 네이버 증권 웹 문서 파싱
                     url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-                    res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1)
+                    res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
                     soup = BeautifulSoup(res.text, 'html.parser')
-                    p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                    
+                    # 시간외 단일가 영역이 존재하면 최우선 파싱
+                    over_price_elem = soup.select_one(".rate_info .first .blind")
+                    if over_price_elem:
+                        p = float(over_price_elem.text.replace(",", ""))
+                    else:
+                        p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                    
                     v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
                 except:
                     if not df.empty:
