@@ -47,30 +47,29 @@ st.markdown("""
     .ind-diag { font-size: 20px !important; color: #333333 !important; line-height: 1.8; background-color: #FDFDFD; padding: 15px; border-radius: 10px; border-left: 8px solid #D32F2F; }
     .final-msg { color: #D32F2F !important; font-size: 24px !important; font-weight: 900 !important; line-height: 1.5 !important; }
     
-    /* 🔥 [신규 추가] 실시간 시세 재조회 버튼 눈에 확 띄게 만드는 시인성 강조 스타일 */
     div.stButton > button {
         background: linear-gradient(90deg, #1A237E 0%, #283593 100%) !important;
         color: #FFFFFF !important;
-        font-size: 22px !important;
-        font-weight: 900 !important;
-        padding: 18px 25px !important;
-        border-radius: 12px !important;
-        border: 3px solid #FFEB3B !important;
+        font-size: 16px !important;            /* 글자 크기를 입력창에 맞춰 정돈 */
+        font-weight: bold !important;
+        padding: 10px 15px !important;          /* 안쪽 여백 축소 */
+        height: 46px !important;                /* 입력창 표준 높이와 완벽 고정 */
+        border-radius: 8px !important;
+        border: 2px solid #FFEB3B !important;
         width: 100% !important;
-        box-shadow: 0 6px 15px rgba(26, 35, 126, 0.4) !important;
+        box-shadow: 0 3px 6px rgba(26, 35, 126, 0.3) !important;
         cursor: pointer !important;
-        transition: all 0.3s ease !important;
+        margin-top: 0px !important;
+        transition: all 0.2s ease !important;
     }
     div.stButton > button:hover {
         background: linear-gradient(90deg, #283593 0%, #3F51B5 100%) !important;
         color: #FFEB3B !important;
         border-color: #FFFFFF !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 20px rgba(40, 53, 147, 0.6) !important;
     }
     div.stButton > button * {
         color: #FFFFFF !important;
-        font-size: 22px !important;
+        font-size: 16px !important;
     }
     </style>
     """, unsafe_allow_html=True)
