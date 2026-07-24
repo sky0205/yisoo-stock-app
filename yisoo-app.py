@@ -404,7 +404,10 @@ if symbol:
                     final_adv = f"💰 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 과열권 및 수학기 진입! 욕심 버리고 야금야금 분할 익절 시작!"
 
             elif is_trend_buy:
-                final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 탈환 후 눌림목 안착 완료! <b>[추세 진격 타점]</b>이시네, 본대 진격 준비하시게!"
+                if vol_strength < 80:
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 위 안착하였으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
+                else:
+                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 탈환 후 거래량 실린 눌림목 안착 완료! <b>[추세 진격 타점]</b>이시네, 본대 진격 준비하시게!"
 
             elif bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
                 final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 5일선 안착 포착! <b>[바닥 선취매 타점]</b>이시네, 소량 진격하시게!"
