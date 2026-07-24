@@ -29,7 +29,7 @@ def fetch_global_market():
     }
 
 # 1. 스타일 및 화면 구성
-st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
+st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36057", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #ECEFF1; } 
@@ -50,10 +50,10 @@ st.markdown("""
     div.stButton > button {
         background: linear-gradient(90deg, #1A237E 0%, #283593 100%) !important;
         color: #FFFFFF !important;
-        font-size: 16px !important;            /* 글자 크기를 입력창에 맞춰 정돈 */
+        font-size: 16px !important;
         font-weight: bold !important;
-        padding: 10px 15px !important;          /* 안쪽 여백 축소 */
-        height: 46px !important;                /* 입력창 표준 높이와 완벽 고정 */
+        padding: 10px 15px !important;
+        height: 46px !important;
         border-radius: 8px !important;
         border: 2px solid #FFEB3B !important;
         width: 100% !important;
@@ -118,7 +118,7 @@ def display_global_risk():
         st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36056")
+st.title("🧐 이수할아버지의 냉정 진단기 v36057")
 display_global_risk(); st.divider()
 
 col_input, col_btn = st.columns([3, 2])
@@ -271,7 +271,7 @@ if symbol:
             defense_link_idx = min(21, len(df))
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
-            # ★ [신규 추가] 52주(약 250일) 신고가 및 신저가 연산
+            # ★ 52주(약 250일) 신고가 및 신저가 연산
             high_52w = float(df['High'].rolling(window=250, min_periods=1).max().iloc[-1])
             low_52w = float(df['Low'].rolling(window=250, min_periods=1).min().iloc[-1])
             is_new_high = (p >= high_52w * 0.99)
@@ -326,12 +326,13 @@ if symbol:
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
+            # ★ [거래량 전황 표기 및 변수 정돈]
             if is_bearish and vol_strength >= 100:
                 v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열 과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 거래량 주의."
             elif vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
             elif vol_strength >= 100: v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
             elif vol_strength >= 80: v_status, v_adv = "정상화력", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점! 기세가 빳빳하구먼."
-            else: v_status, v_adv = "기세부족", f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! 속지 마시게."
+            else: v_status, v_adv = "거래절벽", f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! 수급이 마르고 동력이 없으니 속지 마시게."
             
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
@@ -350,15 +351,17 @@ if symbol:
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
+            # ★ [신호등 판단 로직에 거래량 빗장통합]
             if top_score >= 2:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
             elif bottom_score >= 2:
                 if is_bearish: sig, col, s_adv = "🟡 관망 및 대기 (역배열 주의)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 <b>[대세 역배열]</b> 구간이오!"
                 elif not is_ma5_safe: sig, col, s_adv = "🟡 관망 및 대기 (5일선 이탈)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 단기 생명선 <b>[5일선 이탈]</b> 상태이오!"
+                elif vol_strength < 80: sig, col, s_adv = "🟡 관망 및 대기 (거래량 부족)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)에 5일선 사수 중이나 <b>[거래량 부족({vol_strength:.1f}점)]</b>으로 동력 부재!"
                 elif is_reverse_shrinking or is_macd_turning: 
-                    sig, col, s_adv = "🎯 [명장의 선취매 타점]", "#E65100", f"• 🔥 <b>[필살 변곡점 포착]</b> 다중 바닥({bottom_score}/3) + 5일선 사수 완벽 일치!"
+                    sig, col, s_adv = "🎯 [명장의 선취매 타점]", "#E65100", f"• 🔥 <b>[필살 변곡점 포착]</b> 다중 바닥({bottom_score}/3) + 5일선 사수 + 거래량 분출 완벽 일치!"
                 elif is_engine_reverse: sig, col, s_adv = "🟡 관망 및 대기 (역회전 심화)", "#FBC02D", f"• ⚠️ 다중 바닥 지표({bottom_score}/3)이나 엔진 역회전 심화 중."
-                else: sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"• 🧊 다중 바닥, 5일선 사수 및 엔진 정회전 확정!"
+                else: sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", f"• 🧊 다중 바닥, 5일선 사수, 거래량 유입 및 엔진 정회전 확정!"
             else:
                 if is_bearish: sig, col, s_adv = "🟡 관망 및 대기 (역배열 하락중)", "#FBC02D", f"• ⚠️ 대세 역배열 하락 추세 중이네."
                 elif not is_ma5_safe: sig, col, s_adv = "🟡 관망 및 대기 (5일선 아래)", "#FBC02D", f"• ⚠️ 단기 전투선인 5일선 아래에서 기세 허덕이는 중."
@@ -390,7 +393,7 @@ if symbol:
             # --- 추세 눌림목 매수 조건 정의 ---
             is_trend_buy = (p >= defense_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0)
 
-            # ★ [최우선 결론 판단] 52주 신고가 / 신저가 빗장 연결
+            # ★ [최우선 결론 판단 전체 구역 - 거래량 빗장 통일 적용]
             if is_new_high:
                 final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신고가(무주공산)]</b> 영역 진격 중! 머리 위 매물대는 없으나 과열 위험이 높으니 추격매수는 엄금하고, 5일선 사수 기준 트레일링 스탑(분할 익절)으로 대응하시게!"
 
@@ -401,7 +404,7 @@ if symbol:
                 if vol_strength >= 150 and p > defense_line:
                     final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 화력 폭발하며 성벽 돌파 중! 목표선 근처 분할 익절 준비하시게."
                 else:
-                    final_adv = f"💰 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 과열권 및 수학기 진입! 욕심 버리고 야금야금 분할 익절 시작!"
+                    final_adv = f"💰 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 과열권 및 수확기 진입! 욕심 버리고 야금야금 분할 익절 시작!"
 
             elif is_trend_buy:
                 if vol_strength < 80:
@@ -410,7 +413,10 @@ if symbol:
                     final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 탈환 후 거래량 실린 눌림목 안착 완료! <b>[추세 진격 타점]</b>이시네, 본대 진격 준비하시게!"
 
             elif bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
-                final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 5일선 안착 포착! <b>[바닥 선취매 타점]</b>이시네, 소량 진격하시게!"
+                if vol_strength < 80:
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥은 형성되었으나 <b>[거래량 부족]</b>으로 상승 동력이 없네! 수급 폭발 시까지 관망하시게!"
+                else:
+                    final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 5일선 안착 포착! <b>[바닥 선취매 타점]</b>이시네, 소량 진격하시게!"
 
             else:
                 if not is_ma5_safe and bottom_score >= 2:
@@ -459,7 +465,7 @@ if symbol:
 </div>
 <hr style='border:1px solid #FFEBEE; margin: 20px 0;'>
 <div class='final-msg'>
-{final_adv.replace('<b>', '').replace('</b>', '').replace('<i>', '').replace('</i>', '')}
+{final_adv}
 </div>
 </div>""", unsafe_allow_html=True)
 
