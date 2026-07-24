@@ -423,9 +423,7 @@ if symbol:
                     else:
                         final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 무조건 관망 및 대기!"
 
-            if is_bearish and not (is_new_high or is_new_low):
-                final_adv = f"🚨 <b>[냉정 경고]</b> 현재 <b>[대세 역배열(하락 추세)]</b> 구간이네! 단기 바닥 신호에 속아 진격하면 지하실로 끌려가니 <b>무조건 관망 및 반등 시 탈출!</b>"
-
+            
             # MACD 상충 보정 멘트 생성 (대응전략 4번 영역)
             if m_l > s_l:
                 if p < defense_line:
