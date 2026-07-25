@@ -414,9 +414,11 @@ if symbol:
 
             elif bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
                 if vol_strength < 80:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥은 형성되었으나 <b>[거래량 부족]</b>으로 상승 동력이 없네! 수급 폭발 시까지 관망하시게!"
+        # 417번 줄 부근: 거래량 부족 시 빗장
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 안착했으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
                 else:
-                    final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 5일선 안착 포착! <b>[바닥 선취매 타점]</b>이시네, 소량 진격하시게!"
+        # 419번 줄 부근: 거래량 터진 진짜 바닥 선취매
+                    final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 거래량 유입 포착! <b>[바닥 선취매 타점]</b>이시네. 선발대(20~30%) 소량 진격하되, <b>5일선/성벽 이탈 시 후퇴</b> 기준을 지키시게!"
 
             else:
                 if not is_ma5_safe and bottom_score >= 2:
