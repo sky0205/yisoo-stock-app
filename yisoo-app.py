@@ -410,7 +410,7 @@ if symbol:
                 if vol_strength < 80:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 위 안착하였으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
                 else:
-                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 탈환 후 거래량 실린 눌림목 안착 완료! <b>[추세 진격 타점]</b>이시네, 본대 진격 준비하시게!"
+                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 눌림목 안착! <b>[추세 진격 타점]</b>이시네. 선발대(30~40%) 진격하되, <b>성벽({defense_line:{fmt_p}}) 음봉 이탈 시 즉각 후퇴(손절)</b> 기준을 엄수하시게!"
 
             elif bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
                 if vol_strength < 80:
