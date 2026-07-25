@@ -28,8 +28,27 @@ def fetch_global_market():
         "u_last": usdkrw.last_price, "u_prev": usdkrw.previous_close
     }
 
+# --- ⚔️ 켈리 공식(Kelly Criterion) 정밀 자금관리 연산 장치 ---
+def calculate_kelly_size(win_rate, win_loss_ratio, fraction=0.5):
+    """
+    win_rate (p): 승률 (0.0 ~ 1.0)
+    win_loss_ratio (b): 손익비 (평균익절% / 평균손절%)
+    fraction: 안전 보정계수 (0.5 = Half Kelly 적용)
+    """
+    b = win_loss_ratio
+    p = win_rate
+    q = 1.0 - p
+    f_star = (p * b - q) / b
+    
+    if f_star <= 0:
+        return 0.0 # 기대값이 음수이면 매수 금지 (0%)
+    
+    # 하프 켈리 적용 및 단일 종목 최대 비중 30% 제한 빗장
+    safe_kelly = min(30.0, f_star * fraction * 100)
+    return round(safe_kelly, 1)
+
 # 1. 스타일 및 화면 구성
-st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36057", layout="wide")
+st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36058", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #ECEFF1; } 
@@ -118,7 +137,7 @@ def display_global_risk():
         st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36057")
+st.title("🧐 이수할아버지의 냉정 진단기 v36058")
 display_global_risk(); st.divider()
 
 col_input, col_btn = st.columns([3, 2])
@@ -393,7 +412,7 @@ if symbol:
             # --- 추세 눌림목 매수 조건 정의 ---
             is_trend_buy = (p >= defense_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0)
 
-            # ★ [최우선 결론 판단 전체 구역 - 거래량 빗장 통일 적용]
+            # ★ [최우선 결론 판단 전체 구역 - 켈리 공식 비중 통합 적용]
             if is_new_high:
                 final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신고가(무주공산)]</b> 영역 진격 중! 머리 위 매물대는 없으나 과열 위험이 높으니 추격매수는 엄금하고, 5일선 사수 기준 트레일링 스탑(분할 익절)으로 대응하시게!"
 
@@ -402,7 +421,8 @@ if symbol:
 
             elif top_score >= 2 or p >= up_b * 0.99 or rsi_val >= 60:
                 if vol_strength >= 150 and p > defense_line:
-                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 화력 폭발하며 성벽 돌파 중! 목표선 근처 분할 익절 준비하시게."
+                    k_size = calculate_kelly_size(win_rate=0.70, win_loss_ratio=1.2, fraction=0.5)
+                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 화력 폭발하며 성벽 돌파 중! <b>[켈리 적정 비중: 자산의 {k_size}%]</b> 수준 유지하며 목표선 근처 분할 익절 준비하시게."
                 else:
                     final_adv = f"💰 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 과열권 및 수확기 진입! 욕심 버리고 야금야금 분할 익절 시작!"
 
@@ -410,15 +430,17 @@ if symbol:
                 if vol_strength < 80:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 위 안착하였으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
                 else:
-                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 눌림목 안착! <b>[추세 진격 타점]</b>이시네. 선발대(30~40%) 진격하되, <b>성벽({defense_line:{fmt_p}}) 음봉 이탈 시 즉각 후퇴(손절)</b> 기준을 엄수하시게!"
+                    # 추세 눌림목 타점: 승률 65%, 손익비 1.5 기준 켈리 계산
+                    k_size = calculate_kelly_size(win_rate=0.65, win_loss_ratio=1.5, fraction=0.5)
+                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 눌림목 안착! <b>[추세 진격 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b>로 선발대 진격하되, <b>성벽({defense_line:{fmt_p}}) 음봉 이탈 시 즉각 후퇴(손절)</b> 기준을 엄수하시게!"
 
             elif bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
                 if vol_strength < 80:
-        # 417번 줄 부근: 거래량 부족 시 빗장
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 안착했으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
                 else:
-        # 419번 줄 부근: 거래량 터진 진짜 바닥 선취매
-                    final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 거래량 유입 포착! <b>[바닥 선취매 타점]</b>이시네. 선발대(20~30%) 소량 진격하되, <b>5일선/성벽 이탈 시 후퇴</b> 기준을 지키시게!"
+                    # 바닥 선취매 타점: 승률 45%, 손익비 2.5 기준 켈리 계산
+                    k_size = calculate_kelly_size(win_rate=0.45, win_loss_ratio=2.5, fraction=0.5)
+                    final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 거래량 유입 포착! <b>[바닥 선취매 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b> 소량 진격하되, <b>5일선/성벽 이탈 시 후퇴</b> 기준을 지키시게!"
 
             else:
                 if not is_ma5_safe and bottom_score >= 2:
