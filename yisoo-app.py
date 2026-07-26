@@ -371,7 +371,7 @@ if symbol:
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
             # ★ [신호등 판단 로직에 거래량 빗장통합]
-            if top_score >= 2:
+            if top_score >= 2 or p >= (up_b * 0.995) or rsi_val >= 60:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
             elif bottom_score >= 2:
                 if is_bearish: sig, col, s_adv = "🟡 관망 및 대기 (역배열 주의)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 <b>[대세 역배열]</b> 구간이오!"
