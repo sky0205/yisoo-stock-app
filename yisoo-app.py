@@ -419,7 +419,7 @@ if symbol:
             elif is_new_low:
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신저가(칼날 하락)]</b> 구역 전개! 바닥을 알 수 없는 지하실 진입이오. 단기 반등에 속지 말고 5일선 안착 및 쌍바닥 확인 전까지 무조건 관망하시게!"
 
-           elif top_score >= 2 or p >= up_b:
+            elif top_score >= 2 or p >= up_b:
                 if vol_strength >= 150 and p > defense_line:
                     k_size = calculate_kelly_size(win_rate=0.70, win_loss_ratio=1.2, fraction=0.5)
                     final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 화력 폭발하며 성벽 돌파 중! <b>[켈리 적정 비중: 자산의 {k_size}%]</b> 수준 유지하며 목표선 근처 분할 익절 준비하시게."
