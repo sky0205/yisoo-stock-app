@@ -371,7 +371,7 @@ if symbol:
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
             # ★ [신호등 판단 로직에 거래량 빗장통합]
-            if top_score >= 2 or p >= (up_b * 0.995) or rsi_val >= 60:
+            if top_score >= 2 or p >= up_b:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
             elif bottom_score >= 2:
                 if is_bearish: sig, col, s_adv = "🟡 관망 및 대기 (역배열 주의)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 <b>[대세 역배열]</b> 구간이오!"
@@ -419,7 +419,7 @@ if symbol:
             elif is_new_low:
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신저가(칼날 하락)]</b> 구역 전개! 바닥을 알 수 없는 지하실 진입이오. 단기 반등에 속지 말고 5일선 안착 및 쌍바닥 확인 전까지 무조건 관망하시게!"
 
-            elif top_score >= 2 or p >= up_b * 0.99 or rsi_val >= 60:
+           elif top_score >= 2 or p >= up_b:
                 if vol_strength >= 150 and p > defense_line:
                     k_size = calculate_kelly_size(win_rate=0.70, win_loss_ratio=1.2, fraction=0.5)
                     final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 화력 폭발하며 성벽 돌파 중! <b>[켈리 적정 비중: 자산의 {k_size}%]</b> 수준 유지하며 목표선 근처 분할 익절 준비하시게."
