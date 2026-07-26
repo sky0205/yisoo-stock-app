@@ -370,9 +370,21 @@ if symbol:
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
-            # ★ [신호등 판단 로직에 거래량 빗장통합]
-            if top_score >= 2 or p >= up_b:
-                sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 포착! 기세가 완연한 수확기일세.'} (매도 지표 일치도: {top_score}/3)"
+            # --- 추세 눌림목 매수 조건 정의 ---
+            is_trend_buy = (p >= defense_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0)
+
+            # ★ [상단 메인 신호등 판단 로직 - 하단 최종 결론과 100% 동기화]
+            if is_new_high:
+                sig, col, s_adv = "🚀 [52주 신고가 진격]", "#1E88E5", "• 무주공산 영역 진격 중! 5일선 사수 기준 분할 대응하시게."
+            elif is_new_low:
+                sig, col, s_adv = "🚨 [52주 신저가 경보]", "#D32F2F", "• 지하실 칼날 하락 중이오! 절대 손대지 마시게."
+            elif top_score >= 2 or p >= up_b:
+                sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 및 수확목표선 도달! 수확기 진입일세.'} (과열 지표 일치도: {top_score}/3)"
+            elif is_trend_buy:
+                if vol_strength < 80:
+                    sig, col, s_adv = "🟡 관망 및 대기 (거래량 부족)", "#FBC02D", f"• ⚠️ 성벽 위 안착했으나 <b>[거래량 부족({vol_strength:.1f}점)]</b>으로 동력 부재!"
+                else:
+                    sig, col, s_adv = "🚀 [추세 진격 타점]", "#E65100", "• 🔥 <b>[추세 눌림목 안착]</b> 거래량 실린 선발대 진격 타점 포착!"
             elif bottom_score >= 2:
                 if is_bearish: sig, col, s_adv = "🟡 관망 및 대기 (역배열 주의)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 <b>[대세 역배열]</b> 구간이오!"
                 elif not is_ma5_safe: sig, col, s_adv = "🟡 관망 및 대기 (5일선 이탈)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 단기 생명선 <b>[5일선 이탈]</b> 상태이오!"
@@ -408,11 +420,8 @@ if symbol:
                         def_status = f"성벽({defense_line:{fmt_p}}) 아래(지하실)이나, 엔진 시동을 걸며 <b>지하실 탈출 시도 중</b>이네!"
                     else:
                         def_status = f"성벽({defense_line:{fmt_p}}) 아래로 함락된 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지 마시게.</b>"
-            
-            # --- 추세 눌림목 매수 조건 정의 ---
-            is_trend_buy = (p >= defense_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0)
 
-            # ★ [최우선 결론 판단 전체 구역 - 켈리 공식 비중 통합 적용]
+            # ★ [최우선 결론 판단 전체 구역 - 상단 신호등 조건과 100% 동일하게 일치]
             if is_new_high:
                 final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신고가(무주공산)]</b> 영역 진격 중! 머리 위 매물대는 없으나 과열 위험이 높으니 추격매수는 엄금하고, 5일선 사수 기준 트레일링 스탑(분할 익절)으로 대응하시게!"
 
