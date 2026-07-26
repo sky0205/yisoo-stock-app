@@ -371,7 +371,8 @@ if symbol:
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
             # --- 추세 눌림목 매수 조건 정의 ---
-            is_trend_buy = (p >= defense_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0)
+           # --- 추세 눌림목 매수 조건 정의 ---
+            is_trend_buy = (p >= defense_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0) and (p < up_b * 0.98)
 
             # ★ [상단 메인 신호등 판단 로직 - 하단 최종 결론과 100% 동기화]
             if is_new_high:
