@@ -370,11 +370,9 @@ if symbol:
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
-           
-           # --- 수정 후 (성벽 위 안착 + 20일선 위 + 5일선 사수가 모두 맞아야 진격!) ---
-            # --- 수정 후 (성벽 위 안착 또는 성벽 아래 거래량 실린 20일선 턴어라운드) ---
+            # --- [오류 수정 위치: time_vol_score -> vol_strength 적용] ---
             cond_above_wall = (p >= defense_line) and (p >= mid_line) and (ma5_val >= mid_line)
-            cond_bottom_turn = (p < defense_line) and (p >= mid_line) and (ma5_val >= mid_line) and (time_vol_score >= 120)
+            cond_bottom_turn = (p < defense_line) and (p >= mid_line) and (ma5_val >= mid_line) and (vol_strength >= 120)
 
             is_trend_buy = (cond_above_wall or cond_bottom_turn) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0) and (p < up_b * 0.98)
 
@@ -442,7 +440,6 @@ if symbol:
                 if vol_strength < 80:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 위 안착하였으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
                 else:
-                    # 추세 눌림목 타점: 승률 65%, 손익비 1.5 기준 켈리 계산
                     k_size = calculate_kelly_size(win_rate=0.65, win_loss_ratio=1.5, fraction=0.5)
                     final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 눌림목 안착! <b>[추세 진격 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b>로 선발대 진격하되, <b>성벽({defense_line:{fmt_p}}) 음봉 이탈 시 즉각 후퇴(손절)</b> 기준을 엄수하시게!"
 
@@ -450,7 +447,6 @@ if symbol:
                 if vol_strength < 80:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 안착했으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
                 else:
-                    # 바닥 선취매 타점: 승률 45%, 손익비 2.5 기준 켈리 계산
                     k_size = calculate_kelly_size(win_rate=0.45, win_loss_ratio=2.5, fraction=0.5)
                     final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 거래량 유입 포착! <b>[바닥 선취매 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b> 소량 진격하되, <b>5일선/성벽 이탈 시 후퇴</b> 기준을 지키시게!"
 
@@ -468,7 +464,6 @@ if symbol:
                     else:
                         final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 무조건 관망 및 대기!"
 
-            
             # MACD 상충 보정 멘트 생성 (대응전략 4번 영역)
             if m_l > s_l:
                 if p < defense_line:
