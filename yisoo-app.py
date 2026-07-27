@@ -372,7 +372,7 @@ if symbol:
 
            
            # --- 수정 후 (성벽 위 안착 + 20일선 위 + 5일선 사수가 모두 맞아야 진격!) ---
-is_trend_buy = (p >= defense_line) and (p >= mid_line) and (ma5_val >= mid_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0) and (p < up_b * 0.98)
+            is_trend_buy = (p >= defense_line) and (p >= mid_line) and (ma5_val >= mid_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0) and (p < up_b * 0.98)
 
             # ★ [상단 메인 신호등 판단 로직 - 하단 최종 결론과 100% 동기화]
             if is_new_high:
