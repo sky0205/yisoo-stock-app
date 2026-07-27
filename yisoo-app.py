@@ -370,11 +370,8 @@ if symbol:
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
-            # --- [오류 수정 위치: time_vol_score -> vol_strength 적용] ---
-            cond_above_wall = (p >= defense_line) and (p >= mid_line) and (ma5_val >= mid_line)
-            cond_bottom_turn = (p < defense_line) and (p >= mid_line) and (ma5_val >= mid_line) and (vol_strength >= 120)
-
-            is_trend_buy = (cond_above_wall or cond_bottom_turn) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0) and (p < up_b * 0.98)
+            # ★ [수정 로직: 20일선 위에 확실히 안착했을 때 눌림목 진격 타점 인정]
+            is_trend_buy = (p >= mid_line) and (ma5_val >= mid_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0) and (p < up_b * 0.98)
 
             # ★ [상단 메인 신호등 판단 로직 - 하단 최종 결론과 100% 동기화]
             if is_new_high:
@@ -384,8 +381,7 @@ if symbol:
             elif top_score >= 2 or p >= up_b:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 및 수확목표선 도달! 수확기 진입일세.'} (과열 지표 일치도: {top_score}/3)"
             elif is_trend_buy:
-                buy_type_str = "추세 눌림목 안착" if p >= defense_line else "바닥 턴어라운드 안착"
-                sig, col, s_adv = "🚀 [추세 진격 타점]", "#D84315", f"• 🔥 [{buy_type_str}] 거래량 실린 선발대 진격 타점 포착!"
+                sig, col, s_adv = "🚀 [추세 진격 타점]", "#D84315", "• 🔥 [20일선 지지 눌림목] 거래량 실린 선발대 진격 타점 포착!"
             elif bottom_score >= 2:
                 if is_bearish: sig, col, s_adv = "🟡 관망 및 대기 (역배열 주의)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 <b>[대세 역배열]</b> 구간이오!"
                 elif not is_ma5_safe: sig, col, s_adv = "🟡 관망 및 대기 (5일선 이탈)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 단기 생명선 <b>[5일선 이탈]</b> 상태이오!"
@@ -422,7 +418,7 @@ if symbol:
                     else:
                         def_status = f"성벽({defense_line:{fmt_p}}) 아래로 함락된 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지 마시게.</b>"
 
-            # ★ [최우선 결론 판단 전체 구역 - 상단 신호등 조건과 100% 동일하게 일치]
+            # ★ [최우선 결론 판단 전체 구역 - 20일선 이탈 손절 기준 명확 적용]
             if is_new_high:
                 final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신고가(무주공산)]</b> 영역 진격 중! 머리 위 매물대는 없으나 과열 위험이 높으니 추격매수는 엄금하고, 5일선 사수 기준 트레일링 스탑(분할 익절)으로 대응하시게!"
 
@@ -438,17 +434,19 @@ if symbol:
 
             elif is_trend_buy:
                 if vol_strength < 80:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 위 안착하였으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 지지 안착하였으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
                 else:
                     k_size = calculate_kelly_size(win_rate=0.65, win_loss_ratio=1.5, fraction=0.5)
-                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 눌림목 안착! <b>[추세 진격 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b>로 선발대 진격하되, <b>성벽({defense_line:{fmt_p}}) 음봉 이탈 시 즉각 후퇴(손절)</b> 기준을 엄수하시게!"
+                    # ★ [손절 기준: 20일선(중앙선) 음봉 이탈로 변경]
+                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 20일선 지지 눌림목 안착! <b>[추세 진격 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b>로 선발대 진격하되, <b>20일선({mid_line:{fmt_p}}) 음봉 이탈 시 즉각 후퇴(손절)</b> 기준을 엄수하시게!"
 
             elif bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
                 if vol_strength < 80:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 안착했으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
                 else:
                     k_size = calculate_kelly_size(win_rate=0.45, win_loss_ratio=2.5, fraction=0.5)
-                    final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 거래량 유입 포착! <b>[바닥 선취매 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b> 소량 진격하되, <b>5일선/성벽 이탈 시 후퇴</b> 기준을 지키시게!"
+                    # ★ [손절 기준: 20일선(중앙선) 이탈로 명확화]
+                    final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 거래량 유입 포착! <b>[바닥 선취매 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b> 소량 진격하되, <b>20일선({mid_line:{fmt_p}}) 이탈 시 후퇴</b> 기준을 지키시게!"
 
             else:
                 if not is_ma5_safe and bottom_score >= 2:
