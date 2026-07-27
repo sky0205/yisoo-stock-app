@@ -372,7 +372,11 @@ if symbol:
 
            
            # --- 수정 후 (성벽 위 안착 + 20일선 위 + 5일선 사수가 모두 맞아야 진격!) ---
-            is_trend_buy = (p >= defense_line) and (p >= mid_line) and (ma5_val >= mid_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0) and (p < up_b * 0.98)
+            # --- 수정 후 (성벽 위 안착 또는 성벽 아래 거래량 실린 20일선 턴어라운드) ---
+            cond_above_wall = (p >= defense_line) and (p >= mid_line) and (ma5_val >= mid_line)
+            cond_bottom_turn = (p < defense_line) and (p >= mid_line) and (ma5_val >= mid_line) and (time_vol_score >= 120)
+
+            is_trend_buy = (cond_above_wall or cond_bottom_turn) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0) and (p < up_b * 0.98)
 
             # ★ [상단 메인 신호등 판단 로직 - 하단 최종 결론과 100% 동기화]
             if is_new_high:
@@ -382,10 +386,8 @@ if symbol:
             elif top_score >= 2 or p >= up_b:
                 sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"• {'👿 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 70 else '• 다중 과열 지표 및 수확목표선 도달! 수확기 진입일세.'} (과열 지표 일치도: {top_score}/3)"
             elif is_trend_buy:
-                if vol_strength < 80:
-                    sig, col, s_adv = "🟡 관망 및 대기 (거래량 부족)", "#FBC02D", f"• ⚠️ 성벽 위 안착했으나 <b>[거래량 부족({vol_strength:.1f}점)]</b>으로 동력 부재!"
-                else:
-                    sig, col, s_adv = "🚀 [추세 진격 타점]", "#E65100", "• 🔥 <b>[추세 눌림목 안착]</b> 거래량 실린 선발대 진격 타점 포착!"
+                buy_type_str = "추세 눌림목 안착" if p >= defense_line else "바닥 턴어라운드 안착"
+                sig, col, s_adv = "🚀 [추세 진격 타점]", "#D84315", f"• 🔥 [{buy_type_str}] 거래량 실린 선발대 진격 타점 포착!"
             elif bottom_score >= 2:
                 if is_bearish: sig, col, s_adv = "🟡 관망 및 대기 (역배열 주의)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 <b>[대세 역배열]</b> 구간이오!"
                 elif not is_ma5_safe: sig, col, s_adv = "🟡 관망 및 대기 (5일선 이탈)", "#FBC02D", f"• ⚠️ 다중 바닥({bottom_score}/3)이나 단기 생명선 <b>[5일선 이탈]</b> 상태이오!"
