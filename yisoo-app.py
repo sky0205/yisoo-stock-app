@@ -142,7 +142,7 @@ display_global_risk(); st.divider()
 
 col_input, col_btn = st.columns([3, 2])
 with col_input:
-    symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "257720").strip()
+    symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "IONQ").strip()
 with col_btn:
     st.write("") 
     if st.button("🔄 실시간 시세 재조회 및 정밀 분석 실행"):
@@ -183,7 +183,7 @@ if symbol:
                 except:
                     pass
 
-            # ★ [가장 검증되고 안정적인 정규장 직통 파싱]
+            # ★ [정규장 직통 파싱]
             try:
                 url = f"https://finance.naver.com/item/main.naver?code={symbol}"
                 res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1)
@@ -248,7 +248,7 @@ if symbol:
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
             
-            # ★ [국내/미국 거래량 시간보정 계산 정밀 보정]
+            # ★ [거래량 시간보정 계산]
             if is_kr:
                 m_start = now_local.replace(hour=9, minute=0, second=0, microsecond=0)
                 m_end = now_local.replace(hour=15, minute=30, second=0, microsecond=0)
@@ -264,6 +264,7 @@ if symbol:
             else:
                 vol_strength = v_ratio 
 
+            # --- 보조지표 연산 파트 ---
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
             rsi_val, rsi_prev = rsi_series.iloc[-1], rsi_series.iloc[-2]
@@ -287,10 +288,21 @@ if symbol:
             ma60_val = df['MA60'].iloc[-1] if len(df) >= 60 else mid_line
             ma120_val = df['MA120'].iloc[-1] if len(df) >= 120 else mid_line
             
+            # ★ [수정된 성벽 및 손절가 가변 재정의 파트]
+            prev_low_20 = float(df['Low'].iloc[-21:-1].min()) if len(df) > 20 else float(df['Low'].min())
+            is_above_ma20 = (p >= mid_line)  # 현가가 20일선 위에 있는가?
+            
+            if is_above_ma20:
+                stop_loss_price = mid_line  # 20일선 위일 때는 20일선이 진짜 손절선
+                stop_loss_label = f"20일선({mid_line:{fmt_p}})"
+            else:
+                stop_loss_price = prev_low_20  # 20일선 아래일 때는 '전저점'이 손절선
+                stop_loss_label = f"전저점({prev_low_20:{fmt_p}})"
+
             defense_link_idx = min(21, len(df))
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
-            # ★ 52주(약 250일) 신고가 및 신저가 연산
+            # 52주 신고가/신저가
             high_52w = float(df['High'].rolling(window=250, min_periods=1).max().iloc[-1])
             low_52w = float(df['Low'].rolling(window=250, min_periods=1).min().iloc[-1])
             is_new_high = (p >= high_52w * 0.99)
@@ -345,7 +357,7 @@ if symbol:
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
-            # ★ [거래량 전황 표기 및 변수 정돈]
+            # 거래량 상태 판단
             if is_bearish and vol_strength >= 100:
                 v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열 과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 거래량 주의."
             elif vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
@@ -355,6 +367,7 @@ if symbol:
             
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
+            # 지표점수 연산
             bb_bottom       = 1 if p <= (low_b * 1.005) else 0
             rsi_bottom      = 1 if rsi_val <= 35 else 0
             williams_bottom = 1 if will_val <= -80 else 0
@@ -370,11 +383,16 @@ if symbol:
             is_reverse_shrinking = is_engine_reverse and (abs(m_diff_curr) < abs(m_diff_prev))
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
-            # 20일선 안착 여부
-            is_trend_buy_raw = (p >= mid_line) and (ma5_val >= mid_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0) and (p < up_b * 0.98)
+            # ★ [지표 반등(Turn) 검증 추가]
+            is_william_turn = (will_val > will_prev) or (will_val > -80)
+            is_rsi_turn = (rsi_val > rsi_prev)
+            is_indicator_turned_up = is_william_turn and is_rsi_turn
+
+            # 20일선 안착 매수 raw 조건
+            is_trend_buy_raw = (p >= mid_line) and (ma5_val >= mid_line) and is_ma5_safe and (35 <= rsi_val < 58) and (top_score == 0) and (p < up_b * 0.98) and is_indicator_turned_up
 
             # =========================================================================
-            # ★ [마스터 로직] 1차 [최종 결론] 도출 (수급/거래량 절대 검증 탑재)
+            # ★ [마스터 로직] 1차 [최종 결론] 도출 (가변 손절가 적용)
             # =========================================================================
             if is_new_high:
                 final_code = "NEW_HIGH"
@@ -400,20 +418,26 @@ if symbol:
                 else:
                     final_code = "BUY_TREND"
                     k_size = calculate_kelly_size(win_rate=0.65, win_loss_ratio=1.5, fraction=0.5)
-                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 20일선 지지 눌림목 안착! <b>[추세 진격 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b>로 선발대 진격하되, <b>20일선({mid_line:{fmt_p}}) 음봉 이탈 시 즉각 후퇴(손절)</b> 기준을 엄수하시게!"
+                    final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 20일선 지지 눌림목 안착! <b>[추세 진격 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b>로 선발대 진격하되, <b>{stop_loss_label} 이탈 시 즉각 후퇴(손절)</b> 기준을 엄수하시게!"
 
-            elif bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l):
+            elif bottom_score >= 2 and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) and is_indicator_turned_up:
                 if vol_strength < 80:
                     final_code = "WAIT_BOTTOM_NO_VOL"
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 안착했으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
                 else:
                     final_code = "BUY_BOTTOM"
                     k_size = calculate_kelly_size(win_rate=0.45, win_loss_ratio=2.5, fraction=0.5)
-                    final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 거래량 유입 포착! <b>[바닥 선취매 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b> 소량 진격하되, <b>20일선({mid_line:{fmt_p}}) 이탈 시 후퇴</b> 기준을 지키시게!"
+                    # 역배열/20일선 하향 시 문구 분기 보정
+                    if not is_above_ma20:
+                        final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 반등 포착! <b>[단기 기술적 반등 타점]</b>이시네. 단, 20일선({mid_line:{fmt_p}}) 아래 역배열 구역이니 <b>[켈리 최적 비중: 자산의 {k_size}%]</b> 소량 진격하되, <b>{stop_loss_label} 이탈 시 후퇴</b> 기준을 엄수하고 1차 목표가인 20일선 근처에서 분할 익절하시게!"
+                    else:
+                        final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 거래량 유입 포착! <b>[바닥 선취매 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b> 소량 진격하되, <b>{stop_loss_label} 이탈 시 후퇴</b> 기준을 지키시게!"
 
             else:
                 final_code = "WAIT_GENERAL"
-                if not is_ma5_safe and bottom_score >= 2:
+                if not is_above_ma20 and bottom_score >= 2:
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 유입되었으나 주가가 20일선({mid_line:{fmt_p}}) 아래 역배열 상태이고 지표 상승 전환이 미확인되었네. 무조건 관망 및 대기!"
+                elif not is_ma5_safe and bottom_score >= 2:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 들어왔으나 5일선 이탈 중일세. 무조건 관망 및 대기!"
                 elif m_l < s_l:
                     if is_macd_turning:
@@ -427,7 +451,7 @@ if symbol:
                         final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 무조건 관망 및 대기!"
 
             # =========================================================================
-            # ★ [상단 메인 신호등 연동] final_code에 따라 100% 동기화 (Override)
+            # ★ [상단 메인 신호등 연동]
             # =========================================================================
             if final_code == "NEW_HIGH":
                 sig, col, s_adv = "🚀 [52주 신고가 진격]", "#1E88E5", "• 무주공산 영역 진격 중! 5일선 사수 기준 분할 대응하시게."
@@ -445,6 +469,7 @@ if symbol:
                 sig, col, s_adv = "🟡 관망 및 대기 (수급 부족)", "#FBC02D", f"• 🧊 [바닥 지표 안착] 했으나 거래량({v_ratio:.1f}%) 마르고 동력(보정강도 {vol_strength:.1f}점) 부재! 수급 폭발 전 진입 금지."
             else: # WAIT_GENERAL
                 if is_bearish: sig, col, s_adv = "🟡 관망 및 대기 (역배열 하락중)", "#FBC02D", "• ⚠️ 대세 역배열 하락 추세 중이네."
+                elif not is_above_ma20: sig, col, s_adv = "🟡 관망 및 대기 (20일선 아래)", "#FBC02D", f"• ⚠️ 주가가 20일선({mid_line:{fmt_p}}) 하단에 위치하여 저항을 받는 구간이네."
                 elif not is_ma5_safe: sig, col, s_adv = "🟡 관망 및 대기 (5일선 아래)", "#FBC02D", "• ⚠️ 단기 전투선인 5일선 아래에서 기세 허덕이는 중."
                 else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", f"• 눈치싸움 중일세. (바닥동조: {bottom_score}/3 | 과열동조: {top_score}/3)"
 
@@ -471,7 +496,7 @@ if symbol:
                     else:
                         def_status = f"성벽({defense_line:{fmt_p}}) 아래로 함락된 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지 마시게.</b>"
 
-            # MACD 상충 보정 멘트 생성 (대응전략 4번 영역)
+            # MACD 상충 보정 멘트 생성
             if m_l > s_l:
                 if p < defense_line:
                     macd_strategy_msg = "엔진 정회전이나 성벽 아래(지하실)이므로 헛바퀴 주의! 성벽 회복 전까진 추격 금지."
