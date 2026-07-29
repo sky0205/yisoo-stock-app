@@ -290,7 +290,13 @@ if symbol:
             df['MA120'] = df['Close'].rolling(120).mean()
             df['Std'] = df['Close'].rolling(20).std()
             
-            mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
+            mid_line = df['MA20'].iloc[-1]
+            up_b = mid_line + (df['Std'].iloc[-1] * 2)
+            low_b = mid_line - (df['Std'].iloc[-1] * 2)
+
+# ★ 밴드폭 비율(BandWidth %) 연산 및 수축(Squeeze) 판정 추가
+            bandwidth = ((up_b - low_b) / mid_line) * 100 if mid_line > 0 else 0
+            is_squeeze = (bandwidth <= 10.0)  # 밴드폭 10% 이하 시 에너지 수축(Squeeze)으로 판정
             ma5_val = df['MA5'].iloc[-1] if len(df) >= 5 else mid_line
             ma60_val = df['MA60'].iloc[-1] if len(df) >= 60 else mid_line
             ma120_val = df['MA120'].iloc[-1] if len(df) >= 120 else mid_line
@@ -620,17 +626,21 @@ if symbol:
             i1, i2, i3, i4 = st.columns(4)
             
             # --- 1. Bollinger (기세 & 위치) ---
+           # --- 1. Bollinger (기세 & 위치) ---
             with i1:
                 if p >= up_b: 
-                    bb_diag = "👺 <b>[수확 목표선(상단) 과열]</b><br>• <b>역할:</b> 주가 상단 한계선 접촉.<br>• <b>진단:</b> 탐욕의 끝단이니 신규 매수를 금지하고 익절을 집행하시게."
-                elif is_breakout:  # ★ 수급 돌파 국면 상충 보완 우선 조건
-                    bb_diag = "🚀 <b>[수급 돌파 분출]</b><br>• <b>역할:</b> 20일선 및 볼린저 돌파 강도 측정.<br>• <b>진단:</b> 장대양봉 강력 돌파! 보유자는 분할 수확(매도)하고, 미보유자는 추격매수를 절대 금하시게."
+                    bb_diag = f"👺 <b>[수확 목표선(상단) 과열] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 주가 상단 한계선 접촉.<br>• <b>진단:</b> 탐욕의 끝단이니 신규 매수를 금지하고 익절을 집행하시게."
+                elif is_breakout: 
+                    bb_diag = f"🚀 <b>[수급 돌파 분출] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 20일선 및 볼린저 돌파 강도 측정.<br>• <b>진단:</b> 장대양봉 강력 돌파! 보유자는 분할 수확(매도)하고, 미보유자는 추격매수를 절대 금하시게."
+                elif is_squeeze: # ★ 밴드폭 수축 경보 조건 추가
+                    bb_diag = f"⚡ <b>[에너지 수축 (Squeeze)] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 에너지 응축 및 변동성 폭발 예보.<br>• <b>진단:</b> 밴드가 바짝 좁아졌구먼! 조만간 위/아래 방향성 폭발이 임박했으니 5일선 돌파 전까진 관망하시게."
                 elif p <= low_b: 
-                    bb_diag = "🧊 <b>[공략 대기선(하단) 바닥]</b><br>• <b>역할:</b> 과매도 진바닥 측정.<br>• <b>진단:</b> 지하실 지점이나 5일선 안착 전까진 칼날 매수 금지이외다."
+                    bb_diag = f"🧊 <b>[공략 대기선(하단) 바닥] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 진바닥 측정.<br>• <b>진단:</b> 지하실 지점이나 5일선 안착 전까진 칼날 매수 금지이외다."
                 elif p >= mid_line: 
-                    bb_diag = "🔥 <b>[20일 중앙선 지지]</b><br>• <b>역할:</b> 눌림목 및 추세 유지 판단.<br>• <b>진단:</b> 중앙선 지지 완료! 지표 동조 확인 시 눌림목 매수 가능하오." if is_ma5_safe else "⚠️ <b>[20일선 위 5일선 이탈]</b><br>• <b>역할:</b> 단기 기세 둔화 감지.<br>• <b>진단:</b> 중앙선 위에 있으나 단기 추세가 꺾였으니 관망하시게."
+                    bb_diag = f"🔥 <b>[20일 중앙선 지지] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 눌림목 및 추세 유지 판단.<br>• <b>진단:</b> 중앙선 지지 완료! 지표 동조 확인 시 눌림목 매수 가능하오." if is_ma5_safe else f"⚠️ <b>[20일선 위 5일선 이탈] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 단기 기세 둔화 감지.<br>• <b>진단:</b> 중앙선 위에 있으나 단기 추세가 꺾였으니 관망하시게."
                 else: 
-                    bb_diag = "🏹 <b>[20일선 하단 반격]</b><br>• <b>역할:</b> 하단 추세 전환 시도.<br>• <b>진단:</b> 중앙선 밑이나 5일선 사수하며 상방 반격 시도 중일세." if is_ma5_safe else "🏠 <b>[추세 하락 국면]</b><br>• <b>역할:</b> 관망 모드 유지.<br>• <b>진단:</b> 중앙선 및 5일선 모두 이탈! 대기가 상책이오."
+                    bb_diag = f"🏹 <b>[20일선 하단 반격] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 하단 추세 전환 시도.<br>• <b>진단:</b> 중앙선 밑이나 5일선 사수하며 상방 반격 시도 중일세." if is_ma5_safe else f"🏠 <b>[추세 하락 국면] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 관망 모드 유지.<br>• <b>진단:</b> 중앙선 및 5일선 모두 이탈! 대기가 상책이오."
+        
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세/위치)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             
             # --- 2. RSI (매수 온도) ---
