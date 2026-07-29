@@ -139,7 +139,7 @@ display_global_risk(); st.divider()
 col_symbol, col_avg, col_btn = st.columns([2, 2, 1.5])
 
 with col_symbol:
-    symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "IONQ").strip()
+    symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930").strip()
 
 with col_avg:
     user_avg_price = st.number_input(
@@ -294,6 +294,7 @@ if symbol:
             ma5_val = df['MA5'].iloc[-1] if len(df) >= 5 else mid_line
             ma60_val = df['MA60'].iloc[-1] if len(df) >= 60 else mid_line
             ma120_val = df['MA120'].iloc[-1] if len(df) >= 120 else mid_line
+            ma20_slope = (df['MA20'].iloc[-1] - df['MA20'].iloc[-5]) if len(df) >= 5 else 0
             
             prev_low_20 = float(df['Low'].iloc[-21:-1].min()) if len(df) > 20 else float(df['Low'].min())
             is_above_ma20 = (p >= mid_line)
@@ -364,12 +365,62 @@ if symbol:
             
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
-            # 점수 연산
-            bb_bottom = 1 if p <= (low_b * 1.005) else 0
+            # =========================================================================
+            # ★ [수정 및 완비: 지표검증연산 + 대전제 필터 + 행동지침 자동 결합 로직]
+            # =========================================================================
+            
+            # 1) 진바닥 동조 채점 (3/3점 만점)
+            bb_bottom = 1 if p <= (low_b * 1.02) else 0
             rsi_bottom = 1 if rsi_val <= 35 else 0
             williams_bottom = 1 if will_val <= -80 else 0
             bottom_score = bb_bottom + rsi_bottom + williams_bottom
 
+            if bottom_score == 3:
+                bottom_status_str = "<b>(조건 만족)</b>"
+                if is_ma5_safe:
+                    bottom_action_str = "➔ <b>[매수 실행]</b> 주가 5일선 상향 돌파 확인, 1차 매수 시작"
+                else:
+                    bottom_action_str = "➔ <b>[진입 대기]</b> 조건 달성. 단, 주가 5일선 상향 돌파 시 매수 시작"
+            else:
+                bottom_status_str = "<b>(조건 미흡)</b>"
+                bottom_action_str = "➔ <b>[관망]</b> 매수 보류, 실시간 지표 모니터링 유지"
+
+            # 2) 눌림목 동조 채점 (대전제 필터 적용)
+            is_uptrend = (p >= mid_line) or (ma20_slope > 0)
+            
+            if not is_uptrend:
+                pullback_rebound_score = 0
+                pullback_status_str = "<b>(국면 불일치)</b>"
+                pullback_action_str = "➔ <b>[눌림목 불가]</b> 하락/바닥 국면으로 눌림목 성립 불가 (관망)"
+            else:
+                p_will = 1 if will_val <= -50 else 0
+                p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.01) else 0
+                p_rsi = 1 if (40 <= rsi_val <= 55) else 0
+                pullback_rebound_score = p_will + p_bb + p_rsi
+                
+                if pullback_rebound_score == 3:
+                    pullback_status_str = "<b>(조건 만족)</b>"
+                    if is_ma5_safe:
+                        pullback_action_str = "➔ <b>[매수 실행]</b> 눌림목 지지 확인, 5일선 돌파 시 재진입"
+                    else:
+                        pullback_action_str = "➔ <b>[진입 대기]</b> 눌림목 완성, 5일선 상향 돌파 시 매수 시작"
+                elif pullback_rebound_score == 2:
+                    pullback_status_str = "<b>(부분 만족)</b>"
+                    pullback_action_str = "➔ <b>[정찰 매수 가능]</b> 비중 50% 제한 진입 또는 완벽 신호 대기"
+                else:
+                    pullback_status_str = "<b>(조건 미흡)</b>"
+                    pullback_action_str = "➔ <b>[관망]</b> 눌림목 지지선 확인 불가, 관망 유지"
+
+            # 지표 검증 연산 종합 출력용 문자열 생성
+            indicator_verify_text = (
+                f"<br>• <b>[지표 검증 연산]</b><br>"
+                f"  - <b>진바닥 동조:</b> {bottom_score}/3점 {bottom_status_str} {bottom_action_str}<br>"
+                f"  - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
+            )
+
+            # =========================================================================
+            # 기타 기술 지표 보조 연산
+            # =========================================================================
             bb_top = 1 if p >= (up_b * 0.995) else 0
             rsi_top = 1 if rsi_val >= 60 else 0
             williams_top = 1 if will_val >= -20 else 0 
@@ -382,15 +433,13 @@ if symbol:
 
             is_william_turn = (will_val > will_prev) or (will_val > -80)
             is_rsi_turn = (rsi_val > rsi_prev)
-            is_macd_hist_up = (m_diff_curr > m_diff_prev) or (m_l >= s_l)
             is_indicator_turned_up = is_william_turn and is_rsi_turn
 
-            pullback_rebound_score = (1 if is_rsi_turn else 0) + (1 if is_william_turn else 0) + (1 if is_macd_hist_up else 0)
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_top = margin_to_target < 0.02
 
             is_trend_buy_raw = (p >= mid_line) and (ma5_val >= mid_line) and is_ma5_safe and not is_too_close_to_top and (pullback_rebound_score >= 2)
-            is_bottom_buy_raw = (bottom_score >= 2) and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) and is_indicator_turned_up
+            is_bottom_buy_raw = (bottom_score >= 3) and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) and is_indicator_turned_up
 
             # =========================================================================
             # ★ [최종 결론 연산]
@@ -460,7 +509,6 @@ if symbol:
 
             # =========================================================================
             # ★ [신호등 메인 색상 4색 통일 연동 규칙]
-            # 🟢 매도 / 🔴 매수(바닥) / 🔵 눌림목 / 🟡 관망
             # =========================================================================
             if final_code == "SELL_ZONE":
                 sig = "🟢 [매도] 푸른 수확 / 이익실현 타점!"
@@ -483,7 +531,7 @@ if symbol:
                 if is_bearish: s_adv = "• ⚠️ 대세 역배열 하락 추세 중이니 보유/미보유 모두 관망하시게."
                 elif not is_above_ma20: s_adv = f"• ⚠️ 주가가 20일선({mid_line:{fmt_p}}) 하단 저항을 받는 구간이네."
                 elif not is_ma5_safe: s_adv = "• ⚠️ 단기 전투선인 5일선 아래에서 기세 허덕이는 중일세."
-                else: s_adv = f"• 눈치싸움 중일세. (바닥동조: {bottom_score}/3 | 눌림동조: {pullback_rebound_score}/3)"
+                else: s_adv = f"• 눈치싸움 중일세. (진바닥 동조: {bottom_score}/3 | 눌림동조: {pullback_rebound_score}/3)"
 
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><div class='signal-subtext'>{s_adv}</div></div>", unsafe_allow_html=True)
 
@@ -525,7 +573,7 @@ if symbol:
 </div>
 <div style='margin-bottom: 20px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>3. 중장기 추세 진단 및 지표 동조 현황</span><br>
-<span style='color: #333333; font-weight: bold; font-size: 20px;'>{trend_status}<br>• <b>[지표 검증 연산]</b> 진바닥 동조: {bottom_score}/3점 | 눌림목 동조: {pullback_rebound_score}/3점</span>
+<span style='color: #333333; font-weight: bold; font-size: 20px;'>{trend_status}{indicator_verify_text}</span>
 </div>
 <div style='margin-bottom: 20px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>4. 엔진(MACD) 확인</span><br>
