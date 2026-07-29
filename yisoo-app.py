@@ -135,23 +135,25 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36058")
 display_global_risk(); st.divider()
 
-# --- [사이드바: 보유자 평단가 설정 장치] ---
-with st.sidebar:
-    st.header("⚙️ 보유자 설정")
+# --- [메인 화면 상단: 종목 및 평단가 통합 입력창] ---
+col_symbol, col_avg, col_btn = st.columns([2, 2, 1.5])
+
+with col_symbol:
+    symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "IONQ").strip()
+
+with col_avg:
     user_avg_price = st.number_input(
         "💡 보유 중인 평단가 입력 (미보유 시 0)",
         min_value=0.0,
         value=0.0,
         step=100.0,
-        help="평단가를 입력하시면 평단가 위/아래(수익권/손실권) 맞춤형 실전 대응 가이드를 제공합니다."
+        help="평단가를 입력하시면 수익권/손실권 맞춤형 실전 대응 가이드를 제공합니다."
     )
 
-col_input, col_btn = st.columns([3, 2])
-with col_input:
-    symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "IONQ").strip()
 with col_btn:
     st.write("") 
-    if st.button("🔄 실시간 시세 재조회 및 정밀 분석 실행"):
+    st.write("") 
+    if st.button("🔄 정밀 분석 실행"):
         st.rerun()
 
 if symbol:
@@ -438,7 +440,7 @@ if symbol:
             # ★ [5. 보유자 전용 이원화 행동 가이드 연산]
             # =========================================================================
             if user_avg_price <= 0:
-                holder_guide_msg = f"현재 추세 탐색 구간이니 성벽({defense_line:{fmt_p}})이나 5일선사수 여부를 확인하며 차분히 보유 판단을 내리시게. (사이드바에서 평단가를 입력하시면 이원화 가이드가 출력됩니다)"
+                holder_guide_msg = f"현재 추세 탐색 구간이니 성벽({defense_line:{fmt_p}})이나 5일선 사수 여부를 확인하며 차분히 보유 판단을 내리시게. (상단 입력창에 보유 평단가를 입력하시면 이원화 가이드가 출력됩니다)"
             else:
                 profit_rate = ((p - user_avg_price) / user_avg_price) * 100
                 if p >= user_avg_price:
