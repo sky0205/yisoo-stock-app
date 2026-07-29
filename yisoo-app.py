@@ -410,7 +410,7 @@ if symbol:
                 pullback_rebound_score = 0
                 pullback_status_str = "<b>(수급 돌파 국면)</b>"
                 pullback_action_str = "➔ <b>[수급 돌파]</b> 장대양봉 분출! (보유자 분할 익절 수확 / 미보유자 추격 금지)"
-           elif (not is_uptrend) or (p < mid_line):
+            elif (not is_uptrend) or (p < mid_line):
                 pullback_rebound_score = 0
                 pullback_status_str = "<b>(국면 불일치)</b>"
                 pullback_action_str = "➔ <b>[눌림목 불가]</b> 하락/바닥 국면으로 눌림목 성립 불가 (관망)"
