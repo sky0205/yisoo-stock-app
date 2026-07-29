@@ -135,6 +135,17 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36058")
 display_global_risk(); st.divider()
 
+# --- [사이드바: 보유자 평단가 설정 장치] ---
+with st.sidebar:
+    st.header("⚙️ 보유자 설정")
+    user_avg_price = st.number_input(
+        "💡 보유 중인 평단가 입력 (미보유 시 0)",
+        min_value=0.0,
+        value=0.0,
+        step=100.0,
+        help="평단가를 입력하시면 평단가 위/아래(수익권/손실권) 맞춤형 실전 대응 가이드를 제공합니다."
+    )
+
 col_input, col_btn = st.columns([3, 2])
 with col_input:
     symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "IONQ").strip()
@@ -382,48 +393,38 @@ if symbol:
             # =========================================================================
             # ★ [최종 결론 연산]
             # =========================================================================
-            holder_guide_msg = ""
-
             if is_new_high:
                 final_code = "NEW_HIGH"
                 final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신고가(무주공산)]</b> 영역 진격 중! 5일선 사수 기준 트레일링 스탑(분할 익절)으로 대응하시게!"
-                holder_guide_msg = f"보유 물량은 5일선({ma5_val:{fmt_p}}) 사수 시 계속 홀딩하되, 이탈 시 50% 분할 익절하시게."
 
             elif is_new_low:
                 final_code = "NEW_LOW"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신저가(칼날 하락)]</b> 구역 전개! 5일선 안착 전까지 절대 무조건 관망하시게!"
-                holder_guide_msg = f"함부로 물타지 마시고, 단기 반등 시 손절가({stop_loss_label}) 준수 후 비중 축소를 고려하시게."
 
             elif is_too_close_to_top or top_score >= 2 or p >= up_b:
                 final_code = "SELL_ZONE"  # 🟢 매도 구간 (초록색)
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 수확 목표선(볼린저상단 {up_b:{fmt_p}}) 및 과열권 진입! 신규 진입은 금지하고 <b>[보유자]는 즉시 분할 매도로 수익 확정에 들어가시게!</b>"
-                holder_guide_msg = f"🚨 <b>[수확 목표 달성!]</b> 수확목표선({up_b:{fmt_p}})에 다다랐으니 <b>보유 물량의 30~50%는 즉시 분할 매도(수익 확정)</b>하시게."
 
             elif is_trend_buy_raw:
                 if vol_strength < 80:
                     final_code = "WAIT_GENERAL"
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 지지는 확인되었으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
-                    holder_guide_msg = f"성벽({defense_line:{fmt_p}})을 깨지 않는 한 느긋하게 홀딩하시게."
                 else:
                     final_code = "PULLBACK_BUY"  # 🔵 눌림목 매수 구간 (파란색)
                     k_size = calculate_kelly_size(win_rate=0.65, win_loss_ratio=1.5, fraction=0.5)
                     final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 20일선 지지 안착! <b>[추세 눌림목 매수 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b> 진격하되, <b>{stop_loss_label} 이탈 시 후퇴</b> 기준을 엄수하시게!"
-                    holder_guide_msg = f"추세 정배열 파동이 살아있으니 수확 목표선({up_b:{fmt_p}})까지 자신감 있게 홀딩하시게."
 
             elif is_bottom_buy_raw:
                 if vol_strength < 80:
                     final_code = "WAIT_GENERAL"
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 안착했으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
-                    holder_guide_msg = f"바닥 탈출 시도 중이나 추가 매수는 자제하고 5일선 사수 여부를 지켜보시게."
                 else:
                     final_code = "BOTTOM_BUY"  # 🔴 바닥/선취매 매수 구간 (빨간색)
                     k_size = calculate_kelly_size(win_rate=0.45, win_loss_ratio=2.5, fraction=0.5)
                     final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 거래량 유입 포착! <b>[진바닥 선취매 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b> 진격하되, <b>{stop_loss_label} 이탈 시 후퇴</b> 기준을 지키시게!"
-                    holder_guide_msg = f"바닥 잡고 돌아서는 중이니 손절선({stop_loss_label})을 짧게 잡고 수확목표선까지 들고 가시게."
 
             else:
                 final_code = "WAIT_GENERAL"  # 🟡 관망 구간 (노란색)
-                holder_guide_msg = f"현재 추세 탐색 구간이니 성벽({defense_line:{fmt_p}})이나 5일선 사수 여부를 확인하며 차분히 보유 판단을 내리시게."
                 if not is_above_ma20 and bottom_score >= 2:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 들어왔으나 20일선({mid_line:{fmt_p}}) 아래 역배열 상태이므로 관망하시게!"
                 elif is_above_ma20 and pullback_rebound_score < 2:
@@ -432,6 +433,28 @@ if symbol:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 들어왔으나 5일선 이탈 중일세. 관망하시게!"
                 else:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 관망하시게!"
+
+            # =========================================================================
+            # ★ [5. 보유자 전용 이원화 행동 가이드 연산]
+            # =========================================================================
+            if user_avg_price <= 0:
+                holder_guide_msg = f"현재 추세 탐색 구간이니 성벽({defense_line:{fmt_p}})이나 5일선사수 여부를 확인하며 차분히 보유 판단을 내리시게. (사이드바에서 평단가를 입력하시면 이원화 가이드가 출력됩니다)"
+            else:
+                profit_rate = ((p - user_avg_price) / user_avg_price) * 100
+                if p >= user_avg_price:
+                    # 📈 수익권 보유자
+                    holder_guide_msg = (
+                        f"📈 <b>[수익권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 수익률: +{profit_rate:.2f}%)]</b><br>"
+                        f"• 현재 5일선({ma5_val:{fmt_p}}) 사수 여부를 주시하시게. 단기 변동성에 수익을 반납하지 않도록 본절가/익절선을 설정하시게.<br>"
+                        f"• 5일선 안착 시 수확 목표선({up_b:{fmt_p}})까지 자신감 있게 홀딩하시고, 5일선 이탈 시 일부 분할 익절로 대응하시게."
+                    )
+                else:
+                    # 📉 손실권 보유자
+                    holder_guide_msg = (
+                        f"📉 <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br>"
+                        f"• <b>5일선({ma5_val:{fmt_p}}) 아래에서는 절대로 추측 추가 매수(물타기)를 하지 마시게.</b> 손가락을 묶고 차분히 대기하시게.<br>"
+                        f"• 공략 대기선({low_b:{fmt_p}}) 이탈 시 추가 손실 방지를 위한 비중 축소를 고민하시고, 확실히 5일선에 안착하며 돌아서는 확인 매수 타점이 나오기 전까지는 현금을 지키시게."
+                    )
 
             # =========================================================================
             # ★ [신호등 메인 색상 4색 통일 연동 규칙]
@@ -548,3 +571,4 @@ if symbol:
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
 
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
+        
