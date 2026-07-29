@@ -358,7 +358,7 @@ if symbol:
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
             # =========================================================================
-            # ★ [수정 1: 거래량 성격 정밀 판독 - 음봉 투매 vs 양봉 화력 구분]
+            # 거래량 성격 정밀 판독 - 음봉 투매 vs 양봉 화력 구분
             # =========================================================================
             if is_bearish and vol_strength >= 100: 
                 v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 거래량 주의."
@@ -377,7 +377,7 @@ if symbol:
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
             # =========================================================================
-            # ★ [수정 2: 지표검증연산 + 돌파 국면 판정 + 행동지침 결합]
+            # 지표검증연산 + 돌파 국면 판정 + 행동지침 결합
             # =========================================================================
             
             # 1) 진바닥 동조 채점
@@ -403,7 +403,7 @@ if symbol:
             if is_breakout:
                 pullback_rebound_score = 0
                 pullback_status_str = "<b>(수급 돌파 국면)</b>"
-                pullback_action_str = "➔ <b>[강력 돌파]</b> 장대양봉 수급 분출 중! (미보유자 추격 금지 / 보유자 추세 홀딩)"
+                pullback_action_str = "➔ <b>[수급 돌파]</b> 장대양봉 분출! (보유자 분할 익절 수확 / 미보유자 추격 금지)"
             elif not is_uptrend:
                 pullback_rebound_score = 0
                 pullback_status_str = "<b>(국면 불일치)</b>"
@@ -458,7 +458,7 @@ if symbol:
             is_bottom_buy_raw = (bottom_score >= 3) and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) and is_indicator_turned_up
 
             # =========================================================================
-            # ★ [수정 3: 신호등 & 최종 결론 모순 상충 전면 교정]
+            # ★ [수정: 수급 돌파 국면 = 초록색(수확/분할 매도) 신호등 설정]
             # =========================================================================
             if is_new_high:
                 final_code = "NEW_HIGH"
@@ -469,8 +469,8 @@ if symbol:
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신저가(칼날 하락)]</b> 구역 전개! 5일선 안착 전까지 절대 무조건 관망하시게!"
 
             elif is_breakout:
-                final_code = "BREAKOUT"  # 🔵 장대양봉 수급 돌파 국면
-                final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 <b>[장대양봉 수급 돌파]</b> 분출 중! <b>[미보유자]는 절대 추격 매수하지 말고 눌림목 안착을 대기</b>하시고, <b>[보유자]는 목표선({up_b:{fmt_p}})까지 기세 홀딩</b>하시게!"
+                final_code = "BREAKOUT"  # 🟢 수급 돌파 = 보유자 분할 수확(매도) 국면
+                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 <b>[장대양봉 수급 돌파]</b> 분출 중! <b>[보유자]는 분할 매도로 수익 확정(수확)</b>에 들어가고, <b>[미보유자]는 추격매수 금지</b> 후 눌림목을 대기하시게!"
 
             elif is_too_close_to_top or top_score >= 2 or p >= up_b:
                 final_code = "SELL_ZONE"  # 🟢 매도 구간 (초록색)
@@ -526,7 +526,7 @@ if symbol:
                     )
 
             # =========================================================================
-            # ★ [신호등 메인 색상 및 대응 문구 출력 연동]
+            # ★ [수정: 신호등 메인 색상 연동 - BREAKOUT ➔ 초록색(🟢) 지정]
             # =========================================================================
             if final_code == "SELL_ZONE":
                 sig = "🟢 [매도] 푸른 수확 / 이익실현 타점!"
@@ -534,9 +534,9 @@ if symbol:
                 s_adv = f"• <b>[보유자] 🚨 수확 목표 달성! 보유 물량 30~50% 즉시 현금화(매도)</b><br>• <b>[미보유자]</b> ✋ 추격매수 금지 (수확목표선 {up_b:{fmt_p}} 고점 저항대)"
 
             elif final_code == "BREAKOUT":
-                sig = "🔵 [수급 돌파] 불꽃 진격 / 추세 분출!"
-                col = "#1976D2"  # 파란색
-                s_adv = f"• <b>[미보유자] ✋ 추격매수 절대 금지! (눌림목 지지 안착 시 재진입 대기)</b><br>• <b>[보유자] 🚀 수확목표선({up_b:{fmt_p}})까지 기세 홀딩!</b>"
+                sig = "🟢 [수급 돌파] 푸른 수확 / 분할 익절 타점!"
+                col = "#388E3C"  # 초록색 (수확/매도 색상 적용)
+                s_adv = f"• <b>[보유자] 💰 수급 폭발 시점! 물량 30~50% 1차 분할 익절(수익 확정)</b><br>• <b>[미보유자] ✋ 추격매수 절대 금지! (눌림목 지지 안착 시 재진입 대기)</b>"
 
             elif final_code == "BOTTOM_BUY":
                 sig = "🔴 [매수] 불꽃 진격 / 진바닥 선취매!"
@@ -615,7 +615,7 @@ if symbol:
             st.divider()
             
             # =========================================================================
-            # ★ [하단 4대 핵심 지표 박스]
+            # 하단 4대 핵심 지표 박스
             # =========================================================================
             i1, i2, i3, i4 = st.columns(4)
             
