@@ -357,11 +357,19 @@ if symbol:
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
-            if is_bearish and vol_strength >= 100: v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열 과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 거래량 주의."
-            elif vol_strength >= 150: v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 본진 진격 중이오."
-            elif vol_strength >= 100: v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
-            elif vol_strength >= 80: v_status, v_adv = "정상화력", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점! 기세가 빳빳하구먼."
-            else: v_status, v_adv = "거래절벽", f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! 수급이 마르고 동력이 없으니 속지 마시게."
+            if is_bearish and vol_strength >= 100: 
+                v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 거래량 주의."
+            elif vol_strength >= 150:
+                if p < prev_p:
+                    v_status, v_adv = "투매과열", f"🚨 <b>[음봉 투매과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 투매 물량이 폭발 중이니 절대 칼날을 잡지 마시게."
+                else:
+                    v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 양봉 화력 실린 본진 진격 중이오."
+            elif vol_strength >= 100: 
+                v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
+            elif vol_strength >= 80: 
+                v_status, v_adv = "정상화력", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점! 기세가 빳빳하구먼."
+            else: 
+                v_status, v_adv = "거래절벽", f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! 수급이 마르고 동력이 없으니 속지 마시게."
             
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
