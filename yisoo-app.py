@@ -139,7 +139,7 @@ display_global_risk(); st.divider()
 col_symbol, col_avg, col_btn = st.columns([2, 2, 1.5])
 
 with col_symbol:
-    symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930").strip()
+    symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "058610").strip()
 
 with col_avg:
     user_avg_price = st.number_input(
@@ -357,6 +357,9 @@ if symbol:
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
+            # =========================================================================
+            # ★ [수정 1: 거래량 성격 정밀 판독 - 음봉 투매 vs 양봉 화력 구분]
+            # =========================================================================
             if is_bearish and vol_strength >= 100: 
                 v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 거래량 주의."
             elif vol_strength >= 150:
@@ -374,10 +377,10 @@ if symbol:
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
             # =========================================================================
-            # ★ [수정 및 완비: 지표검증연산 + 대전제 필터 + 행동지침 자동 결합 로직]
+            # ★ [수정 2: 지표검증연산 + 돌파 국면 판정 + 행동지침 결합]
             # =========================================================================
             
-            # 1) 진바닥 동조 채점 (3/3점 만점)
+            # 1) 진바닥 동조 채점
             bb_bottom = 1 if p <= (low_b * 1.02) else 0
             rsi_bottom = 1 if rsi_val <= 35 else 0
             williams_bottom = 1 if will_val <= -80 else 0
@@ -393,10 +396,15 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 매수 보류, 실시간 지표 모니터링 유지"
 
-            # 2) 눌림목 동조 채점 (대전제 필터 적용)
+            # 2) 눌림목 동조 채점 (대전제 필터 및 강력 돌파 국면 감지)
             is_uptrend = (p >= mid_line) or (ma20_slope > 0)
+            is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe  # 장대양봉 돌파주 판단
             
-            if not is_uptrend:
+            if is_breakout:
+                pullback_rebound_score = 0
+                pullback_status_str = "<b>(수급 돌파 국면)</b>"
+                pullback_action_str = "➔ <b>[강력 돌파]</b> 장대양봉 수급 분출 중! (미보유자 추격 금지 / 보유자 추세 홀딩)"
+            elif not is_uptrend:
                 pullback_rebound_score = 0
                 pullback_status_str = "<b>(국면 불일치)</b>"
                 pullback_action_str = "➔ <b>[눌림목 불가]</b> 하락/바닥 국면으로 눌림목 성립 불가 (관망)"
@@ -427,7 +435,7 @@ if symbol:
             )
 
             # =========================================================================
-            # 기타 기술 지표 보조 연산
+            # 보조 연산 및 매수/매도 구간 판단
             # =========================================================================
             bb_top = 1 if p >= (up_b * 0.995) else 0
             rsi_top = 1 if rsi_val >= 60 else 0
@@ -450,7 +458,7 @@ if symbol:
             is_bottom_buy_raw = (bottom_score >= 3) and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) and is_indicator_turned_up
 
             # =========================================================================
-            # ★ [최종 결론 연산]
+            # ★ [수정 3: 신호등 & 최종 결론 모순 상충 전면 교정]
             # =========================================================================
             if is_new_high:
                 final_code = "NEW_HIGH"
@@ -459,6 +467,10 @@ if symbol:
             elif is_new_low:
                 final_code = "NEW_LOW"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신저가(칼날 하락)]</b> 구역 전개! 5일선 안착 전까지 절대 무조건 관망하시게!"
+
+            elif is_breakout:
+                final_code = "BREAKOUT"  # 🔵 장대양봉 수급 돌파 국면
+                final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 <b>[장대양봉 수급 돌파]</b> 분출 중! <b>[미보유자]는 절대 추격 매수하지 말고 눌림목 안착을 대기</b>하시고, <b>[보유자]는 목표선({up_b:{fmt_p}})까지 기세 홀딩</b>하시게!"
 
             elif is_too_close_to_top or top_score >= 2 or p >= up_b:
                 final_code = "SELL_ZONE"  # 🟢 매도 구간 (초록색)
@@ -494,21 +506,19 @@ if symbol:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 관망하시게!"
 
             # =========================================================================
-            # ★ [5. 보유자 전용 이원화 행동 가이드 연산]
+            # 보유자 전용 이원화 가이드 연산
             # =========================================================================
             if user_avg_price <= 0:
                 holder_guide_msg = f"현재 추세 탐색 구간이니 성벽({defense_line:{fmt_p}})이나 5일선 사수 여부를 확인하며 차분히 보유 판단을 내리시게. (상단 입력창에 보유 평단가를 입력하시면 이원화 가이드가 출력됩니다)"
             else:
                 profit_rate = ((p - user_avg_price) / user_avg_price) * 100
                 if p >= user_avg_price:
-                    # 📈 수익권 보유자
                     holder_guide_msg = (
                         f"📈 <b>[수익권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 수익률: +{profit_rate:.2f}%)]</b><br>"
                         f"• 현재 5일선({ma5_val:{fmt_p}}) 사수 여부를 주시하시게. 단기 변동성에 수익을 반납하지 않도록 본절가/익절선을 설정하시게.<br>"
                         f"• 5일선 안착 시 수확 목표선({up_b:{fmt_p}})까지 자신감 있게 홀딩하시고, 5일선 이탈 시 일부 분할 익절로 대응하시게."
                     )
                 else:
-                    # 📉 손실권 보유자
                     holder_guide_msg = (
                         f"📉 <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br>"
                         f"• <b>5일선({ma5_val:{fmt_p}}) 아래에서는 절대로 추측 추가 매수(물타기)를 하지 마시게.</b> 손가락을 묶고 차분히 대기하시게.<br>"
@@ -516,12 +526,17 @@ if symbol:
                     )
 
             # =========================================================================
-            # ★ [신호등 메인 색상 4색 통일 연동 규칙]
+            # ★ [신호등 메인 색상 및 대응 문구 출력 연동]
             # =========================================================================
             if final_code == "SELL_ZONE":
                 sig = "🟢 [매도] 푸른 수확 / 이익실현 타점!"
                 col = "#388E3C"  # 초록색
                 s_adv = f"• <b>[보유자] 🚨 수확 목표 달성! 보유 물량 30~50% 즉시 현금화(매도)</b><br>• <b>[미보유자]</b> ✋ 추격매수 금지 (수확목표선 {up_b:{fmt_p}} 고점 저항대)"
+
+            elif final_code == "BREAKOUT":
+                sig = "🔵 [수급 돌파] 불꽃 진격 / 추세 분출!"
+                col = "#1976D2"  # 파란색
+                s_adv = f"• <b>[미보유자] ✋ 추격매수 절대 금지! (눌림목 지지 안착 시 재진입 대기)</b><br>• <b>[보유자] 🚀 수확목표선({up_b:{fmt_p}})까지 기세 홀딩!</b>"
 
             elif final_code == "BOTTOM_BUY":
                 sig = "🔴 [매수] 불꽃 진격 / 진바닥 선취매!"
@@ -567,7 +582,7 @@ if symbol:
             if m_l > s_l:
                 macd_strategy_msg = "엔진 정회전이나 성벽 아래(지하실)이므로 헛바퀴 주의! 성벽 회복 전까진 추격 금지." if p < defense_line else "엔진 정회전 완료! 성벽을 등지고 본대 진격 신호탄이 터졌네."
             else:
-                macd_strategy_msg = "엔진 역회전폭 급감 중이네! 시동 걸 채비 중이니 회복을 관망하시게." if is_macd_turning else "엔진 역회전 심화 중이네! 거꾸로 도는 차니 절대 칼을 뽑지 마시게."
+                macd_strategy_msg = "엔진 역회전폭 급감 중이네! 시동 걸 채비 중이니 회복을 관망하시게." if is_macd_turning else "엔진 역회전 심화 중이네! 거꾸로 도는 차니 절대 진입 금지이오."
 
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
@@ -600,11 +615,11 @@ if symbol:
             st.divider()
             
             # =========================================================================
-            # ★ [하단 4대 핵심 지표 박스: 역할 및 진단 구체화]
+            # ★ [하단 4대 핵심 지표 박스]
             # =========================================================================
             i1, i2, i3, i4 = st.columns(4)
             
-            # --- 1. Bollinger (기세 & 위치 역할) ---
+            # --- 1. Bollinger (기세 & 위치) ---
             with i1:
                 if p >= up_b: 
                     bb_diag = "👺 <b>[수확 목표선(상단) 과열]</b><br>• <b>역할:</b> 주가 상단 한계선 접촉.<br>• <b>진단:</b> 탐욕의 끝단이니 신규 매수를 금지하고 익절을 집행하시게."
@@ -616,7 +631,7 @@ if symbol:
                     bb_diag = "🏹 <b>[20일선 하단 반격]</b><br>• <b>역할:</b> 하단 추세 전환 시도.<br>• <b>진단:</b> 중앙선 밑이나 5일선 사수하며 상방 반격 시도 중일세." if is_ma5_safe else "🏠 <b>[추세 하락 국면]</b><br>• <b>역할:</b> 관망 모드 유지.<br>• <b>진단:</b> 중앙선 및 5일선 모두 이탈! 대기가 상책이오."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세/위치)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             
-            # --- 2. RSI (온도 & 속임수 다이버전스 역할) ---
+            # --- 2. RSI (매수 온도) ---
             with i2:
                 rsi_trend = "▲ 상승" if rsi_val > rsi_prev else ("▼ 하락" if rsi_val < rsi_prev else "─ 변동없음")
                 is_div = p > prev_p and rsi_val < rsi_prev
@@ -628,7 +643,7 @@ if symbol:
                     r_status = f"<b>⚖️ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> {'🚨 [다이버전스] 가짜 기세니 속지 마시게.' if is_div else '에너지 충전 중. 보조지표 고개 돌림을 주시하시게.'}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (매수 온도)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{rsi_val:.2f} <span style='font-size:22px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>{r_status}</p></div>", unsafe_allow_html=True)
             
-            # --- 3. Williams %R (민감 반전 & 개미항복 역할) ---
+            # --- 3. Williams %R (민감 반전) ---
             with i3:
                 will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
                 if will_val >= -20: 
@@ -643,7 +658,7 @@ if symbol:
                     w_status = "<b>⚖️ 중간 지대</b><br>• <b>역할:</b> 추세 방향 탐색.<br>• <b>진단:</b> 상/하방 방향 탐색 중. 20일선 지지 여부를 지켜보시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (민감 반전)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{will_val:.2f} <span style='font-size:22px; color:#333333;'>({will_trend})</span></p><p class='ind-diag'>{w_status}</p></div>", unsafe_allow_html=True)
             
-            # --- 4. MACD (추세 엔진 & 모멘텀 역할) ---
+            # --- 4. MACD (추세 엔진) ---
             with i4:
                 if m_l > s_l:
                     m_diag = "<b>🔥 엔진 정회전 완료</b><br>• <b>역할:</b> 상승 모멘텀 유지.<br>• <b>진단:</b> " + ("성벽 아래이므로 헛바퀴 주의! 추격 매수는 금지이외다." if p < defense_line else "엔진 정회전! 성벽 사수하며 자신 있게 추세 진격하시게.")
