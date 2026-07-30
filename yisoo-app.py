@@ -340,11 +340,11 @@ if symbol:
 
             # 📌 4대 주요 이동평균선 실시간 가격 상세 가이드
             ma_price_summary = (
-                f"<br>• 📌 <b>[주요 이동평균선 가격 현황]</b><br>"
-                f"   - <b>5일선 (단기 생명선):</b> {ma5_str}<br>"
-                f"   - <b>20일선 (중앙 성벽선):</b> {ma20_str}<br>"
-                f"   - <b>60일선 (수급 수급선):</b> {ma60_str}<br>"
-                f"   - <b>120일선 (장기 대세선):</b> {ma120_str}"
+                f"<br>• 📌 <b>[주요 이동평균선 현황]</b><br>"
+                f"&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str}</span> | "
+                f"<span style='color:#1976D2; font-weight:bold;'>🔵 20일선: {ma20_str}</span> | "
+                f"<span style='color:#388E3C; font-weight:bold;'>🟢 60일선: {ma60_str}</span> | "
+                f"<span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
             )
 
             # 밴드폭 상태 요약 문구 생성
