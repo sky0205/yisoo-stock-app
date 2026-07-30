@@ -326,7 +326,7 @@ if symbol:
             is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
             is_ma5_safe = (p >= ma5_val)
 
-            # ★ [이동평균선 가격 수치 표기 복원]
+            # ★ [이동평균선 가격 수치 가로 한 줄 정돈]
             ma5_str = f"{ma5_val:{fmt_p}}{currency}"
             ma20_str = f"{mid_line:{fmt_p}}{currency}"
             ma60_str = f"{ma60_val:{fmt_p}}{currency}"
@@ -338,7 +338,7 @@ if symbol:
             elif ma5_val < mid_line: trend_status = "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려 숨고르기 중"
             else: trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
 
-            # 📌 4대 주요 이동평균선 실시간 가격 상세 가이드
+            # 📌 4대 주요 이동평균선 실시간 가격 가로 한 줄 배치
             ma_price_summary = (
                 f"<br>• 📌 <b>[주요 이동평균선 현황]</b><br>"
                 f"&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str}</span> | "
@@ -483,7 +483,7 @@ if symbol:
             )
 
             # =========================================================================
-            # 보조 연산 및 매수/매도 구간 판단
+            # 보조 연산 및 매수/매도 구간 판단 + [★ 이격도 안전장치 추가]
             # =========================================================================
             bb_top = 1 if p >= (up_b * 0.995) else 0
             rsi_top = 1 if rsi_val >= 60 else 0
@@ -502,15 +502,39 @@ if symbol:
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_top = margin_to_target < 0.02
 
-            is_trend_buy_raw = (p >= mid_line) and (ma5_val >= mid_line) and is_ma5_safe and not is_too_close_to_top and (pullback_rebound_score >= 2)
-            
-            # ★ 진바닥 기억 장치: 최근 바닥 2점 이상 기운이 있고 5일선 안착 시 매수!
-            is_bottom_buy_raw = (recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) and is_indicator_turned_up
+            # ★ [이격도(Disparity) 안심 범위 정밀 연산]
+            bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
+            bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
+
+            # 1) 진바닥 매수 이격도 안심 범위 (5일선 이격 3% 이내 + 20일선 이격 5% 이내)
+            is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0) and (bias_ma20 <= 5.0)
+            is_bottom_buy_raw = (recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and is_bottom_disparity_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) and is_indicator_turned_up
+
+            # 2) 눌림목 매수 이격도 안심 범위 (20일선 이격 3% 이내)
+            is_pullback_disparity_safe = (0 <= bias_ma20 <= 3.0)
+            is_trend_buy_raw = (p >= mid_line) and (ma5_val >= mid_line) and is_ma5_safe and is_pullback_disparity_safe and not is_too_close_to_top and (pullback_rebound_score >= 2)
+
+            # ★ [스마트 비상 손절 붕괴 연산]
+            is_stop_loss_triggered = False
+            stop_reason = ""
+            if user_avg_price > 0 and p < stop_loss_price:
+                is_stop_loss_triggered = True
+                stop_reason = f"보유 평단가 대비 손절 마지노선({stop_loss_label}) 붕괴"
+            elif (recent_bottom_memory or bottom_score >= 2) and p < prev_low_20:
+                is_stop_loss_triggered = True
+                stop_reason = f"진바닥 전저점 마지노선({prev_low_20:{fmt_p}}{currency}) 붕괴"
+            elif is_uptrend and p < mid_line and not is_ma5_safe:
+                is_stop_loss_triggered = True
+                stop_reason = f"20일선 중앙 성벽선({mid_line:{fmt_p}}{currency}) 이탈 붕괴"
 
             # =========================================================================
-            # ★ [신호등 & 최종 결론 연동 - 전저점 손절가격 명시 + 상충 오류 완전 해결]
+            # ★ [신호등 & 최종 결론 연동 - 비상 손절 경보 최우선 연동]
             # =========================================================================
-            if is_new_high:
+            if is_stop_loss_triggered:
+                final_code = "STOP_LOSS_ALERT"
+                final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하여 현금을 사수하시게!"
+
+            elif is_new_high:
                 final_code = "NEW_HIGH"
                 final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신고가(무주공산)]</b> 영역 진격 중! 5일선 사수 기준 트레일링 스탑(분할 익절)으로 대응하시게!"
 
@@ -578,9 +602,14 @@ if symbol:
                     )
 
             # =========================================================================
-            # ★ [신호등 메인 색상 연동 - 손절 마지노선 정확 금액 표기]
+            # ★ [신호등 메인 색상 연동 - 비상 손절 경보 최우선 적용]
             # =========================================================================
-            if final_code == "SELL_ZONE":
+            if final_code == "STOP_LOSS_ALERT":
+                sig = "🚨 [비상 손절] 방어선 붕괴! 전량 손절 후퇴!"
+                col = "#D32F2F" 
+                s_adv = f"• <b>[긴급 집행] {stop_reason}!</b> 추가 손실을 막기 위해 미련 없이 즉시 전량 칼손절 후퇴하시게."
+
+            elif final_code == "SELL_ZONE":
                 sig = "🟢 [매도] 푸른 수확 / 이익실현 타점!"
                 col = "#388E3C" 
                 s_adv = f"• <b>[보유자] 🚨 수확 목표 달성! 보유 물량 30~50% 즉시 현금화(매도)</b><br>• <b>[미보유자]</b> ✋ 추격매수 금지 (수확목표선 {up_b:{fmt_p}}{currency} 고점 저항대)"
