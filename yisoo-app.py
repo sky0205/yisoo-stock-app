@@ -472,11 +472,13 @@ if symbol:
                     pullback_status_str = "<b>(조건 미흡)</b>"
                     pullback_action_str = "➔ <b>[관망]</b> 눌림목 지지선 확인 불가, 관망 유지"
 
+            # ★ [시각적 순서 교정 구역: 이평선 가격 수치 바로 밑으로 추세 진단 밀착]
             indicator_verify_text = (
-                f"<br>• <b>[지표 검증 연산]</b><br>"
+                f"{ma_price_summary}<br>"
+                f"• <b>[추세 정밀 판독]:</b> {trend_status}<br>"
+                f"• <b>[지표 검증 연산]</b><br>"
                 f"   - <b>진바닥 동조:</b> {bottom_score}/3점 {bottom_status_str} {bottom_action_str}<br>"
                 f"   - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
-                f"{ma_price_summary}"
                 f"{squeeze_info_str}"
             )
 
@@ -544,7 +546,6 @@ if symbol:
                 final_code = "WAIT_GENERAL"
                 if (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 최근 바닥권 과매도는 확인되었으나, 아직 단기 생명선인 일봉 5일선({ma5_val:{fmt_p}}{currency}) 아래에 있으니 종가 안착 전까진 대기하시게! (★ <b>매수 후 최종 방어선: 전저점 {prev_low_20:{fmt_p}}{currency}</b>)"
-                # ★ [상충 오류 수정 구역]
                 elif is_squeeze and p > mid_line:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소]</b> 에너지가 응축되었구먼! 20일선 위에 안착 시 대응하시게!"
                 elif is_squeeze:
@@ -637,7 +638,7 @@ if symbol:
                         def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래로 함락된 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지 마시게.</b>"
 
             if m_l > s_l:
-                macd_strategy_msg = "엔진 정회전이나 성벽 아래(지하실)이므로 헛바퀴 주의! 성벽 회복 전까진 추격 금지." if p < defense_line else "엔진 정회전 완료! 성벽을 등지고 본대 진격 신호탄이 터졌네."
+                macd_strategy_msg = "엔진 정회전이나 성벽 아래(지하실)이므로 헛바퀴 주의! 추격 매수는 금지이외다." if p < defense_line else "엔진 정회전 완료! 성벽을 등지고 본대 진격 신호탄이 터졌네."
             else:
                 macd_strategy_msg = "엔진 역회전폭 급감 중이네! 시동 걸 채비 중이니 일봉 5일선 안착을 대기하시게." if is_macd_turning else "엔진 역회전 심화 중이네! 거꾸로 도는 차니 절대 진입 금지이오."
 
@@ -653,7 +654,7 @@ if symbol:
 </div>
 <div style='margin-bottom: 20px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>3. 중장기 추세 진단 및 지표 동조 현황</span><br>
-<span style='color: #333333; font-weight: bold; font-size: 20px;'>{trend_status}{indicator_verify_text}</span>
+<span style='color: #333333; font-weight: bold; font-size: 20px;'>{indicator_verify_text}</span>
 </div>
 <div style='margin-bottom: 20px;'>
 <span style='color: #1565C0; font-weight: 900; font-size: 24px;'>4. 엔진(MACD) 확인</span><br>
