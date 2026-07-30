@@ -1,4 +1,4 @@
-import Streamlit as st
+import streamlit as st
 import FinanceDataReader as fdr
 import yfinance as yf
 import pandas as pd
@@ -609,7 +609,7 @@ if symbol:
             if m_l > s_l:
                 macd_strategy_msg = "엔진 정회전이나 성벽 아래(지하실)이므로 헛바퀴 주의! 성벽 회복 전까진 추격 금지." if p < defense_line else "엔진 정회전 완료! 성벽을 등지고 본대 진격 신호탄이 터졌네."
             else:
-                macd_strategy_msg = "엔진 역회전폭 급감 중이네! 시동 걸 채비 중이니 회복을 관망하시게." if is_macd_turning else "엔진 역회전 심화 중이네! 거꾸로 도는 차니 절대 진입 금지이오."
+                macd_strategy_msg = "엔진 역회전폭 급감 중이네! 시동 걸 채비 중이니 60분봉 5선/20선 골든크로스를 대기하시게." if is_macd_turning else "엔진 역회전 심화 중이네! 거꾸로 도는 차니 절대 진입 금지이오."
 
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
@@ -655,7 +655,7 @@ if symbol:
                 elif is_squeeze: 
                     bb_diag = f"⚡ <b>[에너지 극초축소 (Squeeze)] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 에너지 응축 및 변동성 폭발 예보.<br>• <b>진단:</b> 밴드가 바짝 좁아졌구먼! 조만간 위/아래 방향성 폭발이 임박했으니 5일선 돌파 전까진 관망하시게."
                 elif p <= low_b: 
-                    bb_diag = f"🧊 <b>[공략 대기선(하단) 바닥] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 진바닥 측정.<br>• <b>진단:</b> 지하실 지점이오. 역배열/5일선 아래 시 60분 5선 골든크로스 시 10% 정찰병만 먼저 대응하시게."
+                    bb_diag = f"🧊 <b>[공략 대기선(하단) 바닥] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 진바닥 측정.<br>• <b>진단:</b> 지하실 지점이오. 역배열/5일선 아래시 60분 5선 골든크로스 시 10% 정찰병만 먼저 대응하시게."
                 elif p >= mid_line: 
                     bb_diag = f"🔥 <b>[20일 중앙선 지지] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 눌림목 및 추세 유지 판단.<br>• <b>진단:</b> 중앙선 지지 완료! 지표 동조 확인 시 3단계 승순 확대(30%) 가능하오." if is_ma5_safe else f"⚠️ <b>[20일선 위 5일선 이탈] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 단기 기세 둔화 감지.<br>• <b>진단:</b> 중앙선 위에 있으나 단기 추세가 꺾였으니 관망하시게."
                 else: 
