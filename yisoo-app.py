@@ -232,13 +232,15 @@ if symbol:
                 v_curr = float(df['Volume'].iloc[-1])
 
         # ==============================================================================
-        # ★ [현재가(p) 수동 입력 최우선 채택 스위치 연산 (빈칸 처리)]
+        # ★ [현재가(p) 수동 입력 최우선 채택 스위치 연산]
         # ==============================================================================
+        is_manual_mode = False
         if manual_price_str:
             try:
                 parsed_val = float(manual_price_str.replace(",", "").replace("$", ""))
                 if parsed_val > 0:
                     p = parsed_val
+                    is_manual_mode = True
                     st.info(f"💡 **[수동 입력 모드]** 현재가를 **{p:{fmt_p}}{currency}** 기준으로 정밀 연산합니다.")
                 else:
                     p = auto_p
@@ -281,7 +283,7 @@ if symbol:
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
             
-            # 시간보정 거래량
+            # 시간보정 거래량 연산
             if is_kr:
                 m_start = now_local.replace(hour=9, minute=0, second=0, microsecond=0)
                 m_end = now_local.replace(hour=15, minute=30, second=0, microsecond=0)
@@ -293,9 +295,15 @@ if symbol:
 
             if m_start <= now_local <= m_end and now_local.weekday() < 5:
                 elapsed = max(10, (now_local - m_start).seconds / 60)
-                vol_strength = min(1000, v_ratio / (elapsed / total_minutes))
+                vol_strength_auto = min(1000, v_ratio / (elapsed / total_minutes))
             else:
-                vol_strength = v_ratio 
+                vol_strength_auto = v_ratio 
+
+            # ★ [수동 입력 모드 시 프리장 거래량 예외 보정 정밀 연산]
+            if is_manual_mode:
+                vol_strength = 100.0  # 프리장 수동 검증 시 거래량 필터 안심 통과
+            else:
+                vol_strength = vol_strength_auto
 
             # 보조지표 연산
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
@@ -320,16 +328,14 @@ if symbol:
             up_b = mid_line + (df['Std'].iloc[-1] * 2)
             low_b = mid_line - (df['Std'].iloc[-1] * 2)
 
-            # ★ 밴드폭 비율(BandWidth %) 연산 및 수축(Squeeze) 판정
             bandwidth = ((up_b - low_b) / mid_line) * 100 if mid_line > 0 else 0
-            is_squeeze = (bandwidth <= 10.0)  # 밴드폭 10% 이하 시 에너지 극초수축(Squeeze)으로 판정
+            is_squeeze = (bandwidth <= 10.0)
             
             ma5_val = df['MA5'].iloc[-1] if len(df) >= 5 else mid_line
             ma60_val = df['MA60'].iloc[-1] if len(df) >= 60 else mid_line
             ma120_val = df['MA120'].iloc[-1] if len(df) >= 120 else mid_line
             ma20_slope = (df['MA20'].iloc[-1] - df['MA20'].iloc[-5]) if len(df) >= 5 else 0
             
-            # ★ 전저점 가격 정확 연산
             prev_low_20 = float(df['Low'].iloc[-21:-1].min()) if len(df) > 20 else float(df['Low'].min())
             is_above_ma20 = (p >= mid_line)
             
@@ -352,7 +358,6 @@ if symbol:
             is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
             is_ma5_safe = (p >= ma5_val)
 
-            # ★ [이동평균선 가격 수치 가로 한 줄 정돈]
             ma5_str = f"{ma5_val:{fmt_p}}{currency}"
             ma20_str = f"{mid_line:{fmt_p}}{currency}"
             ma60_str = f"{ma60_val:{fmt_p}}{currency}"
@@ -364,7 +369,6 @@ if symbol:
             elif ma5_val < mid_line: trend_status = "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려 숨고르기 중"
             else: trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
 
-            # 📌 4대 주요 이동평균선 실시간 가격 가로 한 줄 배치
             ma_price_summary = (
                 f"<br>• 📌 <b>[주요 이동평균선 현황]</b><br>"
                 f"&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str}</span> | "
@@ -373,7 +377,6 @@ if symbol:
                 f"<span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
             )
 
-            # 밴드폭 상태 요약 문구 생성
             if is_squeeze:
                 squeeze_info_str = f"<br>• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 얕은 조정 후 폭발할 수 있으니 돌파 시 정면 대응하시게."
             elif bandwidth <= 15.0:
@@ -415,33 +418,33 @@ if symbol:
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
             # =========================================================================
-            # 거래량 성격 정밀 판독 - 음봉 투매 vs 양봉 화력 구분
+            # 거래량 전황 출력 (수동 모드 안내 포함)
             # =========================================================================
-            if vol_strength >= 150:
+            if is_manual_mode:
+                v_status, v_adv = "수동검증", f"⚡ <b>[프리장/수동 연산]</b> 수동 입력 시세를 기준으로 이격도 및 매수 타점을 정밀 검증 중이외다."
+            elif vol_strength_auto >= 150:
                 if p >= prev_p:
-                    v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 양봉 화력 실린 본진 진격 중이오."
+                    v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 양봉 화력 실린 본진 진격 중이오."
                 else:
                     if is_bearish:
-                        v_status, v_adv = "역배열투매", f"🚨 <b>[역배열 투매과열]</b> 시간보정 강도 {vol_strength:.1f}점! 역배열 하락 투매가 폭발 중이니 절대 칼날을 잡지 마시게."
+                        v_status, v_adv = "역배열투매", f"🚨 <b>[역배열 투매과열]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 역배열 하락 투매가 폭발 중이니 절대 칼날을 잡지 마시게."
                     else:
-                        v_status, v_adv = "투매과열", f"🚨 <b>[음봉 투매과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 투매 물량이 폭발 중이니 절대 칼날을 잡지 마시게."
-            elif vol_strength >= 100: 
+                        v_status, v_adv = "투매과열", f"🚨 <b>[음봉 투매과열]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 하락 투매 물량이 폭발 중이니 절대 칼날을 잡지 마시게."
+            elif vol_strength_auto >= 100: 
                 if p >= prev_p:
-                    v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
+                    v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 화력이 차오르네."
                 else:
-                    v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 음봉 거래량 주의."
-            elif vol_strength >= 80: 
-                v_status, v_adv = "정상화력", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점! 기세가 빳빳하구먼."
+                    v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 하락 추세 속 속임수 음봉 거래량 주의."
+            elif vol_strength_auto >= 80: 
+                v_status, v_adv = "정상화력", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 기세가 빳빳하구먼."
             else: 
-                v_status, v_adv = "거래절벽", f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! 수급이 마르고 동력이 없으니 속지 마시게."
+                v_status, v_adv = "거래절벽", f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 수급이 마르고 동력이 없으니 속지 마시게."
             
-            st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} ({'수동 연산 모드' if is_manual_mode else f'실시간 {v_ratio:.1f}% / 5일평균대비'})</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
             # =========================================================================
             # 지표검증연산 + 진바닥 기억 장치(Memory Logic) 연동
             # =========================================================================
-            
-            # 과거 5일간의 진바닥 점수 시열 연산 (기억 장치)
             bb_bot_series = (df['Close'] <= (low_b * 1.02)).astype(int)
             rsi_bot_series = (rsi_series <= 35).astype(int)
             will_bot_series = (will_series <= -80).astype(int)
@@ -450,15 +453,12 @@ if symbol:
             bottom_score = bottom_score_series.iloc[-1]
             recent_bottom_memory = (bottom_score_series.iloc[-3:].max() >= 2)
 
-            # ★ [오류 수정 핵심] 변수 선언 순서 교정 (is_uptrend 및 is_breakout 선계산)
             is_uptrend = (p >= mid_line) or (ma20_slope > 0)
             is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe 
 
-            # 이격도 안심 범위 연산
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
 
-            # 손절가 붕괴 조건 연산
             is_stop_loss_triggered = False
             stop_reason = ""
             if user_avg_price > 0 and p < stop_loss_price:
@@ -471,7 +471,7 @@ if symbol:
                 is_stop_loss_triggered = True
                 stop_reason = f"20일선 중앙 성벽선({mid_line:{fmt_p}}{currency}) 이탈 붕괴"
 
-            # 1) 진바닥 동조 텍스트 연산 (메인 신호등 필터 적용)
+            # 1) 진바닥 동조 텍스트 연산
             if bottom_score == 3:
                 bottom_status_str = "<b>(오늘 진바닥 3점 만점 달성!)</b>"
                 if is_stop_loss_triggered:
@@ -538,7 +538,6 @@ if symbol:
                     pullback_status_str = "<b>(조건 미흡)</b>"
                     pullback_action_str = "➔ <b>[관망]</b> 눌림목 지지선 확인 불가, 관망 유지"
 
-            # ★ [시각적 순서 교정 구역: 이평선 가격 수치 바로 밑으로 추세 진단 밀착]
             indicator_verify_text = (
                 f"{ma_price_summary}<br>"
                 f"• <b>[추세 정밀 판독]:</b> {trend_status}<br>"
@@ -549,7 +548,7 @@ if symbol:
             )
 
             # =========================================================================
-            # 보조 연산 및 매수/매도 구간 판단 + [★ 이격도 정밀 연산]
+            # 보조 연산 및 매수/매도 구간 판단
             # =========================================================================
             bb_top = 1 if p >= (up_b * 0.995) else 0
             rsi_top = 1 if rsi_val >= 60 else 0
@@ -568,7 +567,7 @@ if symbol:
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_top = margin_to_target < 0.02
 
-            # 1) 진바닥 매수 원시 신호 (이격도 +3% 이내 및 필터)
+            # 1) 진바닥 매수 원시 신호
             is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
             is_bottom_buy_raw = (
                 (recent_bottom_memory or bottom_score >= 2) 
@@ -576,10 +575,10 @@ if symbol:
                 and is_bottom_disparity_safe 
                 and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) 
                 and is_indicator_turned_up
-                and not is_bearish # 대세 역배열 필터 반영
+                and not is_bearish
             )
 
-            # 2) 눌림목 매수 원시 신호 (이격도 +3% 이내 및 필터)
+            # 2) 눌림목 매수 원시 신호
             is_pullback_disparity_safe = (0 <= bias_ma20 <= 3.0)
             is_trend_buy_raw = (
                 (p >= mid_line) 
