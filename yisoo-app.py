@@ -147,7 +147,7 @@ with col_manual:
     manual_price_str = st.text_input(
         "⚡ 프리장/수동 실시간가 (선택)", 
         value="", 
-        help="프리장나 주간거래 가격을 직접 적으시면 정규장 시세 대신 우선 적용합니다."
+        help="프리장이나 주간거래 가격을 직접 적으시면 정규장 시세 대신 우선 적용합니다. (지우고 빈칸으로 만드시면 자동 시세 복귀)"
     ).strip()
 
 with col_avg:
@@ -232,12 +232,16 @@ if symbol:
                 v_curr = float(df['Volume'].iloc[-1])
 
         # ==============================================================================
-        # ★ [현재가(p) 수동 입력 최우선 채택 스위치 연산]
+        # ★ [현재가(p) 수동 입력 최우선 채택 스위치 연산 (빈칸 처리)]
         # ==============================================================================
         if manual_price_str:
             try:
-                p = float(manual_price_str.replace(",", "").replace("$", ""))
-                st.info(f"💡 **[수동 입력 모드]** 현재가를 **{p:{fmt_p}}{currency}** 기준으로 정밀 연산합니다.")
+                parsed_val = float(manual_price_str.replace(",", "").replace("$", ""))
+                if parsed_val > 0:
+                    p = parsed_val
+                    st.info(f"💡 **[수동 입력 모드]** 현재가를 **{p:{fmt_p}}{currency}** 기준으로 정밀 연산합니다.")
+                else:
+                    p = auto_p
             except ValueError:
                 st.warning("⚠️ 올바른 숫자 형식으로 입력해 주십시오. (자동 시세로 연산합니다)")
                 p = auto_p
@@ -444,21 +448,59 @@ if symbol:
             bottom_score_series = bb_bot_series + rsi_bot_series + will_bot_series
             
             bottom_score = bottom_score_series.iloc[-1]
-            # ★ 핵심: 최근 3일 이내에 진바닥 2/3점 이상을 찍었던 기억 추적 연산
             recent_bottom_memory = (bottom_score_series.iloc[-3:].max() >= 2)
 
+            # -------------------------------------------------------------------------
+            # ★ [상충 완전 해결 구역] 메인 신호등 통제 필터를 완벽히 반영한 텍스트 연산
+            # -------------------------------------------------------------------------
+            # 이격도 안심 범위 우선 정의
+            bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
+            bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
+
+            # 손절가 붕괴 조건 우선 연산
+            is_stop_loss_triggered = False
+            stop_reason = ""
+            if user_avg_price > 0 and p < stop_loss_price:
+                is_stop_loss_triggered = True
+                stop_reason = f"보유 평단가 대비 손절 마지노선({stop_loss_label}) 붕괴"
+            elif (recent_bottom_memory or bottom_score >= 2) and p < prev_low_20:
+                is_stop_loss_triggered = True
+                stop_reason = f"진바닥 전저점 마지노선({prev_low_20:{fmt_p}}{currency}) 붕괴"
+            elif is_uptrend and p < mid_line and not is_ma5_safe:
+                is_stop_loss_triggered = True
+                stop_reason = f"20일선 중앙 성벽선({mid_line:{fmt_p}}{currency}) 이탈 붕괴"
+
+            # 1) 진바닥 동조 텍스트 연산 (메인 신호등 필터 적용)
             if bottom_score == 3:
                 bottom_status_str = "<b>(오늘 진바닥 3점 만점 달성!)</b>"
-                if is_ma5_safe:
+                if is_stop_loss_triggered:
+                    bottom_action_str = f"➔ <b>[비상 후퇴]</b> 전저점 마지노선 붕괴로 매수 금지"
+                elif is_bearish:
+                    bottom_action_str = f"➔ <b>[관망]</b> 바닥 지표는 포착되었으나 대세 역배열 하락 추세이므로 매수 보류"
+                elif vol_strength < 80:
+                    bottom_action_str = f"➔ <b>[관망]</b> 바닥 지표는 포착되었으나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
+                elif bias_ma5 > 3.0:
+                    bottom_action_str = f"➔ <b>[관망]</b> 5일선 대비 +3% 초과 이격 과열로 매수 보류"
+                elif is_ma5_safe:
                     bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 진바닥 3점 달성 + 일봉 5일선 종가 안착 완료! 20% 선취매 진격 (손절 마지노선: {prev_low_20:{fmt_p}}{currency})"
                 else:
-                    bottom_action_str = f"➔ <b>[진입 대기]</b> 진바닥 3점 달성! 종가 기준 일봉 5일선 상향 안착 시 20% 매수 시작 (매수 후 손절선: {prev_low_20:{fmt_p}}{currency})"
+                    bottom_action_str = f"➔ <b>[진입 대기]</b> 진바닥 3점 달성! 종가 기준 일봉 5일선 상향 안착 시 20% 매수 시작"
+
             elif recent_bottom_memory or bottom_score >= 2:
                 bottom_status_str = "<b>(최근 3일 내 바닥권 2점 이상 기록 유효!)</b>"
-                if is_ma5_safe:
+                if is_stop_loss_triggered:
+                    bottom_action_str = f"➔ <b>[비상 후퇴]</b> 전저점 마지노선 붕괴로 매수 금지"
+                elif is_bearish:
+                    bottom_action_str = f"➔ <b>[관망]</b> 최근 바닥 기록은 유효하나 대세 역배열 하락 추세이므로 매수 보류"
+                elif vol_strength < 80:
+                    bottom_action_str = f"➔ <b>[관망]</b> 최근 바닥 기록은 유효하나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
+                elif bias_ma5 > 3.0:
+                    bottom_action_str = f"➔ <b>[관망]</b> 5일선 대비 +3% 초과 이격 과열로 매수 보류"
+                elif is_ma5_safe:
                     bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 바닥권 기록 포착 후 일봉 5일선 종가 안착 완료! 20% 선취매 진격 (손절 마지노선: {prev_low_20:{fmt_p}}{currency})"
                 else:
-                    bottom_action_str = f"➔ <b>[진입 대기]</b> 최근 바닥권(2점 이상) 기록 유효. 일봉 5일선 종가 안착 시 20% 매수 시작 (매수 후 손절선: {prev_low_20:{fmt_p}}{currency})"
+                    bottom_action_str = f"➔ <b>[진입 대기]</b> 최근 바닥권 기록 유효. 일봉 5일선 종가 안착 시 20% 매수 시작"
+
             else:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 매수 보류, 실시간 지표 모니터링 유지"
@@ -483,7 +525,11 @@ if symbol:
                 
                 if pullback_rebound_score == 3:
                     pullback_status_str = "<b>(조건 만족)</b>"
-                    if is_ma5_safe:
+                    if vol_strength < 80:
+                        pullback_action_str = f"➔ <b>[관망]</b> 눌림목 조건은 만족했으나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
+                    elif bias_ma20 > 3.0:
+                        pullback_action_str = f"➔ <b>[관망]</b> 20일선 대비 +3% 초과 이격 과열로 매수 보류"
+                    elif is_ma5_safe:
                         pullback_action_str = f"➔ <b>[2단계 승순 확대]</b> 20일선 눌림목 안착 확인, 30% 추가 진격 (손절선: 20일선 {mid_line:{fmt_p}}{currency})"
                     else:
                         pullback_action_str = "➔ <b>[진입 대기]</b> 눌림목 완성, 종가 기준 일봉 5일선 상향 안착 시 매수 실행"
@@ -505,7 +551,7 @@ if symbol:
             )
 
             # =========================================================================
-            # 보조 연산 및 매수/매도 구간 판단 + [★ 이격도 정밀 연산 완전 통합]
+            # 보조 연산 및 매수/매도 구간 판단 + [★ 이격도 정밀 연산]
             # =========================================================================
             bb_top = 1 if p >= (up_b * 0.995) else 0
             rsi_top = 1 if rsi_val >= 60 else 0
@@ -524,11 +570,7 @@ if symbol:
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_top = margin_to_target < 0.02
 
-            # ★ [이격도(Disparity) 안심 범위 정밀 연산]
-            bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
-            bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
-
-            # 1) 진바닥 매수 이격도 안심 범위 (오직 5일선 이격 3% 이내 전용)
+            # 1) 진바닥 매수 원시 신호 (이격도 +3% 이내 및 필터)
             is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
             is_bottom_buy_raw = (
                 (recent_bottom_memory or bottom_score >= 2) 
@@ -536,9 +578,10 @@ if symbol:
                 and is_bottom_disparity_safe 
                 and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) 
                 and is_indicator_turned_up
+                and not is_bearish # 대세 역배열 필터 반영
             )
 
-            # 2) 눌림목 매수 이격도 안심 범위 (20일선 이격 3% 이내)
+            # 2) 눌림목 매수 원시 신호 (이격도 +3% 이내 및 필터)
             is_pullback_disparity_safe = (0 <= bias_ma20 <= 3.0)
             is_trend_buy_raw = (
                 (p >= mid_line) 
@@ -548,19 +591,6 @@ if symbol:
                 and not is_too_close_to_top 
                 and (pullback_rebound_score >= 2)
             )
-
-            # ★ [스마트 비상 손절 붕괴 연산]
-            is_stop_loss_triggered = False
-            stop_reason = ""
-            if user_avg_price > 0 and p < stop_loss_price:
-                is_stop_loss_triggered = True
-                stop_reason = f"보유 평단가 대비 손절 마지노선({stop_loss_label}) 붕괴"
-            elif (recent_bottom_memory or bottom_score >= 2) and p < prev_low_20:
-                is_stop_loss_triggered = True
-                stop_reason = f"진바닥 전저점 마지노선({prev_low_20:{fmt_p}}{currency}) 붕괴"
-            elif is_uptrend and p < mid_line and not is_ma5_safe:
-                is_stop_loss_triggered = True
-                stop_reason = f"20일선 중앙 성벽선({mid_line:{fmt_p}}{currency}) 이탈 붕괴"
 
             # =========================================================================
             # ★ [신호등 & 최종 결론 연동 - 비상 손절 경보 최우선 연동]
