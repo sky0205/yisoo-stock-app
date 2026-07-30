@@ -506,10 +506,8 @@ if symbol:
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
 
-            # 1) 진바닥 매수 이격도 안심 범위 (5일선 이격 3% 이내 + 20일선 이격 5% 이내)
-            is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0) and (bias_ma20 <= 5.0)
-            is_bottom_buy_raw = (recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and is_bottom_disparity_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) and is_indicator_turned_up
-
+           # 1) 진바닥 매수 이격도 안심 범위 (오직 5일선 이격 3% 이내 전용)
+            is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
             # 2) 눌림목 매수 이격도 안심 범위 (20일선 이격 3% 이내)
             is_pullback_disparity_safe = (0 <= bias_ma20 <= 3.0)
             is_trend_buy_raw = (p >= mid_line) and (ma5_val >= mid_line) and is_ma5_safe and is_pullback_disparity_safe and not is_too_close_to_top and (pullback_rebound_score >= 2)
