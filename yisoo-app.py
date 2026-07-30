@@ -135,6 +135,17 @@ def display_global_risk():
 st.title("🧐 이수할아버지의 냉정 진단기 v36058")
 display_global_risk(); st.divider()
 
+# ==============================================================================
+# ★ [사이드바: 프리장 / 주간거래 대응 수동 가격 입력 스위치]
+# ==============================================================================
+st.sidebar.markdown("---")
+st.sidebar.markdown("### ⚙️ 프리장/주간거래 수동 연산")
+manual_price_str = st.sidebar.text_input(
+    "프리장/주간 실시간가 입력 (미입력 시 정규장 자동)", 
+    value="",
+    help="국장 주간거래나 미장 프리장 가격을 직접 적으시면 즉시 재연산합니다."
+)
+
 # --- [메인 화면 상단: 종목 및 평단가 통합 입력창] ---
 col_symbol, col_avg, col_btn = st.columns([2, 2, 1.5])
 
@@ -173,7 +184,7 @@ if symbol:
             now_local = utc_now.astimezone(ZoneInfo('Asia/Seoul') if is_kr else ZoneInfo('America/New_York'))
 
         df = pd.DataFrame()
-        p, v_curr = 0.0, 0.0
+        auto_p, v_curr = 0.0, 0.0
         us_prev_p = None
 
         if is_kr:
@@ -195,11 +206,11 @@ if symbol:
                 url = f"https://finance.naver.com/item/main.naver?code={symbol}"
                 res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1)
                 soup = BeautifulSoup(res.text, 'html.parser')
-                p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
                 v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
             except:
                 if not df.empty:
-                    p = float(df['Close'].iloc[-1])
+                    auto_p = float(df['Close'].iloc[-1])
                     v_curr = float(df['Volume'].iloc[-1])
         else:
             currency, fmt_p = "$", ",.2f"
@@ -212,15 +223,28 @@ if symbol:
                 
             try:
                 info = ticker.fast_info
-                p = getattr(info, 'last_price', float(df['Close'].iloc[-1]))
+                auto_p = getattr(info, 'last_price', float(df['Close'].iloc[-1]))
                 v_curr = getattr(info, 'last_volume', float(df['Volume'].iloc[-1]))
                 us_prev_p = info.previous_close
             except:
                 pass
             
-            if p == 0.0 and not df.empty:
-                p = float(df['Close'].iloc[-1])
+            if auto_p == 0.0 and not df.empty:
+                auto_p = float(df['Close'].iloc[-1])
                 v_curr = float(df['Volume'].iloc[-1])
+
+        # ==============================================================================
+        # ★ [현재가(p) 수동 입력 최우선 채택 스위치 연산]
+        # ==============================================================================
+        if manual_price_str.strip():
+            try:
+                p = float(manual_price_str.replace(",", "").replace("$", ""))
+                st.info(f"💡 **[수동 입력 모드]** 실시간 시세를 **{p:{fmt_p}}{currency}** 기준으로 정밀 연산합니다.")
+            except ValueError:
+                st.warning("⚠️ 올바른 숫자 형식으로 입력해 주십시오. (자동 시세로 계산합니다)")
+                p = auto_p
+        else:
+            p = auto_p
 
         if df.empty:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인하거나 잠시 후 다시 시도해 주시게.")
@@ -483,7 +507,7 @@ if symbol:
             )
 
             # =========================================================================
-            # 보조 연산 및 매수/매도 구간 판단 + [★ 이격도 안전장치 추가]
+            # 보조 연산 및 매수/매도 구간 판단 + [★ 이격도 정밀 연산 완전 통합]
             # =========================================================================
             bb_top = 1 if p >= (up_b * 0.995) else 0
             rsi_top = 1 if rsi_val >= 60 else 0
@@ -503,17 +527,30 @@ if symbol:
             is_too_close_to_top = margin_to_target < 0.02
 
             # ★ [이격도(Disparity) 안심 범위 정밀 연산]
-            # ★ [이격도(Disparity) 안심 범위 정밀 연산]
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
 
-# 1) 진바닥 매수 이격도 안심 범위 (오직 5일선 이격 3% 이내 전용)
+            # 1) 진바닥 매수 이격도 안심 범위 (오직 5일선 이격 3% 이내 전용)
             is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
-            is_bottom_buy_raw = (recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and is_bottom_disparity_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) and is_indicator_turned_up
+            is_bottom_buy_raw = (
+                (recent_bottom_memory or bottom_score >= 2) 
+                and is_ma5_safe 
+                and is_bottom_disparity_safe 
+                and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) 
+                and is_indicator_turned_up
+            )
 
-# 2) 눌림목 매수 이격도 안심 범위 (20일선 이격 3% 이내)
+            # 2) 눌림목 매수 이격도 안심 범위 (20일선 이격 3% 이내)
             is_pullback_disparity_safe = (0 <= bias_ma20 <= 3.0)
-            is_trend_buy_raw = (p >= mid_line) and (ma5_val >= mid_line) and is_ma5_safe and is_pullback_disparity_safe and not is_too_close_to_top and (pullback_rebound_score >= 2)
+            is_trend_buy_raw = (
+                (p >= mid_line) 
+                and (ma5_val >= mid_line) 
+                and is_ma5_safe 
+                and is_pullback_disparity_safe 
+                and not is_too_close_to_top 
+                and (pullback_rebound_score >= 2)
+            )
+
             # ★ [스마트 비상 손절 붕괴 연산]
             is_stop_loss_triggered = False
             stop_reason = ""
@@ -568,7 +605,9 @@ if symbol:
 
             else:
                 final_code = "WAIT_GENERAL"
-                if (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
+                if bias_ma5 > 3.0 or bias_ma20 > 3.0:
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 이동평균선 대비 +3% 초과 단기 이격 과열 구간이오. 추격 매수를 철통 차단하고 관망하시게."
+                elif (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 최근 바닥권 과매도는 확인되었으나, 아직 단기 생명선인 일봉 5일선({ma5_val:{fmt_p}}{currency}) 아래에 있으니 종가 안착 전까진 대기하시게! (★ <b>매수 후 최종 방어선: 전저점 {prev_low_20:{fmt_p}}{currency}</b>)"
                 elif is_squeeze and is_ma5_safe:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소]</b> 에너지가 바짝 응축되었구먼! 5일선/20일선 성벽 사수하며 상방 돌파 시 대응하시게!"
@@ -632,7 +671,9 @@ if symbol:
             else: 
                 sig = "🟡 [관망] 방향 탐색 / 종가 안착 대기"
                 col = "#FBC02D" 
-                if (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
+                if bias_ma5 > 3.0 or bias_ma20 > 3.0:
+                    s_adv = f"• ⚠️ 이동평균선 대비 +3% 초과 단기 이격 과열 구간이오. 추격 매수를 철통 차단하고 관망하시게."
+                elif (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
                     s_adv = f"• 🎯 최근 바닥권 과매도 포착 완료! 종가 기준 일봉 5일선({ma5_val:{fmt_p}}{currency}) 안착 시 1차 20% 진격! (매수 후 마지노선: 전저점 {prev_low_20:{fmt_p}}{currency})"
                 elif is_squeeze and is_above_ma20: 
                     s_adv = f"• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 20일선 위이나 일봉 5일선 종가 안착 여부를 관망하시게."
