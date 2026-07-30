@@ -366,15 +366,21 @@ if symbol:
             # =========================================================================
             # 거래량 성격 정밀 판독 - 음봉 투매 vs 양봉 화력 구분
             # =========================================================================
-            if is_bearish and vol_strength >= 100: 
-                v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 거래량 주의."
-            elif vol_strength >= 150:
-                if p < prev_p:
-                    v_status, v_adv = "투매과열", f"🚨 <b>[음봉 투매과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 투매 물량이 폭발 중이니 절대 칼날을 잡지 마시게."
-                else:
+            if vol_strength >= 150:
+                if p >= prev_p:
+                    # ★ 역배열이든 정배열이든 양봉 상승 폭발이면 무조건 [화력폭발]로 인정!
                     v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 양봉 화력 실린 본진 진격 중이오."
+                else:
+                    # 음봉 하락 폭발일 때
+                    if is_bearish:
+                        v_status, v_adv = "역배열투매", f"🚨 <b>[역배열 투매과열]</b> 시간보정 강도 {vol_strength:.1f}점! 역배열 하락 투매가 폭발 중이니 절대 칼날을 잡지 마시게."
+                    else:
+                        v_status, v_adv = "투매과열", f"🚨 <b>[음봉 투매과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 투매 물량이 폭발 중이니 절대 칼날을 잡지 마시게."
             elif vol_strength >= 100: 
-                v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
+                if p >= prev_p:
+                    v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
+                else:
+                    v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 음봉 거래량 주의."
             elif vol_strength >= 80: 
                 v_status, v_adv = "정상화력", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점! 기세가 빳빳하구먼."
             else: 
