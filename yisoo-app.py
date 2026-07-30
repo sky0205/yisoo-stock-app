@@ -450,14 +450,15 @@ if symbol:
             bottom_score = bottom_score_series.iloc[-1]
             recent_bottom_memory = (bottom_score_series.iloc[-3:].max() >= 2)
 
-            # -------------------------------------------------------------------------
-            # ★ [상충 완전 해결 구역] 메인 신호등 통제 필터를 완벽히 반영한 텍스트 연산
-            # -------------------------------------------------------------------------
-            # 이격도 안심 범위 우선 정의
+            # ★ [오류 수정 핵심] 변수 선언 순서 교정 (is_uptrend 및 is_breakout 선계산)
+            is_uptrend = (p >= mid_line) or (ma20_slope > 0)
+            is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe 
+
+            # 이격도 안심 범위 연산
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
 
-            # 손절가 붕괴 조건 우선 연산
+            # 손절가 붕괴 조건 연산
             is_stop_loss_triggered = False
             stop_reason = ""
             if user_avg_price > 0 and p < stop_loss_price:
@@ -505,10 +506,7 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 매수 보류, 실시간 지표 모니터링 유지"
 
-            # 2) 눌림목 동조 채점 (대전제 필터 및 강력 돌파 국면 감지)
-            is_uptrend = (p >= mid_line) or (ma20_slope > 0)
-            is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe 
-            
+            # 2) 눌림목 동조 채점
             if is_breakout:
                 pullback_rebound_score = 0
                 pullback_status_str = "<b>(수급 돌파 국면)</b>"
