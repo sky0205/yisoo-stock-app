@@ -294,9 +294,10 @@ if symbol:
             up_b = mid_line + (df['Std'].iloc[-1] * 2)
             low_b = mid_line - (df['Std'].iloc[-1] * 2)
 
-# ★ 밴드폭 비율(BandWidth %) 연산 및 수축(Squeeze) 판정 추가
+            # ★ 밴드폭 비율(BandWidth %) 연산 및 정밀 수축(Squeeze) 판정
             bandwidth = ((up_b - low_b) / mid_line) * 100 if mid_line > 0 else 0
-            is_squeeze = (bandwidth <= 10.0)  # 밴드폭 10% 이하 시 에너지 수축(Squeeze)으로 판정
+            is_squeeze = (bandwidth <= 10.0)  # 밴드폭 10% 이하 시 에너지 극초수축(Squeeze)으로 판정
+            
             ma5_val = df['MA5'].iloc[-1] if len(df) >= 5 else mid_line
             ma60_val = df['MA60'].iloc[-1] if len(df) >= 60 else mid_line
             ma120_val = df['MA120'].iloc[-1] if len(df) >= 120 else mid_line
@@ -329,6 +330,14 @@ if symbol:
             elif ma5_val > mid_line: trend_status = "🌱 <b>[단기 반등 초입]</b> 5일선이 20일선 돌파! 상방 반전 시도 중"
             elif ma5_val < mid_line: trend_status = "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려 숨고르기 중"
             else: trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
+
+            # 밴드폭 상태 요약 문구 생성
+            if is_squeeze:
+                squeeze_info_str = f"<br>• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 얕은 조정 후 폭발할 수 있으니 돌파 시 정면 대응하시게."
+            elif bandwidth <= 15.0:
+                squeeze_info_str = f"<br>• 🔍 <b>[밴드폭 축소({bandwidth:.1f}%)]</b> 힘을 모으는 구간이오. 5일선/20일선 안착을 주의 깊게 보시게."
+            else:
+                squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 일반 변동성 국면이니 정석 눌림목/진바닥 타점을 차분히 기다리시게."
 
             if is_kr:
                 core_vault = {"005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", "257720": "실리콘투", "058610": "에스피지"}
@@ -368,10 +377,8 @@ if symbol:
             # =========================================================================
             if vol_strength >= 150:
                 if p >= prev_p:
-                    # ★ 역배열이든 정배열이든 양봉 상승 폭발이면 무조건 [화력폭발]로 인정!
                     v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 양봉 화력 실린 본진 진격 중이오."
                 else:
-                    # 음봉 하락 폭발일 때
                     if is_bearish:
                         v_status, v_adv = "역배열투매", f"🚨 <b>[역배열 투매과열]</b> 시간보정 강도 {vol_strength:.1f}점! 역배열 하락 투매가 폭발 중이니 절대 칼날을 잡지 마시게."
                     else:
@@ -410,7 +417,7 @@ if symbol:
 
             # 2) 눌림목 동조 채점 (대전제 필터 및 강력 돌파 국면 감지)
             is_uptrend = (p >= mid_line) or (ma20_slope > 0)
-            is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe  # 장대양봉 돌파주 판단
+            is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe 
             
             if is_breakout:
                 pullback_rebound_score = 0
@@ -439,11 +446,11 @@ if symbol:
                     pullback_status_str = "<b>(조건 미흡)</b>"
                     pullback_action_str = "➔ <b>[관망]</b> 눌림목 지지선 확인 불가, 관망 유지"
 
-            # 지표 검증 연산 종합 출력용 문자열 생성
             indicator_verify_text = (
                 f"<br>• <b>[지표 검증 연산]</b><br>"
                 f"  - <b>진바닥 동조:</b> {bottom_score}/3점 {bottom_status_str} {bottom_action_str}<br>"
                 f"  - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
+                f"{squeeze_info_str}"
             )
 
             # =========================================================================
@@ -470,7 +477,7 @@ if symbol:
             is_bottom_buy_raw = (bottom_score >= 3) and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) and is_indicator_turned_up
 
             # =========================================================================
-            # ★ [신호등 & 최종 결론 연동 - BREAKOUT ➔ 초록색(수확/분할 매도) 지정]
+            # ★ [신호등 & 최종 결론 연동 - 밴드폭 극초축소(Squeeze) 조건 정밀 보완]
             # =========================================================================
             if is_new_high:
                 final_code = "NEW_HIGH"
@@ -481,11 +488,11 @@ if symbol:
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신저가(칼날 하락)]</b> 구역 전개! 5일선 안착 전까지 절대 무조건 관망하시게!"
 
             elif is_breakout:
-                final_code = "BREAKOUT"  # 🟢 수급 돌파 = 보유자 분할 수확(매도) 국면
+                final_code = "BREAKOUT" 
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 <b>[장대양봉 수급 돌파]</b> 분출 중! <b>[보유자]는 분할 매도로 수익 확정(수확)</b>에 들어가고, <b>[미보유자]는 추격매수 금지</b> 후 눌림목을 대기하시게!"
 
             elif is_too_close_to_top or top_score >= 2 or p >= up_b:
-                final_code = "SELL_ZONE"  # 🟢 매도 구간 (초록색)
+                final_code = "SELL_ZONE"
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 수확 목표선(볼린저상단 {up_b:{fmt_p}}) 및 과열권 진입! 신규 진입은 금지하고 <b>[보유자]는 즉시 분할 매도로 수익 확정에 들어가시게!</b>"
 
             elif is_trend_buy_raw:
@@ -493,7 +500,7 @@ if symbol:
                     final_code = "WAIT_GENERAL"
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 지지는 확인되었으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
                 else:
-                    final_code = "PULLBACK_BUY"  # 🔵 눌림목 매수 구간 (파란색)
+                    final_code = "PULLBACK_BUY"
                     k_size = calculate_kelly_size(win_rate=0.65, win_loss_ratio=1.5, fraction=0.5)
                     final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 20일선 지지 안착! <b>[추세 눌림목 매수 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b> 진격하되, <b>{stop_loss_label} 이탈 시 후퇴</b> 기준을 엄수하시게!"
 
@@ -502,15 +509,16 @@ if symbol:
                     final_code = "WAIT_GENERAL"
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 안착했으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
                 else:
-                    final_code = "BOTTOM_BUY"  # 🔴 바닥/선취매 매수 구간 (빨간색)
+                    final_code = "BOTTOM_BUY"
                     k_size = calculate_kelly_size(win_rate=0.45, win_loss_ratio=2.5, fraction=0.5)
                     final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 다중 바닥 및 거래량 유입 포착! <b>[진바닥 선취매 타점]</b>이시네. <b>[켈리 최적 비중: 자산의 {k_size}%]</b> 진격하되, <b>{stop_loss_label} 이탈 시 후퇴</b> 기준을 지키시게!"
 
             else:
-                final_code = "WAIT_GENERAL"  # 🟡 관망 구간 (노란색)
+                final_code = "WAIT_GENERAL"
                 if bottom_score >= 2 and not is_ma5_safe:
-                # ★ 진바닥 동조는 왔으나 5일선 아래일 때 (5일선 사수를 최우선 경고)
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 들어왔으나 단기 생명선인 5일선({ma5_val:{fmt_p}}) 아래에 있으니 안착 전까진 관망하시게!"
+                elif is_squeeze: # ★ 밴드폭 극초축소 시 관망 및 돌파 대기 가이드
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 깊은 눌림을 주지 않고 폭발할 수 있으니 20일선({mid_line:{fmt_p}}) 돌파 시 🟢 <b>[수급 돌파]</b>로 대응하시게!"
                 elif is_above_ma20 and pullback_rebound_score < 2:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 위에 있으나 보조지표 동조가 부족하네. 관망하시게!"
                 elif not is_above_ma20:
@@ -543,28 +551,29 @@ if symbol:
             # =========================================================================
             if final_code == "SELL_ZONE":
                 sig = "🟢 [매도] 푸른 수확 / 이익실현 타점!"
-                col = "#388E3C"  # 초록색
+                col = "#388E3C" 
                 s_adv = f"• <b>[보유자] 🚨 수확 목표 달성! 보유 물량 30~50% 즉시 현금화(매도)</b><br>• <b>[미보유자]</b> ✋ 추격매수 금지 (수확목표선 {up_b:{fmt_p}} 고점 저항대)"
 
             elif final_code == "BREAKOUT":
                 sig = "🟢 [수급 돌파] 푸른 수확 / 분할 익절 타점!"
-                col = "#388E3C"  # 초록색 (수확/매도 색상 적용)
+                col = "#388E3C" 
                 s_adv = f"• <b>[보유자] 💰 수급 폭발 시점! 물량 30~50% 1차 분할 익절(수익 확정)</b><br>• <b>[미보유자] ✋ 추격매수 절대 금지! (눌림목 지지 안착 시 재진입 대기)</b>"
 
             elif final_code == "BOTTOM_BUY":
                 sig = "🔴 [매수] 불꽃 진격 / 진바닥 선취매!"
-                col = "#D32F2F"  # 빨간색
+                col = "#D32F2F" 
                 s_adv = f"• <b>[미보유자] 🎯 [진바닥 포착] 켈리 적정 비중으로 1차 매수 진격!</b><br>• <b>[보유자]</b> 🚀 손절가({stop_loss_label}) 사수하며 목표선까지 홀딩"
 
             elif final_code == "PULLBACK_BUY":
                 sig = "🔵 [눌림목 매수] 냉철한 보급 / 추세 안착!"
-                col = "#1976D2"  # 파란색
+                col = "#1976D2" 
                 s_adv = f"• <b>[미보유자] 🎯 [20일선 지지 반등] 거래량 실린 눌림목 매수 진격!</b><br>• <b>[보유자]</b> 🚀 수확목표선({up_b:{fmt_p}})까지 편안하게 추세 홀딩"
 
-            else:  # WAIT_GENERAL, NEW_HIGH, NEW_LOW 등
+            else: 
                 sig = "🟡 [관망] 방향 탐색 / 손가락 묶고 대기"
-                col = "#FBC02D"  # 노란색
-                if is_bearish: s_adv = "• ⚠️ 대세 역배열 하락 추세 중이니 보유/미보유 모두 관망하시게."
+                col = "#FBC02D" 
+                if is_squeeze: s_adv = f"• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 응축되었으니 20일선 돌파 및 안착 여부를 관망하시게."
+                elif is_bearish: s_adv = "• ⚠️ 대세 역배열 하락 추세 중이니 보유/미보유 모두 관망하시게."
                 elif not is_above_ma20: s_adv = f"• ⚠️ 주가가 20일선({mid_line:{fmt_p}}) 하단 저항을 받는 구간이네."
                 elif not is_ma5_safe: s_adv = "• ⚠️ 단기 전투선인 5일선 아래에서 기세 허덕이는 중일세."
                 else: s_adv = f"• 눈치싸움 중일세. (진바닥 동조: {bottom_score}/3 | 눌림동조: {pullback_rebound_score}/3)"
@@ -628,19 +637,18 @@ if symbol:
             st.divider()
             
             # =========================================================================
-            # ★ [하단 4대 핵심 지표 박스 - 볼린저 상충 보완 수정]
+            # ★ [하단 4대 핵심 지표 박스]
             # =========================================================================
             i1, i2, i3, i4 = st.columns(4)
             
             # --- 1. Bollinger (기세 & 위치) ---
-           # --- 1. Bollinger (기세 & 위치) ---
             with i1:
                 if p >= up_b: 
                     bb_diag = f"👺 <b>[수확 목표선(상단) 과열] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 주가 상단 한계선 접촉.<br>• <b>진단:</b> 탐욕의 끝단이니 신규 매수를 금지하고 익절을 집행하시게."
                 elif is_breakout: 
                     bb_diag = f"🚀 <b>[수급 돌파 분출] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 20일선 및 볼린저 돌파 강도 측정.<br>• <b>진단:</b> 장대양봉 강력 돌파! 보유자는 분할 수확(매도)하고, 미보유자는 추격매수를 절대 금하시게."
-                elif is_squeeze: # ★ 밴드폭 수축 경보 조건 추가
-                    bb_diag = f"⚡ <b>[에너지 수축 (Squeeze)] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 에너지 응축 및 변동성 폭발 예보.<br>• <b>진단:</b> 밴드가 바짝 좁아졌구먼! 조만간 위/아래 방향성 폭발이 임박했으니 5일선 돌파 전까진 관망하시게."
+                elif is_squeeze: 
+                    bb_diag = f"⚡ <b>[에너지 극초축소 (Squeeze)] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 에너지 응축 및 변동성 폭발 예보.<br>• <b>진단:</b> 밴드가 바짝 좁아졌구먼! 조만간 위/아래 방향성 폭발이 임박했으니 5일선 돌파 전까진 관망하시게."
                 elif p <= low_b: 
                     bb_diag = f"🧊 <b>[공략 대기선(하단) 바닥] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 진바닥 측정.<br>• <b>진단:</b> 지하실 지점이나 5일선 안착 전까진 칼날 매수 금지이외다."
                 elif p >= mid_line: 
