@@ -136,25 +136,23 @@ st.title("🧐 이수할아버지의 냉정 진단기 v36058")
 display_global_risk(); st.divider()
 
 # ==============================================================================
-# ★ [사이드바: 프리장 / 주간거래 대응 수동 가격 입력 스위치]
+# ★ [메인 화면 상단: 종목 / 수동입력 / 평단가 4칸 통합 입력창]
 # ==============================================================================
-st.sidebar.markdown("---")
-st.sidebar.markdown("### ⚙️ 프리장/주간거래 수동 연산")
-manual_price_str = st.sidebar.text_input(
-    "프리장/주간 실시간가 입력 (미입력 시 정규장 자동)", 
-    value="",
-    help="국장 주간거래나 미장 프리장 가격을 직접 적으시면 즉시 재연산합니다."
-)
-
-# --- [메인 화면 상단: 종목 및 평단가 통합 입력창] ---
-col_symbol, col_avg, col_btn = st.columns([2, 2, 1.5])
+col_symbol, col_manual, col_avg, col_btn = st.columns([1.8, 1.8, 1.8, 1.2])
 
 with col_symbol:
-    symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "058610").strip()
+    symbol = st.text_input("📊 종목번호 또는 티커", "058610").strip()
+
+with col_manual:
+    manual_price_str = st.text_input(
+        "⚡ 프리장/수동 실시간가 (선택)", 
+        value="", 
+        help="프리장나 주간거래 가격을 직접 적으시면 정규장 시세 대신 우선 적용합니다."
+    ).strip()
 
 with col_avg:
     user_avg_price = st.number_input(
-        "💡 보유 중인 평단가 입력 (미보유 시 0)",
+        "💡 보유 평단가 (미보유 시 0)",
         min_value=0.0,
         value=0.0,
         step=100.0,
@@ -164,7 +162,7 @@ with col_avg:
 with col_btn:
     st.write("") 
     st.write("") 
-    if st.button("🔄 정밀 분석 실행"):
+    if st.button("🔄 정밀 분석"):
         st.rerun()
 
 if symbol:
@@ -236,12 +234,12 @@ if symbol:
         # ==============================================================================
         # ★ [현재가(p) 수동 입력 최우선 채택 스위치 연산]
         # ==============================================================================
-        if manual_price_str.strip():
+        if manual_price_str:
             try:
                 p = float(manual_price_str.replace(",", "").replace("$", ""))
-                st.info(f"💡 **[수동 입력 모드]** 실시간 시세를 **{p:{fmt_p}}{currency}** 기준으로 정밀 연산합니다.")
+                st.info(f"💡 **[수동 입력 모드]** 현재가를 **{p:{fmt_p}}{currency}** 기준으로 정밀 연산합니다.")
             except ValueError:
-                st.warning("⚠️ 올바른 숫자 형식으로 입력해 주십시오. (자동 시세로 계산합니다)")
+                st.warning("⚠️ 올바른 숫자 형식으로 입력해 주십시오. (자동 시세로 연산합니다)")
                 p = auto_p
         else:
             p = auto_p
