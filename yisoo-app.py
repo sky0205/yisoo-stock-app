@@ -605,8 +605,10 @@ if symbol:
                 col = "#FBC02D" 
                 if (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
                     s_adv = f"• 🎯 최근 바닥권 과매도 포착 완료! 종가 기준 일봉 5일선({ma5_val:{fmt_p}}{currency}) 안착 시 1차 20% 진격! (매수 후 마지노선: 전저점 {prev_low_20:{fmt_p}}{currency})"
+                elif is_squeeze and is_above_ma20: 
+                    s_adv = f"• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 20일선 위이나 일봉 5일선 종가 안착 여부를 관망하시게."
                 elif is_squeeze: 
-                    s_adv = f"• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 응축되었으니 20일선 돌파 및 안착 여부를 관망하시게."
+                    s_adv = f"• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었으니 20일선 돌파 및 안착 여부를 관망하시게."
                 elif is_bearish: 
                     s_adv = "• ⚠️ 대세 역배열 하락 추세 중이니 보유/미보유 모두 관망하시게."
                 elif not is_above_ma20: 
