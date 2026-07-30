@@ -502,12 +502,13 @@ if symbol:
 
             else:
                 final_code = "WAIT_GENERAL"  # 🟡 관망 구간 (노란색)
-                if not is_above_ma20 and bottom_score >= 2:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 들어왔으나 20일선({mid_line:{fmt_p}}) 아래 역배열 상태이므로 관망하시게!"
+                if bottom_score >= 2 and not is_ma5_safe:
+                # ★ 진바닥 동조는 왔으나 5일선 아래일 때 (5일선 사수를 최우선 경고)
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 들어왔으나 단기 생명선인 5일선({ma5_val:{fmt_p}}) 아래에 있으니 안착 전까진 관망하시게!"
                 elif is_above_ma20 and pullback_rebound_score < 2:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 위에 있으나 보조지표 동조가 부족하네. 관망하시게!"
-                elif not is_ma5_safe and bottom_score >= 2:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표는 들어왔으나 5일선 이탈 중일세. 관망하시게!"
+                elif not is_above_ma20:
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선({mid_line:{fmt_p}}) 아래 하락 추세이므로 관망 모드를 유지하시게!"
                 else:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 엔진 정회전이나 추세 탐색 중일세. 관망하시게!"
 
