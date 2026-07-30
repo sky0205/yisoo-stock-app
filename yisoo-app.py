@@ -326,11 +326,26 @@ if symbol:
             is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
             is_ma5_safe = (p >= ma5_val)
 
+            # ★ [이동평균선 가격 수치 표기 복원]
+            ma5_str = f"{ma5_val:{fmt_p}}{currency}"
+            ma20_str = f"{mid_line:{fmt_p}}{currency}"
+            ma60_str = f"{ma60_val:{fmt_p}}{currency}"
+            ma120_str = f"{ma120_val:{fmt_p}}{currency}"
+
             if is_bullish: trend_status = "🔥 <b>[대세 정배열]</b> 완벽한 우상향 성벽 구축 완료"
             elif is_bearish: trend_status = "⚠️ <b>[대세 역배열]</b> 지하실 향하는 하락 추세"
             elif ma5_val > mid_line: trend_status = "🌱 <b>[단기 반등 초입]</b> 5일선이 20일선 돌파! 상방 반전 시도 중"
             elif ma5_val < mid_line: trend_status = "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려 숨고르기 중"
             else: trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
+
+            # 📌 4대 주요 이동평균선 실시간 가격 상세 가이드
+            ma_price_summary = (
+                f"<br>• 📌 <b>[주요 이동평균선 가격 현황]</b><br>"
+                f"   - <b>5일선 (단기 생명선):</b> {ma5_str}<br>"
+                f"   - <b>20일선 (중앙 성벽선):</b> {ma20_str}<br>"
+                f"   - <b>60일선 (수급 수급선):</b> {ma60_str}<br>"
+                f"   - <b>120일선 (장기 대세선):</b> {ma120_str}"
+            )
 
             # 밴드폭 상태 요약 문구 생성
             if is_squeeze:
@@ -459,8 +474,9 @@ if symbol:
 
             indicator_verify_text = (
                 f"<br>• <b>[지표 검증 연산]</b><br>"
-                f"  - <b>진바닥 동조:</b> {bottom_score}/3점 {bottom_status_str} {bottom_action_str}<br>"
-                f"  - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
+                f"   - <b>진바닥 동조:</b> {bottom_score}/3점 {bottom_status_str} {bottom_action_str}<br>"
+                f"   - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
+                f"{ma_price_summary}"
                 f"{squeeze_info_str}"
             )
 
@@ -490,7 +506,7 @@ if symbol:
             is_bottom_buy_raw = (recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) and is_indicator_turned_up
 
             # =========================================================================
-            # ★ [신호등 & 최종 결론 연동 - 전저점 손절가격 명시]
+            # ★ [신호등 & 최종 결론 연동 - 전저점 손절가격 명시 + 상충 오류 완전 해결]
             # =========================================================================
             if is_new_high:
                 final_code = "NEW_HIGH"
@@ -528,6 +544,7 @@ if symbol:
                 final_code = "WAIT_GENERAL"
                 if (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 최근 바닥권 과매도는 확인되었으나, 아직 단기 생명선인 일봉 5일선({ma5_val:{fmt_p}}{currency}) 아래에 있으니 종가 안착 전까진 대기하시게! (★ <b>매수 후 최종 방어선: 전저점 {prev_low_20:{fmt_p}}{currency}</b>)"
+                # ★ [상충 오류 수정 구역]
                 elif is_squeeze and p > mid_line:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소]</b> 에너지가 응축되었구먼! 20일선 위에 안착 시 대응하시게!"
                 elif is_squeeze:
