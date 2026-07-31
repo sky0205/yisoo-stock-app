@@ -141,7 +141,7 @@ display_global_risk(); st.divider()
 col_symbol, col_manual, col_avg, col_btn = st.columns([1.8, 1.8, 1.8, 1.2])
 
 with col_symbol:
-    symbol = st.text_input("📊 종목번호 또는 티커", "058610").strip()
+    symbol = st.text_input("📊 종목번호 또는 티커", "005930").strip()
 
 with col_manual:
     manual_price_str = st.text_input(
@@ -200,11 +200,9 @@ if symbol:
                 except:
                     pass
 
-            # ★ [실시간 시세 3중 보급로] 네이버 모바일 API 최우선 호출
             # ★ [시세 수집 속도 최적화] 타임아웃 1초 조율 및 최신 모바일 API 타격
             kr_fetched = False
             try:
-                # 네이버 최신 모바일 API (타임아웃 1초로 단축하여 반응속도 극대화)
                 api_url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
                 headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)'}
                 res = requests.get(api_url, headers=headers, timeout=1)
@@ -319,7 +317,7 @@ if symbol:
 
             # ★ [수동 입력 모드 시 프리장 거래량 예외 보정 정밀 연산]
             if is_manual_mode:
-                vol_strength = 100.0  # 프리장 수동 검증 시 거래량 필터 안심 통과
+                vol_strength = 100.0
             else:
                 vol_strength = vol_strength_auto
 
@@ -436,7 +434,7 @@ if symbol:
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
             # =========================================================================
-            # 거래량 전황 출력 (수동 모드 안내 포함)
+            # 거래량 전황 출력
             # =========================================================================
             if is_manual_mode:
                 v_status, v_adv = "수동검증", f"⚡ <b>[프리장/수동 연산]</b> 수동 입력 시세를 기준으로 이격도 및 매수 타점을 정밀 검증 중이외다."
@@ -489,13 +487,11 @@ if symbol:
                 is_stop_loss_triggered = True
                 stop_reason = f"20일선 중앙 성벽선({mid_line:{fmt_p}}{currency}) 이탈 붕괴"
 
-            # 1) 진바닥 동조 텍스트 연산
+            # 1) 진바닥 동조 텍스트 연산 (★ 역배열 시에도 1단계 진격 허용 수식으로 정돈)
             if bottom_score == 3:
                 bottom_status_str = "<b>(오늘 진바닥 3점 만점 달성!)</b>"
                 if is_stop_loss_triggered:
                     bottom_action_str = f"➔ <b>[비상 후퇴]</b> 전저점 마지노선 붕괴로 매수 금지"
-                elif is_bearish:
-                    bottom_action_str = f"➔ <b>[관망]</b> 바닥 지표는 포착되었으나 대세 역배열 하락 추세이므로 매수 보류"
                 elif vol_strength < 80:
                     bottom_action_str = f"➔ <b>[관망]</b> 바닥 지표는 포착되었으나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
                 elif bias_ma5 > 3.0:
@@ -509,8 +505,6 @@ if symbol:
                 bottom_status_str = "<b>(최근 3일 내 바닥권 2점 이상 기록 유효!)</b>"
                 if is_stop_loss_triggered:
                     bottom_action_str = f"➔ <b>[비상 후퇴]</b> 전저점 마지노선 붕괴로 매수 금지"
-                elif is_bearish:
-                    bottom_action_str = f"➔ <b>[관망]</b> 최근 바닥 기록은 유효하나 대세 역배열 하락 추세이므로 매수 보류"
                 elif vol_strength < 80:
                     bottom_action_str = f"➔ <b>[관망]</b> 최근 바닥 기록은 유효하나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
                 elif bias_ma5 > 3.0:
@@ -566,7 +560,7 @@ if symbol:
             )
 
             # =========================================================================
-            # 보조 연산 및 매수/매도 구간 판단
+            # 보조 연산 및 매수/매도 구간 판단 (★ 역배열 필터 완전 소탕 완료)
             # =========================================================================
             bb_top = 1 if p >= (up_b * 0.995) else 0
             rsi_top = 1 if rsi_val >= 60 else 0
@@ -585,7 +579,7 @@ if symbol:
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_top = margin_to_target < 0.02
 
-           # 1) 진바닥 매수 원시 신호 (역배열 시에도 5일선 안착 시 1단계 선취매 허용)
+            # 1) 진바닥 매수 원시 신호 (역배열 제약 완전 해제)
             is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
             is_bottom_buy_raw = (
                 (recent_bottom_memory or bottom_score >= 2) 
@@ -593,7 +587,6 @@ if symbol:
                 and is_bottom_disparity_safe 
                 and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) 
                 and is_indicator_turned_up
-    # and not is_bearish 제거 완료 ➔ 역배열에서도 5일선 안착 시 1단계 선취매 빳빳하게 터짐!
             )
 
             # 2) 눌림목 매수 원시 신호
@@ -722,8 +715,6 @@ if symbol:
                     s_adv = f"• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 20일선 위이나 일봉 5일선 종가 안착 여부를 관망하시게."
                 elif is_squeeze: 
                     s_adv = f"• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었으니 20일선 돌파 및 안착 여부를 관망하시게."
-                elif is_bearish: 
-                    s_adv = "• ⚠️ 대세 역배열 하락 추세 중이니 보유/미보유 모두 관망하시게."
                 elif not is_above_ma20: 
                     s_adv = f"• ⚠️ 주가가 20일선({mid_line:{fmt_p}}{currency}) 하단 저항을 받는 구간이네."
                 elif not is_ma5_safe: 
