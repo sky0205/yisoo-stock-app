@@ -42,7 +42,7 @@ def calculate_kelly_size(win_rate, win_loss_ratio, fraction=0.5):
     return round(safe_kelly, 1)
 
 # 1. 스타일 및 화면 구성
-st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36059", layout="wide")
+st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36060", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #ECEFF1; } 
@@ -132,7 +132,7 @@ def display_global_risk():
         st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36059")
+st.title("🧐 이수할아버지의 냉정 진단기 v36060")
 display_global_risk(); st.divider()
 
 # ==============================================================================
@@ -612,56 +612,56 @@ if symbol:
             elif is_bottom_buy_raw: 
                 if vol_strength < 80:
                     final_code = "WAIT_GENERAL"
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표 안착 기록은 확인되었으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표 안착 기록은 확인되었으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 else:
                     final_code = "BOTTOM_BUY"
                     final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [최근 진바닥 기록] 및 [일봉 5일선 종가 안착] 성공! <b>[1단계 진바닥 선취매 20% 진격 타점]</b>이시네. (★ <b>매수 후 손절 마지노선: {stop_loss_label} 붕괴 시 전량 칼손절 후퇴</b>)"
 
             elif is_breakout and p >= mid_line: 
                 final_code = "BREAKOUT" 
-                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 <b>[장대양봉 수급 돌파]</b> 분출 중! <b>[보유자]는 분할 매도로 수익 확정(수확)</b>에 들어가고, <b>[미보유자]는 추격매수 금지</b> 후 눌림목을 대기하시게!"
+                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 <b>[장대양봉 수급 돌파]</b> 분출 중! <b>[보유자]는 분할 매도로 수익 확정(수확)</b>에 들어가고, <b>[미보유자]는 추격매수 금지</b> 후 눌림목을 대기하시게! (★ <b>기보유자 방어선: {stop_loss_label}</b>)"
 
             elif is_too_close_to_top or top_score >= 2 or p >= up_b:
                 final_code = "SELL_ZONE"
-                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 수확 목표선(볼린저상단 {up_b:{fmt_p}}{currency}) 및 과열권 진입! 신규 진입은 금지하고 <b>[보유자]는 즉시 분할 매도로 수익 확정에 들어가시게!</b>"
+                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 수확 목표선(볼린저상단 {up_b:{fmt_p}}{currency}) 및 과열권 진입! 신규 진입은 금지하고 <b>[보유자]는 즉시 분할 매도로 수익 확정에 들어가시게!</b> (★ <b>기보유자 방어선: {stop_loss_label}</b>)"
 
             elif is_trend_buy_raw:
                 if vol_strength < 80:
                     final_code = "WAIT_GENERAL"
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 지지는 확인되었으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 지지는 확인되었으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 else:
                     final_code = "PULLBACK_BUY"
-                    final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 지지 안착 및 눌림목 완성! <b>[2단계 승순 확대 30% 진격 타점]</b>이시네. (누적 50% 비중 진격, <b>20일선({mid_line:{fmt_p}}{currency}) 이탈 시 후퇴</b> 기준 엄수!)"
+                    final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 지지 안착 및 눌림목 완성! <b>[2단계 승순 확대 30% 진격 타점]</b>이시네. (누적 50% 비중 진격, <b>손절 마지노선: {stop_loss_label} 이탈 시 후퇴</b> 기준 엄수!)"
 
             else:
                 final_code = "WAIT_GENERAL"
                 if bias_ma5 > 3.0 or bias_ma20 > 3.0:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 아래 지하실에서 5일선 대비 <b>+3% 초과 단기 이격 과열</b> 상태이오! 추격매수를 철통 차단하고 🟡 <b>[관망 및 보유자 홀딩]</b>하시게."
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 위/아래에서 <b>+3% 초과 단기 이격 과열</b> 상태이오! 추격매수를 철통 차단하고 🟡 <b>[관망 및 보유자 홀딩]</b>하시게. (★ <b>기보유자 필수 방어선(손절 마지노선): {stop_loss_label}</b>)"
                 elif (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 최근 바닥권 과매도는 확인되었으나, 아직 단기 생명선인 일봉 5일선({ma5_val:{fmt_p}}{currency}) 아래에 있으니 종가 안착 전까진 대기하시게! (★ <b>매수 후 방어선: {stop_loss_label}</b>)"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 최근 바닥권 과매도는 확인되었으나, 아직 단기 생명선인 일봉 5일선({ma5_val:{fmt_p}}{currency}) 아래에 있으니 종가 안착 전까진 대기하시게! (★ <b>매수/보유 방어선: {stop_loss_label}</b>)"
                 elif is_squeeze and is_ma5_safe:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소]</b> 에너지가 바짝 응축되었구먼! 5일선/20일선 성벽 사수하며 상방 돌파 시 대응하시게!"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소]</b> 에너지가 바짝 응축되었구먼! 5일선/20일선 성벽 사수하며 상방 돌파 시 대응하시게. (★ <b>방어선: {stop_loss_label}</b>)"
                 elif is_squeeze and p > mid_line:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소]</b> 20일선 위에 있으나 단기 5일선 밑이오! 5일선 종가 안착 시 대응하시게!"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소]</b> 20일선 위에 있으나 단기 5일선 밑이오! 5일선 종가 안착 시 대응하시게. (★ <b>방어선: {stop_loss_label}</b>)"
                 elif is_squeeze:
-                    final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소]</b> 하락 조정 중이니 추격 금지! 🟡 [관망]하시게!"
+                    final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소]</b> 하락 조정 중이니 추격 금지! 🟡 [관망]하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif is_above_ma20 and pullback_rebound_score < 2:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 위에 있으나 보조지표 동조가 부족하네. 관망하시게!"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 위에 있으나 보조지표 동조가 부족하네. 관망하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 else:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선({mid_line:{fmt_p}}{currency}) 아래 하락 추세이므로 느긋하게 관망 모드를 유지하시게!"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선({mid_line:{fmt_p}}{currency}) 아래 하락 추세이므로 느긋하게 관망 모드를 유지하시게! (★ <b>기보유자 필수 방어선(손절 마지노선): {stop_loss_label}</b>)"
 
             # =========================================================================
             # 보유자 전용 이원화 가이드 연산
             # =========================================================================
             if user_avg_price <= 0:
-                holder_guide_msg = f"현재 추세 탐색 구간이니 성벽({defense_line:{fmt_p}}{currency})이나 5일선 사수 여부를 확인하며 차분히 보유 판단을 내리시게. (상단 입력창에 보유 평단가를 입력하시면 이원화 가이드가 출력됩니다)"
+                holder_guide_msg = f"현재 추세 탐색 구간이니 성벽({defense_line:{fmt_p}}{currency})이나 5일선 사수 여부를 확인하며 차분히 보유 판단을 내리시게. (★ <b>현재 기준 손절 마지노선: {stop_loss_label}</b>)"
             else:
                 profit_rate = ((p - user_avg_price) / user_avg_price) * 100
                 if p >= user_avg_price:
                     holder_guide_msg = (
                         f"📈 <b>[수익권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 수익률: +{profit_rate:.2f}%)]</b><br>"
                         f"• 현재 5일선({ma5_val:{fmt_p}}{currency}) 사수 여부를 주시하시게. 단기 변동성에 수익을 반납하지 않도록 본절가/익절선을 설정하시게.<br>"
-                        f"• 5일선 안착 시 수확 목표선({up_b:{fmt_p}}{currency})까지 자신감 있게 홀딩하시고, 5일선 이탈 시 일부 분할 익절로 대응하시게."
+                        f"• 5일선 안착 시 수확 목표선({up_b:{fmt_p}}{currency})까지 자신감 있게 홀딩하시고, 5일선 이탈 시 일부 분할 익절로 대응하시게. (★ <b>필수 방어선: {stop_loss_label}</b>)"
                     )
                 else:
                     holder_guide_msg = (
@@ -681,12 +681,12 @@ if symbol:
             elif final_code == "SELL_ZONE":
                 sig = "🟢 [매도] 푸른 수확 / 이익실현 타점!"
                 col = "#388E3C" 
-                s_adv = f"• <b>[보유자] 🚨 수확 목표 달성! 보유 물량 30~50% 즉시 현금화(매도)</b><br>• <b>[미보유자]</b> ✋ 추격매수 금지 (수확목표선 {up_b:{fmt_p}}{currency} 고점 저항대)"
+                s_adv = f"• <b>[보유자] 🚨 수확 목표 달성! 보유 물량 30~50% 즉시 현금화(매도)</b><br>• <b>[미보유자]</b> ✋ 추격매수 금지 (수확목표선 {up_b:{fmt_p}}{currency} 고점 저항대)<br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
 
             elif final_code == "BREAKOUT":
                 sig = "🟢 [수급 돌파] 푸른 수확 / 분할 익절 타점!"
                 col = "#388E3C" 
-                s_adv = f"• <b>[보유자] 💰 수급 폭발 시점! 물량 30~50% 1차 분할 익절(수익 확정)</b><br>• <b>[미보유자] ✋ 추격매수 절대 금지! (눌림목 지지 안착 시 재진입 대기)</b>"
+                s_adv = f"• <b>[보유자] 💰 수급 폭발 시점! 물량 30~50% 1차 분할 익절(수익 확정)</b><br>• <b>[미보유자] ✋ 추격매수 절대 금지! (눌림목 지지 안착 시 재진입 대기)</b><br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
 
             elif final_code == "BOTTOM_BUY":
                 sig = "🔴 [매수] 1단계 진바닥 선취매! (20% 진격)"
@@ -696,25 +696,25 @@ if symbol:
             elif final_code == "PULLBACK_BUY":
                 sig = "🔵 [눌림목 매수] 2단계 승순 확대! (30% 추가)"
                 col = "#1976D2" 
-                s_adv = f"• <b>[기보유자] 🎯 [20일선 눌림목 안착] 승순 확대 30% 확정 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 20일선({mid_line:{fmt_p}}{currency}) 이탈 시 손절선 철저 준수"
+                s_adv = f"• <b>[기보유자] 🎯 [20일선 눌림목 안착] 승순 확대 30% 확정 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 손절선 철저 준수"
 
             else: 
                 sig = "🟡 [관망] 방향 탐색 / 종가 안착 대기"
                 col = "#FBC02D" 
                 if bias_ma5 > 3.0 or bias_ma20 > 3.0:
-                    s_adv = f"• ⚠️ 20일선 아래 지하실에서 <b>+3% 초과 단기 이격 과열 구간</b>이오! 추격매수를 철통 차단하고 <b>[관망 및 보유자 홀딩]</b>하시게."
+                    s_adv = f"• ⚠️ 이격 과열 구간이오! 추격매수를 철통 차단하고 <b>[관망 및 보유자 홀딩]</b>하시게.<br>• 🚀 <b>[기보유자 필수 방어선(손절 마지노선)]</b> {stop_loss_label}"
                 elif (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
-                    s_adv = f"• 🎯 최근 바닥권 과매도 포착 완료! 종가 기준 일봉 5일선({ma5_val:{fmt_p}}{currency}) 안착 시 1차 20% 진격! (매수 후 마지노선: {stop_loss_label})"
+                    s_adv = f"• 🎯 최근 바닥권 포착 완료! 일봉 5일선({ma5_val:{fmt_p}}{currency}) 안착 시 1차 20% 진격!<br>• 🚀 <b>[방어선(마지노선)]</b> {stop_loss_label}"
                 elif is_squeeze and is_above_ma20: 
-                    s_adv = f"• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 20일선 위이나 일봉 5일선 종가 안착 여부를 관망하시게."
+                    s_adv = f"• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 20일선 위이나 5일선 안착 여부를 관망하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 elif is_squeeze: 
-                    s_adv = f"• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었으니 20일선 돌파 및 안착 여부를 관망하시게."
+                    s_adv = f"• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 응축되었으니 20일선 돌파 및 안착 여부를 관망하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 elif not is_above_ma20: 
-                    s_adv = f"• ⚠️ 주가가 20일선({mid_line:{fmt_p}}{currency}) 하단 저항을 받는 구간이네."
+                    s_adv = f"• ⚠️ 주가가 20일선({mid_line:{fmt_p}}{currency}) 하단 저항을 받는 구간이네.<br>• 🚀 <b>[필수 방어선(손절 마지노선)]</b> {stop_loss_label}"
                 elif not is_ma5_safe: 
-                    s_adv = "• ⚠️ 단기 전투선인 5일선 아래에서 기세 허덕이는 중일세."
+                    s_adv = f"• ⚠️ 단기 전투선인 5일선 아래에서 기세 허덕이는 중일세.<br>• 🚀 <b>[필수 방어선(손절 마지노선)]</b> {stop_loss_label}"
                 else: 
-                    s_adv = f"• 눈치싸움 중일세. (진바닥 동조: {bottom_score}/3 | 눌림동조: {pullback_rebound_score}/3)"
+                    s_adv = f"• 눈치싸움 중일세. (진바닥 동조: {bottom_score}/3 | 눌림동조: {pullback_rebound_score}/3)<br>• 🚀 <b>[기보유자 필수 방어선(손절 마지노선)]</b> {stop_loss_label}"
 
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><div class='signal-subtext'>{s_adv}</div></div>", unsafe_allow_html=True)
 
