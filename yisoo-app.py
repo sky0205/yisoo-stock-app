@@ -200,7 +200,6 @@ if symbol:
                 except:
                     pass
 
-            # ★ [시세 수집 속도 최적화] 타임아웃 1초 조율 및 최신 모바일 API 타격
             kr_fetched = False
             try:
                 api_url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
@@ -315,7 +314,6 @@ if symbol:
             else:
                 vol_strength_auto = v_ratio 
 
-            # ★ [수동 입력 모드 시 프리장 거래량 예외 보정 정밀 연산]
             if is_manual_mode:
                 vol_strength = 100.0
             else:
@@ -354,10 +352,16 @@ if symbol:
             
             prev_low_20 = float(df['Low'].iloc[-21:-1].min()) if len(df) > 20 else float(df['Low'].min())
             is_above_ma20 = (p >= mid_line)
+
+            # ★ [손절가 동적 자동 전환 연산: 어르신 맞춤 반영]
+            # 1) 단기 급등(등락률 +5% 이상 또는 거래량 폭발) 시: 5일선 - 3% 완충 가격
+            # 2) 진바닥에서 잔잔하게 올라온 매수 시: 정석 전저점
+            is_surge_bottom = (p_chg >= 5.0) or (vol_strength >= 150)
+            surge_stop_price = ma5_val * 0.97
             
-            if is_above_ma20:
-                stop_loss_price = mid_line
-                stop_loss_label = f"20일선({mid_line:{fmt_p}}{currency})"
+            if is_surge_bottom:
+                stop_loss_price = surge_stop_price
+                stop_loss_label = f"5일선-3%({surge_stop_price:{fmt_p}}{currency})"
             else:
                 stop_loss_price = prev_low_20
                 stop_loss_label = f"전저점 마지노선({prev_low_20:{fmt_p}}{currency})"
@@ -387,10 +391,8 @@ if symbol:
 
             ma_price_summary = (
                 f"<br>• 📌 <b>[주요 이동평균선 현황]</b><br>"
-                f"&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str}</span> | "
-                f"<span style='color:#1976D2; font-weight:bold;'>🔵 20일선: {ma20_str}</span> | "
-                f"<span style='color:#388E3C; font-weight:bold;'>🟢 60일선: {ma60_str}</span> | "
-                f"<span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
+                f"&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str} (손절완충선: {surge_stop_price:{fmt_p}}{currency})</span> | "
+                f"<span style='color:#1976D2; font-weight:bold;'>🔵 20일선: {ma20_str}</span><br>"
             )
 
             if is_squeeze:
@@ -475,19 +477,14 @@ if symbol:
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
 
-            # ★ [손절가 동적 자동 전환 연산: 단기 폭등 시 5일선 / 일반 잔잔한 바닥 시 전저점]
-            is_surge_bottom = (p_chg >= 5.0) or (vol_strength >= 150)
-            dynamic_stop_price = ma5_val if is_surge_bottom else prev_low_20
-            dynamic_stop_label = f"5일선({ma5_str})" if is_surge_bottom else f"전저점({prev_low_20:{fmt_p}}{currency})"
-
             is_stop_loss_triggered = False
             stop_reason = ""
             if user_avg_price > 0 and p < stop_loss_price:
                 is_stop_loss_triggered = True
                 stop_reason = f"보유 평단가 대비 손절 마지노선({stop_loss_label}) 붕괴"
-            elif (recent_bottom_memory or bottom_score >= 2) and p < dynamic_stop_price:
+            elif (recent_bottom_memory or bottom_score >= 2) and p < stop_loss_price:
                 is_stop_loss_triggered = True
-                stop_reason = f"진바닥 방어선({dynamic_stop_label}) 붕괴"
+                stop_reason = f"진바닥 방어선({stop_loss_label}) 붕괴"
             elif is_uptrend and p < mid_line and not is_ma5_safe:
                 is_stop_loss_triggered = True
                 stop_reason = f"20일선 중앙 성벽선({mid_line:{fmt_p}}{currency}) 이탈 붕괴"
@@ -502,7 +499,7 @@ if symbol:
                 elif bias_ma5 > 3.0:
                     bottom_action_str = f"➔ <b>[관망]</b> 5일선 대비 +3% 초과 이격 과열로 추격 매수 보류 (보유자 홀딩/관망)"
                 elif is_ma5_safe:
-                    bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 진바닥 3점 달성 + 일봉 5일선 종가 안착 완료! 20% 선취매 진격 (손절 마지노선: {dynamic_stop_label})"
+                    bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 진바닥 3점 달성 + 일봉 5일선 종가 안착 완료! 20% 선취매 진격 (손절 마지노선: {stop_loss_label})"
                 else:
                     bottom_action_str = f"➔ <b>[진입 대기]</b> 진바닥 3점 달성! 종가 기준 일봉 5일선 상향 안착 시 20% 매수 시작"
 
@@ -515,7 +512,7 @@ if symbol:
                 elif bias_ma5 > 3.0:
                     bottom_action_str = f"➔ <b>[관망]</b> 5일선 대비 +3% 초과 이격 과열로 추격 매수 보류 (보유자 홀딩/관망)"
                 elif is_ma5_safe:
-                    bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 바닥권 기록 포착 후 일봉 5일선 종가 안착 완료! 20% 선취매 진격 (손절 마지노선: {dynamic_stop_label})"
+                    bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 바닥권 기록 포착 후 일봉 5일선 종가 안착 완료! 20% 선취매 진격 (손절 마지노선: {stop_loss_label})"
                 else:
                     bottom_action_str = f"➔ <b>[진입 대기]</b> 최근 바닥권 기록 유효. 일봉 5일선 종가 안착 시 20% 매수 시작"
 
@@ -580,7 +577,6 @@ if symbol:
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_top = margin_to_target < 0.02
 
-            # 1) 진바닥 매수 원시 신호
             is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
             is_bottom_buy_raw = (
                 (recent_bottom_memory or bottom_score >= 2) 
@@ -588,7 +584,6 @@ if symbol:
                 and is_bottom_disparity_safe
             )
 
-            # 2) 눌림목 매수 원시 신호
             is_trend_buy_raw = (
                 (p >= mid_line) 
                 and (ma5_val >= mid_line) 
@@ -599,7 +594,7 @@ if symbol:
             )
 
             # =========================================================================
-            # ★ [신호등 & 최종 결론 연동 - 20일선 아래 이격 과열 시 관망 철통 방어]
+            # ★ [신호등 & 최종 결론 연동]
             # =========================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -619,9 +614,9 @@ if symbol:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표 안착 기록은 확인되었으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
                 else:
                     final_code = "BOTTOM_BUY"
-                    final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [최근 진바닥 기록] 및 [일봉 5일선 종가 안착] 성공! <b>[1단계 진바닥 선취매 20% 진격 타점]</b>이시네. (★ <b>매수 후 손절 마지노선: {dynamic_stop_label} 붕괴 시 전량 칼손절 후퇴</b>)"
+                    final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [최근 진바닥 기록] 및 [일봉 5일선 종가 안착] 성공! <b>[1단계 진바닥 선취매 20% 진격 타점]</b>이시네. (★ <b>매수 후 손절 마지노선: {stop_loss_label} 붕괴 시 전량 칼손절 후퇴</b>)"
 
-            elif is_breakout and p >= mid_line: # ★ 20일선 위 성벽에서 터진 수급 돌파만 익절 허용
+            elif is_breakout and p >= mid_line: 
                 final_code = "BREAKOUT" 
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 <b>[장대양봉 수급 돌파]</b> 분출 중! <b>[보유자]는 분할 매도로 수익 확정(수확)</b>에 들어가고, <b>[미보유자]는 추격매수 금지</b> 후 눌림목을 대기하시게!"
 
@@ -642,7 +637,7 @@ if symbol:
                 if bias_ma5 > 3.0 or bias_ma20 > 3.0:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 아래 지하실에서 5일선 대비 <b>+3% 초과 단기 이격 과열</b> 상태이오! 추격매수를 철통 차단하고 🟡 <b>[관망 및 보유자 홀딩]</b>하시게."
                 elif (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 최근 바닥권 과매도는 확인되었으나, 아직 단기 생명선인 일봉 5일선({ma5_val:{fmt_p}}{currency}) 아래에 있으니 종가 안착 전까진 대기하시게! (★ <b>매수 후 방어선: {dynamic_stop_label}</b>)"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 최근 바닥권 과매도는 확인되었으나, 아직 단기 생명선인 일봉 5일선({ma5_val:{fmt_p}}{currency}) 아래에 있으니 종가 안착 전까진 대기하시게! (★ <b>매수 후 방어선: {stop_loss_label}</b>)"
                 elif is_squeeze and is_ma5_safe:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소]</b> 에너지가 바짝 응축되었구먼! 5일선/20일선 성벽 사수하며 상방 돌파 시 대응하시게!"
                 elif is_squeeze and p > mid_line:
@@ -675,7 +670,7 @@ if symbol:
                     )
 
             # =========================================================================
-            # ★ [신호등 메인 색상 연동 - 20일선 아래 과열 시 노란색 관망 유지]
+            # ★ [신호등 메인 색상 연동]
             # =========================================================================
             if final_code == "STOP_LOSS_ALERT":
                 sig = "🚨 [비상 손절] 방어선 붕괴! 전량 손절 후퇴!"
@@ -695,7 +690,7 @@ if symbol:
             elif final_code == "BOTTOM_BUY":
                 sig = "🔴 [매수] 1단계 진바닥 선취매! (20% 진격)"
                 col = "#D32F2F" 
-                s_adv = f"• <b>[미보유자] 🎯 [진바닥 기록 + 일봉 5일선 안착] 1차 선취매 20% 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {dynamic_stop_label} 이탈 시 전량 칼손절 후퇴"
+                s_adv = f"• <b>[미보유자] 🎯 [진바닥 기록 + 일봉 5일선 안착] 1차 선취매 20% 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 전량 칼손절 후퇴"
 
             elif final_code == "PULLBACK_BUY":
                 sig = "🔵 [눌림목 매수] 2단계 승순 확대! (30% 추가)"
@@ -708,7 +703,7 @@ if symbol:
                 if bias_ma5 > 3.0 or bias_ma20 > 3.0:
                     s_adv = f"• ⚠️ 20일선 아래 지하실에서 <b>+3% 초과 단기 이격 과열 구간</b>이오! 추격매수를 철통 차단하고 <b>[관망 및 보유자 홀딩]</b>하시게."
                 elif (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
-                    s_adv = f"• 🎯 최근 바닥권 과매도 포착 완료! 종가 기준 일봉 5일선({ma5_val:{fmt_p}}{currency}) 안착 시 1차 20% 진격! (매수 후 마지노선: {dynamic_stop_label})"
+                    s_adv = f"• 🎯 최근 바닥권 과매도 포착 완료! 종가 기준 일봉 5일선({ma5_val:{fmt_p}}{currency}) 안착 시 1차 20% 진격! (매수 후 마지노선: {stop_loss_label})"
                 elif is_squeeze and is_above_ma20: 
                     s_adv = f"• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 20일선 위이나 일봉 5일선 종가 안착 여부를 관망하시게."
                 elif is_squeeze: 
