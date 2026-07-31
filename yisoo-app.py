@@ -42,7 +42,7 @@ def calculate_kelly_size(win_rate, win_loss_ratio, fraction=0.5):
     return round(safe_kelly, 1)
 
 # 1. 스타일 및 화면 구성
-st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36058", layout="wide")
+st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36059", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #ECEFF1; } 
@@ -132,7 +132,7 @@ def display_global_risk():
         st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36058")
+st.title("🧐 이수할아버지의 냉정 진단기 v36059")
 display_global_risk(); st.divider()
 
 # ==============================================================================
@@ -775,13 +775,19 @@ if symbol:
             st.divider()
             
             # =========================================================================
-            # ★ [하단 4대 핵심 지표 박스]
+            # ★ [하단 4대 핵심 지표 박스 (신호등 상태 연동 정합성 확보)]
             # =========================================================================
             i1, i2, i3, i4 = st.columns(4)
             
             # --- 1. Bollinger (기세 & 위치) ---
             with i1:
-                if p >= up_b: 
+                if final_code == "BOTTOM_BUY":
+                    bb_diag = f"🔴 <b>[진바닥 선취매 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 바닥권 과매도 및 5일선 안착 검증.<br>• <b>진단:</b> 진바닥 기록 포착 후 5일선 종가 안착 완료! 1단계 선취매(20%) 집행 구역이오."
+                elif final_code == "PULLBACK_BUY":
+                    bb_diag = f"🔵 <b>[20일선 눌림목 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 눌림목 지지 검증.<br>• <b>진단:</b> 20일선 지지 안착 확인 완료! 2단계 승순 확대(30%) 진격 구역이오."
+                elif final_code == "STOP_LOSS_ALERT":
+                    bb_diag = f"🚨 <b>[방어선 붕괴 비상 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 손절 마지노선 이탈 감지.<br>• <b>진단:</b> 주요 방어선이 무너졌으니 미련 없이 전량 칼손절 후퇴하시게."
+                elif p >= up_b: 
                     bb_diag = f"👺 <b>[수확 목표선(상단) 과열] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 주가 상단 한계선 접촉.<br>• <b>진단:</b> 탐욕의 끝단이니 신규 매수를 금지하고 익절을 집행하시게."
                 elif is_breakout: 
                     bb_diag = f"🚀 <b>[수급 돌파 분출] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 20일선 및 볼린저 돌파 강도 측정.<br>• <b>진단:</b> 장대양봉 강력 돌파! 보유자는 분할 수확(매도)하고, 미보유자는 추격매수를 절대 금하시게."
@@ -793,7 +799,7 @@ if symbol:
                     bb_diag = f"🔥 <b>[20일 중앙선 지지] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 눌림목 및 추세 유지 판단.<br>• <b>진단:</b> 중앙선 지지 완료! 지표 동조 확인 시 2단계 승순 확대(30%) 가능하오." if is_ma5_safe else f"⚠️ <b>[20일선 위 5일선 이탈] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 단기 기세 둔화 감지.<br>• <b>진단:</b> 중앙선 위에 있으나 단기 추세가 꺾였으니 관망하시게."
                 else: 
                     bb_diag = f"🏹 <b>[20일선 하단 반격] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 하단 추세 전환 시도.<br>• <b>진단:</b> 중앙선 밑이나 5일선 사수하며 상방 반격 시도 중일세." if is_ma5_safe else f"🏠 <b>[추세 하락 국면] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 관망 모드 유지.<br>• <b>진단:</b> 중앙선 및 5일선 모두 이탈! 대기가 상책이오."
-        
+            
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세/위치)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             
             # --- 2. RSI (매수 온도) ---
