@@ -500,7 +500,7 @@ if symbol:
                 elif vol_strength < 80:
                     bottom_action_str = f"➔ <b>[관망]</b> 바닥 지표는 포착되었으나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
                 elif bias_ma5 > 3.0:
-                    bottom_action_str = f"➔ <b>[관망]</b> 5일선 대비 +3% 초과 이격 과열로 추격 매수 보류"
+                    bottom_action_str = f"➔ <b>[관망]</b> 5일선 대비 +3% 초과 이격 과열로 추격 매수 보류 (보유자 홀딩/관망)"
                 elif is_ma5_safe:
                     bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 진바닥 3점 달성 + 일봉 5일선 종가 안착 완료! 20% 선취매 진격 (손절 마지노선: {dynamic_stop_label})"
                 else:
@@ -513,7 +513,7 @@ if symbol:
                 elif vol_strength < 80:
                     bottom_action_str = f"➔ <b>[관망]</b> 최근 바닥 기록은 유효하나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
                 elif bias_ma5 > 3.0:
-                    bottom_action_str = f"➔ <b>[관망]</b> 5일선 대비 +3% 초과 이격 과열로 추격 매수 보류"
+                    bottom_action_str = f"➔ <b>[관망]</b> 5일선 대비 +3% 초과 이격 과열로 추격 매수 보류 (보유자 홀딩/관망)"
                 elif is_ma5_safe:
                     bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 바닥권 기록 포착 후 일봉 5일선 종가 안착 완료! 20% 선취매 진격 (손절 마지노선: {dynamic_stop_label})"
                 else:
@@ -599,7 +599,7 @@ if symbol:
             )
 
             # =========================================================================
-            # ★ [신호등 & 최종 결론 연동]
+            # ★ [신호등 & 최종 결론 연동 - 20일선 아래 이격 과열 시 관망 철통 방어]
             # =========================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -621,7 +621,7 @@ if symbol:
                     final_code = "BOTTOM_BUY"
                     final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [최근 진바닥 기록] 및 [일봉 5일선 종가 안착] 성공! <b>[1단계 진바닥 선취매 20% 진격 타점]</b>이시네. (★ <b>매수 후 손절 마지노선: {dynamic_stop_label} 붕괴 시 전량 칼손절 후퇴</b>)"
 
-            elif is_breakout:
+            elif is_breakout and p >= mid_line: # ★ 20일선 위 성벽에서 터진 수급 돌파만 익절 허용
                 final_code = "BREAKOUT" 
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 <b>[장대양봉 수급 돌파]</b> 분출 중! <b>[보유자]는 분할 매도로 수익 확정(수확)</b>에 들어가고, <b>[미보유자]는 추격매수 금지</b> 후 눌림목을 대기하시게!"
 
@@ -640,7 +640,7 @@ if symbol:
             else:
                 final_code = "WAIT_GENERAL"
                 if bias_ma5 > 3.0 or bias_ma20 > 3.0:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 5일선/20일선 대비 <b>+3% 초과 단기 이격 과열 구간</b>이오. 추격 매수를 철통 차단하고 🟡 <b>[관망]</b>하시게."
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 아래 지하실에서 5일선 대비 <b>+3% 초과 단기 이격 과열</b> 상태이오! 추격매수를 철통 차단하고 🟡 <b>[관망 및 보유자 홀딩]</b>하시게."
                 elif (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 최근 바닥권 과매도는 확인되었으나, 아직 단기 생명선인 일봉 5일선({ma5_val:{fmt_p}}{currency}) 아래에 있으니 종가 안착 전까진 대기하시게! (★ <b>매수 후 방어선: {dynamic_stop_label}</b>)"
                 elif is_squeeze and is_ma5_safe:
@@ -675,7 +675,7 @@ if symbol:
                     )
 
             # =========================================================================
-            # ★ [신호등 메인 색상 연동]
+            # ★ [신호등 메인 색상 연동 - 20일선 아래 과열 시 노란색 관망 유지]
             # =========================================================================
             if final_code == "STOP_LOSS_ALERT":
                 sig = "🚨 [비상 손절] 방어선 붕괴! 전량 손절 후퇴!"
@@ -706,7 +706,7 @@ if symbol:
                 sig = "🟡 [관망] 방향 탐색 / 종가 안착 대기"
                 col = "#FBC02D" 
                 if bias_ma5 > 3.0 or bias_ma20 > 3.0:
-                    s_adv = f"• ⚠️ 5일선/20일선 대비 <b>+3% 초과 단기 이격 과열 구간</b>이오. 추격 매수를 철통 차단하고 관망하시게."
+                    s_adv = f"• ⚠️ 20일선 아래 지하실에서 <b>+3% 초과 단기 이격 과열 구간</b>이오! 추격매수를 철통 차단하고 <b>[관망 및 보유자 홀딩]</b>하시게."
                 elif (recent_bottom_memory or bottom_score >= 2) and not is_ma5_safe:
                     s_adv = f"• 🎯 최근 바닥권 과매도 포착 완료! 종가 기준 일봉 5일선({ma5_val:{fmt_p}}{currency}) 안착 시 1차 20% 진격! (매수 후 마지노선: {dynamic_stop_label})"
                 elif is_squeeze and is_above_ma20: 
