@@ -585,7 +585,7 @@ if symbol:
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_top = margin_to_target < 0.02
 
-            # 1) 진바닥 매수 원시 신호
+           # 1) 진바닥 매수 원시 신호 (역배열 시에도 5일선 안착 시 1단계 선취매 허용)
             is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
             is_bottom_buy_raw = (
                 (recent_bottom_memory or bottom_score >= 2) 
@@ -593,7 +593,7 @@ if symbol:
                 and is_bottom_disparity_safe 
                 and (is_reverse_shrinking or is_macd_turning or m_l >= s_l) 
                 and is_indicator_turned_up
-                and not is_bearish
+    # and not is_bearish 제거 완료 ➔ 역배열에서도 5일선 안착 시 1단계 선취매 빳빳하게 터짐!
             )
 
             # 2) 눌림목 매수 원시 신호
