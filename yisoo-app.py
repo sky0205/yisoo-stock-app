@@ -487,11 +487,8 @@ if symbol:
                 is_stop_loss_triggered = True
                 stop_reason = f"20일선 중앙 성벽선({mid_line:{fmt_p}}{currency}) 이탈 붕괴"
 
-            # 1) 진바닥 동조 텍스트 연산 (★ 급등 수급 폭발 시 매수 텍스트 원천 차단 동조)
-            if is_breakout:
-                bottom_status_str = "<b>(수급 돌파 급등 국면)</b>"
-                bottom_action_str = "➔ <b>[수급 돌파 익절]</b> 하루 만에 +7% 이상 급등 과열! 진바닥 선취매 대신 분할 익절(수확) 준수"
-            elif bottom_score == 3:
+            # 1) 진바닥 동조 텍스트 연산 (★ 폭등 여부와 관계없이 진바닥 매수 허용 동조)
+            if bottom_score == 3:
                 bottom_status_str = "<b>(오늘 진바닥 3점 만점 달성!)</b>"
                 if is_stop_loss_triggered:
                     bottom_action_str = f"➔ <b>[비상 후퇴]</b> 전저점 마지노선 붕괴로 매수 금지"
@@ -500,7 +497,7 @@ if symbol:
                 elif bias_ma5 > 3.0:
                     bottom_action_str = f"➔ <b>[관망]</b> 5일선 대비 +3% 초과 이격 과열로 매수 보류"
                 elif is_ma5_safe:
-                    bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 진바닥 3점 달성 + 일봉 5일선 종가 안착 완료! 20% 선취매 진격 (손절 마지노선: {prev_low_20:{fmt_p}}{currency})"
+                    bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 진바닥 3점 달성 + 일봉 5일선 종가 안착 완료! 20% 선취매 진격 (손절 마지노선: 전저점 {prev_low_20:{fmt_p}}{currency} / 5일선 단기 방어)"
                 else:
                     bottom_action_str = f"➔ <b>[진입 대기]</b> 진바닥 3점 달성! 종가 기준 일봉 5일선 상향 안착 시 20% 매수 시작"
 
@@ -513,7 +510,7 @@ if symbol:
                 elif bias_ma5 > 3.0:
                     bottom_action_str = f"➔ <b>[관망]</b> 5일선 대비 +3% 초과 이격 과열로 매수 보류"
                 elif is_ma5_safe:
-                    bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 바닥권 기록 포착 후 일봉 5일선 종가 안착 완료! 20% 선취매 진격 (손절 마지노선: {prev_low_20:{fmt_p}}{currency})"
+                    bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 바닥권 기록 포착 후 일봉 5일선 종가 안착 완료! 20% 선취매 진격 (손절 마지노선: 전저점 {prev_low_20:{fmt_p}}{currency} / 5일선 단기 방어)"
                 else:
                     bottom_action_str = f"➔ <b>[진입 대기]</b> 최근 바닥권 기록 유효. 일봉 5일선 종가 안착 시 20% 매수 시작"
 
@@ -582,13 +579,12 @@ if symbol:
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_top = margin_to_target < 0.02
 
-            # 1) 진바닥 매수 원시 신호 (★ 급등 수급 폭발 시 진바닥 매수 원천 차단)
+            # 1) 진바닥 매수 원시 신호 (★ 폭등 시 차단 필터 제거 및 5일선 위 바닥 매수 전면 허용)
             is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
             is_bottom_buy_raw = (
                 (recent_bottom_memory or bottom_score >= 2) 
                 and is_ma5_safe 
                 and is_bottom_disparity_safe
-                and not is_breakout  # ★ 급등 시 진바닥 매수 차단 필터 철통 적용
             )
 
             # 2) 눌림목 매수 원시 신호
@@ -617,6 +613,14 @@ if symbol:
                 final_code = "NEW_LOW"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신저가(칼날 하락)]</b> 구역 전개! 5일선 안착 전까지 절대 무조건 관망하시게!"
 
+            elif is_bottom_buy_raw: # ★ [폭등 여부와 상관없이 바닥 + 5일선 안착 시 진바닥 선취매 신호 우선 발동]
+                if vol_strength < 80:
+                    final_code = "WAIT_GENERAL"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표 안착 기록은 확인되었으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
+                else:
+                    final_code = "BOTTOM_BUY"
+                    final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [최근 진바닥 기록] 및 [일봉 5일선 종가 안착] 성공! <b>[1단계 진바닥 선취매 20% 진격 타점]</b>이시네. (★ <b>매수 후 손절 마지노선: 전저점 {prev_low_20:{fmt_p}}{currency} 붕괴 시 전량 칼손절 후퇴 (단기 방어: 5일선 이탈 시 유연 대응)</b>)"
+
             elif is_breakout:
                 final_code = "BREAKOUT" 
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 거래량 실린 <b>[장대양봉 수급 돌파]</b> 분출 중! <b>[보유자]는 분할 매도로 수익 확정(수확)</b>에 들어가고, <b>[미보유자]는 추격매수 금지</b> 후 눌림목을 대기하시게!"
@@ -624,14 +628,6 @@ if symbol:
             elif is_too_close_to_top or top_score >= 2 or p >= up_b:
                 final_code = "SELL_ZONE"
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 수확 목표선(볼린저상단 {up_b:{fmt_p}}{currency}) 및 과열권 진입! 신규 진입은 금지하고 <b>[보유자]는 즉시 분할 매도로 수익 확정에 들어가시게!</b>"
-
-            elif is_bottom_buy_raw: 
-                if vol_strength < 80:
-                    final_code = "WAIT_GENERAL"
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표 안착 기록은 확인되었으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
-                else:
-                    final_code = "BOTTOM_BUY"
-                    final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [최근 진바닥 기록] 및 [일봉 5일선 종가 안착] 성공! <b>[1단계 진바닥 선취매 20% 진격 타점]</b>이시네. (★ <b>매수 후 손절 마지노선: 전저점 {prev_low_20:{fmt_p}}{currency} 붕괴 시 전량 칼손절 후퇴</b>)"
 
             elif is_trend_buy_raw:
                 if vol_strength < 80:
@@ -699,7 +695,7 @@ if symbol:
             elif final_code == "BOTTOM_BUY":
                 sig = "🔴 [매수] 1단계 진바닥 선취매! (20% 진격)"
                 col = "#D32F2F" 
-                s_adv = f"• <b>[미보유자] 🎯 [진바닥 기록 + 일봉 5일선 안착] 1차 선취매 20% 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 전저점({prev_low_20:{fmt_p}}{currency}) 이탈 시 전량 칼손절 후퇴"
+                s_adv = f"• <b>[미보유자] 🎯 [진바닥 기록 + 일봉 5일선 안착] 1차 선취매 20% 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 전저점({prev_low_20:{fmt_p}}{currency}) 이탈 시 전량 칼손절 후퇴 (단기 방어: 5일선 이탈 시 유연 대응)"
 
             elif final_code == "PULLBACK_BUY":
                 sig = "🔵 [눌림목 매수] 2단계 승순 확대! (30% 추가)"
