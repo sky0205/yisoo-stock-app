@@ -354,8 +354,6 @@ if symbol:
             is_above_ma20 = (p >= mid_line)
 
             # ★ [손절가 동적 자동 전환 연산: 어르신 맞춤 반영]
-            # 1) 단기 급등(등락률 +5% 이상 또는 거래량 폭발) 시: 5일선 - 3% 완충 가격
-            # 2) 진바닥에서 잔잔하게 올라온 매수 시: 정석 전저점
             is_surge_bottom = (p_chg >= 5.0) or (vol_strength >= 150)
             surge_stop_price = ma5_val * 0.97
             
@@ -389,10 +387,13 @@ if symbol:
             elif ma5_val < mid_line: trend_status = "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려 숨고르기 중"
             else: trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
 
+            # ★ [이동평균선 현황에 60일선, 120일선 완전 복구 장착]
             ma_price_summary = (
                 f"<br>• 📌 <b>[주요 이동평균선 현황]</b><br>"
                 f"&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str} (손절완충선: {surge_stop_price:{fmt_p}}{currency})</span> | "
-                f"<span style='color:#1976D2; font-weight:bold;'>🔵 20일선: {ma20_str}</span><br>"
+                f"<span style='color:#1976D2; font-weight:bold;'>🔵 20일선: {ma20_str}</span> | "
+                f"<span style='color:#388E3C; font-weight:bold;'>🟢 60일선: {ma60_str}</span> | "
+                f"<span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
             )
 
             if is_squeeze:
