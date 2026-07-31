@@ -77,7 +77,7 @@ st.markdown("""
         transition: all 0.2s ease !important;
     }
     div.stButton > button:hover {
-        background: linear-gradient(90deg, #283593 0%, #3F51B5 100%) !important;
+        background: linear-gradient(90deg, #283593 100%, #3F51B5 100%) !important;
         color: #FFEB3B !important;
         border-color: #FFFFFF !important;
     }
@@ -487,8 +487,11 @@ if symbol:
                 is_stop_loss_triggered = True
                 stop_reason = f"20일선 중앙 성벽선({mid_line:{fmt_p}}{currency}) 이탈 붕괴"
 
-            # 1) 진바닥 동조 텍스트 연산
-            if bottom_score == 3:
+            # 1) 진바닥 동조 텍스트 연산 (★ 급등 수급 폭발 시 매수 텍스트 원천 차단 동조)
+            if is_breakout:
+                bottom_status_str = "<b>(수급 돌파 급등 국면)</b>"
+                bottom_action_str = "➔ <b>[수급 돌파 익절]</b> 하루 만에 +7% 이상 급등 과열! 진바닥 선취매 대신 분할 익절(수확) 준수"
+            elif bottom_score == 3:
                 bottom_status_str = "<b>(오늘 진바닥 3점 만점 달성!)</b>"
                 if is_stop_loss_triggered:
                     bottom_action_str = f"➔ <b>[비상 후퇴]</b> 전저점 마지노선 붕괴로 매수 금지"
@@ -579,14 +582,13 @@ if symbol:
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_top = margin_to_target < 0.02
 
-           # 1) 진바닥 매수 원시 신호 (하단 텍스트와 완벽 일치화)
-            # 1) 진바닥 매수 원시 신호 (하단 텍스트 일치화 및 급등 시 원천 차단)
+            # 1) 진바닥 매수 원시 신호 (★ 급등 수급 폭발 시 진바닥 매수 원천 차단)
             is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
             is_bottom_buy_raw = (
                 (recent_bottom_memory or bottom_score >= 2) 
                 and is_ma5_safe 
                 and is_bottom_disparity_safe
-                and not is_breakout  # ★ 급등 수급 폭발 시 진바닥 매수 신호 원천 차단
+                and not is_breakout  # ★ 급등 시 진바닥 매수 차단 필터 철통 적용
             )
 
             # 2) 눌림목 매수 원시 신호
@@ -623,7 +625,7 @@ if symbol:
                 final_code = "SELL_ZONE"
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 수확 목표선(볼린저상단 {up_b:{fmt_p}}{currency}) 및 과열권 진입! 신규 진입은 금지하고 <b>[보유자]는 즉시 분할 매도로 수익 확정에 들어가시게!</b>"
 
-            elif is_bottom_buy_raw: # ★ [진바닥 선취매 조건을 최우선으로 격상하여 상단/하단 동조 완료]
+            elif is_bottom_buy_raw: 
                 if vol_strength < 80:
                     final_code = "WAIT_GENERAL"
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥 지표 안착 기록은 확인되었으나 <b>[거래량 부족]</b>으로 동력이 없네! 수급 폭발 시까지 관망하시게!"
@@ -677,7 +679,7 @@ if symbol:
                     )
 
             # =========================================================================
-            # ★ [신호등 메인 색상 연동 - 진바닥 1단계 매수 최우선 적용]
+            # ★ [신호등 메인 색상 연동]
             # =========================================================================
             if final_code == "STOP_LOSS_ALERT":
                 sig = "🚨 [비상 손절] 방어선 붕괴! 전량 손절 후퇴!"
