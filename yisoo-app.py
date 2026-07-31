@@ -580,11 +580,13 @@ if symbol:
             is_too_close_to_top = margin_to_target < 0.02
 
            # 1) 진바닥 매수 원시 신호 (하단 텍스트와 완벽 일치화)
+            # 1) 진바닥 매수 원시 신호 (하단 텍스트 일치화 및 급등 시 원천 차단)
             is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
             is_bottom_buy_raw = (
                 (recent_bottom_memory or bottom_score >= 2) 
                 and is_ma5_safe 
                 and is_bottom_disparity_safe
+                and not is_breakout  # ★ 급등 수급 폭발 시 진바닥 매수 신호 원천 차단
             )
 
             # 2) 눌림목 매수 원시 신호
