@@ -201,11 +201,13 @@ if symbol:
                     pass
 
             # ★ [실시간 시세 3중 보급로] 네이버 모바일 API 최우선 호출
+            # ★ [시세 수집 속도 최적화] 타임아웃 1초 조율 및 최신 모바일 API 타격
             kr_fetched = False
             try:
+                # 네이버 최신 모바일 API (타임아웃 1초로 단축하여 반응속도 극대화)
                 api_url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
                 headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)'}
-                res = requests.get(api_url, headers=headers, timeout=2)
+                res = requests.get(api_url, headers=headers, timeout=1)
                 if res.status_code == 200:
                     data = res.json()
                     auto_p = float(data['closePrice'].replace(",", ""))
