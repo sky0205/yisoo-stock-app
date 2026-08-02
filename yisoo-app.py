@@ -359,7 +359,7 @@ if symbol:
             
             if is_surge_bottom:
                 stop_loss_price = surge_stop_price
-                stop_loss_label = f"5일선-3%({surge_stop_price:{fmt_p}}{currency})"
+                stop_loss_label = f"단기 트레이딩용 5일선-3%({surge_stop_price:{fmt_p}}{currency})"
             else:
                 stop_loss_price = prev_low_20
                 stop_loss_label = f"전저점 마지노선({prev_low_20:{fmt_p}}{currency})"
