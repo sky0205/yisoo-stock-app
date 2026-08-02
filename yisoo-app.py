@@ -742,7 +742,7 @@ if symbol:
             if m_l > s_l:
                 macd_strategy_msg = "엔진 정회전이나 성벽 아래(지하실)이므로 헛바퀴 주의! 추격 매수는 금지이외다." if p < defense_line else "엔진 정회전 완료! 성벽을 등지고 본대 진격 신호탄이 터졌네."
             else:
-                macd_strategy_msg = "엔진 역회전폭 급감 중이네! 시동 걸 채비 중이니 일봉 5일선 안착을 대기하시게." if is_macd_turning else "엔진 역회전 심화 중이네! 거꾸로 도는 차니 절대 진입 금지이오."
+                macd_strategy_msg = "엔진 역회전폭 급감 중이네! 시동을 거는 중이니 5일선 위에서의 안착 유지 여부를 주시하시게." if is_macd_turning else "엔진 역회전 심화 중이네! 거꾸로 도는 차니 절대 진입 금지이오."
 
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
@@ -837,7 +837,7 @@ if symbol:
                 if m_l > s_l:
                     m_diag = "<b>🔥 엔진 정회전 완료</b><br>• <b>역할:</b> 상승 모멘텀 유지.<br>• <b>진단:</b> " + ("성벽 아래이므로 헛바퀴 주의! 추격 매수는 금지이외다." if p < defense_line else "엔진 정회전! 성벽 사수하며 자신 있게 추세 진격하시게.")
                 else:
-                    m_diag = "<b>⚙️ 엔진 역회전 상태</b><br>• <b>역할:</b> 하락 조정 모멘텀.<br>• <b>진단:</b> " + ("🚀 [엔진 시동] 역회전폭 급감! 시동 걸 채비 중이니 일봉 5일선 안착을 대기하시게." if is_macd_turning else "⚠️ 역회전 심화! 엔진 거꾸로 도는 차니 절대 진입 금지이오.")
+                    m_diag = "<b>⚙️ 엔진 역회전 상태</b><br>• <b>역할:</b> 하락 조정 모멘텀.<br>• <b>진단:</b> " + ("🚀 [엔진 시동] 역회전폭 급감! 시동을 거는 중이니 5일선 위에서의 안착 유지 여부를 주시하시게." if is_macd_turning else "⚠️ 역회전 심화! 엔진 거꾸로 도는 차니 절대 진입 금지이오.")
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (추세 엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
 
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
