@@ -462,7 +462,7 @@ if symbol:
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} ({'수동 연산 모드' if is_manual_mode else f'실시간 {v_ratio:.1f}% / 5일평균대비'})</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
             # =========================================================================
-            # 지표검증연산 + 진바닥 기억 장치(Memory Logic) 연동
+            # 지표검증연산 + 진바닥 기억 장치(Memory Logic) 연동 (★ 이격 과열 안전장치 보완 적용)
             # =========================================================================
             bb_bot_series = (df['Close'] <= (low_b * 1.02)).astype(int)
             rsi_bot_series = (rsi_series <= 35).astype(int)
@@ -490,7 +490,7 @@ if symbol:
                 is_stop_loss_triggered = True
                 stop_reason = f"20일선 중앙 성벽선({mid_line:{fmt_p}}{currency}) 이탈 붕괴"
 
-            # 1) 진바닥 동조 텍스트 연산
+            # 1) 진바닥 동조 텍스트 연산 (★ 이격 과열 시 관망 우선 적용)
             if bottom_score == 3:
                 bottom_status_str = "<b>(오늘 진바닥 3점 만점 달성!)</b>"
                 if is_stop_loss_triggered:
@@ -559,7 +559,7 @@ if symbol:
             )
 
             # =========================================================================
-            # 보조 연산 및 매수/매도 구간 판단
+            # 보조 연산 및 매수/매도 구간 판단 (★ 이격 과열 조건 엄격 반영)
             # =========================================================================
             bb_top = 1 if p >= (up_b * 0.995) else 0
             rsi_top = 1 if rsi_val >= 60 else 0
@@ -583,6 +583,7 @@ if symbol:
                 (recent_bottom_memory or bottom_score >= 2) 
                 and is_ma5_safe 
                 and is_bottom_disparity_safe
+                and (bias_ma5 <= 3.0)  # ★ 이격 과열 시 진바닥 매수 차단 장치
             )
 
             is_trend_buy_raw = (
@@ -651,18 +652,28 @@ if symbol:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선({mid_line:{fmt_p}}{currency}) 아래 하락 추세이므로 느긋하게 관망 모드를 유지하시게! (★ <b>기보유자 필수 방어선(손절 마지노선): {stop_loss_label}</b>)"
 
             # =========================================================================
-            # 보유자 전용 이원화 가이드 연산
+            # 보유자 전용 이원화 가이드 연산 (★ 저가 보유자 맞춤형 분리 적용)
             # =========================================================================
             if user_avg_price <= 0:
                 holder_guide_msg = f"현재 추세 탐색 구간이니 성벽({defense_line:{fmt_p}}{currency})이나 5일선 사수 여부를 확인하며 차분히 보유 판단을 내리시게. (★ <b>현재 기준 손절 마지노선: {stop_loss_label}</b>)"
             else:
                 profit_rate = ((p - user_avg_price) / user_avg_price) * 100
+                # 평단가가 전저점보다 낮거나 충분히 여유 있는 수익권인 경우 판별
+                is_low_safe_holder = (user_avg_price <= prev_low_20) or (profit_rate >= 15.0)
+
                 if p >= user_avg_price:
-                    holder_guide_msg = (
-                        f"📈 <b>[수익권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 수익률: +{profit_rate:.2f}%)]</b><br>"
-                        f"• 현재 5일선({ma5_val:{fmt_p}}{currency}) 사수 여부를 주시하시게. 단기 변동성에 수익을 반납하지 않도록 본절가/익절선을 설정하시게.<br>"
-                        f"• 5일선 안착 시 수확 목표선({up_b:{fmt_p}}{currency})까지 자신감 있게 홀딩하시고, 5일선 이탈 시 일부 분할 익절로 대응하시게. (★ <b>필수 방어선: {stop_loss_label}</b>)"
-                    )
+                    if is_low_safe_holder:
+                        holder_guide_msg = (
+                            f"📈 <b>[안전마진 확보 저가 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 수익률: +{profit_rate:.2f}%)]</b><br>"
+                            f"• 이미 바닥에서 든든하게 쥐고 계신 효자 물량이니, 단기 5일선 흔들림이나 전저점에 연연하지 마시게.<br>"
+                            f"• 수확 목표선({up_b:{fmt_p}}{currency})까지 느긋하게 홀딩하시고, 추후 중기 생명선인 <b>20일선({ma20_str})</b>을 완전히 이탈할 때 비로소 수익 실현을 고민하시게."
+                        )
+                    else:
+                        holder_guide_msg = (
+                            f"📈 <b>[수익권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 수익률: +{profit_rate:.2f}%)]</b><br>"
+                            f"• 현재 5일선({ma5_val:{fmt_p}}{currency}) 사수 여부를 주시하시게. 단기 변동성에 수익을 반납하지 않도록 본절가/익절선을 설정하시게.<br>"
+                            f"• 5일선 안착 시 수확 목표선({up_b:{fmt_p}}{currency})까지 자신감 있게 홀딩하시고, 5일선 이탈 시 일부 분할 익절로 대응하시게. (★ <b>필수 방어선: {stop_loss_label}</b>)"
+                        )
                 else:
                     holder_guide_msg = (
                         f"📉 <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br>"
