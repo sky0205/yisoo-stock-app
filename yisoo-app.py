@@ -390,7 +390,7 @@ if symbol:
             # ★ [이동평균선 현황에 60일선, 120일선 완전 복구 장착]
             ma_price_summary = (
                 f"<br>• 📌 <b>[주요 이동평균선 현황]</b><br>"
-                f"&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str} (단기 트레이딩용 5일선-3%: {surge_stop_price:{fmt_p}}{currency})</span> | "
+                f"&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str} (단기 트레이딩용 손절선: {surge_stop_price:{fmt_p}}{currency})</span> | "
                 f"<span style='color:#1976D2; font-weight:bold;'>🔵 20일선: {ma20_str}</span> | "
                 f"<span style='color:#388E3C; font-weight:bold;'>🟢 60일선: {ma60_str}</span> | "
                 f"<span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
