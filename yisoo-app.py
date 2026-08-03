@@ -666,7 +666,7 @@ if symbol:
                 col = "#1976D2" 
                 s_adv = f"• <b>[기보유자] 🎯 [20일선 눌림목 안착] 승순 확대 30% 확정 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 손절선 철저 준수"
             else: 
-                sig = "🟡 [관망] 방향 탐색 / 음봉 숨고르기 대기"
+                sig = "🟡 [관망] 방향 탐색 / 상방 기세 유지 대기"
                 col = "#FBC02D" 
                 if pullback_rebound_score < 2 and p >= mid_line:
                     s_adv = f"• ⚠️ 20일선 위에 있으나 눌림목 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
