@@ -530,8 +530,11 @@ if symbol:
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_target = margin_to_target < 0.02
 
+            is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
+            is_bottom_buy_raw = ((recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and is_bottom_disparity_safe)
+
             # =========================================================================
-            # ★ [눌림목 동조 채점 정밀 연산 - 완벽 동기화 장치 탑재]
+            # ★ [눌림목 동조 채점 정밀 연산 - 안전하게 먼저 정의]
             # =========================================================================
             if (not is_uptrend) or (p < mid_line):
                 pullback_rebound_score = 0
@@ -557,7 +560,6 @@ if symbol:
                     pullback_status_str = "<b>(조건 미흡)</b>"
                     pullback_action_str = "➔ <b>[관망]</b>"
 
-            # 2점 이상이고 거래량/이격 조건이 완벽히 맞을 때만 진정한 눌림목 매수로 인정
             is_trend_buy_raw = (
                 (p >= mid_line) 
                 and (ma5_val >= mid_line) 
