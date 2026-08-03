@@ -596,7 +596,7 @@ if symbol:
             )
 
             # =========================================================================
-            # ★ [신호등 & 최종 결론 연동]
+            # ★ [신호등 & 최종 결론 연동 - 실시간 위치 우선 반영 완벽 수정]
             # =========================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -646,8 +646,10 @@ if symbol:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소]</b> 20일선 위에 있으나 단기 5일선 밑이오! 5일선 종가 안착 시 대응하시게. (★ <b>방어선: {stop_loss_label}</b>)"
                 elif is_squeeze:
                     final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 극초축소]</b> 하락 조정 중이니 추격 금지! 🟡 [관망]하시게! (★ <b>방어선: {stop_loss_label}</b>)"
-                elif is_above_ma20 and pullback_rebound_score < 2:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 위에 있으나 보조지표 동조가 부족하네. 관망하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                elif p >= mid_line and is_ma5_safe:
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 20일선({mid_line:{fmt_p}}{currency}) 및 5일선 위에 안착해 있으나 보조지표 동조나 수급 동력이 부족하네. 관망하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                elif p >= mid_line:
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 20일선({mid_line:{fmt_p}}{currency}) 위이나 단기 5일선 아래에서 숨고르기 중이오! 종가 안착 전까진 관망하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 else:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선({mid_line:{fmt_p}}{currency}) 아래 하락 추세이므로 느긋하게 관망 모드를 유지하시게! (★ <b>기보유자 필수 방어선(손절 마지노선): {stop_loss_label}</b>)"
 
@@ -658,7 +660,6 @@ if symbol:
                 holder_guide_msg = f"현재 추세 탐색 구간이니 성벽({defense_line:{fmt_p}}{currency})이나 5일선 사수 여부를 확인하며 차분히 보유 판단을 내리시게. (★ <b>현재 기준 손절 마지노선: {stop_loss_label}</b>)"
             else:
                 profit_rate = ((p - user_avg_price) / user_avg_price) * 100
-                # 평단가가 전저점보다 낮거나 충분히 여유 있는 수익권인 경우 판별
                 is_low_safe_holder = (user_avg_price <= prev_low_20) or (profit_rate >= 15.0)
 
                 if p >= user_avg_price:
@@ -725,7 +726,7 @@ if symbol:
                 elif not is_ma5_safe: 
                     s_adv = f"• ⚠️ 단기 전투선인 5일선 아래에서 기세 허덕이는 중일세.<br>• 🚀 <b>[필수 방어선(손절 마지노선)]</b> {stop_loss_label}"
                 else: 
-                    s_adv = f"• 눈치싸움 중일세. (진바닥 동조: {bottom_score}/3 | 눌림동조: {pullback_rebound_score}/3)<br>• 🚀 <b>[기보유자 필수 방어선(손절 마지노선)]</b> {stop_loss_label}"
+                    s_adv = f"• 주가가 20일선 위에 있으나 눈치싸움 중일세. (진바닥 동조: {bottom_score}/3 | 눌림동조: {pullback_rebound_score}/3)<br>• 🚀 <b>[기보유자 필수 방어선(손절 마지노선)]</b> {stop_loss_label}"
 
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><div class='signal-subtext'>{s_adv}</div></div>", unsafe_allow_html=True)
 
