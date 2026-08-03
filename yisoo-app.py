@@ -552,7 +552,7 @@ if symbol:
                     pullback_status_str = "<b>(조건 만족)</b>"
                     if vol_strength < 80: 
                         pullback_action_str = f"➔ <b>[관망]</b> 조건 충족이나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
-                    elif bias_ma20 > 3.0: 
+                    elif bias_ma20 > 5.0: 
                         pullback_action_str = f"➔ <b>[관망]</b> 20일선 이격 과열로 매수 보류"
                     elif is_ma5_safe: 
                         pullback_action_str = f"➔ <b>[2단계 승순 확대]</b> 30% 추가 진격"
@@ -562,13 +562,10 @@ if symbol:
                     pullback_status_str = "<b>(조건 미흡)</b>"
                     pullback_action_str = "➔ <b>[관망]</b>"
 
-            # 실질적 눌림목 매수 유효성 판정 (이격 과열 기준을 완화하여 20일선 근처 안착 시 상충 방지)
+            # ★ [결정적 해결: 지표가 2점 이상 만족하고 5일선/20일선 위에 있으면 신호등도 무조건 승순 일치]
             is_true_pullback_buy = (
                 (p >= mid_line) 
-                and (ma5_val >= mid_line) 
                 and is_ma5_safe 
-                and (bias_ma20 <= 5.0) 
-                and not is_too_close_to_target 
                 and (pullback_rebound_score >= 2)
                 and (vol_strength >= 80)
             )
@@ -596,13 +593,11 @@ if symbol:
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 수확 목표선 및 과열권 진입! <b>[보유자]는 분할 매도로 수익 확정</b>에 들어가시게! (★ <b>방어선: {stop_loss_label}</b>)"
             elif is_true_pullback_buy:
                 final_code = "PULLBACK_BUY"
-                final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 지지 및 눌림목 완성! <b>[2단계 승순 확대 30% 진격 타점]</b>이시네. (★ <b>방어선: {stop_loss_label}</b>)"
+                final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 눌림목 동조 2점 달성 및 5일선/20일선 안착! <b>[2단계 승순 확대 30% 진격 타점]</b>이시네. (★ <b>방어선: {stop_loss_label}</b>)"
             else:
                 final_code = "WAIT_GENERAL"
                 if pullback_rebound_score < 2 and p >= mid_line:
                     final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 20일선 위에 있으나 <b>눌림목 지표 동조(점수 미흡)</b> 상태이므로 섣부른 진입을 금하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
-                elif bias_ma5 > 3.0 and p < mid_line:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>20일선 아래에 있으나, 단기 5일선 위에서 +3% 초과 이격 과열 상태</b>이오! 음봉 숨고르기 중이므로 추격매수를 철통 차단하고 🟡 <b>[관망]</b>하시게. (★ <b>방어선: {stop_loss_label}</b>)"
                 elif bias_ma5 > 5.0 or bias_ma20 > 5.0:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>단기 이격 과열</b> 상태이오! 추격매수를 철통 차단하고 🟡 <b>[관망 및 보유자 홀딩]</b>하시게. (★ <b>방어선: {stop_loss_label}</b>)"
                 elif p >= mid_line and is_ma5_safe:
@@ -667,14 +662,12 @@ if symbol:
             elif final_code == "PULLBACK_BUY":
                 sig = "🔵 [눌림목 매수] 2단계 승순 확대! (30% 추가)"
                 col = "#1976D2" 
-                s_adv = f"• <b>[기보유자] 🎯 [20일선 눌림목 안착] 승순 확대 30% 확정 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 손절선 철저 준수"
+                s_adv = f"• <b>[기보유자] 🎯 [눌림목 2점 달성 + 5일선/20일선 안착] 승순 확대 30% 확정 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 손절선 철저 준수"
             else: 
                 sig = "🟡 [관망] 방향 탐색 / 상방 기세 유지 대기"
                 col = "#FBC02D" 
                 if pullback_rebound_score < 2 and p >= mid_line:
                     s_adv = f"• ⚠️ 20일선 위에 있으나 눌림목 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
-                elif bias_ma5 > 3.0 and p < mid_line:
-                    s_adv = f"• ⚠️ 20일선 아래이나 5일선 위에서 +3% 초과 이격 과열! 음봉 숨고르기 중이므로 추격 매수 금지 및 <b>[관망]</b>.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 else:
                     s_adv = f"• ⚠️ 이격 과열 및 수급 동력 부족으로 관망 중일세.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
 
@@ -746,7 +739,7 @@ if symbol:
                 if final_code == "BOTTOM_BUY":
                     bb_diag = f"🔴 <b>[진바닥 선취매 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 바닥권 과매도 및 5일선 안착 검증.<br>• <b>진단:</b> 진바닥 기록 포착 후 5일선 종가 안착 완료! 1단계 선취매(20%) 집행 구역이오."
                 elif final_code == "PULLBACK_BUY":
-                    bb_diag = f"🔵 <b>[20일선 눌림목 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 눌림목 지지 검증.<br>• <b>진단:</b> 20일선 지지 안착 확인 완료! 2단계 승순 확대(30%) 진격 구역이오."
+                    bb_diag = f"🔵 <b>[20일선 눌림목 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 눌림목 지지 검증.<br>• <b>진단:</b> 눌림목 동조 2점 달성 및 20일선 지지 안착 완료! 2단계 승순 확대(30%) 진격 구역이오."
                 elif final_code == "STOP_LOSS_ALERT":
                     bb_diag = f"🚨 <b>[방어선 붕괴 비상 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 손절 마지노선 이탈 감지.<br>• <b>진단:</b> 주요 방어선이 무너졌으니 미련 없이 전량 칼손절 후퇴하시게."
                 elif p >= up_b: 
@@ -763,7 +756,7 @@ if symbol:
                     else:
                         bb_diag = f"🔥 <b>[20일 중앙선 지지] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 눌림목 및 추세 유지 판단.<br>• <b>진단:</b> 중앙선 지지 완료! 지표 동조 확인 시 2단계 승순 확대(30%) 가능하오." if is_ma5_safe else f"⚠️ <b>[20일선 위 5일선 이탈] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 단기 기세 둔화 감지.<br>• <b>진단:</b> 중앙선 위에 있으나 단기 추세가 꺾였으니 관망하시게."
                 else: 
-                    bb_diag = f"🏹 <b>[20일선 하단 반격] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 하단 추세 전환 시도.<br>• <b>진단:</b> 20일선 아래이나 5일선 위 이격 과열 및 음봉 숨고르기 중이오." if bias_ma5 > 3.0 and p < mid_line else (f"🏹 <b>[20일선 하단 반격] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 하단 추세 전환 시도.<br>• <b>진단:</b> 중앙선 밑이나 5일선 사수하며 상방 반격 시도 중일세." if is_ma5_safe else f"🏠 <b>[추세 하락 국면] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 관망 모드 유지.<br>• <b>진단:</b> 중앙선 및 5일선 모두 이탈! 대기가 상책이오.")
+                    bb_diag = f"🏠 <b>[추세 하락 국면] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 관망 모드 유지.<br>• <b>진단:</b> 중앙선 및 5일선 모두 이탈! 대기가 상책이오."
             
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세/위치)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             
