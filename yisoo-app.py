@@ -521,43 +521,6 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 매수 보류, 실시간 지표 모니터링 유지"
 
-            # 2) 눌림목 동조 채점
-            if (not is_uptrend) or (p < mid_line):
-                pullback_rebound_score = 0
-                pullback_status_str = "<b>(국면 불일치)</b>"
-                pullback_action_str = "➔ <b>[눌림목 불가]</b> 하락/바닥 국면으로 눌림목 성립 불가 (관망)"
-            else:
-                p_will = 1 if will_val <= -50 else 0
-                p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.01) else 0
-                p_rsi = 1 if (40 <= rsi_val <= 55) else 0
-                pullback_rebound_score = p_will + p_bb + p_rsi
-                
-                if pullback_rebound_score == 3:
-                    pullback_status_str = "<b>(조건 만족)</b>"
-                    if vol_strength < 80:
-                        pullback_action_str = f"➔ <b>[관망]</b> 눌림목 조건은 만족했으나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
-                    elif bias_ma20 > 3.0:
-                        pullback_action_str = f"➔ <b>[관망]</b> 20일선 대비 +3% 초과 이격 과열로 매수 보류"
-                    elif is_ma5_safe:
-                        pullback_action_str = f"➔ <b>[2단계 승순 확대]</b> 20일선 눌림목 안착 확인, 30% 추가 진격 (손절선: 20일선 {mid_line:{fmt_p}}{currency})"
-                    else:
-                        pullback_action_str = "➔ <b>[진입 대기]</b> 눌림목 완성, 종가 기준 일봉 5일선 상향 안착 시 매수 실행"
-                elif pullback_rebound_score == 2:
-                    pullback_status_str = "<b>(부분 만족)</b>"
-                    pullback_action_str = "➔ <b>[정찰 매수 가능]</b> 비중 10% 제한 진입"
-                else:
-                    pullback_status_str = "<b>(조건 미흡)</b>"
-                    pullback_action_str = "➔ <b>[관망]</b> 눌림목 지지선 확인 불가, 관망 유지"
-
-            indicator_verify_text = (
-                f"{ma_price_summary}<br>"
-                f"• <b>[추세 정밀 판독]:</b> {trend_status}<br>"
-                f"• <b>[지표 검증 연산]</b><br>"
-                f"   - <b>진바닥 동조:</b> {bottom_score}/3점 {bottom_status_str} {bottom_action_str}<br>"
-                f"   - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
-                f"{squeeze_info_str}"
-            )
-
             # =========================================================================
             # 보조 연산 및 매수/매도 구간 판단 (★ 이격 과열 조건 엄격 반영)
             # =========================================================================
@@ -592,7 +555,7 @@ if symbol:
                 and is_ma5_safe 
                 and (0 <= bias_ma20 <= 3.0)
                 and not is_too_close_to_top 
-                and (pullback_rebound_score >= 2)
+                and (pullback_rebound_score >= 2) if 'pullback_rebound_score' in locals() else False
             )
 
             # =========================================================================
@@ -652,6 +615,49 @@ if symbol:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 20일선({mid_line:{fmt_p}}{currency}) 위이나 단기 5일선 아래에서 숨고르기 중이오! 종가 안착 전까진 관망하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 else:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선({mid_line:{fmt_p}}{currency}) 아래 하락 추세이므로 느긋하게 관망 모드를 유지하시게! (★ <b>기보유자 필수 방어선(손절 마지노선): {stop_loss_label}</b>)"
+
+            # =========================================================================
+            # ★ [눌림목 동조 채점 - 최종 결론의 '관망' 기조와 완벽 동기화 수정]
+            # =========================================================================
+            if (not is_uptrend) or (p < mid_line):
+                pullback_rebound_score = 0
+                pullback_status_str = "<b>(국면 불일치)</b>"
+                pullback_action_str = "➔ <b>[눌림목 불가]</b> 하락/바닥 국면으로 눌림목 성립 불가 (관망)"
+            else:
+                p_will = 1 if will_val <= -50 else 0
+                p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.01) else 0
+                p_rsi = 1 if (40 <= rsi_val <= 55) else 0
+                pullback_rebound_score = p_will + p_bb + p_rsi
+                
+                # 최종 결론이 '관망' 상태(수급 부족 등)일 때는 2점이어도 10% 정찰병 대신 관망으로 일치시킴
+                if pullback_rebound_score == 3:
+                    pullback_status_str = "<b>(조건 만족)</b>"
+                    if vol_strength < 80:
+                        pullback_action_str = f"➔ <b>[관망]</b> 눌림목 조건은 만족했으나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
+                    elif bias_ma20 > 3.0:
+                        pullback_action_str = f"➔ <b>[관망]</b> 20일선 대비 +3% 초과 이격 과열로 매수 보류"
+                    elif is_ma5_safe:
+                        pullback_action_str = f"➔ <b>[2단계 승순 확대]</b> 20일선 눌림목 안착 확인, 30% 추가 진격 (손절선: 20일선 {mid_line:{fmt_p}}{currency})"
+                    else:
+                        pullback_action_str = "➔ <b>[진입 대기]</b> 눌림목 완성, 종가 기준 일봉 5일선 상향 안착 시 매수 실행"
+                elif pullback_rebound_score == 2:
+                    pullback_status_str = "<b>(부분 만족)</b>"
+                    if final_code == "WAIT_GENERAL":
+                        pullback_action_str = "➔ <b>[관망 유지]</b> 부분 만족이나 수급 동력 부족으로 정찰 매수 유보 및 관망"
+                    else:
+                        pullback_action_str = "➔ <b>[정찰 매수 가능]</b> 비중 10% 제한 진입"
+                else:
+                    pullback_status_str = "<b>(조건 미흡)</b>"
+                    pullback_action_str = "➔ <b>[관망]</b> 눌림목 지지선 확인 불가, 관망 유지"
+
+            indicator_verify_text = (
+                f"{ma_price_summary}<br>"
+                f"• <b>[추세 정밀 판독]:</b> {trend_status}<br>"
+                f"• <b>[지표 검증 연산]</b><br>"
+                f"   - <b>진바닥 동조:</b> {bottom_score}/3점 {bottom_status_str} {bottom_action_str}<br>"
+                f"   - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
+                f"{squeeze_info_str}"
+            )
 
             # =========================================================================
             # 보유자 전용 이원화 가이드 연산 (★ 저가 보유자 맞춤형 분리 적용)
@@ -726,7 +732,7 @@ if symbol:
                 elif not is_ma5_safe: 
                     s_adv = f"• ⚠️ 단기 전투선인 5일선 아래에서 기세 허덕이는 중일세.<br>• 🚀 <b>[필수 방어선(손절 마지노선)]</b> {stop_loss_label}"
                 else: 
-                    s_adv = f"• 주가가 20일선 위에 있으나 눈치싸움 중일세. (진바닥 동조: {bottom_score}/3 | 눌림동조: {pullback_rebound_score}/3)<br>• 🚀 <b>[기보유자 필수 방어선(손절 마지노선)]</b> {stop_loss_label}"
+                    s_adv = f"• 주가가 20일선 위에 있으나 수급 동력 부족으로 관망 중일세. (진바닥 동조: {bottom_score}/3 | 눌림동조: {pullback_rebound_score}/3)<br>• 🚀 <b>[기보유자 필수 방어선(손절 마지노선)]</b> {stop_loss_label}"
 
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><div class='signal-subtext'>{s_adv}</div></div>", unsafe_allow_html=True)
 
