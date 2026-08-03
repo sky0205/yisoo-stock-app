@@ -429,7 +429,7 @@ if symbol:
             is_trend_buy_raw = ((p >= mid_line) and (ma5_val >= mid_line) and is_ma5_safe and (0 <= bias_ma20 <= 3.0) and not is_too_close_to_top)
 
             # =========================================================================
-            # ★ [최종 결론 연동 - 5일선 이격 과열 및 20일선 위치 정밀 반영 수정]
+            # ★ [최종 결론 연동 - 5일선 이격 과열 및 20일선 위치 정밀 반영]
             # =========================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -454,7 +454,6 @@ if symbol:
                 final_adv = f"🔵 <b>[최종 결론]</b> 20일선 지지 및 눌림목 완성! <b>[2단계 승순 확대 30% 진격]</b> 타점이시네."
             else:
                 final_code = "WAIT_GENERAL"
-                # ★ 어르신 지적 반영: 5일선 위 이격 과열과 20일선 하단 위치를 명확히 분리하여 표현
                 if bias_ma5 > 3.0 and p < mid_line:
                     final_adv = f"🧐 <b>[최종 결론]</b> <b>20일선 아래에 있으나, 단기 5일선 위에서 +3% 초과 이격 과열 상태</b>이오! 음봉 숨고르기 중이므로 추격매수를 철통 차단하고 🟡 <b>[관망]</b>하시게. (★ <b>방어선: {stop_loss_label}</b>)"
                 elif bias_ma5 > 3.0 or bias_ma20 > 3.0:
@@ -559,5 +558,66 @@ if symbol:
 {final_adv}
 </div>
 </div>""", unsafe_allow_html=True)
+
+            st.divider()
+            
+            # =========================================================================
+            # ★ [하단 4대 핵심 지표 박스 복구 완료]
+            # =========================================================================
+            i1, i2, i3, i4 = st.columns(4)
+            
+            # --- 1. Bollinger (기세 & 위치) ---
+            with i1:
+                if final_code == "BOTTOM_BUY":
+                    bb_diag = f"🔴 <b>[진바닥 선취매 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 바닥권 과매도 및 5일선 안착 검증.<br>• <b>진단:</b> 진바닥 기록 포착 후 5일선 종가 안착 완료! 1단계 선취매(20%) 집행 구역이오."
+                elif final_code == "PULLBACK_BUY":
+                    bb_diag = f"🔵 <b>[20일선 눌림목 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 눌림목 지지 검증.<br>• <b>진단:</b> 20일선 지지 안착 확인 완료! 2단계 승순 확대(30%) 진격 구역이오."
+                elif final_code == "STOP_LOSS_ALERT":
+                    bb_diag = f"🚨 <b>[방어선 붕괴 비상 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 손절 마지노선 이탈 감지.<br>• <b>진단:</b> 주요 방어선이 무너졌으니 미련 없이 전량 칼손절 후퇴하시게."
+                elif p >= up_b: 
+                    bb_diag = f"👺 <b>[수확 목표선(상단) 과열] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 주가 상단 한계선 접촉.<br>• <b>진단:</b> 탐욕의 끝단이니 신규 매수를 금지하고 익절을 집행하시게."
+                elif is_breakout: 
+                    bb_diag = f"🚀 <b>[수급 돌파 분출] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 20일선 및 볼린저 돌파 강도 측정.<br>• <b>진단:</b> 장대양봉 강력 돌파! 보유자는 분할 수확(매도)하고, 미보유자는 추격매수를 절대 금하시게."
+                elif is_squeeze: 
+                    bb_diag = f"⚡ <b>[에너지 극초축소 (Squeeze)] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 에너지 응축 및 변동성 폭발 예보.<br>• <b>진단:</b> 밴드가 바짝 좁아졌구먼! 조만간 위/아래 방향성 폭발이 임박했으니 5일선 돌파 전까진 관망하시게."
+                elif p <= low_b: 
+                    bb_diag = f"🧊 <b>[공략 대기선(하단) 바닥] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 진바닥 측정.<br>• <b>진단:</b> 지하실 지점이오. 일봉 5일선 종가 안착 시 1단계 선취매(20%)로 대응하시게."
+                elif p >= mid_line: 
+                    if final_code == "WAIT_GENERAL":
+                        bb_diag = f"🔥 <b>[20일 중앙선 지지 / 관망] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 눌림목 및 추세 유지 판단.<br>• <b>진단:</b> 중앙선 위에서 이격 과열 및 숨고르기 중이므로 관망 중이오."
+                    else:
+                        bb_diag = f"🔥 <b>[20일 중앙선 지지] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 눌림목 및 추세 유지 판단.<br>• <b>진단:</b> 중앙선 지지 완료!" if is_ma5_safe else f"⚠️ <b>[20일선 위 5일선 이탈] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 단기 기세 둔화 감지."
+                else: 
+                    bb_diag = f"🏹 <b>[20일선 하단 반격] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 하단 추세 전환 시도.<br>• <b>진단:</b> 20일선 아래이나 5일선 위 이격 과열 및 음봉 숨고르기 중이오." if bias_ma5 > 3.0 and p < mid_line else (f"🏹 <b>[20일선 하단 반격] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 하단 추세 전환 시도." if is_ma5_safe else f"🏠 <b>[추세 하락 국면] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 관망 모드 유지.")
+            
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세/위치)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
+            
+            # --- 2. RSI (매수 온도) ---
+            with i2:
+                rsi_trend = "▲ 상승" if rsi_val > rsi_prev else ("▼ 하락" if rsi_val < rsi_prev else "─ 변동없음")
+                is_div = p > prev_p and rsi_val < rsi_prev
+                if rsi_val >= 60: 
+                    r_status = f"<b>👿 불지옥 과열권</b><br>• <b>역할:</b> 매수 에너지 고갈 경보.<br>• <b>진단:</b> {'🚨 [가짜 상승] 다이버전스 발생!' if is_div else '과열 구간 진입.'}"
+                elif rsi_val <= 35: 
+                    r_status = f"<b>🧊 냉골 바닥권</b><br>• <b>역할:</b> 진바닥 수급 에너지 감지.<br>• <b>진단:</b> 바닥 탈출 시도 중."
+                else: 
+                    r_status = f"<b>⚖️ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> {'🚨 [다이버전스] 가짜 기세니 속지 마시게.' if is_div else '에너지 충전 중.'}"
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (매수 온도)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{rsi_val:.2f} <span style='font-size:22px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>{r_status}</p></div>", unsafe_allow_html=True)
+            
+            # --- 3. Williams %R (민감 반전) ---
+            with i3:
+                will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
+                if will_val >= -20: w_status = "<b>🚩 천장 광기 구역</b><br>• <b>진단:</b> 최고점 광기 진입!"
+                elif will_val >= -35: w_status = "<b>⚠️ 천장 근접 경계</b><br>• <b>진단:</b> 고점 징후 포착."
+                elif will_val <= -80: w_status = "<b>🏳️ 개미 항복 구역</b><br>• <b>진단:</b> 바닥 침체 및 투매 구간."
+                elif will_val <= -65: w_status = "<b>📉 낙폭 과대 지대</b><br>• <b>진단:</b> 반등 타점 감지."
+                else: w_status = "<b>⚖️ 중간 지대</b><br>• <b>진단:</b> 방향 탐색 중."
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (민감 반전)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{will_val:.2f} <span style='font-size:22px; color:#333333;'>({will_trend})</span></p><p class='ind-diag'>{w_status}</p></div>", unsafe_allow_html=True)
+            
+            # --- 4. MACD (추세 엔진) ---
+            with i4:
+                if m_l > s_l: m_diag = "<b>🔥 엔진 정회전 완료</b><br>• <b>진단:</b> 상승 모멘텀 유지."
+                else: m_diag = "<b>⚙️ 엔진 역회전 상태</b><br>• <b>진단:</b> 하락 조정 모멘텀."
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (추세 엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
 
     except Exception as e: st.error(f"👵 오류 발생: {e}")
