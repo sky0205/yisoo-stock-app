@@ -473,7 +473,9 @@ if symbol:
             recent_bottom_memory = (bottom_score_series.iloc[-3:].max() >= 2)
 
             is_uptrend = (p >= mid_line) or (ma20_slope > 0)
-            is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe 
+            
+            # ★ [장대양봉 수급 돌파 판정 개정: 무분별한 익절 방지 및 과열권/목표선 근접 제한]
+            is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe and (p >= up_b * 0.98 or p >= defense_line)
 
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
@@ -587,7 +589,7 @@ if symbol:
                 final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [진바닥 기록 + 5일선 안착] 성공! <b>[1단계 진바닥 선취매 20% 진격 타점]</b>이시네. (★ <b>손절선: {stop_loss_label}</b>)"
             elif is_breakout and p >= mid_line: 
                 final_code = "BREAKOUT" 
-                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[장대양봉 수급 돌파]</b> 분출 중! 보유자는 분할 익절, 미보유자는 추격 금지! (★ <b>방어선: {stop_loss_label}</b>)"
+                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상투 과열권 수급 돌파]</b> 분출 중! 보유자는 분할 익절, 미보유자는 추격 금지! (★ <b>방어선: {stop_loss_label}</b>)"
             elif is_too_close_to_target or top_score >= 2 or p >= up_b:
                 final_code = "SELL_ZONE"
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 수확 목표선 및 과열권 진입! <b>[보유자]는 분할 매도로 수익 확정</b>에 들어가시게! (★ <b>방어선: {stop_loss_label}</b>)"
@@ -654,9 +656,9 @@ if symbol:
                 col = "#388E3C" 
                 s_adv = f"• <b>[보유자] 🚨 수확 목표 달성! 보유 물량 30~50% 즉시 현금화(매도)</b><br>• <b>[미보유자]</b> ✋ 추격매수 금지 (수확목표선 {up_b:{fmt_p}}{currency} 고점 저항대)<br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
             elif final_code == "BREAKOUT":
-                sig = "🟢 [수급 돌파] 푸른 수확 / 분할 익절 타점!"
+                sig = "🟢 [상투 돌파] 푸른 수확 / 분할 익절 타점!"
                 col = "#388E3C" 
-                s_adv = f"• <b>[보유자] 💰 수급 폭발 시점! 물량 30~50% 1차 분할 익절(수익 확정)</b><br>• <b>[미보유자] ✋ 추격매수 절대 금지! (눌림목 지지 안착 시 재진입 대기)</b><br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
+                s_adv = f"• <b>[보유자] 💰 상투 과열권 수급 폭발! 물량 30~50% 1차 분할 익절(수익 확정)</b><br>• <b>[미보유자] ✋ 추격매수 절대 금지! (눌림목 지지 안착 시 재진입 대기)</b><br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
             elif final_code == "BOTTOM_BUY":
                 sig = "🔴 [매수] 1단계 진바닥 선취매! (20% 진격)"
                 col = "#D32F2F" 
@@ -734,7 +736,7 @@ if symbol:
             st.divider()
             
             # =========================================================================
-            # ★ [하단 4대 핵심 지표 박스 - 윌리엄스 %R 단독 익절 오해 방지 적용]
+            # ★ [하단 4대 핵심 지표 박스 - 윌리엄스 %R 단독 익절 오해 방지 반영]
             # =========================================================================
             i1, i2, i3, i4 = st.columns(4)
             
@@ -749,7 +751,7 @@ if symbol:
                 elif p >= up_b: 
                     bb_diag = f"👺 <b>[수확 목표선(상단) 과열] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 주가 상단 한계선 접촉.<br>• <b>진단:</b> 탐욕의 끝단이니 신규 매수를 금지하고 익절을 집행하시게."
                 elif is_breakout: 
-                    bb_diag = f"🚀 <b>[수급 돌파 분출] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 20일선 및 볼린저 돌파 강도 측정.<br>• <b>진단:</b> 장대양봉 강력 돌파! 보유자는 분할 수확(매도)하고, 미보유자는 추격매수를 절대 금하시게."
+                    bb_diag = f"🚀 <b>[상투 과열권 수급 돌파] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상단 저항선 돌파 강도 측정.<br>• <b>진단:</b> 상투 과열권 장대양봉 돌파! 보유자는 분할 수확(매도)하고, 미보유자는 추격매수를 절대 금하시게."
                 elif is_squeeze: 
                     bb_diag = f"⚡ <b>[에너지 극초축소 (Squeeze)] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 에너지 응축 및 변동성 폭발 예보.<br>• <b>진단:</b> 밴드가 바짝 좁아졌구먼! 조만간 위/아래 방향성 폭발이 임박했으니 5일선 돌파 전까진 관망하시게."
                 elif p <= low_b: 
