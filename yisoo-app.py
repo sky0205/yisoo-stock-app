@@ -693,9 +693,6 @@ if symbol:
                     else:
                         def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래로 함락된 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지 마시게.</b>"
 
-            # =========================================================================
-            # ★ [MACD 엔진 진단 입체적 개정 반영]
-            # =========================================================================
             if m_l > s_l:
                 if p < defense_line:
                     macd_strategy_msg = "<b>🔥 엔진 정회전 완료 (준비된 불꽃)</b><br>• <b>역할:</b> 상승 모멘텀 유지.<br>• <b>진단:</b> 성벽 아래에 있으나 엔진이 정회전으로 힘차게 돌고 있네! 성벽 돌파를 위해 아래에서 에너지를 바짝 응축하며 밀어 올리는 <b>강력한 준비 엔진 구역</b>이오."
@@ -777,13 +774,19 @@ if symbol:
                     r_status = f"<b>⚖️ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> {'🚨 [다이버전스] 가짜 기세니 속지 마시게.' if is_div else '에너지 충전 중. 보조지표 고개 돌림을 주시하시게.'}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (매수 온도)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{rsi_val:.2f} <span style='font-size:22px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>{r_status}</p></div>", unsafe_allow_html=True)
             
-            # --- 3. Williams %R (민감 반전) ---
+            # --- 3. Williams %R (민감 반전 - 전체 추세 조화형 개정) ---
             with i3:
                 will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
                 if will_val >= -20: 
-                    w_status = "<b>🚩 단기 천장 과열 경계</b><br>• <b>역할:</b> 단기 상투 가장 빠르게 포착.<br>• <b>진단:</b> 지수가 천장권에 진입했으나 타 지표(RSI·볼린저 등) 여유가 있으므로 무조건적인 익절보다 <b>추세 유지 및 타 지표 동조 여부를 관망</b>하시게."
+                    if final_code == "PULLBACK_BUY" or (m_l > s_l and is_ma5_safe):
+                        w_status = "<b>🚀 상방 돌파 도전 구역</b><br>• <b>역할:</b> 단기 상향 압력 측정.<br>• <b>진단:</b> 엔진이 정회전하며 위로 치고 나가는 기세이므로, 단기 천장 지표(-20 위)는 단순 과열이 아니라 <b>상방 문턱을 두드리며 밀어 올리는 강한 추진력</b>이오."
+                    else:
+                        w_status = "<b>🚩 단기 천장 과열 경계</b><br>• <b>역할:</b> 단기 상투 가장 빠르게 포착.<br>• <b>진단:</b> 지수가 천장권에 진입했으나 타 지표 여유가 있으므로 추세 유지 여부를 관망하시게."
                 elif will_val >= -35: 
-                    w_status = "<b>⚠️ 천장 근접 경계</b><br>• <b>역할:</b> 상단 매도 타점 예보.<br>• <b>진단:</b> 고점 징후 포착 중이니 매수 금지, 분할 매도 준수하시게."
+                    if final_code == "PULLBACK_BUY" or (m_l > s_l and is_ma5_safe):
+                        w_status = "<b>⚔️ 상방 압력 집중 구간</b><br>• <b>역할:</b> 상승 에너지 도달 확인.<br>• <b>진단:</b> 상승 추세 속 단기 저항대에 진입했으나, 5일선/20일선 안착 상태이므로 <b>추세 연장 및 승순 확대 흐름과 일치</b>하오."
+                    else:
+                        w_status = "<b>⚠️ 천장 근접 경계</b><br>• <b>역할:</b> 상단 매도 타점 예보.<br>• <b>진단:</b> 고점 징후 포착 중이니 매수 금지, 분할 매도 준수하시게."
                 elif will_val <= -80:
                     if will_val > will_prev and is_ma5_safe:
                         w_status = "<b>🏳️ 개미 항복 구역</b><br>• <b>역할:</b> 세력 선취매 및 반전 포착.<br>• <b>진단:</b> 🚀 <b>[항복 후 반격]</b> -80 위로 고개 듦! 1단계 진바닥 선취매 신호 포착."
