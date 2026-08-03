@@ -734,7 +734,7 @@ if symbol:
             st.divider()
             
             # =========================================================================
-            # ★ [하단 4대 핵심 지표 박스 - 원본 세부 진단 내용 100% 완벽 복구]
+            # ★ [하단 4대 핵심 지표 박스 - 윌리엄스 %R 단독 익절 오해 방지 적용]
             # =========================================================================
             i1, i2, i3, i4 = st.columns(4)
             
@@ -776,11 +776,11 @@ if symbol:
                     r_status = f"<b>⚖️ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> {'🚨 [다이버전스] 가짜 기세니 속지 마시게.' if is_div else '에너지 충전 중. 보조지표 고개 돌림을 주시하시게.'}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (매수 온도)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{rsi_val:.2f} <span style='font-size:22px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>{r_status}</p></div>", unsafe_allow_html=True)
             
-            # --- 3. Williams %R (민감 반전) ---
+            # --- 3. Williams %R (민감 반전) - ★ 단독 익절 오해 방지 반영 ---
             with i3:
                 will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
                 if will_val >= -20: 
-                    w_status = "<b>🚩 천장 광기 구역</b><br>• <b>역할:</b> 단기 상투 가장 빠르게 포착.<br>• <b>진단:</b> 최고점 광기 진입! 비수 꽂히기 전에 익절하시게."
+                    w_status = "<b>🚩 단기 천장 과열 경계</b><br>• <b>역할:</b> 단기 상투 가장 빠르게 포착.<br>• <b>진단:</b> 지수가 천장권에 진입했으나 타 지표(RSI·볼린저 등) 여유가 있으므로 무조건적인 익절보다 <b>추세 유지 및 타 지표 동조 여부를 관망</b>하시게."
                 elif will_val >= -35: 
                     w_status = "<b>⚠️ 천장 근접 경계</b><br>• <b>역할:</b> 상단 매도 타점 예보.<br>• <b>진단:</b> 고점 징후 포착 중이니 매수 금지, 분할 매도 준수하시게."
                 elif will_val <= -80:
