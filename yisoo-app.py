@@ -474,7 +474,7 @@ if symbol:
 
             is_uptrend = (p >= mid_line) or (ma20_slope > 0)
             
-            # ★ [장대양봉 수급 돌파 판정 개정: 무분별한 익절 방지 및 과열권/목표선 근접 제한]
+            # 장대양봉 수급 돌파 판정
             is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe and (p >= up_b * 0.98 or p >= defense_line)
 
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
@@ -536,7 +536,7 @@ if symbol:
             is_bottom_buy_raw = ((recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and is_bottom_disparity_safe)
 
             # =========================================================================
-            # ★ [눌림목 동조 채점 정밀 연산 - 안전하게 먼저 정의]
+            # ★ [눌림목 동조 채점 정밀 연산]
             # =========================================================================
             if (not is_uptrend) or (p < mid_line):
                 pullback_rebound_score = 0
@@ -562,18 +562,19 @@ if symbol:
                     pullback_status_str = "<b>(조건 미흡)</b>"
                     pullback_action_str = "➔ <b>[관망]</b>"
 
-            is_trend_buy_raw = (
+            # 실질적 눌림목 매수 유효성 판정 (이격 과열 기준을 완화하여 20일선 근처 안착 시 상충 방지)
+            is_true_pullback_buy = (
                 (p >= mid_line) 
                 and (ma5_val >= mid_line) 
                 and is_ma5_safe 
-                and (0 <= bias_ma20 <= 3.0) 
+                and (bias_ma20 <= 5.0) 
                 and not is_too_close_to_target 
                 and (pullback_rebound_score >= 2)
                 and (vol_strength >= 80)
             )
 
             # =========================================================================
-            # ★ [최종 결론 연동 - 상단 신호등과 하단 지표 동조 100% 일치]
+            # ★ [최종 결론 연동 - 상단 신호등과 하단 지표 동조 100% 일치 정비]
             # =========================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -593,7 +594,7 @@ if symbol:
             elif is_too_close_to_target or top_score >= 2 or p >= up_b:
                 final_code = "SELL_ZONE"
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 수확 목표선 및 과열권 진입! <b>[보유자]는 분할 매도로 수익 확정</b>에 들어가시게! (★ <b>방어선: {stop_loss_label}</b>)"
-            elif is_trend_buy_raw:
+            elif is_true_pullback_buy:
                 final_code = "PULLBACK_BUY"
                 final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 지지 및 눌림목 완성! <b>[2단계 승순 확대 30% 진격 타점]</b>이시네. (★ <b>방어선: {stop_loss_label}</b>)"
             else:
@@ -602,8 +603,8 @@ if symbol:
                     final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 20일선 위에 있으나 <b>눌림목 지표 동조(점수 미흡)</b> 상태이므로 섣부른 진입을 금하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif bias_ma5 > 3.0 and p < mid_line:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>20일선 아래에 있으나, 단기 5일선 위에서 +3% 초과 이격 과열 상태</b>이오! 음봉 숨고르기 중이므로 추격매수를 철통 차단하고 🟡 <b>[관망]</b>하시게. (★ <b>방어선: {stop_loss_label}</b>)"
-                elif bias_ma5 > 3.0 or bias_ma20 > 3.0:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>+3% 초과 단기 이격 과열</b> 상태이오! 추격매수를 철통 차단하고 🟡 <b>[관망 및 보유자 홀딩]</b>하시게. (★ <b>방어선: {stop_loss_label}</b>)"
+                elif bias_ma5 > 5.0 or bias_ma20 > 5.0:
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>단기 이격 과열</b> 상태이오! 추격매수를 철통 차단하고 🟡 <b>[관망 및 보유자 홀딩]</b>하시게. (★ <b>방어선: {stop_loss_label}</b>)"
                 elif p >= mid_line and is_ma5_safe:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 20일선 및 5일선 위에 안착해 있으나 수급 동력 부족으로 관망 중! (★ <b>방어선: {stop_loss_label}</b>)"
                 else:
@@ -736,7 +737,7 @@ if symbol:
             st.divider()
             
             # =========================================================================
-            # ★ [하단 4대 핵심 지표 박스 - 윌리엄스 %R 단독 익절 오해 방지 반영]
+            # ★ [하단 4대 핵심 지표 박스]
             # =========================================================================
             i1, i2, i3, i4 = st.columns(4)
             
@@ -778,7 +779,7 @@ if symbol:
                     r_status = f"<b>⚖️ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> {'🚨 [다이버전스] 가짜 기세니 속지 마시게.' if is_div else '에너지 충전 중. 보조지표 고개 돌림을 주시하시게.'}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (매수 온도)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{rsi_val:.2f} <span style='font-size:22px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>{r_status}</p></div>", unsafe_allow_html=True)
             
-            # --- 3. Williams %R (민감 반전) - ★ 단독 익절 오해 방지 반영 ---
+            # --- 3. Williams %R (민감 반전) ---
             with i3:
                 will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
                 if will_val >= -20: 
