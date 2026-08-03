@@ -736,7 +736,7 @@ if symbol:
             # =========================================================================
             i1, i2, i3, i4 = st.columns(4)
             
-            # --- 1. Bollinger (기세 & 위치) ---
+            # --- 1. Bollinger (기세 & 위치) - 상단 생명선 연동형 개정 완료 ---
             with i1:
                 if final_code == "BOTTOM_BUY":
                     bb_diag = f"🔴 <b>[진바닥 선취매 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 바닥권 과매도 및 5일선 안착 검증.<br>• <b>진단:</b> 진바닥 기록 포착 후 5일선 종가 안착 완료! 1단계 선취매(20%) 집행 구역이오."
@@ -752,13 +752,13 @@ if symbol:
                     bb_diag = f"⚡ <b>[에너지 극초축소 (Squeeze)] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 에너지 응축 및 변동성 폭발 예보.<br>• <b>진단:</b> 밴드가 바짝 좁아졌구먼! 조만간 위/아래 방향성 폭발이 임박했으니 5일선 돌파 전까진 관망하시게."
                 elif p <= low_b: 
                     bb_diag = f"🧊 <b>[공략 대기선(하단) 바닥] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 진바닥 측정.<br>• <b>진단:</b> 지하실 지점이오. 일봉 5일선 종가 안착 시 1단계 선취매(20%)로 대응하시게."
-                elif p >= mid_line: 
-                    if final_code == "WAIT_GENERAL":
-                        bb_diag = f"🔥 <b>[20일 중앙선 지지 / 관망] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 눌림목 및 추세 유지 판단.<br>• <b>진단:</b> 중앙선 지지를 받고 있으나 눌림목 동조 점수 미흡으로 승순 확대는 유보하고 관망 중이오."
+                else:
+                    if is_ma5_safe:
+                        bb_diag = f"🌱 <b>[5일선 생명선 사수 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 단기 전투선 및 생명선 방어 확인.<br>• <b>진단:</b> 주가가 단기 5일선 위에 빳빳하게 안착해 있으므로, 중앙선(20일선) 아래에 있더라도 <b>생명선을 지키며 반격을 노리는 대기 구역</b>이오."
+                    elif p >= mid_line:
+                        bb_diag = f"🔥 <b>[20일 중앙선 지지] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 눌림목 및 추세 유지 판단.<br>• <b>진단:</b> 중앙선 지지 완료! 지표 동조 확인 시 승순 확대 가능하오."
                     else:
-                        bb_diag = f"🔥 <b>[20일 중앙선 지지] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 눌림목 및 추세 유지 판단.<br>• <b>진단:</b> 중앙선 지지 완료! 지표 동조 확인 시 2단계 승순 확대(30%) 가능하오." if is_ma5_safe else f"⚠️ <b>[20일선 위 5일선 이탈] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 단기 기세 둔화 감지.<br>• <b>진단:</b> 중앙선 위에 있으나 단기 추세가 꺾였으니 관망하시게."
-                else: 
-                    bb_diag = f"🏠 <b>[추세 하락 국면] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 관망 모드 유지.<br>• <b>진단:</b> 중앙선 및 5일선 모두 이탈! 대기가 상책이오."
+                        bb_diag = f"🏠 <b>[추세 하락 및 생명선 이탈] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 관망 모드 유지.<br>• <b>진단:</b> 중앙선 및 5일선 모두 이탈! 대기가 상책이오."
             
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세/위치)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             
@@ -774,7 +774,7 @@ if symbol:
                     r_status = f"<b>⚖️ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> {'🚨 [다이버전스] 가짜 기세니 속지 마시게.' if is_div else '에너지 충전 중. 보조지표 고개 돌림을 주시하시게.'}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (매수 온도)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{rsi_val:.2f} <span style='font-size:22px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>{r_status}</p></div>", unsafe_allow_html=True)
             
-            # --- 3. Williams %R (민감 반전 - 전체 추세 조화형 개정) ---
+            # --- 3. Williams %R (민감 반전) ---
             with i3:
                 will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
                 if will_val >= -20: 
