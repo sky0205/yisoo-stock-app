@@ -398,8 +398,8 @@ if symbol:
 
             if is_squeeze:
                 squeeze_info_str = f"<br>• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 얕은 조정 후 폭발할 수 있으니 돌파 시 정면 대응하시게."
-            elif bandwidth < 30.0:
-                squeeze_info_str = f"<br>• 🟡 <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 밴드폭이 30% 미만이오! 먹을 자리가 부족하니 섣부른 진입을 자제하시게."
+            elif bandwidth < 25.0:
+                squeeze_info_str = f"<br>• 🟡 <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 밴드폭이 25% 미만이오! 먹을 자리가 부족하니 섣부른 진입을 자제하시게."
             else:
                 squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 활주로가 넉넉히 트였으니 정석 눌림목 타점을 공략하시게."
 
@@ -536,13 +536,13 @@ if symbol:
             is_bottom_buy_raw = ((recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and is_bottom_disparity_safe)
 
             # =========================================================================
-            # ★ [눌림목 동조 채점 정밀 연산: 밴드폭 30% 이상 활주로 확보 조건 장착]
+            # ★ [눌림목 동조 채점 정밀 연산: 밴드폭 25% 이상 활주로 확보 조건 장착]
             # =========================================================================
-            if (not is_uptrend) or (p < mid_line) or (bandwidth < 30.0):
+            if (not is_uptrend) or (p < mid_line) or (bandwidth < 25.0):
                 pullback_rebound_score = 0
-                if bandwidth < 30.0 and is_uptrend and p >= mid_line:
+                if bandwidth < 25.0 and is_uptrend and p >= mid_line:
                     pullback_status_str = f"<b>(밴드폭 협소 {bandwidth:.1f}%)</b>"
-                    pullback_action_str = "➔ <b>[매수 보류]</b> 밴드폭 30% 미만으로 먹을 자리가 부족하여 승순 확대 금지"
+                    pullback_action_str = "➔ <b>[매수 보류]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승순 확대 금지"
                 else:
                     pullback_status_str = "<b>(국면 불일치)</b>"
                     pullback_action_str = "➔ <b>[눌림목 불가]</b> 하락/바닥 국면으로 관망"
@@ -559,7 +559,7 @@ if symbol:
                     elif bias_ma20 > 5.0: 
                         pullback_action_str = f"➔ <b>[관망]</b> 20일선 이격 과열로 매수 보류"
                     elif is_ma5_safe: 
-                        pullback_action_str = f"➔ <b>[2단계 승순 확대]</b> 밴드폭 30% 이상 활주로 확보! 30% 추가 진격"
+                        pullback_action_str = f"➔ <b>[2단계 승순 확대]</b> 밴드폭 25% 이상 활주로 확보! 30% 추가 진격"
                     else: 
                         pullback_action_str = f"➔ <b>[진입 대기]</b> 5일선 안착 대기"
                 else:
@@ -571,7 +571,7 @@ if symbol:
                 and is_ma5_safe 
                 and (pullback_rebound_score >= 2)
                 and (vol_strength >= 80)
-                and (bandwidth >= 30.0)
+                and (bandwidth >= 25.0)
             )
 
             # =========================================================================
@@ -600,8 +600,8 @@ if symbol:
                 final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 밴드폭 넉넉함({bandwidth:.1f}%) + 눌림목 동조 2점 달성 및 5일선/20일선 안착! <b>[2단계 승순 확대 30% 진격 타점]</b>이시네. (★ <b>방어선: {stop_loss_label}</b>)"
             else:
                 final_code = "WAIT_GENERAL"
-                if bandwidth < 30.0 and p >= mid_line:
-                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>밴드폭이 {bandwidth:.1f}%로 30% 미만</b>이오! 상단 목표선이 가까워 먹을 자리가 부족하므로 매수를 잠그고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                if bandwidth < 25.0 and p >= mid_line:
+                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>밴드폭이 {bandwidth:.1f}%로 25% 미만</b>이오! 상단 목표선이 가까워 먹을 자리가 부족하므로 매수를 잠그고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif pullback_rebound_score < 2 and p >= mid_line:
                     final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 20일선 위에 있으나 <b>눌림목 지표 동조(점수 미흡)</b> 상태이므로 섣부른 진입을 금하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif bias_ma5 > 5.0 or bias_ma20 > 5.0:
@@ -672,8 +672,8 @@ if symbol:
             else: 
                 sig = "🟡 [관망] 방향 탐색 / 상방 기세 유지 대기"
                 col = "#FBC02D" 
-                if bandwidth < 30.0 and p >= mid_line:
-                    s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 30% 미만이므로 먹을 자리가 부족하여 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                if bandwidth < 25.0 and p >= mid_line:
+                    s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이므로 먹을 자리가 부족하여 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 elif pullback_rebound_score < 2 and p >= mid_line:
                     s_adv = f"• ⚠️ 20일선 위에 있으나 눌림목 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 else:
@@ -745,20 +745,20 @@ if symbol:
             # =========================================================================
             i1, i2, i3, i4 = st.columns(4)
             
-            # --- 1. Bollinger (기세 & 위치) - 밴드폭 30% 조건 연동 개정 완료 ---
+            # --- 1. Bollinger (기세 & 위치) - 밴드폭 25% 조건 연동 개정 완료 ---
             with i1:
                 if final_code == "BOTTOM_BUY":
                     bb_diag = f"🔴 <b>[진바닥 선취매 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 바닥권 과매도 및 5일선 안착 검증.<br>• <b>진단:</b> 진바닥 기록 포착 후 5일선 종가 안착 완료! 1단계 선취매(20%) 집행 구역이오."
                 elif final_code == "PULLBACK_BUY":
-                    bb_diag = f"🔵 <b>[20일선 눌림목 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 눌림목 지지 검증.<br>• <b>진단:</b> 밴드폭 30% 이상 활주로 확보! 눌림목 동조 2점 달성 및 지지 안착 완료로 2단계 승순 확대(30%) 진격 구역이오."
+                    bb_diag = f"🔵 <b>[20일선 눌림목 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 눌림목 지지 검증.<br>• <b>진단:</b> 밴드폭 25% 이상 활주로 확보! 눌림목 동조 2점 달성 및 지지 안착 완료로 2단계 승순 확대(30%) 진격 구역이오."
                 elif final_code == "STOP_LOSS_ALERT":
                     bb_diag = f"🚨 <b>[방어선 붕괴 비상 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 손절 마지노선 이탈 감지.<br>• <b>진단:</b> 주요 방어선이 무너졌으니 미련 없이 전량 칼손절 후퇴하시게."
                 elif p >= up_b: 
                     bb_diag = f"👺 <b>[수확 목표선(상단) 과열] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 주가 상단 한계선 접촉.<br>• <b>진단:</b> 탐욕의 끝단이니 신규 매수를 금지하고 익절을 집행하시게."
                 elif is_breakout: 
                     bb_diag = f"🚀 <b>[상투 과열권 수급 돌파] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상단 저항선 돌파 강도 측정.<br>• <b>진단:</b> 상투 과열권 장대양봉 돌파! 보유자는 분할 수확(매도)하고, 미보유자는 추격매수를 절대 금하시게."
-                elif bandwidth < 30.0 and p >= mid_line:
-                    bb_diag = f"🟡 <b>[밴드폭 협소 관망 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 박스권 협소 구간 매수 제한.<br>• <b>진단:</b> 밴드폭이 30% 미만으로 상단 목표선과의 거리가 가까워 먹을 자리가 부족하므로, 눌림목 매수를 금하고 <b>[관망]</b>하시게."
+                elif bandwidth < 25.0 and p >= mid_line:
+                    bb_diag = f"🟡 <b>[밴드폭 협소 관망 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 박스권 협소 구간 매수 제한.<br>• <b>진단:</b> 밴드폭이 25% 미만으로 상단 목표선과의 거리가 가까워 먹을 자리가 부족하므로, 눌림목 매수를 금하고 <b>[관망]</b>하시게."
                 elif is_squeeze: 
                     bb_diag = f"⚡ <b>[에너지 극초축소 (Squeeze)] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 에너지 응축 및 변동성 폭발 예보.<br>• <b>진단:</b> 밴드가 바짝 좁아졌구먼! 조만간 위/아래 방향성 폭발이 임박했으니 5일선 돌파 전까진 관망하시게."
                 elif p <= low_b: 
