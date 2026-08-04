@@ -607,7 +607,7 @@ if symbol:
                 elif bias_ma5 > 5.0 or bias_ma20 > 5.0:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>단기 이격 과열</b> 상태이오! 추격매수를 철통 차단하고 🟡 <b>[관망 및 보유자 홀딩]</b>하시게. (★ <b>방어선: {stop_loss_label}</b>)"
                 elif p >= mid_line and is_ma5_safe:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 20일선 및 5일선 위에 안착해 있으나 수급 동력 부족으로 관망 중! (★ <b>방어선: {stop_loss_label}</b>)"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 20일선 및 5일선 위에 안착해 있으나 지표 동조 대기 중! (★ <b>방어선: {stop_loss_label}</b>)"
                 else:
                     final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 아래 하락 추세이므로 느긋하게 관망 모드를 유지하시게! (★ <b>방어선: {stop_loss_label}</b>)"
 
@@ -675,9 +675,9 @@ if symbol:
                 if bandwidth < 25.0 and p >= mid_line:
                     s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이므로 먹을 자리가 부족하여 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 elif pullback_rebound_score < 2 and p >= mid_line:
-                    s_adv = f"• ⚠️ 20일선 위에 있으나 눌림목 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                    s_adv = f"• ⚠️ 화력은 살아있으나 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 else:
-                    s_adv = f"• ⚠️ 이격 과열 및 수급 동력 부족으로 관망 중일세.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                    s_adv = f"• ⚠️ 이격 과열 및 지표 동조 대기로 관망 중일세.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
 
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><div class='signal-subtext'>{s_adv}</div></div>", unsafe_allow_html=True)
 
