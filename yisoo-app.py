@@ -403,7 +403,6 @@ if symbol:
             else:
                 squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 활주로가 넉넉히 트였으니 정석 눌림목 타점을 공략하시게."
 
-            # ★ [진짜 하방 판정: 오늘 당장 주가가 내리거나(음봉) 전일비가 마이너스(-)일 때만 하방으로 인정]
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
             if is_kr:
@@ -536,7 +535,7 @@ if symbol:
             is_bottom_buy_raw = ((recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and is_bottom_disparity_safe)
 
             # =========================================================================
-            # ★ [눌림목 동조 채점 정밀 연산: 밴드폭 25% 이상 활주로 확보 조건 장착]
+            # ★ [진바닥 선취매는 밴드폭 무관, 눌림목 매수만 밴드폭 25% 이상 활주로 적용]
             # =========================================================================
             if (not is_uptrend) or (p < mid_line) or (bandwidth < 25.0):
                 pullback_rebound_score = 0
@@ -575,7 +574,7 @@ if symbol:
             )
 
             # =========================================================================
-            # ★ [최종 결론 연동]
+            # ★ [최종 결론 연동 - 진바닥 선취매가 밴드폭보다 최우선 작동]
             # =========================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -588,7 +587,7 @@ if symbol:
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신저가(칼날 하락)]</b> 구역 전개! 무조건 관망하시게!"
             elif is_bottom_buy_raw and vol_strength >= 80:
                 final_code = "BOTTOM_BUY"
-                final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [진바닥 기록 + 5일선 안착] 성공! <b>[1단계 진바닥 선취매 20% 진격 타점]</b>이시네. (★ <b>손절선: {stop_loss_label}</b>)"
+                final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [진바닥 기록 + 5일선 안착] 성공! <b>[1단계 진바닥 선취매 20% 진격 타점]</b>이시네. (★ 밴드폭 협소와 무관하게 진바닥 에너지 응축 인정! <b>손절선: {stop_loss_label}</b>)"
             elif is_breakout and p >= mid_line: 
                 final_code = "BREAKOUT" 
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상투 과열권 수급 돌파]</b> 분출 중! 보유자는 분할 익절, 미보유자는 추격 금지! (★ <b>방어선: {stop_loss_label}</b>)"
@@ -603,7 +602,7 @@ if symbol:
                 if is_down_trend_v:
                     final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 <b>하방 압력 및 하락세</b>이므로 섣부른 진입을 철통 차단하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif bandwidth < 25.0 and p >= mid_line:
-                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>밴드폭이 {bandwidth:.1f}%로 25% 미만</b>이오! 상단 목표선이 가까워 먹을 자리가 부족하므로 매수를 잠그고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>밴드폭이 {bandwidth:.1f}%로 25% 미만</b>이오! 상단 목표선이 가까워 먹을 자리가 부족하므로 눌림목 매수를 잠그고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif pullback_rebound_score < 2 and p >= mid_line:
                     final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 화력은 살아있으나 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 else:
@@ -665,7 +664,7 @@ if symbol:
             elif final_code == "BOTTOM_BUY":
                 sig = "🔴 [매수] 1단계 진바닥 선취매! (20% 진격)"
                 col = "#D32F2F" 
-                s_adv = f"• <b>[미보유자] 🎯 [진바닥 기록 + 일봉 5일선 안착] 1차 선취매 20% 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 전량 칼손절 후퇴"
+                s_adv = f"• <b>[미보유자] 🎯 [진바닥 기록 + 일봉 5일선 안착] 1차 선취매 20% 진격!</b> (밴드폭 협소 무관)<br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 전량 칼손절 후퇴"
             elif final_code == "PULLBACK_BUY":
                 sig = "🔵 [눌림목 매수] 2단계 승순 확대! (30% 추가)"
                 col = "#1976D2" 
@@ -754,7 +753,7 @@ if symbol:
             # --- 1. Bollinger (기세 & 위치) ---
             with i1:
                 if final_code == "BOTTOM_BUY":
-                    bb_diag = f"🔴 <b>[진바닥 선취매 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 바닥권 과매도 및 5일선 안착 검증.<br>• <b>진단:</b> 진바닥 기록 포착 후 5일선 종가 안착 완료! 1단계 선취매(20%) 집행 구역이오."
+                    bb_diag = f"🔴 <b>[진바닥 선취매 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 바닥권 과매도 및 5일선 안착 검증.<br>• <b>진단:</b> 진바닥 기록 포착 후 5일선 종가 안착 완료! (밴드폭 무관) 1단계 선취매(20%) 집행 구역이오."
                 elif final_code == "PULLBACK_BUY":
                     bb_diag = f"🔵 <b>[20일선 눌림목 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 눌림목 지지 검증.<br>• <b>진단:</b> 밴드폭 25% 이상 활주로 확보! 눌림목 동조 2점 달성 및 지지 안착 완료로 2단계 승순 확대(30%) 진격 구역이오."
                 elif final_code == "STOP_LOSS_ALERT":
