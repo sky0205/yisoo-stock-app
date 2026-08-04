@@ -439,18 +439,16 @@ if symbol:
             # =========================================================================
             # 거래량 전황 출력
             # =========================================================================
+            is_down_trend_v = (p < prev_p) or is_bearish or (p < mid_line)
             if is_manual_mode:
                 v_status, v_adv = "수동검증", f"⚡ <b>[프리장/수동 연산]</b> 수동 입력 시세를 기준으로 이격도 및 매수 타점을 정밀 검증 중이외다."
             elif vol_strength_auto >= 150:
-                if p >= prev_p:
+                if not is_down_trend_v:
                     v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 양봉 화력 실린 본진 진격 중이오."
                 else:
-                    if is_bearish:
-                        v_status, v_adv = "역배열투매", f"🚨 <b>[역배열 투매과열]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 역배열 하락 투매가 폭발 중이니 절대 칼날을 잡지 마시게."
-                    else:
-                        v_status, v_adv = "투매과열", f"🚨 <b>[음봉 투매과열]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 하락 투매 물량이 폭발 중이니 절대 칼날을 잡지 마시게."
+                    v_status, v_adv = "역배열투매", f"🚨 <b>[역배열/하방 투매과열]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 하방 압력 속 투매 물량 폭발 중이니 절대 칼날을 잡지 마시게."
             elif vol_strength_auto >= 100: 
-                if p >= prev_p:
+                if not is_down_trend_v:
                     v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 화력이 차오르네."
                 else:
                     v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength_auto:.1f}점! 하락 추세 속 속임수 음봉 거래량 주의."
@@ -600,16 +598,14 @@ if symbol:
                 final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 밴드폭 넉넉함({bandwidth:.1f}%) + 눌림목 동조 2점 달성 및 5일선/20일선 안착! <b>[2단계 승순 확대 30% 진격 타점]</b>이시네. (★ <b>방어선: {stop_loss_label}</b>)"
             else:
                 final_code = "WAIT_GENERAL"
-                if bandwidth < 25.0 and p >= mid_line:
+                if is_down_trend_v:
+                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 <b>하방 압력 및 역배열 하락세</b>이므로 섣부른 진입을 철통 차단하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                elif bandwidth < 25.0 and p >= mid_line:
                     final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>밴드폭이 {bandwidth:.1f}%로 25% 미만</b>이오! 상단 목표선이 가까워 먹을 자리가 부족하므로 매수를 잠그고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif pullback_rebound_score < 2 and p >= mid_line:
-                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 20일선 위에 있으나 <b>눌림목 지표 동조(점수 미흡)</b> 상태이므로 섣부른 진입을 금하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
-                elif bias_ma5 > 5.0 or bias_ma20 > 5.0:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>단기 이격 과열</b> 상태이오! 추격매수를 철통 차단하고 🟡 <b>[관망 및 보유자 홀딩]</b>하시게. (★ <b>방어선: {stop_loss_label}</b>)"
-                elif p >= mid_line and is_ma5_safe:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 주가가 20일선 및 5일선 위에 안착해 있으나 지표 동조 대기 중! (★ <b>방어선: {stop_loss_label}</b>)"
+                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 화력은 살아있으나 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 else:
-                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 아래 하락 추세이므로 느긋하게 관망 모드를 유지하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                    final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 이격 과열 및 지표 동조 대기로 관망 중일세! (★ <b>방어선: {stop_loss_label}</b>)"
 
             indicator_verify_text = (
                 f"{ma_price_summary}<br>"
@@ -670,14 +666,19 @@ if symbol:
                 col = "#1976D2" 
                 s_adv = f"• <b>[기보유자] 🎯 [밴드폭 넉넉함({bandwidth:.1f}%) + 눌림목 2점 + 5일/20일선 안착] 승순 확대 30% 확정 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 손절선 철저 준수"
             else: 
-                sig = "🟡 [관망] 방향 탐색 / 상방 기세 유지 대기"
-                col = "#FBC02D" 
-                if bandwidth < 25.0 and p >= mid_line:
-                    s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이므로 먹을 자리가 부족하여 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
-                elif pullback_rebound_score < 2 and p >= mid_line:
-                    s_adv = f"• ⚠️ 화력은 살아있으나 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                if is_down_trend_v:
+                    sig = "🟡 [관망] 하방 압력 및 추세 이탈 경계"
+                    col = "#C0CA33" # 하방 관망용 올리브 그린/톤다운 컬러
+                    s_adv = f"• ⚠️ 현재 하방 압력 및 역배열 하락세이므로 손가락을 묶고 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 else:
-                    s_adv = f"• ⚠️ 이격 과열 및 지표 동조 대기로 관망 중일세.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                    sig = "🟡 [관망] 방향 탐색 / 상방 기세 유지 대기"
+                    col = "#FBC02D"
+                    if bandwidth < 25.0 and p >= mid_line:
+                        s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이므로 먹을 자리가 부족하여 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                    elif pullback_rebound_score < 2 and p >= mid_line:
+                        s_adv = f"• ⚠️ 화력은 살아있으나 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                    else:
+                        s_adv = f"• ⚠️ 이격 과열 및 지표 동조 대기로 관망 중일세.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
 
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><div class='signal-subtext'>{s_adv}</div></div>", unsafe_allow_html=True)
 
