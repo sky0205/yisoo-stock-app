@@ -398,10 +398,10 @@ if symbol:
 
             if is_squeeze:
                 squeeze_info_str = f"<br>• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 얕은 조정 후 폭발할 수 있으니 돌파 시 정면 대응하시게."
-            elif bandwidth <= 15.0:
-                squeeze_info_str = f"<br>• 🔍 <b>[밴드폭 축소({bandwidth:.1f}%)]</b> 힘을 모으는 구간이오. 5일선/20일선 안착을 주의 깊게 보시게."
+            elif bandwidth < 30.0:
+                squeeze_info_str = f"<br>• 🟡 <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 밴드폭이 30% 미만이오! 먹을 자리가 부족하니 섣부른 진입을 자제하시게."
             else:
-                squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 일반 변동성 국면이니 정석 눌림목/진바닥 타점을 차분히 기다리시게."
+                squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 활주로가 넉넉히 트였으니 정석 눌림목 타점을 공략하시게."
 
             if is_kr:
                 core_vault = {"005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", "257720": "실리콘투", "058610": "에스피지"}
