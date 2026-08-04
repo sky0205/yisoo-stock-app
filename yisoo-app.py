@@ -403,7 +403,8 @@ if symbol:
             else:
                 squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 활주로가 넉넉히 트였으니 정석 눌림목 타점을 공략하시게."
 
-            is_down_trend_v = (p < prev_p) or is_bearish or (p < mid_line)
+            # ★ [진짜 하방 판정: 오늘 당장 주가가 내리거나(음봉) 전일비가 마이너스(-)일 때만 하방으로 인정]
+            is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
             if is_kr:
                 core_vault = {"005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", "257720": "실리콘투", "058610": "에스피지"}
@@ -600,7 +601,7 @@ if symbol:
             else:
                 final_code = "WAIT_GENERAL"
                 if is_down_trend_v:
-                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 <b>하방 압력 및 역배열 하락세</b>이므로 섣부른 진입을 철통 차단하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 <b>하방 압력 및 하락세</b>이므로 섣부른 진입을 철통 차단하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif bandwidth < 25.0 and p >= mid_line:
                     final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>밴드폭이 {bandwidth:.1f}%로 25% 미만</b>이오! 상단 목표선이 가까워 먹을 자리가 부족하므로 매수를 잠그고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif pullback_rebound_score < 2 and p >= mid_line:
@@ -618,13 +619,13 @@ if symbol:
             )
 
             # =========================================================================
-            # ★ [보유자 전용 이원화 가이드 (5번 항목) - 하방 국면 완벽 동기화]
+            # ★ [보유자 전용 이원화 가이드 (5번 항목) - 실시간 기세 반영]
             # =========================================================================
             if user_avg_price <= 0:
                 if is_down_trend_v:
                     holder_guide_msg = f"현재 하방 압력 및 하락 추세 구간이므로 신규 진입을 철통같이 금하고 관망하시게. (★ <b>현재 기준 손절 마지노선: {stop_loss_label}</b>)"
                 else:
-                    holder_guide_msg = f"현재 추세 탐색 구간이니 성벽({defense_line:{fmt_p}}{currency})이나 5일선 사수 여부를 확인하며 차분히 보유 판단을 내리시게. (★ <b>현재 기준 손절 마지노선: {stop_loss_label}</b>)"
+                    holder_guide_msg = f"현재 추세 탐색 및 방향 정립 구간이니 성벽({defense_line:{fmt_p}}{currency})이나 5일선 사수 여부를 확인하며 차분히 보유 판단을 내리시게. (★ <b>현재 기준 손절 마지노선: {stop_loss_label}</b>)"
             else:
                 profit_rate = ((p - user_avg_price) / user_avg_price) * 100
                 is_low_safe_holder = (user_avg_price <= prev_low_20) or (profit_rate >= 15.0)
@@ -639,13 +640,13 @@ if symbol:
                     else:
                         holder_guide_msg = (
                             f"📈 <b>[수익권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 수익률: +{profit_rate:.2f}%)]</b><br>"
-                            f"• 현재 하방 압력이 작동 중이므로 5일선({ma5_val:{fmt_p}}{currency}) 사수 여부를 바짝 주시하시게. 단기 변동성에 수익을 반납하지 않도록 본절가/익절선을 바짝 조이시게.<br>"
-                            f"• 5일선 이탈 시 일부 분할 익절 또는 비중 축소로 대응하시게. (★ <b>필수 방어선: {stop_loss_label}</b>)"
+                            f"• 현재 5일선({ma5_val:{fmt_p}}{currency}) 사수 여부를 주시하시게. 단기 변동성에 수익을 반납하지 않도록 본절가/익절선을 설정하시게.<br>"
+                            f"• 5일선 안착 시 수확 목표선({up_b:{fmt_p}}{currency})까지 자신감 있게 홀딩하시고, 이탈 시 일부 분할 익절로 대응하시게. (★ <b>필수 방어선: {stop_loss_label}</b>)"
                         )
                 else:
                     holder_guide_msg = (
                         f"📉 <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br>"
-                        f"• <b>현재 하방 압력이 거세므로 5일선({ma5_val:{fmt_p}}{currency}) 아래에서 절대 추측 추가 매수(물타기)를 하지 마시게.</b><br>"
+                        f"• <b>5일선({ma5_val:{fmt_p}}{currency}) 아래에서는 절대로 추측 추가 매수(물타기)를 하지 마시게.</b> 손가락을 묶고 차분히 대기하시게.<br>"
                         f"• 손절 마지노선({stop_loss_label}) 이탈 시 추가 손실 방지를 위한 전량 손절 후퇴를 집행하시고 현금을 지키시게."
                     )
 
@@ -673,7 +674,7 @@ if symbol:
                 if is_down_trend_v:
                     sig = "🟡 [관망] 하방 압력 및 추세 이탈 경계"
                     col = "#C0CA33" 
-                    s_adv = f"• ⚠️ 현재 하방 압력 및 역배열 하락세이므로 손가락을 묶고 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                    s_adv = f"• ⚠️ 현재 하방 압력 및 하락세이므로 손가락을 묶고 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 else:
                     sig = "🟡 [관망] 방향 탐색 / 상방 기세 유지 대기"
                     col = "#FBC02D"
@@ -746,7 +747,7 @@ if symbol:
             st.divider()
             
             # =========================================================================
-            # ★ [하단 4대 핵심 지표 박스 - 하방 국면 동기화 개정 완료]
+            # ★ [하단 4대 핵심 지표 박스]
             # =========================================================================
             i1, i2, i3, i4 = st.columns(4)
             
@@ -763,7 +764,7 @@ if symbol:
                 elif is_breakout: 
                     bb_diag = f"🚀 <b>[상투 과열권 수급 돌파] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상단 저항선 돌파 강도 측정.<br>• <b>진단:</b> 상투 과열권 장대양봉 돌파! 보유자는 분할 수확(매도)하고, 미보유자는 추격매수를 절대 금하시게."
                 elif is_down_trend_v:
-                    bb_diag = f"📉 <b>[하방 압력 및 중앙선 이탈 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 하락 추세 속 리스크 관리.<br>• <b>진단:</b> 현재 주가가 하방 압력을 받으며 밀리는 국면이므로, 섣부른 반등 기대를 버리고 <b>추세 이탈 경계 및 관망</b>을 유지하시게."
+                    bb_diag = f"📉 <b>[하방 압력 및 중앙선 이탈 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 하락 추세 속 리스크 관리.<br>• <b>진단:</b> 현재 주가가 하방 압력을 받으며 밀리는 국면이므로 섣부른 반등 기대를 버리고 관망하시게."
                 elif bandwidth < 25.0 and p >= mid_line:
                     bb_diag = f"🟡 <b>[밴드폭 협소 관망 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 박스권 협소 구간 매수 제한.<br>• <b>진단:</b> 밴드폭이 25% 미만으로 상단 목표선과의 거리가 가까워 먹을 자리가 부족하므로, 눌림목 매수를 금하고 <b>[관망]</b>하시게."
                 elif is_squeeze: 
@@ -771,7 +772,10 @@ if symbol:
                 elif p <= low_b: 
                     bb_diag = f"🧊 <b>[공략 대기선(하단) 바닥] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 진바닥 측정.<br>• <b>진단:</b> 지하실 지점이오. 일봉 5일선 종가 안착 시 1단계 선취매(20%)로 대응하시게."
                 else:
-                    bb_diag = f"🔥 <b>[20일 중앙선 위 안착 및 지지] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 상방 기세 유지 판단.<br>• <b>진단:</b> 주가가 20일 중앙선 및 5일선 위에 빳빳하게 안착해 있으므로 상방 기세를 유지하는 구역이오."
+                    if p >= mid_line:
+                        bb_diag = f"🔥 <b>[20일 중앙선 위 안착 및 지지] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 상방 기세 유지 판단.<br>• <b>진단:</b> 주가가 20일 중앙선 및 5일선 위에 빳빳하게 안착해 있으므로 상방 기세를 유지하는 구역이오."
+                    else:
+                        bb_diag = f"🌱 <b>[기세 회복 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 단기 반등 모니터링.<br>• <b>진단:</b> 장기 추세는 바닥에 있으나 오늘 기세를 회복하며 올라서는 중이므로 방향성을 차분히 주시하시게."
             
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세/위치)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             
