@@ -1,4 +1,3 @@
-
 import streamlit as st
 import FinanceDataReader as fdr
 import yfinance as yf
@@ -483,6 +482,10 @@ if symbol:
                 is_stop_loss_triggered = True
                 stop_reason = f"20일선 중앙 성벽선({mid_line:{fmt_p}}{currency}) 이탈 붕괴"
 
+            # ★ [누락되었던 is_bottom_buy_raw 변수 정의 복구]
+            is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
+            is_bottom_buy_raw = ((recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and is_bottom_disparity_safe)
+
             if bottom_score == 3:
                 bottom_status_str = "<b>(오늘 진바닥 3점 만점 달성!)</b>"
                 if is_stop_loss_triggered:
@@ -524,7 +527,7 @@ if symbol:
             is_too_close_to_target = margin_to_target < 0.02
 
             # =========================================================================
-            # ★ [수정 포인트: 역배열 및 5일선 아래 여부에 따른 '하락/바닥' vs '돌파 대기' 갈라치기]
+            # ★ [역배열 및 5일선 아래 여부에 따른 '하락/바닥' vs '돌파 대기' 갈라치기]
             # =========================================================================
             is_bearish_alignment = (ma5_val < mid_line and ma60_val < ma120_val)
             
@@ -535,7 +538,6 @@ if symbol:
                     pullback_action_str = "➔ <b>[매수 보류]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승순 확대 금지"
                 else:
                     pullback_status_str = "<b>(국면 불일치)</b>"
-                    # 역배열 상태이면서 5일선 아래에 처박혀 있는 경우에만 '하락/바닥 국면'으로 판독
                     if is_bearish_alignment and not is_ma5_safe:
                         pullback_action_str = "➔ <b>[눌림목 불가]</b> 하락/바닥 국면으로 관망"
                     else:
