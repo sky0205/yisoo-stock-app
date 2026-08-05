@@ -1,3 +1,4 @@
+
 import streamlit as st
 import FinanceDataReader as fdr
 import yfinance as yf
@@ -387,7 +388,6 @@ if symbol:
             elif ma5_val < mid_line: trend_status = "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려 숨고르기 중"
             else: trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
 
-            # ★ [이동평균선 현황에 60일선, 120일선 완전 복구 장착]
             ma_price_summary = (
                 f"<br>• 📌 <b>[주요 이동평균선 현황]</b><br>"
                 f"&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str} (단기 트레이딩용 손절선: {surge_stop_price:{fmt_p}}{currency})</span> | "
@@ -438,9 +438,6 @@ if symbol:
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
-            # =========================================================================
-            # 거래량 전황 출력
-            # =========================================================================
             if is_manual_mode:
                 v_status, v_adv = "수동검증", f"⚡ <b>[프리장/수동 연산]</b> 수동 입력 시세를 기준으로 이격도 및 매수 타점을 정밀 검증 중이외다."
             elif vol_strength_auto >= 150:
@@ -460,9 +457,6 @@ if symbol:
             
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} ({'수동 연산 모드' if is_manual_mode else f'실시간 {v_ratio:.1f}% / 5일평균대비'})</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
-            # =========================================================================
-            # 지표검증연산 + 진바닥 기억 장치(Memory Logic) 연동
-            # =========================================================================
             bb_bot_series = (df['Close'] <= (low_b * 1.02)).astype(int)
             rsi_bot_series = (rsi_series <= 35).astype(int)
             will_bot_series = (will_series <= -80).astype(int)
@@ -472,8 +466,6 @@ if symbol:
             recent_bottom_memory = (bottom_score_series.iloc[-3:].max() >= 2)
 
             is_uptrend = (p >= mid_line) or (ma20_slope > 0)
-            
-            # 장대양봉 수급 돌파 판정
             is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe and (p >= up_b * 0.98 or p >= defense_line)
 
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
@@ -531,12 +523,11 @@ if symbol:
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_target = margin_to_target < 0.02
 
-            is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
-            is_bottom_buy_raw = ((recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and is_bottom_disparity_safe)
-
             # =========================================================================
-            # ★ [진바닥 선취매는 밴드폭 무관, 눌림목 매수만 밴드폭 25% 이상 활주로 적용]
+            # ★ [수정 포인트: 역배열 및 5일선 아래 여부에 따른 '하락/바닥' vs '돌파 대기' 갈라치기]
             # =========================================================================
+            is_bearish_alignment = (ma5_val < mid_line and ma60_val < ma120_val)
+            
             if (not is_uptrend) or (p < mid_line) or (bandwidth < 25.0):
                 pullback_rebound_score = 0
                 if bandwidth < 25.0 and is_uptrend and p >= mid_line:
@@ -544,7 +535,11 @@ if symbol:
                     pullback_action_str = "➔ <b>[매수 보류]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승순 확대 금지"
                 else:
                     pullback_status_str = "<b>(국면 불일치)</b>"
-                    pullback_action_str = "➔ <b>[눌림목 불가]</b> 하락/바닥 국면으로 관망"
+                    # 역배열 상태이면서 5일선 아래에 처박혀 있는 경우에만 '하락/바닥 국면'으로 판독
+                    if is_bearish_alignment and not is_ma5_safe:
+                        pullback_action_str = "➔ <b>[눌림목 불가]</b> 하락/바닥 국면으로 관망"
+                    else:
+                        pullback_action_str = "➔ <b>[돌파 대기]</b> 상방 공방 및 이격 조율 중 관망"
             else:
                 p_will = 1 if will_val <= -50 else 0
                 p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.01) else 0
@@ -573,12 +568,9 @@ if symbol:
                 and (bandwidth >= 25.0)
             )
 
-            # =========================================================================
-            # ★ [최종 결론 연동 - 진바닥 선취매가 밴드폭보다 최우선 작동]
-            # =========================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
-                final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게!"
+                final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
             elif is_new_high:
                 final_code = "NEW_HIGH"
                 final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신고가(무주공산)]</b> 영역 진격 중! 5일선 사수 기준 대응하시게!"
@@ -617,9 +609,6 @@ if symbol:
                 f"{squeeze_info_str}"
             )
 
-            # =========================================================================
-            # ★ [보유자 전용 이원화 가이드 (5번 항목) - 실시간 기세 반영]
-            # =========================================================================
             if user_avg_price <= 0:
                 if is_down_trend_v:
                     holder_guide_msg = f"현재 하방 압력 및 하락 추세 구간이므로 신규 진입을 철통같이 금하고 관망하시게. (★ <b>현재 기준 손절 마지노선: {stop_loss_label}</b>)"
@@ -745,12 +734,9 @@ if symbol:
 
             st.divider()
             
-            # =========================================================================
-            # ★ [하단 4대 핵심 지표 박스]
-            # =========================================================================
+            # --- 하단 4대 핵심 지표 박스 ---
             i1, i2, i3, i4 = st.columns(4)
             
-            # --- 1. Bollinger (기세 & 위치) ---
             with i1:
                 if final_code == "BOTTOM_BUY":
                     bb_diag = f"🔴 <b>[진바닥 선취매 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 바닥권 과매도 및 5일선 안착 검증.<br>• <b>진단:</b> 진바닥 기록 포착 후 5일선 종가 안착 완료! (밴드폭 무관) 1단계 선취매(20%) 집행 구역이오."
@@ -775,10 +761,9 @@ if symbol:
                         bb_diag = f"🔥 <b>[20일 중앙선 위 안착 및 지지] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 상방 기세 유지 판단.<br>• <b>진단:</b> 주가가 20일 중앙선 및 5일선 위에 빳빳하게 안착해 있으므로 상방 기세를 유지하는 구역이오."
                     else:
                         bb_diag = f"🌱 <b>[기세 회복 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 단기 반등 모니터링.<br>• <b>진단:</b> 장기 추세는 바닥에 있으나 오늘 기세를 회복하며 올라서는 중이므로 방향성을 차분히 주시하시게."
-            
+                
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세/위치)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             
-            # --- 2. RSI (매수 온도) ---
             with i2:
                 rsi_trend = "▲ 상승" if rsi_val > rsi_prev else ("▼ 하락" if rsi_val < rsi_prev else "─ 변동없음")
                 is_div = p > prev_p and rsi_val < rsi_prev
@@ -790,7 +775,6 @@ if symbol:
                     r_status = f"<b>⚖️ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> {'🚨 [다이버전스] 가짜 기세니 속지 마시게.' if is_div else '에너지 충전 중. 보조지표 고개 돌림을 주시하시게.'}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (매수 온도)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{rsi_val:.2f} <span style='font-size:22px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>{r_status}</p></div>", unsafe_allow_html=True)
             
-            # --- 3. Williams %R (민감 반전) ---
             with i3:
                 will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
                 if will_val >= -20: 
@@ -814,7 +798,6 @@ if symbol:
                     w_status = "<b>⚖️ 중간 지대</b><br>• <b>역할:</b> 추세 방향 탐색.<br>• <b>진단:</b> 상/하방 방향 탐색 중. 20일선 지지 여부를 지켜보시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (민감 반전)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{will_val:.2f} <span style='font-size:22px; color:#333333;'>({will_trend})</span></p><p class='ind-diag'>{w_status}</p></div>", unsafe_allow_html=True)
             
-            # --- 4. MACD (추세 엔진) ---
             with i4:
                 if m_l > s_l:
                     m_diag = "<b>🔥 엔진 정회전 완료</b><br>• <b>역할:</b> 상승 모멘텀 유지.<br>• <b>진단:</b> " + ("성벽 돌파를 위해 아래에서 에너지를 바짝 응축하며 밀어 올리는 <b>강력한 준비 엔진 구역</b>이오." if p < defense_line else "엔진 정회전! 성벽 사수하며 자신 있게 추세 진격하시게.")
