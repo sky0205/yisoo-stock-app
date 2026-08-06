@@ -482,7 +482,6 @@ if symbol:
                 is_stop_loss_triggered = True
                 stop_reason = f"20일선 중앙 성벽선({mid_line:{fmt_p}}{currency}) 이탈 붕괴"
 
-            # ★ [누락되었던 is_bottom_buy_raw 변수 정의 복구]
             is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
             is_bottom_buy_raw = ((recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and is_bottom_disparity_safe)
 
@@ -526,9 +525,6 @@ if symbol:
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_target = margin_to_target < 0.02
 
-            # =========================================================================
-            # ★ [역배열 및 5일선 아래 여부에 따른 '하락/바닥' vs '돌파 대기' 갈라치기]
-            # =========================================================================
             is_bearish_alignment = (ma5_val < mid_line and ma60_val < ma120_val)
             
             if (not is_uptrend) or (p < mid_line) or (bandwidth < 25.0):
@@ -640,7 +636,10 @@ if symbol:
                         f"• 손절 마지노선({stop_loss_label}) 이탈 시 추가 손실 방지를 위한 전량 손절 후퇴를 집행하시고 현금을 지키시게."
                     )
 
-            if final_code == "STOP_LOSS_ALERT":
+            # ==============================================================================
+            # ★ [상단 신호등(대장 박스) 5일선 연동 및 직관적 표시 로직]
+            # ==============================================================================
+            if is_stop_loss_triggered:
                 sig = "🚨 [비상 손절] 방어선 붕괴! 전량 손절 후퇴!"
                 col = "#D32F2F" 
                 s_adv = f"• <b>[긴급 집행] {stop_reason}!</b> 추가 손실을 막기 위해 미련 없이 즉시 전량 칼손절 후퇴하시게."
@@ -661,19 +660,19 @@ if symbol:
                 col = "#1976D2" 
                 s_adv = f"• <b>[기보유자] 🎯 [밴드폭 넉넉함({bandwidth:.1f}%) + 눌림목 2점 + 5일/20일선 안착] 승순 확대 30% 확정 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 손절선 철저 준수"
             else: 
-                if is_down_trend_v:
-                    sig = "🟡 [관망] 하방 압력 및 추세 이탈 경계"
+                if is_down_trend_v or not is_ma5_safe:
+                    sig = "🟡 [관망/이탈] 5일선 아래 / 하방 경계"
                     col = "#C0CA33" 
-                    s_adv = f"• ⚠️ 현재 하방 압력 및 하락세이므로 손가락을 묶고 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                    s_adv = f"• ⚠️ 현재가가 5일선 아래에 머물거나 하방 압력이므로 손가락을 묶고 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 else:
-                    sig = "🟡 [관망] 방향 탐색 / 상방 기세 유지 대기"
+                    sig = "🟡 [관망/안착] 5일선 위 안착 / 상방 폭발 대기"
                     col = "#FBC02D"
                     if bandwidth < 25.0 and p >= mid_line:
-                        s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이므로 먹을 자리가 부족하여 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                        s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이오나, 5일선 위에 안착하여 상방 에너지를 다지는 중이니 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                     elif pullback_rebound_score < 2 and p >= mid_line:
-                        s_adv = f"• ⚠️ 화력은 살아있으나 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                        s_adv = f"• ⚠️ 5일선 위 안착했으나 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                     else:
-                        s_adv = f"• ⚠️ 이격 과열 및 지표 동조 대기로 관망 중일세.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                        s_adv = f"• ⚠️ 5일선 위에서 기세를 타며 방향 탐색 중일세.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
 
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><div class='signal-subtext'>{s_adv}</div></div>", unsafe_allow_html=True)
 
