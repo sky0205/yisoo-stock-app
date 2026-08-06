@@ -637,40 +637,19 @@ if symbol:
                     )
 
             # ==============================================================================
-            # ★ [상단 신호등(대장 박스) 5일선 위/아래 기세 직관적 연동 출력부 (들여쓰기 정돈 완료)]
+            # ★ [상단 신호등(대장 박스) 5일선 위/아래 기세 최우선 강제 고정 출력부]
             # ==============================================================================
-            if is_stop_loss_triggered:
-                sig = "🚨 [비상 손절] 방어선 붕괴! 전량 손절 후퇴!"
-                col = "#D32F2F" 
-                s_adv = f"• <b>[긴급 집행] {stop_reason}!</b> 추가 손실을 막기 위해 미련 없이 즉시 전량 칼손절 후퇴하시게."
-            elif final_code == "SELL_ZONE":
-                sig = "🟢 [매도] 푸른 수확 / 이익실현 타점!"
-                col = "#388E3C" 
-                s_adv = f"• <b>[보유자] 🚨 수확 목표 달성! 보유 물량 30~50% 즉시 현금화(매도)</b><br>• <b>[미보유자]</b> ✋ 추격매수 금지 (수확목표선 {up_b:{fmt_p}}{currency} 고점 저항대)<br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
-            elif final_code == "BREAKOUT":
-                sig = "🟢 [상투 돌파] 푸른 수확 / 분할 익절 타점!"
-                col = "#388E3C" 
-                s_adv = f"• <b>[보유자] 💰 상투 과열권 수급 폭발! 물량 30~50% 1차 분할 익절(수익 확정)</b><br>• <b>[미보유자] ✋ 추격매수 절대 금지! (눌림목 지지 안착 시 재진입 대기)</b><br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
-            elif final_code == "BOTTOM_BUY":
-                sig = "🔴 [매수] 1단계 진바닥 선취매! (20% 진격)"
-                col = "#D32F2F" 
-                s_adv = f"• <b>[미보유자] 🎯 [진바닥 기록 + 일봉 5일선 안착] 1차 선취매 20% 진격!</b> (밴드폭 협소 무관)<br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 전량 칼손절 후퇴"
-            elif final_code == "PULLBACK_BUY":
-                sig = "🔵 [눌림목 매수] 2단계 승순 확대! (30% 추가)"
-                col = "#1976D2" 
-                s_adv = f"• <b>[기보유자] 🎯 [밴드폭 넉넉함({bandwidth:.1f}%) + 눌림목 2점 + 5일/20일선 안착] 승순 확대 30% 확정 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 손절선 철저 준수"
-            else: 
-                if is_ma5_safe:
-                    sig = "🟢 [5일선 위 · 상승장] 진격 및 응축 대기"
-                    col = "#2E7D32" 
-                    if bandwidth < 25.0:
-                        s_adv = f"• 🚀 <b>현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 상방 에너지를 바짝 응축 중이오이다!</b><br>• ⚠️ 밴드폭이 {bandwidth:.1f}%로 좁으니 돌파 기세를 주시하시게."
-                    else:
-                        s_adv = f"• 🚀 <b>현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 빳빳하게 올라타 상승장을 펼치는 중이오!</b><br>• 🚀 <b>방어선:</b> {stop_loss_label}"
+            if is_ma5_safe:
+                sig = "🟢 [5일선 위 · 상승장] 진격 및 응축 대기"
+                col = "#2E7D32" 
+                if bandwidth < 25.0:
+                    s_adv = f"• 🚀 <b>현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 상방 에너지를 바짝 응축 중이오이다!</b><br>• ⚠️ 밴드폭이 {bandwidth:.1f}%로 좁으니 돌파 기세를 주시하시게."
                 else:
-                    sig = "⚠️ [5일선 아래 · 하락장] 손가락 묶고 관망"
-                    col = "#F57F17" 
-                    s_adv = f"• 🚨 <b>현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래로 밀려나 하락장세이므로 절대 진입 금지이오!</b><br>• 🚀 <b>방어선:</b> {stop_loss_label}"
+                    s_adv = f"• 🚀 <b>현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 빳빳하게 올라타 상승장을 펼치는 중이오!</b><br>• 🚀 <b>방어선:</b> {stop_loss_label}"
+            else:
+                sig = "⚠️ [5일선 아래 · 하락장] 손가락 묶고 관망"
+                col = "#F57F17" 
+                s_adv = f"• 🚨 <b>현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래로 밀려나 하락장세이므로 절대 진입 금지이오!</b><br>• 🚀 <b>방어선:</b> {stop_loss_label}"
 
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><div class='signal-subtext'>{s_adv}</div></div>", unsafe_allow_html=True)
 
