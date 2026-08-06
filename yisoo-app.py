@@ -231,16 +231,16 @@ if symbol:
                     df = ticker.history(period="1y")
                 
                 try:
-                    info = ticker.fast_info
-                    auto_p = getattr(info, 'last_price', 0.0)
-                    if not auto_p or auto_p == 0.0:
+                    todays_data = ticker.history(period='1d', interval='1m')
+                    if not todays_data.empty:
+                        auto_p = float(todays_data['Close'].iloc[-1])
+                        v_curr = float(todays_data['Volume'].sum())
+                    else:
                         auto_p = float(df['Close'].iloc[-1]) if not df.empty else 0.0
-                
-                    v_curr = getattr(info, 'last_volume', 0.0)
-                    if not v_curr or v_curr == 0.0:
-                        v_curr = float(df['Volume'].iloc[-1]) if not df.empty else 0.0
-                    
-                    us_prev_p = getattr(info, 'previous_close', None)
+                        v_curr = float(df['Volume'].iloc[-1]) if (not df.empty and 'Volume' in df.columns) else 0.0
+                except:
+                    auto_p = float(df['Close'].iloc[-1]) if not df.empty else 0.0
+                    v_curr = float(df['Volume'].iloc[-1]) if (not df.empty and 'Volume' in df.columns) else 0.0
                 except:
                     if not df.empty:
                         auto_p = float(df['Close'].iloc[-1])
