@@ -221,26 +221,34 @@ if symbol:
                     if not df.empty:
                         auto_p = float(df['Close'].iloc[-1])
                         v_curr = float(df['Volume'].iloc[-1])
-        else:
-            currency, fmt_p = "$", ",.2f"
-            ticker = yf.Ticker(symbol.upper())
+            else:
+                currency, fmt_p = "$", ",.2f"
+                ticker = yf.Ticker(symbol.upper())
             
-            try:
-                df = ticker.history(start=start_date)
-            except Exception:
-                df = ticker.history(period="1y")
+                try:
+                    df = ticker.history(start=start_date)
+                except Exception:
+                    df = ticker.history(period="1y")
                 
-            try:
-                info = ticker.fast_info
-                auto_p = getattr(info, 'last_price', float(df['Close'].iloc[-1]))
-                v_curr = getattr(info, 'last_volume', float(df['Volume'].iloc[-1]))
-                us_prev_p = info.previous_close
-            except:
-                pass
+                try:
+                    info = ticker.fast_info
+                    auto_p = getattr(info, 'last_price', 0.0)
+                    if not auto_p or auto_p == 0.0:
+                        auto_p = float(df['Close'].iloc[-1]) if not df.empty else 0.0
+                
+                    v_curr = getattr(info, 'last_volume', 0.0)
+                    if not v_curr or v_curr == 0.0:
+                        v_curr = float(df['Volume'].iloc[-1]) if not df.empty else 0.0
+                    
+                    us_prev_p = getattr(info, 'previous_close', None)
+                except:
+                    if not df.empty:
+                        auto_p = float(df['Close'].iloc[-1])
+                        v_curr = float(df['Volume'].iloc[-1])
             
-            if auto_p == 0.0 and not df.empty:
-                auto_p = float(df['Close'].iloc[-1])
-                v_curr = float(df['Volume'].iloc[-1])
+                if auto_p == 0.0 and not df.empty:
+                    auto_p = float(df['Close'].iloc[-1])
+                    v_curr = float(df['Volume'].iloc[-1])
 
         is_manual_mode = False
         if manual_price_str:
