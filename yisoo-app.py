@@ -637,7 +637,7 @@ if symbol:
                     )
 
             # ==============================================================================
-            # ★ [상단 신호등(대장 박스) 5일선 연동 및 직관적 표시 로직]
+            # ★ [상단 신호등(대장 박스) 5일선 위/아래 기세 직관적 연동 출력부 (들여쓰기 정돈 완료)]
             # ==============================================================================
             if is_stop_loss_triggered:
                 sig = "🚨 [비상 손절] 방어선 붕괴! 전량 손절 후퇴!"
@@ -660,19 +660,17 @@ if symbol:
                 col = "#1976D2" 
                 s_adv = f"• <b>[기보유자] 🎯 [밴드폭 넉넉함({bandwidth:.1f}%) + 눌림목 2점 + 5일/20일선 안착] 승순 확대 30% 확정 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 손절선 철저 준수"
             else: 
-                if is_down_trend_v or not is_ma5_safe:
-                    sig = "🟡 [관망/이탈] 5일선 아래 / 하방 경계"
-                    col = "#C0CA33" 
-                    s_adv = f"• ⚠️ 현재가가 5일선 아래에 머물거나 하방 압력이므로 손가락을 묶고 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
-                else:
-                    sig = "🟡 [관망/안착] 5일선 위 안착 / 상방 폭발 대기"
-                    col = "#FBC02D"
-                    if bandwidth < 25.0 and p >= mid_line:
-                        s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이오나, 5일선 위에 안착하여 상방 에너지를 다지는 중이니 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
-                    elif pullback_rebound_score < 2 and p >= mid_line:
-                        s_adv = f"• ⚠️ 5일선 위 안착했으나 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                if is_ma5_safe:
+                    sig = "🟢 [5일선 위 · 상승장] 진격 및 응축 대기"
+                    col = "#2E7D32" 
+                    if bandwidth < 25.0:
+                        s_adv = f"• 🚀 <b>현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 상방 에너지를 바짝 응축 중이오이다!</b><br>• ⚠️ 밴드폭이 {bandwidth:.1f}%로 좁으니 돌파 기세를 주시하시게."
                     else:
-                        s_adv = f"• ⚠️ 5일선 위에서 기세를 타며 방향 탐색 중일세.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                        s_adv = f"• 🚀 <b>현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 빳빳하게 올라타 상승장을 펼치는 중이오!</b><br>• 🚀 <b>방어선:</b> {stop_loss_label}"
+                else:
+                    sig = "⚠️ [5일선 아래 · 하락장] 손가락 묶고 관망"
+                    col = "#F57F17" 
+                    s_adv = f"• 🚨 <b>현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래로 밀려나 하락장세이므로 절대 진입 금지이오!</b><br>• 🚀 <b>방어선:</b> {stop_loss_label}"
 
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><div class='signal-subtext'>{s_adv}</div></div>", unsafe_allow_html=True)
 
