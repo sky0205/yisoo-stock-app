@@ -94,6 +94,7 @@ def display_global_risk():
         data = fetch_global_market()
         n_chg = (data["n_last"] / data["n_prev"] - 1) * 100
         s_chg = (data["s_last"] / data["s_prev"] - 1) * 100
+        # [수정 완료] 다우존스 전일비 계산 오류(s_prev -> d_prev) 바로잡음
         d_chg = (data["d_last"] / data["d_prev"] - 1) * 100
         tnx_val, tnx_chg = data["t_last"], (data["t_last"] / data["t_prev"] - 1) * 100
         u_val, u_chg = data["u_last"], (data["u_last"] / data["u_prev"] - 1) * 100
@@ -132,7 +133,7 @@ def display_global_risk():
         st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기")
+st.title("🧐 이수할아버지의 냉정 진단기 v36060")
 display_global_risk(); st.divider()
 
 col_symbol, col_manual, col_avg, col_btn = st.columns([1.8, 1.8, 1.8, 1.2])
@@ -221,52 +222,50 @@ if symbol:
                     if not df.empty:
                         auto_p = float(df['Close'].iloc[-1])
                         v_curr = float(df['Volume'].iloc[-1])
-            else:
-                currency, fmt_p = "$", ",.2f"
-                ticker = yf.Ticker(symbol.upper())
+        else:
+            currency, fmt_p = "$", ",.2f"
+            ticker = yf.Ticker(symbol.upper())
             
+            try:
+                df = ticker.history(start=start_date)
+            except Exception:
+                df = ticker.history(period="1y")
+            
+            auto_p = 0.0
+            try:
+                info = ticker.fast_info
+                auto_p = float(getattr(info, 'last_price', 0.0) or 0.0)
+            except:
+                pass
+            
+            if (auto_p <= 0 or auto_p != auto_p) and not df.empty:
+                auto_p = float(df['Close'].iloc[-1])
+
+            v_curr = 0.0
+            try:
+                info = ticker.fast_info
+                v_curr = float(getattr(info, 'last_volume', 0.0) or 0.0)
+            except:
+                pass
+
+            if v_curr <= 0 or v_curr != v_curr:
                 try:
-                    df = ticker.history(start=start_date)
-                except Exception:
-                    df = ticker.history(period="1y")
-                
-            # 1. 가격(auto_p) 추출
-                auto_p = 0.0
-                try:
-                    info = ticker.fast_info
-                    auto_p = float(getattr(info, 'last_price', 0.0) or 0.0)
+                    todays_data = ticker.history(period='1d', interval='1m', prepost=True)
+                    if not todays_data.empty and todays_data['Volume'].sum() > 0:
+                        v_curr = float(todays_data['Volume'].sum())
                 except:
                     pass
-            
-                if (auto_p <= 0 or auto_p != auto_p) and not df.empty:
-                    auto_p = float(df['Close'].iloc[-1])
 
-            # 2. 실시간 거래량(v_curr) 추출 (거래량이 0인 빈 행 철저 필터링)
-                v_curr = 0.0
-                try:
-                    info = ticker.fast_info
-                    v_curr = float(getattr(info, 'last_volume', 0.0) or 0.0)
-                except:
-                    pass
-
-                if v_curr <= 0 or v_curr != v_curr:
-                    try:
-                        todays_data = ticker.history(period='1d', interval='1m', prepost=True)
-                        if not todays_data.empty and todays_data['Volume'].sum() > 0:
-                            v_curr = float(todays_data['Volume'].sum())
-                    except:
-                        pass
-
-                if (v_curr <= 0 or v_curr != v_curr) and not df.empty and 'Volume' in df.columns:
-                    valid_vols = df['Volume'][df['Volume'] > 0]
-                    if not valid_vols.empty:
-                        v_curr = float(valid_vols.iloc[-1])
-                    else:
-                        v_curr = float(df['Volume'].iloc[-1])
-            
-                if auto_p == 0.0 and not df.empty:
-                    auto_p = float(df['Close'].iloc[-1])
+            if (v_curr <= 0 or v_curr != v_curr) and not df.empty and 'Volume' in df.columns:
+                valid_vols = df['Volume'][df['Volume'] > 0]
+                if not valid_vols.empty:
+                    v_curr = float(valid_vols.iloc[-1])
+                else:
                     v_curr = float(df['Volume'].iloc[-1])
+            
+            if auto_p == 0.0 and not df.empty:
+                auto_p = float(df['Close'].iloc[-1])
+                v_curr = float(df['Volume'].iloc[-1])
 
         is_manual_mode = False
         if manual_price_str:
