@@ -230,20 +230,38 @@ if symbol:
                 except Exception:
                     df = ticker.history(period="1y")
                 
+            # 1. 가격(auto_p) 추출
+                auto_p = 0.0
                 try:
-                    todays_data = ticker.history(period='1d', interval='1m')
-                    if not todays_data.empty:
-                        auto_p = float(todays_data['Close'].iloc[-1])
-                        v_curr = float(todays_data['Volume'].sum())
+                    info = ticker.fast_info
+                    auto_p = float(getattr(info, 'last_price', 0.0) or 0.0)
+                except:
+                    pass
+            
+                if (auto_p <= 0 or auto_p != auto_p) and not df.empty:
+                    auto_p = float(df['Close'].iloc[-1])
+
+            # 2. 실시간 거래량(v_curr) 추출 (거래량이 0인 빈 행 철저 필터링)
+                v_curr = 0.0
+                try:
+                    info = ticker.fast_info
+                    v_curr = float(getattr(info, 'last_volume', 0.0) or 0.0)
+                except:
+                    pass
+
+                if v_curr <= 0 or v_curr != v_curr:
+                    try:
+                        todays_data = ticker.history(period='1d', interval='1m', prepost=True)
+                        if not todays_data.empty and todays_data['Volume'].sum() > 0:
+                            v_curr = float(todays_data['Volume'].sum())
+                    except:
+                        pass
+
+                if (v_curr <= 0 or v_curr != v_curr) and not df.empty and 'Volume' in df.columns:
+                    valid_vols = df['Volume'][df['Volume'] > 0]
+                    if not valid_vols.empty:
+                        v_curr = float(valid_vols.iloc[-1])
                     else:
-                        auto_p = float(df['Close'].iloc[-1]) if not df.empty else 0.0
-                        v_curr = float(df['Volume'].iloc[-1]) if (not df.empty and 'Volume' in df.columns) else 0.0
-                except:
-                    auto_p = float(df['Close'].iloc[-1]) if not df.empty else 0.0
-                    v_curr = float(df['Volume'].iloc[-1]) if (not df.empty and 'Volume' in df.columns) else 0.0
-                except:
-                    if not df.empty:
-                        auto_p = float(df['Close'].iloc[-1])
                         v_curr = float(df['Volume'].iloc[-1])
             
                 if auto_p == 0.0 and not df.empty:
