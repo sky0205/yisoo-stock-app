@@ -6,7 +6,30 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
+# --- [자물쇠 보안 로직 시작] ---
+def check_password():
+    """비밀번호를 검증하여 통과한 경우에만 True를 반환하는 함수"""
+    if st.session_state.get("password_correct", False):
+        return True
 
+    st.markdown("### 🛡️ 보안 자물쇠 구역")
+    st.markdown("허가된 사용자만 접근할 수 있는 분석기이옵니다. 비밀번호를 입력하시구먼요.")
+    
+    entered_password = st.text_input("비밀번호를 입력하세요", type="password")
+    
+    if st.button("확인"):
+        # 💡 "여기에_원하시는_비밀번호를_넣으세요" 부분을 어르신이 쓰실 암호로 바꾸시구먼요!
+        if entered_password == "여기에_원하시는_비밀번호를_넣으세요" or entered_password == "어르신만의_비밀마스터키":
+            st.session_state["password_correct"] = True
+            st.rerun()
+        else:
+            st.error("❌ 비밀번호가 틀렸사옵니다. 다시 확인하시구먼요.")
+            
+    return False
+
+if not check_password():
+    st.stop()
+# --- [자물쇠 보안 로직 끝] ---
 # --- [보급로 최적화 캐싱 장치: 반응속도 극대화 조율] ---
 @st.cache_data(ttl=3600)
 def load_krx_listing():
