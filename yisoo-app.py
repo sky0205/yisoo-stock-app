@@ -1,9 +1,4 @@
 import streamlit as st
-st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기",
-    page_icon="👑",
-    layout="wide"
-)
 import FinanceDataReader as fdr
 import yfinance as yf
 import pandas as pd
@@ -12,7 +7,7 @@ from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
 
-# --- [보급로 최적화 캐싱 장치] ---
+# --- [보급로 최적화 캐싱 장치: 반응속도 극대화 조율] ---
 @st.cache_data(ttl=3600)
 def load_krx_listing():
     try: return fdr.StockListing('KRX')
