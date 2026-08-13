@@ -698,15 +698,19 @@ if symbol:
                 col = "#1976D2" 
                 s_adv = f"• <b>[기보유자] 🎯 [밴드폭 넉넉함({bandwidth:.1f}%) + 눌림목 2점 + 5일/20일선 안착] 승순 확대 30% 확정 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 손절선 철저 준수"
             else: 
-                if p >= defense_line and p < up_b * 0.97:
-                    if is_down_trend_v or p < prev_p:
+                if p >= defense_line:
+                    if p >= up_b * 0.97:
+                        sig = "🟢 [매도] 푸른 수확 / 이익실현 타점!"
+                        col = "#388E3C"
+                        s_adv = f"• 🎯 <b>[보유자] 수확 목표선({up_b:{fmt_p}}{currency})의 97% 이상(현재가 {p:{fmt_p}}{currency}) 도달! 즉시 물량 30~50% 현금화(매도)로 수익 확정</b>에 들어가시게.<br>• <b>[미보유자]</b> ✋ 추격매수 절대 금지<br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
+                    elif is_down_trend_v or p < prev_p:
                         sig = "🟡 [경계/관망] 성벽 위 음봉 이탈 경계"
                         col = "#FBC02D"
-                        s_adv = f"• ⚠️ 성벽 위({defense_line:{fmt_p}}{currency})에 올라타 있으나 마침 <b>음봉 조정</b>을 맞고 있네! 목표선까지 가기 전에 기세가 꺾일 수 있으니 섣부른 방심을 금하고 <b>철저히 경계 관망</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                        s_adv = f"• ⚠️ 성벽 위({defense_line:{fmt_p}}{currency})에 올라타 있으나 마침 <b>음봉 조정</b>을 맞고 있네! 철저히 경계 관망하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                     else:
                         sig = "🎯 [매도 준비] 수확 목표선 접근 중!"
                         col = "#EF6C00"
-                        s_adv = f"• 🎯 <b>[보유자] 성벽 돌파 후 수확 목표선({up_b:{fmt_p}}{currency})을 향해 맹렬히 진격 중!</b> 목표선까지 얼마 남지 않았으니 곧 다가올 익절(매도) 타이밍을 철저히 준비하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                        s_adv = f"• 🎯 <b>[보유자] 성벽 돌파 후 수확 목표선({up_b:{fmt_p}}{currency})을 향해 진격 중!</b> 익절 타이밍을 준비하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 elif is_down_trend_v:
                     sig = "🟡 [관망] 하방 압력 및 추세 이탈 경계"
                     col = "#C0CA33" 
