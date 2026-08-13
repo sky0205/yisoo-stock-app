@@ -340,17 +340,23 @@ if symbol:
             recent_bottom_memory = (bottom_score_series.iloc[-3:].max() >= 2)
 
             is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
-            is_bottom_buy_raw = ((recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and is_bottom_disparity_safe)
+            # --- 🛡️ [상충 방지 안전 필터 적용] ---
+            is_volume_cliff = (vol_strength < 50.0) # 거래량 50% 미만 시 거래절벽 판정
+            is_real_buy_allowed = is_ma5_safe and (not is_volume_cliff)
 
-            if bottom_score == 3:
+            if bottom_score == 3 and is_real_buy_allowed:
                 bottom_status_str = "<b>(오늘 진바닥 3점 만점 달성!)</b>"
                 bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 진바닥 3점 달성 + 일봉 5일선 종가 안착 완료!"
-            elif recent_bottom_memory or bottom_score >= 2:
+            elif (recent_bottom_memory or bottom_score >= 2) and is_real_buy_allowed:
                 bottom_status_str = "<b>(최근 3일 내 바닥권 2점 이상 기록 유효!)</b>"
                 bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 바닥권 기록 포착 후 일봉 5일선 종가 안착 완료!"
             else:
-                bottom_status_str = "<b>(조건 미흡)</b>"
-                bottom_action_str = "➔ <b>[관망]</b> 매수 보류"
+                if not is_real_buy_allowed:
+                    bottom_status_str = "<b>(조건 만족 / 5일선 이탈 또는 거래절벽)</b>"
+                    bottom_action_str = "➔ <b>[관망]</b> 5일선 미안착 또는 거래절벽으로 매수 보류"
+                else:
+                    bottom_status_str = "<b>(조건 미흡)</b>"
+                    bottom_action_str = "➔ <b>[관망]</b> 매수 보류"
 
             ma5_str = f"{ma5_val:{fmt_p}}{currency}"
             ma20_str = f"{mid_line:{fmt_p}}{currency}"
