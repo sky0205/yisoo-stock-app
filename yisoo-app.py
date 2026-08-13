@@ -593,6 +593,7 @@ if symbol:
                 and (bandwidth >= 25.0)
             )
 
+            # ★ [최종 결론 판정: SELL_ZONE 맹점 수정 완료]
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -608,7 +609,7 @@ if symbol:
             elif is_breakout and p >= mid_line: 
                 final_code = "BREAKOUT" 
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상투 과열권 수급 돌파]</b> 분출 중! 보유자는 분할 익절, 미보유자는 추격 금지! (★ <b>방어선: {stop_loss_label}</b>)"
-            elif is_too_close_to_target or top_score >= 2 or p >= up_b:
+            elif is_too_close_to_target or (top_score >= 2 and p >= up_b * 0.97) or p >= up_b:
                 final_code = "SELL_ZONE"
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 수확 목표선 및 과열권 진입! <b>[보유자]는 분할 매도로 수익 확정</b>에 들어가시게! (★ <b>방어선: {stop_loss_label}</b>)"
             elif is_true_pullback_buy:
