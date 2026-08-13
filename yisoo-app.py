@@ -293,6 +293,8 @@ if symbol:
             is_new_high = (p >= high_52w * 0.99)
             is_new_low = (p <= low_52w * 1.01)
 
+            is_down_trend_v = (p < prev_p) and (p_chg < 0) # ★ is_down_trend_v 정의 누락 해결 완료
+
             is_stop_loss_triggered = (user_avg_price > 0 and p < stop_loss_price) or (p < stop_loss_price and not is_above_ma20)
 
             # 눌림목 동조 점수 연산
@@ -317,9 +319,9 @@ if symbol:
 
             is_above_defense = (p >= defense_line)
             is_near_target = (p >= up_b * 0.98) 
-            is_near_wall = (defense_line * 0.98 <= p <= defense_line * 1.02) and (p < up_b * 0.98) and (vol_strength >= 80)
+            is_near_wall = (defense_link_idx > 1 and defense_line * 0.98 <= p <= defense_line * 1.02) and (p < up_b * 0.98) and (vol_strength >= 80)
 
-            # ★ [최종 판독 분기점: is_new_high, is_new_low 변수 정의 누락 해결 완료]
+            # ★ [최종 판독 분기점: is_down_trend_v 정의 추가 완료]
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -540,7 +542,7 @@ if symbol:
                 if m_l > s_l:
                     m_diag = "<b>🔥 엔진 정회전 완료</b><br>• <b>역할:</b> 상승 모멘텀 유지.<br>• <b>진단:</b> " + ("성벽 돌파를 위해 아래에서 에너지를 바짝 응축하며 밀어 올리는 <b>강력한 준비 엔진 구역</b>이오." if p < defense_line else "엔진 정회전! 성벽 사수하며 자신 있게 추세 진격하시게.")
                 else:
-                    m_diag = "<b>⚙️ 엔진 역회전 상태</b><br>• <b>역할:</b> 하락 조정 모멘텀.<br>• <b>진단:</b> " + ("🚀 [엔진 시동] 역회전폭 급감! 반격의 시동을 거는 중이니 5일선 위에서의 안착 유지 여부를 주시하시게." if is_macd_turning else "⚠️ 역회전 심화! 엔진 거꾸로 도는 차니 절대 진입 금지이오.")
+                    m_diag = "<b>⚙️ 엔진 역회전 상태</b><br>• <b>역할:</b> 하락 조정 모멘텀.<br>• <b>진단:</b> " + ("🚀 [엔진 시동] 역회전폭 급감! 바닥에서 다시 고개를 치켜드는 <b>반격의 시동을 거는 밸브 개방 구역</b>이네." if is_macd_turning else "⚠️ 역회전 심화! 엔진 거꾸로 도는 차니 절대 진입 금지이오.")
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (추세 엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
 
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
