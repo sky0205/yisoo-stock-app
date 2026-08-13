@@ -244,7 +244,11 @@ if symbol:
                 df = pd.concat([df, pd.DataFrame({'Open': [p], 'High': [p], 'Low': [p], 'Close': [p], 'Volume': [v_curr]}, index=[today_date])])
 
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) if len(df) >= 6 else float(df['Volume'].mean())
-            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
+    
+            # ★ [장중 시간 비례 환산: 390분 기준 가중치 보정]
+            v_curr_adjusted = v_curr * (390.0 / max(elapsed_minutes, 1)) if 'elapsed_minutes' in locals() else v_curr
+            v_ratio = (v_curr_adjusted / v_avg5) * 100 if v_avg5 > 0 else 0
+    
             p_diff, p_chg = p - prev_p, ((p - prev_p) / prev_p) * 100 if prev_p > 0 else 0
             vol_strength = 100.0 if is_manual_mode else v_ratio
 
