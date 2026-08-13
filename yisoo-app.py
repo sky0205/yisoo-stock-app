@@ -544,8 +544,9 @@ if symbol:
             is_engine_reverse = (m_l < s_l)
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
-            margin_to_target = (up_b - p) / p if p > 0 else 0
-            is_too_close_to_target = margin_to_target < 0.02
+            # ★ [성벽 돌파 국면과 진짜 수확선 도달 국면 구분 계산]
+            is_near_target = (p >= up_b * 0.98) # 수확 목표선 2% 이내
+            is_near_wall = (p >= defense_line * 0.99) and (p < up_b * 0.98) # 성벽 돌파 공방 중
 
             is_bearish_alignment = (ma5_val < mid_line and ma60_val < ma120_val)
             
@@ -589,7 +590,7 @@ if symbol:
                 and (not is_ma5_over_extended)
             )
 
-            # ★ [최종 판독 분기점]: 5일선 이격 과열(+3% 초과)이거나 목표선 코앞이면 매수 차단 및 관망/익절 전환
+            # ★ [최종 판독 분기점]: 성벽 돌파 중인 경우와 진짜 목표선 도달/이격 과열 구분
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -599,15 +600,18 @@ if symbol:
             elif is_new_low:
                 final_code = "NEW_LOW"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신저가(칼날 하락)]</b> 구역 전개! 무조건 관망하시게!"
+            elif is_near_target: # 진짜 수확 목표선 코앞일 때만 경고
+                final_code = "SELL_ZONE"
+                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>수확 목표선 코앞(과열권)</b>이오! <b>[미보유자] 추격매수 절대 금지</b>, [보유자]는 분할 익절 및 5일선 기준 홀딩하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+            elif is_near_wall: # 성벽 돌파 시도 중일 때는 진격 유지
+                final_code = "WALL_BREAKOUT"
+                final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>현재 성벽({defense_line:{fmt_p}}{currency}) 돌파 공방 중!</b> 기세를 살려 돌파하는지 5일선 기준으로 살피시게. (★ <b>방어선: {stop_loss_label}</b>)"
             elif is_bottom_buy_raw and vol_strength >= 80 and not is_ma5_over_extended:
                 final_code = "BOTTOM_BUY"
                 final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [진바닥 기록 + 5일선 안착] 성공! <b>[1단계 진바닥 선취매 20% 진격 타점]</b>이시네. (★ <b>손절선: {stop_loss_label}</b>)"
             elif is_breakout and p >= mid_line: 
                 final_code = "BREAKOUT" 
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상투 과열권 수급 돌파]</b> 분출 중! 보유자는 분할 익절, 미보유자는 추격 금지! (★ <b>방어선: {stop_loss_label}</b>)"
-            elif is_too_close_to_target or top_score >= 2 or p >= up_b:
-                final_code = "SELL_ZONE"
-                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>수확 목표선 코앞(과열권)</b>이오! <b>[미보유자] 추격매수 절대 금지</b>, [보유자]는 분할 익절 및 5일선 기준 홀딩하시게! (★ <b>방어선: {stop_loss_label}</b>)"
             elif is_ma5_over_extended:
                 final_code = "OVER_EXTENDED"
                 final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>5일선 이격도가 +{bias_ma5:.1f}%로 +3%를 초과하여 과다 이격 상태</b>이오! 고무줄 과열이므로 신규 추격매수를 철통 차단하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
@@ -671,6 +675,10 @@ if symbol:
                 sig = "🟢 [상단 주의] 추격매수 금지 / 수확 목표선 코앞!"
                 col = "#388E3C" 
                 s_adv = f"• <b>[미보유자] ✋ 탐욕의 끝단이오! 추격매수 절대 금지!</b><br>• <b>[보유자]</b> 목표선 인접이므로 분할 익절하며 5일선 기준 홀딩<br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
+            elif final_code == "WALL_BREAKOUT":
+                sig = "🔵 [성벽 돌파 공방] 기세 유지 진격!"
+                col = "#1E88E5"
+                s_adv = f"• <b>[성벽 돌파 공방 중]</b> 현재 성벽({defense_line:{fmt_p}}{currency}) 돌파 시도 중이오. 기세를 살려 돌파하는지 5일선 기준으로 살피시게.<br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
             elif final_code == "OVER_EXTENDED":
                 sig = "🟡 [이격 과열 관망] 5일선 +3% 초과!"
                 col = "#FBC02D"
@@ -682,7 +690,7 @@ if symbol:
             elif final_code == "BOTTOM_BUY":
                 sig = "🔴 [매수] 1단계 진바닥 선취매! (20% 진격)"
                 col = "#D32F2F" 
-                s_adv = f"• <b>[미보유자] 🎯 [진바닥 기록 + 5일선 안착] 1차 선취매 20% 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label}"
+                s_adv = f"• <b>[미보유자] 🎯 [진바닥 기록 + 일봉 5일선 안착] 1차 선취매 20% 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label}"
             elif final_code == "PULLBACK_BUY":
                 sig = "🔵 [상승 추세 유지] 5일/20일선 안착 본진 진격!"
                 col = "#1976D2" 
@@ -696,7 +704,7 @@ if symbol:
                     sig = "🟡 [관망] 방향 탐색 / 상방 기세 유지 대기"
                     col = "#FBC02D"
                     if bandwidth < 25.0 and p >= mid_line:
-                        s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이므로 먹을 자리가 부족하여 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                        s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이오니 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                     elif is_ma5_over_extended:
                         s_adv = f"• ⚠️ 5일선 이격 과열(+{bias_ma5:.1f}%)로 고무줄 늘어났으니 추격매수 금지 및 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                     else:
@@ -772,8 +780,10 @@ if symbol:
                     bb_diag = f"🚨 <b>[방어선 붕괴 비상 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 손절 마지노선 이탈 감지.<br>• <b>진단:</b> 주요 방어선이 무너졌으니 전량 칼손절 후퇴하시게."
                 elif is_ma5_over_extended:
                     bb_diag = f"🟡 <b>[5일선 이격 과열 관망 구역] (이격도: +{bias_ma5:.1f}%)</b><br>• <b>역할:</b> 5일선 대비 +3% 초과 과다 이격 차단.<br>• <b>진단:</b> 고무줄이 너무 팽팽해졌으니 추격매수를 멈추고 이격이 좁혀질 때까지 <b>[관망]</b>하시게."
-                elif p >= up_b * 0.98: 
+                elif is_near_target: 
                     bb_diag = f"👺 <b>[수확 목표선(상단) 과열 경계] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 주가 상단 한계선 접촉 및 탐욕 차단.<br>• <b>진단:</b> 상단선에 바짝 붙은 탐욕의 끝단이니 신규 진입을 철저히 금지하시게."
+                elif final_code == "WALL_BREAKOUT":
+                    bb_diag = f"🔵 <b>[성벽 돌파 공방 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 성벽 돌파 시도 중.<br>• <b>진단:</b> 성벽 근처에서 상방 돌파 공방 중이오. 5일선 기준 기세를 주시하시게."
                 elif final_code == "PULLBACK_BUY":
                     bb_diag = f"🔵 <b>[상승 추세 유지 및 지지 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 상방 기세 유지.<br>• <b>진단:</b> 5일선 이격 과열 없이 우상향 진격 중이므로 추세를 믿고 홀딩하는 구역이오."
                 elif is_breakout: 
