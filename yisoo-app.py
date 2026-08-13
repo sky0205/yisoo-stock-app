@@ -412,7 +412,17 @@ if symbol:
             is_above_defense = (p >= defense_line)
             is_near_target = (p >= up_b * 0.97) # ★ 목표선 97% 이상 도달 시 무조건 수확/매도 최우선 반영!
             is_near_wall = (defense_link_idx > 1 and defense_line * 0.98 <= p <= defense_line * 1.02) and (p < up_b * 0.97) and (vol_strength >= 80)
-
+            # ★ [최종 판독 분기점: 5일선 이탈/거래절벽을 최우선 경고로 고정]
+            is_volume_cliff = (vol_strength < 50.0)
+    
+            if not is_ma5_safe:
+                final_code = "MA5_EXIT"
+                final_adv = f"⚠️ <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[생명선 이탈]</b> 주가가 5일선 아래로 처박혔으니 종가 안착 전까지 절대 손가락을 묶으시게."
+            elif is_volume_cliff:
+                final_code = "VOLUME_CLIFF"
+                final_adv = f"⚠️ <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[거래절벽]</b> 수급이 말라붙어 동력이 없으니 섣부른 진입은 절대 금물이네."
+            elif is_stop_loss_triggered:
+        # 기존 손절 로직... (이하 기존 코드) 
             # ★ [최종 판독 분기점: 목표선 근접 매도를 절대 최우선으로 고정]
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
