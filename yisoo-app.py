@@ -297,14 +297,12 @@ if symbol:
             df.index = pd.to_datetime(df.index).date
             today_date = now_local.date()
 
+            # ★ [장 마감 후 전일비 0 오류 완벽 해결: 무조건 어제까지의 진짜 마지막 종가를 전일비 기준으로 확정]
             if not is_kr and us_prev_p and us_prev_p > 0:
                 prev_p = us_prev_p
             else:
-                if today_date in df.index:
-                    temp_df = df.loc[df.index < today_date]
-                    prev_p = float(temp_df['Close'].iloc[-1]) if not temp_df.empty else float(df['Close'].iloc[0])
-                else:
-                    prev_p = float(df['Close'].iloc[-1]) if len(df) > 0 else p
+                temp_df = df.loc[df.index < today_date] if today_date in df.index else df
+                prev_p = float(temp_df['Close'].iloc[-1]) if not temp_df.empty else p
 
             if today_date in df.index:
                 df.loc[today_date, 'Close'] = p
