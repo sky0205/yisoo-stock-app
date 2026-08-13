@@ -259,7 +259,12 @@ if symbol:
             macd = df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()
             sig_line = macd.ewm(span=9).mean()
             m_l, s_l, m_p, s_p = macd.iloc[-1], sig_line.iloc[-1], macd.iloc[-2], sig_line.iloc[-2]
-            
+            # MACD 반전 연산 변수 추가 (에러 방지 안전장치)
+            try:
+                m_diff_curr, m_diff_prev = m_l - s_l, m_p - s_p
+                is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
+            except:
+                is_macd_turning = False
             df['MA5'] = df['Close'].rolling(5).main if hasattr(df['Close'].rolling(5), 'main') else df['Close'].rolling(5).mean()
             df['MA20'] = df['Close'].rolling(20).mean()
             df['MA60'] = df['Close'].rolling(60).mean()
