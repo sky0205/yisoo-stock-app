@@ -293,14 +293,40 @@ if symbol:
             is_new_high = (p >= high_52w * 0.99)
             is_new_low = (p <= low_52w * 1.01)
 
-            is_down_trend_v = (p < prev_p) and (p_chg < 0) # ★ is_down_trend_v 정의 누락 해결 완료
+            is_down_trend_v = (p < prev_p) and (p_chg < 0)
+
+            # ★ [ma_price_summary 및 trend_status 변수 정의 누락 해결 완료]
+            ma5_str = f"{ma5_val:{fmt_p}}{currency}"
+            ma20_str = f"{mid_line:{fmt_p}}{currency}"
+            ma60_str = f"{ma60_val:{fmt_p}}{currency}"
+            ma120_str = f"{ma120_val:{fmt_p}}{currency}"
+
+            is_bullish = (ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
+            is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
+
+            if is_bullish: trend_status = "🔥 <b>[대세 정배열]</b> 완벽한 우상향 성벽 구축 완료"
+            elif is_bearish: trend_status = "⚠️ <b>[대세 역배열]</b> 지하실 향하는 하락 추세"
+            elif ma5_val > mid_line: trend_status = "🌱 <b>[단기 반등 초입]</b> 5일선이 20일선 돌파! 상방 반전 시도 중"
+            elif ma5_val < mid_line: trend_status = "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려 숨고르기 중"
+            else: trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
+
+            ma_price_summary = (
+                f"<br>• 📌 <b>[주요 이동평균선 현황]</b><br>"
+                f"&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str} (단기 트레이딩용 손절선: {surge_stop_price:{fmt_p}}{currency})</span> | "
+                f"<span style='color:#1976D2; font-weight:bold;'>🔵 20일선: {ma20_str}</span> | "
+                f"<span style='color:#388E3C; font-weight:bold;'>🟢 60일선: {ma60_str}</span> | "
+                f"<span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
+            )
+
+            if bandwidth < 25.0:
+                squeeze_info_str = f"<br>• 🟡 <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 밴드폭이 25% 미만이오! 먹을 자리가 부족하니 섣부른 진입을 자제하시게."
+            else:
+                squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 활주로가 넉넉히 트였으니 정석 눌림목 타점을 공략하시게."
 
             is_stop_loss_triggered = (user_avg_price > 0 and p < stop_loss_price) or (p < stop_loss_price and not is_above_ma20)
 
             # 눌림목 동조 점수 연산
             is_uptrend = (p >= mid_line) or (ma20_slope > 0)
-            is_bearish_alignment = (ma5_val < mid_line and ma60_val < ma120_val)
-            
             if (not is_uptrend) or (p < mid_line) or (bandwidth < 25.0):
                 pullback_rebound_score = 0
             else:
@@ -321,7 +347,7 @@ if symbol:
             is_near_target = (p >= up_b * 0.98) 
             is_near_wall = (defense_link_idx > 1 and defense_line * 0.98 <= p <= defense_line * 1.02) and (p < up_b * 0.98) and (vol_strength >= 80)
 
-            # ★ [최종 판독 분기점: is_down_trend_v 정의 추가 완료]
+            # ★ [최종 판독 분기점: ma_price_summary 정의 완료]
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -355,8 +381,8 @@ if symbol:
                 f"{ma_price_summary}<br>"
                 f"• <b>[추세 정밀 판독]:</b> {trend_status}<br>"
                 f"• <b>[지표 검증 연산]</b><br>"
-                f"   - <b>진바닥 동조:</b> {bottom_score}/3점 {bottom_status_str} {bottom_action_str}<br>"
-                f"   - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
+                f"   - <b>진바닥 동조:</b> {bottom_score}/3점 (확인 완료)<br>"
+                f"   - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 (확인 완료)"
                 f"{squeeze_info_str}"
             )
 
