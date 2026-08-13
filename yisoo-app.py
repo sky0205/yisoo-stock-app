@@ -596,7 +596,7 @@ if symbol:
                 and (bandwidth >= 25.0)
             )
 
-            # ★ [최종 결론 판정: 성벽 위 음봉 이탈 시 경계 관망 반영]
+            # ★ [최종 결론 판정: 성벽 위 판정을 하방 판정보다 최우선으로 배치]
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -620,13 +620,13 @@ if symbol:
                 final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 밴드폭 넉넉함({bandwidth:.1f}%) + 눌림목 동조 2점 달성 및 5일선/20일선 안착! <b>[2단계 승순 확대 30% 진격 타점]</b>이시네. (★ <b>방어선: {stop_loss_label}</b>)"
             else:
                 final_code = "WAIT_GENERAL"
-                if is_down_trend_v:
-                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 <b>하방 압력 및 하락세</b>이므로 섣부른 진입을 철통 차단하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
-                elif p >= defense_line and p < up_b * 0.97:
+                if p >= defense_line and p < up_b * 0.97:
                     if is_down_trend_v or p < prev_p:
                         final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 위({defense_line:{fmt_p}}{currency})에 있으나 <b>음봉 조정</b>을 맞고 있네! 목표선까지 가기 전에 기세가 꺾일 수 있으니 <b>철저히 경계 관망</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                     else:
                         final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽을 넘어 <b>수확 목표선(상단)을 향해 맹렬히 진격 중</b>이네! 목표선까지 얼마 남지 않았으니 <b>[보유자]는 곧 다가올 익절(매도) 타이밍을 철저히 준비</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                elif is_down_trend_v:
+                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 <b>하방 압력 및 하락세</b>이므로 섣부른 진입을 철통 차단하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif bandwidth < 25.0 and p >= mid_line:
                     final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>밴드폭이 {bandwidth:.1f}%로 25% 미만</b>이오! 상단 목표선이 가까워 먹을 자리가 부족하므로 눌림목 매수를 잠그고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif pullback_rebound_score < 2 and p >= mid_line:
@@ -693,11 +693,7 @@ if symbol:
                 col = "#1976D2" 
                 s_adv = f"• <b>[기보유자] 🎯 [밴드폭 넉넉함({bandwidth:.1f}%) + 눌림목 2점 + 5일/20일선 안착] 승순 확대 30% 확정 진격!</b><br>• <b>[손절 마지노선]</b> 🚀 {stop_loss_label} 이탈 시 손절선 철저 준수"
             else: 
-                if is_down_trend_v:
-                    sig = "🟡 [관망] 하방 압력 및 추세 이탈 경계"
-                    col = "#C0CA33" 
-                    s_adv = f"• ⚠️ 현재 하방 압력 및 하락세이므로 손가락을 묶고 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
-                elif p >= defense_line and p < up_b * 0.97:
+                if p >= defense_line and p < up_b * 0.97:
                     if is_down_trend_v or p < prev_p:
                         sig = "🟡 [경계/관망] 성벽 위 음봉 이탈 경계"
                         col = "#FBC02D"
@@ -706,6 +702,10 @@ if symbol:
                         sig = "🎯 [매도 준비] 수확 목표선 접근 중!"
                         col = "#EF6C00"
                         s_adv = f"• 🎯 <b>[보유자] 성벽 돌파 후 수확 목표선({up_b:{fmt_p}}{currency})을 향해 맹렬히 진격 중!</b> 목표선까지 얼마 남지 않았으니 곧 다가올 익절(매도) 타이밍을 철저히 준비하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                elif is_down_trend_v:
+                    sig = "🟡 [관망] 하방 압력 및 추세 이탈 경계"
+                    col = "#C0CA33" 
+                    s_adv = f"• ⚠️ 현재 하방 압력 및 하락세이므로 손가락을 묶고 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 else:
                     sig = "🟡 [관망] 방향 탐색 / 상방 기세 유지 대기"
                     col = "#FBC02D"
