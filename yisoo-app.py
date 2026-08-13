@@ -294,8 +294,9 @@ if symbol:
             is_new_low = (p <= low_52w * 1.01)
 
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
+            is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe and (p >= up_b * 0.98 or p >= defense_line) # ★ is_breakout 정의 추가 완료
 
-            # 진바닥 동조 점수 연산 (bottom_score 정의 추가 완료)
+            # 진바닥 동조 점수 연산
             bb_bot_series = (df['Close'] <= (low_b * 1.02)).astype(int)
             rsi_bot_series = (rsi_series <= 35).astype(int)
             will_bot_series = (will_series <= -80).astype(int)
@@ -371,7 +372,7 @@ if symbol:
             is_near_target = (p >= up_b * 0.98) 
             is_near_wall = (defense_link_idx > 1 and defense_line * 0.98 <= p <= defense_line * 1.02) and (p < up_b * 0.98) and (vol_strength >= 80)
 
-            # ★ [최종 판독 분기점: bottom_score 정의 누락 해결 완료]
+            # ★ [최종 판독 분기점: is_breakout 정의 추가 완료]
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -384,6 +385,9 @@ if symbol:
             elif is_new_low:
                 final_code = "NEW_LOW"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신저가(칼날 하락)]</b> 구역 전개! 무조건 관망하시게!"
+            elif is_breakout and p >= mid_line:
+                final_code = "BREAKOUT"
+                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상투 과열권 수급 돌파]</b> 분출 중! 보유자는 분할 익절, 미보유자는 추격 금지! (★ <b>방어선: {stop_loss_label}</b>)"
             elif is_near_wall and pullback_rebound_score >= 2:
                 final_code = "WALL_BREAKOUT"
                 final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 돌파 공방 중 + 지표 동조 충족! <b>[진격 타점]</b>이시네. (★ <b>방어선: {stop_loss_label}</b>)"
