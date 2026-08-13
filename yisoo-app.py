@@ -154,7 +154,7 @@ def display_global_risk():
             adv = "🔥 [골디락스 진입] 지수 상승과 금리 하락, 기세 타시게."
         else:
             adv = "🧐 [눈치싸움 중] 세력들이 간 보고 있구먼."
-        st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
+        st.info(f"🧐 서강윤 어르신의 글로벌 판독: {adv}")
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
 st.title("🧐 서강윤 어르신의 냉정 진단기 v36060")
@@ -596,7 +596,7 @@ if symbol:
                 and (bandwidth >= 25.0)
             )
 
-            # ★ [최종 결론 판정: 성벽 돌파 오작동 원천 차단 완료]
+            # ★ [최종 결론 판정: 성벽 돌파 후 목표선 진격 보유자 경보 연동 반영]
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -622,6 +622,8 @@ if symbol:
                 final_code = "WAIT_GENERAL"
                 if is_down_trend_v:
                     final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 <b>하방 압력 및 하락세</b>이므로 섣부른 진입을 철통 차단하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                elif p >= defense_line and p < up_b * 0.97:
+                    final_adv = f"🎯 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽을 넘어 <b>수확 목표선(상단)을 향해 맹렬히 진격 중</b>이네! 목표선까지 얼마 남지 않았으니 <b>[보유자]는 곧 다가올 익절(매도) 타이밍을 철저히 준비</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif bandwidth < 25.0 and p >= mid_line:
                     final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>밴드폭이 {bandwidth:.1f}%로 25% 미만</b>이오! 상단 목표선이 가까워 먹을 자리가 부족하므로 눌림목 매수를 잠그고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
                 elif pullback_rebound_score < 2 and p >= mid_line:
@@ -692,6 +694,10 @@ if symbol:
                     sig = "🟡 [관망] 하방 압력 및 추세 이탈 경계"
                     col = "#C0CA33" 
                     s_adv = f"• ⚠️ 현재 하방 압력 및 하락세이므로 손가락을 묶고 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                elif p >= defense_line and p < up_b * 0.97:
+                    sig = "🎯 [매도 준비] 수확 목표선 접근 중!"
+                    col = "#EF6C00" 
+                    s_adv = f"• 🎯 <b>[보유자] 성벽 돌파 후 수확 목표선({up_b:{fmt_p}}{currency})을 향해 맹렬히 진격 중!</b> 목표선이 얼마 남지 않았으니 곧 다가올 익절(매도) 타이밍을 철저히 준비하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                 else:
                     sig = "🟡 [관망] 방향 탐색 / 상방 기세 유지 대기"
                     col = "#FBC02D"
