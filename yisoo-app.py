@@ -294,7 +294,37 @@ if symbol:
             is_new_low = (p <= low_52w * 1.01)
 
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
-            is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe and (p >= up_b * 0.98 or p >= defense_line) # ★ is_breakout 정의 추가 완료
+            is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe and (p >= up_b * 0.98 or p >= defense_line)
+
+            # 종목명 가져오기 로직 복구
+            if is_kr:
+                core_vault = {"005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", "257720": "실리콘투", "058610": "에스피지"}
+                final_display_name = core_vault.get(symbol, f"국내종목 ({symbol})")
+                if symbol not in core_vault:
+                    try:
+                        url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+                        res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1)
+                        soup = BeautifulSoup(res.text, 'html.parser')
+                        final_display_name = soup.select_one(".wrap_company h2 a").text.strip()
+                    except:
+                        try:
+                            df_krx_backup = load_krx_listing()
+                            final_display_name = df_krx_backup[df_krx_backup['Code'] == symbol]['Name'].values[0]
+                        except: pass
+            else:
+                us_vault = {
+                    "TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", 
+                    "MSFT": "마이크로소프트", "AMZN": "아마존", "GOOGL": "알파벳A", 
+                    "META": "메타", "IONQ": "아이온큐", "CPNG": "쿠팡", "NFLX": "넷플릭스"
+                }
+                tk = symbol.upper()
+                kor_name = us_vault.get(tk, None)
+                if not kor_name:
+                    try:
+                        info_dict = ticker.info
+                        kor_name = info_dict.get('longName', info_dict.get('shortName', tk))
+                    except: kor_name = tk
+                final_display_name = f"{kor_name} ({tk})"
 
             # 진바닥 동조 점수 연산
             bb_bot_series = (df['Close'] <= (low_b * 1.02)).astype(int)
@@ -372,7 +402,7 @@ if symbol:
             is_near_target = (p >= up_b * 0.98) 
             is_near_wall = (defense_link_idx > 1 and defense_line * 0.98 <= p <= defense_line * 1.02) and (p < up_b * 0.98) and (vol_strength >= 80)
 
-            # ★ [최종 판독 분기점: is_breakout 정의 추가 완료]
+            # 최종 판독 분기점
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -443,6 +473,31 @@ if symbol:
                         f"• 손절 마지노선({stop_loss_label}) 이탈 시 추가 손실 방지를 위한 전량 손절 후퇴를 집행하시고 현금을 지키시게."
                     )
 
+            # ★ [누락되었던 현재주가현황 & 거래량 전황 박스 화면 출력부 완전 복구]
+            st.markdown("### 📊 현재주가현황")
+            display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
+            st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
+
+            if is_manual_mode:
+                v_status, v_adv = "수동검증", f"⚡ <b>[프리장/수동 연산]</b> 수동 입력 시세를 기준으로 이격도 및 매수 타점을 정밀 검증 중이외다."
+            elif vol_strength >= 150:
+                if not is_down_trend_v:
+                    v_status, v_adv = "과열폭발", f"🔥 <b>[화력폭발]</b> 시간보정 강도 {vol_strength:.1f}점! 양봉 화력 실린 본진 진격 중이오."
+                else:
+                    v_status, v_adv = "역배열투매", f"🚨 <b>[역배열/하방 투매과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하방 압력 속 투매 물량 폭발 중이니 절대 칼날을 잡지 마시게."
+            elif vol_strength >= 100: 
+                if not is_down_trend_v:
+                    v_status, v_adv = "매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네."
+                else:
+                    v_status, v_adv = "역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 음봉 거래량 주의."
+            elif vol_strength >= 80: 
+                v_status, v_adv = "정상화력", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점! 기세가 빳빳하구먼."
+            else: 
+                v_status, v_adv = "거래절벽", f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! 수급이 마르고 동력이 없으니 속지 마시게."
+            
+            st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} ({'수동 연산 모드' if is_manual_mode else f'실시간 {v_ratio:.1f}% / 5일평균대비'})</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
+
+            # 신호등 박스 출력
             if final_code == "STOP_LOSS_ALERT":
                 sig = "🚨 [비상 손절] 방어선 붕괴! 전량 손절 후퇴!"
                 col = "#D32F2F" 
@@ -476,7 +531,7 @@ if symbol:
                     sig = "🟡 [관망] 성벽 탈환 대기 / 홀딩 유지"
                     col = "#FBC02D"
                     if bandwidth < 25.0 and p >= mid_line:
-                        s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이므로 먹을 자리가 부족하여 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                        s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이오니 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                     elif not is_above_defense:
                         s_adv = f"• ⚠️ 현재 주가가 <b>성벽({defense_line:{fmt_p}}{currency}) 아래</b>에 있으므로 매도(수확)가 아니라 <b>성벽 탈환 대기 및 홀딩</b> 자리이네.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                     else:
