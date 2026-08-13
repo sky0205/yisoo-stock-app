@@ -157,7 +157,7 @@ def display_global_risk():
         st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36060")
+st.title("🧐 서강윤 어르신의 냉정 진단기 v36060")
 display_global_risk(); st.divider()
 
 # ==============================================================================
@@ -448,7 +448,8 @@ if symbol:
                 us_vault = {
                     "TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", 
                     "MSFT": "마이크로소프트", "AMZN": "아마존", "GOOGL": "알파벳A", 
-                    "META": "메타", "IONQ": "아이온큐", "CPNG": "쿠팡", "NFLX": "넷플릭스"
+                    "META": "메타", "IONQ": "아이온큐", "CPNG": "쿠팡", "NFLX": "넷플릭스",
+                    "SKHY": "SK하이닉스"
                 }
                 tk = symbol.upper()
                 kor_name = us_vault.get(tk, None)
@@ -492,7 +493,9 @@ if symbol:
             recent_bottom_memory = (bottom_score_series.iloc[-3:].max() >= 2)
 
             is_uptrend = (p >= mid_line) or (ma20_slope > 0)
-            is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe and (p >= up_b * 0.98 or p >= defense_line)
+            
+            # ★ [성벽 돌파 엇박자 수정: 성벽 조건 제거 및 수확 목표선 근처 도달로 일원화]
+            is_breakout = (p_chg >= 7.0) and (vol_strength >= 120) and is_ma5_safe and (p >= up_b * 0.97)
 
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
@@ -593,7 +596,7 @@ if symbol:
                 and (bandwidth >= 25.0)
             )
 
-            # ★ [최종 결론 판정: SELL_ZONE 맹점 수정 완료]
+            # ★ [최종 결론 판정: 성벽 돌파 오작동 원천 차단 완료]
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -693,7 +696,7 @@ if symbol:
                     sig = "🟡 [관망] 방향 탐색 / 상방 기세 유지 대기"
                     col = "#FBC02D"
                     if bandwidth < 25.0 and p >= mid_line:
-                        s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이므로 먹을 자리가 부족하여 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
+                        s_adv = f"• ⚠️ 밴드폭이 {bandwidth:.1f}%로 25% 미만이오니 먹을 자리가 부족하여 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                     elif pullback_rebound_score < 2 and p >= mid_line:
                         s_adv = f"• ⚠️ 화력은 살아있으나 지표 동조 점수가 미흡하므로 <b>[관망]</b>하시게.<br>• 🚀 <b>[방어선]</b> {stop_loss_label}"
                     else:
