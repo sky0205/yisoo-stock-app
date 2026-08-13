@@ -518,8 +518,8 @@ if symbol:
                 sig, col, s_adv = "⚠️ [관망] 단기 생명선(5일선) 이탈", "#D32F2F", f"• ⚠️ 주가가 5일선 아래로 이탈했으니 종가 안착 전까지 손가락을 묶으시게.<br>• 🚀 [방어선] {stop_loss_label}"
             elif final_code == "VOLUME_CLIFF":
                 sig, col, s_adv = "🟡 [관망] 극심한 거래절벽 / 수급 마름", "#E0A800", f"• ⚠️ 수급이 말라붙어 동력이 없으니 섣부른 진입은 자제하시게.<br>• 🚀 [방어선] {stop_loss_label}"
+            
             elif final_code == "STOP_LOSS_ALERT":
-            if final_code == "STOP_LOSS_ALERT":
                 sig, col, s_adv = "🚨 [비상 손절] 방어선 붕괴!", "#D32F2F", f"• <b>[긴급 집행] {stop_reason}!</b> 추가 손실을 막기 위해 미련 없이 즉시 전량 칼손절 후퇴하시게."
             elif final_code == "SELL_ZONE":
                 sig, col, s_adv = "🟢 [매도] 푸른 수확 / 이익실현 타점!", "#388E3C", f"• <b>[보유자] 🚨 수확 목표 달성! 보유 물량 30~50% 즉시 현금화(매도)</b><br>• <b>[미보유자]</b> ✋ 추격매수 금지 (수확목표선 {up_b:{fmt_p}}{currency} 고점 저항대)<br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
