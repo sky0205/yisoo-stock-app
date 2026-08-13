@@ -245,12 +245,21 @@ if symbol:
 
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) if len(df) >= 6 else float(df['Volume'].mean())
     
-            # ★ [실시간 장중 경과 시간 기반 390분 환산 보정]
+            # ★ [국장/미장 맞춤형 장중 경과 시간 분기 연산]
             import datetime
             now_time = datetime.datetime.now()
-            # 한국 시간 혹은 미국 장 기준 경과 분 산출 (예시: 오전 9시 정각 또는 장 시작 시각 기준 경과 분)
-            # 현재 시각의 분을 계산하여 대입
-            elapsed_minutes = max((now_time.hour * 60 + now_time.minute) - (9 * 60 + 30), 30) # 최소 30분 보장
+    
+            # 종목 코드나 심볼에 따라 미장/국장 구분 (예: 미국 주식은 알파벳 위주, 국장은 숫자 위주 등 기존 판별식 활용)
+            # 여기서는 안전하게 시간 분기 로직 적용
+            is_us_market = True  # 현재 미장 분석 중일 때의 분기 (또는 기존에 쓰시던 미장 판별 변수)
+    
+            if is_us_market:
+                # 미국 정규장 기준 경과 분 산출 (동부 시각 또는 현지 개장 시각 기준)
+                elapsed_minutes = max((now_time.hour * 60 + now_time.minute) - (11 * 60 + 30), 30)
+            else:
+                # 한국장 기준 경과 분 산출 (오전 9시 30분 ~ 오후 3시 30분)
+                elapsed_minutes = max((now_time.hour * 60 + now_time.minute) - (9 * 60 + 30), 30)
+        
             if elapsed_minutes > 390: elapsed_minutes = 390
     
             v_curr_adjusted = v_curr * (390.0 / elapsed_minutes)
