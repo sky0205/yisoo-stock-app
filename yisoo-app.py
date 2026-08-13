@@ -299,14 +299,15 @@ if symbol:
 
             # ★ [장 마감 후 전일비 0 오류 완벽 해결: 무조건 어제까지의 진짜 마지막 종가를 전일비 기준으로 확정]
             # [수정 후: 오늘 날짜를 확실하게 도려내고 진짜 어제 이전의 마지막 종가를 확정]
+            # [수정 후: 데이터프레임의 맨 끝이 오늘이면 바로 전 날을 전일 종가로 확정]
             if not is_kr and us_prev_p and us_prev_p > 0:
                 prev_p = us_prev_p
             else:
-                clean_df = df.loc[df.index < today_date]
-                if not clean_df.empty:
-                    prev_p = float(clean_df['Close'].iloc[-1])
-                elif len(df) > 1:
+                if len(df) >= 2:
+                    # 데이터의 가장 마지막 날짜가 오늘이거나 최신이면 그 바로 전 날 종가를 전일 종가로 채택
                     prev_p = float(df['Close'].iloc[-2])
+                elif len(df) == 1:
+                    prev_p = float(df['Close'].iloc[-1])
                 else:
                     prev_p = p
 
