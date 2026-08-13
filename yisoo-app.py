@@ -288,6 +288,11 @@ if symbol:
             defense_link_idx = min(21, len(df))
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
+            high_52w = float(df['High'].rolling(window=250, min_periods=1).max().iloc[-1])
+            low_52w = float(df['Low'].rolling(window=250, min_periods=1).min().iloc[-1])
+            is_new_high = (p >= high_52w * 0.99)
+            is_new_low = (p <= low_52w * 1.01)
+
             is_stop_loss_triggered = (user_avg_price > 0 and p < stop_loss_price) or (p < stop_loss_price and not is_above_ma20)
 
             # 눌림목 동조 점수 연산
@@ -311,14 +316,14 @@ if symbol:
             )
 
             is_above_defense = (p >= defense_line)
-            is_near_target = (p >= up_b * 0.98) # ★ 수확 목표선 코앞(98% 이상) 도달 여부
+            is_near_target = (p >= up_b * 0.98) 
             is_near_wall = (defense_line * 0.98 <= p <= defense_line * 1.02) and (p < up_b * 0.98) and (vol_strength >= 80)
 
-            # ★ [최종 판독 분기점: 수확 목표선 코앞 도달 매도를 최우선으로 격상]
+            # ★ [최종 판독 분기점: is_new_high, is_new_low 변수 정의 누락 해결 완료]
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
-            elif is_near_target: # ★ 수확 목표선 도달 매도를 1순위로 최우선 배치!
+            elif is_near_target: 
                 final_code = "SELL_ZONE"
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 수확 목표선 코앞(과열권) 도달! <b>[보유자]는 분할 매도로 즉시 수익 확정(매도)</b>에 들어가시게! (★ <b>방어선: {stop_loss_label}</b>)"
             elif is_new_high:
@@ -503,13 +508,8 @@ if symbol:
                     bb_diag = f"🟡 <b>[밴드폭 협소 관망 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 박스권 협소 구간 매수 제한.<br>• <b>진단:</b> 밴드폭이 25% 미만으로 상단 목표선과의 거리가 가까워 먹을 자리가 부족하므로, 눌림목 매수를 금하고 <b>[관망]</b>하시게."
                 elif is_squeeze: 
                     bb_diag = f"⚡ <b>[에너지 극초축소 (Squeeze)] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 에너지 응축 및 변동성 폭발 예보.<br>• <b>진단:</b> 밴드가 바짝 좁아졌구먼! 조만간 위/아래 방향성 폭발이 임박했으니 5일선 돌파 전까진 관망하시게."
-                elif p <= low_b: 
-                    bb_diag = f"🧊 <b>[공략 대기선(하단) 바닥] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 진바닥 측정.<br>• <b>진단:</b> 지하실 지점이오. 일봉 5일선 종가 안착 시 1단계 선취매(20%)로 대응하시게."
                 else:
-                    if p >= mid_line:
-                        bb_diag = f"🔥 <b>[20일 중앙선 위 안착 및 지지] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 상방 기세 유지 판단.<br>• <b>진단:</b> 주가가 20일 중앙선 및 5일선 위에 빳빳하게 안착해 있으므로 상방 기세를 유지하는 구역이오."
-                    else:
-                        bb_diag = f"🌱 <b>[기세 회복 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 단기 반등 모니터링.<br>• <b>진단:</b> 장기 추세는 바닥에 있으나 오늘 기세를 회복하며 올라서는 중이므로 방향성을 차분히 주시하시게."
+                    bb_diag = f"🔥 <b>[20일 중앙선 위 안착 및 지지] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 상방 기세 유지 판단.<br>• <b>진단:</b> 주가가 20일 중앙선 및 5일선 위에 빳빳하게 안착해 있으므로 상방 기세를 유지하는 구역이오."
                 
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세/위치)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
             
@@ -517,7 +517,7 @@ if symbol:
                 rsi_trend = "▲ 상승" if rsi_val > rsi_prev else ("▼ 하락" if rsi_val < rsi_prev else "─ 변동없음")
                 is_div = p > prev_p and rsi_val < rsi_prev
                 if rsi_val >= 60: 
-                    r_status = f"<b>👿 불지옥 과열권</b><br>• <b>역할:</b> 매수 에너지 고갈 경보.<br>• <b>진단:</b> {'🚨 [가짜 상승] 주가 상승에도 RSI 하락! 세력 속임수니 대피하시게.' if is_div else ('성벽 아래에서의 과열이므로 매도가 아닌 성벽 돌파 대기 구역이오.' if not is_above_defense else '과열 구간 진입, 차익 실현을 준비하시게.')}"
+                    r_status = f"<b>👿 불지옥 과열권</b><br>• <b>역할:</b> 매수 에너지 고갈 경보.<br>• <b>진단:</b> {'🚨 [가짜 상승] 주가 상승에도 RSI 하락! 세력 속임수니 대피하시게.' if is_div else '과열 구간 진입, 차익 실현을 준비하시게.'}"
                 elif rsi_val <= 35: 
                     r_status = f"<b>🧊 냉골 바닥권</b><br>• <b>역할:</b> 진바닥 수급 에너지 감지.<br>• <b>진단:</b> {'🔥 [온도 상승] 바닥 탈출 신호 포착! 일봉 5일선 안착 시 1단계 선취매(20%) 타점 판독.' if rsi_val > rsi_prev else '매수 에너지 고갈 중. 지속 관망하시게.'}"
                 else: 
@@ -527,22 +527,11 @@ if symbol:
             with i3:
                 will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
                 if will_val >= -20: 
-                    if final_code == "PULLBACK_BUY" or (m_l > s_l and is_ma5_safe):
-                        w_status = "<b>🚀 상방 돌파 도전 구역</b><br>• <b>역할:</b> 단기 상향 압력 측정.<br>• <b>진단:</b> 엔진이 정회전하며 위로 치고 나가는 기세이므로, 단기 천장 지표(-20 위)는 단순 과열이 아니라 <b>상방 문턱을 두드리며 밀어 올리는 강한 추진력</b>이오."
-                    else:
-                        w_status = "<b>🚩 단기 천장 과열 경계</b><br>• <b>역할:</b> 단기 상투 가장 빠르게 포착.<br>• <b>진단:</b> 지수가 천장권에 진입했으나 성벽 아래이므로 매도가 아닌 성벽 돌파 대기 구역이오."
+                    w_status = "<b>🚀 상방 돌파 도전 구역</b><br>• <b>역할:</b> 단기 상향 압력 측정.<br>• <b>진단:</b> 엔진이 정회전하며 위로 치고 나가는 기세이므로, 단기 천장 지표(-20 위)는 단순 과열이 아니라 <b>상방 문턱을 두드리며 밀어 올리는 강한 추진력</b>이오."
                 elif will_val >= -35: 
-                    if final_code == "PULLBACK_BUY" or (m_l > s_l and is_ma5_safe):
-                        w_status = "<b>⚔️ 상방 압력 집중 구간</b><br>• <b>역할:</b> 상승 에너지 도달 확인.<br>• <b>진단:</b> 상승 추세 속 단기 저항대에 진입했으나, 5일선/20일선 안착 상태이므로 <b>추세 연장 및 승순 확대 흐름과 일치</b>하오."
-                    else:
-                        w_status = "<b>⚠️ 천장 근접 경계</b><br>• <b>역할:</b> 상단 매도 타점 예보.<br>• <b>진단:</b> 고점 징후 포착 중이니 매수 금지, 분할 매도 준수하시게."
+                    w_status = "<b>⚔️ 상방 압력 집중 구간</b><br>• <b>역할:</b> 상승 에너지 도달 확인.<br>• <b>진단:</b> 상승 추세 속 단기 저항대에 진입했으나, 5일선/20일선 안착 상태이므로 <b>추세 연장 및 승순 확대 흐름과 일치</b>하오."
                 elif will_val <= -80:
-                    if will_val > will_prev and is_ma5_safe:
-                        w_status = "<b>🏳️ 개미 항복 구역</b><br>• <b>역할:</b> 세력 선취매 및 반전 포착.<br>• <b>진단:</b> 🚀 <b>[항복 후 반격]</b> -80 위로 고개 듦! 1단계 진바닥 선취매 신호 포착."
-                    else:
-                        w_status = "<b>🏳️ 개미 항복 구역</b><br>• <b>역할:</b> 세력 선취매 및 반전 포착.<br>• <b>진단:</b> 🧊 <b>[바닥 침체]</b> -80 밑 투매 진행 중! 일봉 5일선 종가 안착 전까진 매수 금지이외다."
-                elif will_val <= -65: 
-                    w_status = f"<b>📉 낙폭 과대 지대</b><br>• <b>역할:</b> 눌림목 반등 타점 감지.<br>• <b>진단:</b> {'🌱 하락 브레이크 포착! 반등 동조 점수 가산 중.' if will_val > will_prev else '하락 가속 중! 손가락을 묶으시게.'}"
+                    w_status = "<b>🏳️ 개미 항복 구역</b><br>• <b>역할:</b> 세력 선취매 및 반전 포착.<br>• <b>진단:</b> 투매 진행 중. 일봉 5일선 종가 안착 전까진 매수 금지이외다."
                 else: 
                     w_status = "<b>⚖️ 중간 지대</b><br>• <b>역할:</b> 추세 방향 탐색.<br>• <b>진단:</b> 상/하방 방향 탐색 중. 20일선 지지 여부를 지켜보시게."
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (민감 반전)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{will_val:.2f} <span style='font-size:22px; color:#333333;'>({will_trend})</span></p><p class='ind-diag'>{w_status}</p></div>", unsafe_allow_html=True)
