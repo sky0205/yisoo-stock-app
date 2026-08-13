@@ -413,8 +413,9 @@ if symbol:
             is_near_target = (p >= up_b * 0.97) # ★ 목표선 97% 이상 도달 시 무조건 수확/매도 최우선 반영!
             is_near_wall = (defense_link_idx > 1 and defense_line * 0.98 <= p <= defense_line * 1.02) and (p < up_b * 0.97) and (vol_strength >= 80)
             # ★ [최종 판독 분기점: 5일선 이탈/거래절벽을 최우선 경고로 고정]
+            # ★ [최종 판독 분기점: 5일선 이탈/거래절벽을 최우선 경고로 고정]
             is_volume_cliff = (vol_strength < 50.0)
-    
+
             if not is_ma5_safe:
                 final_code = "MA5_EXIT"
                 final_adv = f"⚠️ <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[생명선 이탈]</b> 주가가 5일선 아래로 처박혔으니 종가 안착 전까지 절대 손가락을 묶으시게."
@@ -422,40 +423,36 @@ if symbol:
                 final_code = "VOLUME_CLIFF"
                 final_adv = f"⚠️ <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[거래절벽]</b> 수급이 말라붙어 동력이 없으니 섣부른 진입은 절대 금물이네."
             elif is_stop_loss_triggered:
-        # 기존 손절 로직... (이하 기존 코드) 
-            # ★ [최종 판독 분기점: 목표선 근접 매도를 절대 최우선으로 고정]
-            if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
-                final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
-            elif is_near_target: # ★ 1순위: 목표선 97% 이상 도달 시 밴드폭 불문 무조건 매도(수확)
+                final_adv = f"<b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>{stop_reason}</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
+            elif is_near_target:
                 final_code = "SELL_ZONE"
-                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 수확 목표선 코앞(과열권) 도달! <b>[보유자]는 분할 매도로 즉시 수익 확정(매도)</b>에 들어가시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 수확 목표선 코앞(과열권) 도달! <b>[보유자]</b>는 분할 매도로 즉시 수익 확정(매도)에 들어가시게!"
             elif is_new_high:
                 final_code = "NEW_HIGH"
                 final_adv = f"🚀 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신고가(무주공산)]</b> 영역 진격 중! 5일선 사수 기준 대응하시게!"
             elif is_new_low:
                 final_code = "NEW_LOW"
-                final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신저가(칼날 하락)]</b> 구역 전개! 무조건 관망하시게!"
+                final_adv = f"📉 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[52주 신저가(칼날 하락)]</b> 구역 전개! 무조건 관망하시게!"
             elif is_breakout and p >= mid_line:
                 final_code = "BREAKOUT"
-                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상투 과열권 수급 돌파]</b> 분출 중! 보유자는 분할 익절, 미보유자는 추격 금지! (★ <b>방어선: {stop_loss_label}</b>)"
+                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상투 과열권 수급 돌파]</b> 분출 중! 보유자는 분할 익절, 미보유자는 추격 금지!"
             elif is_near_wall and pullback_rebound_score >= 2:
                 final_code = "WALL_BREAKOUT"
-                final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 돌파 공방 중 + 지표 동조 충족! <b>[진격 타점]</b>이시네. (★ <b>방어선: {stop_loss_label}</b>)"
+                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 성벽 돌파 공방 중 + 지표 동조 충족! <b>[진격 타점]</b>이시네."
             elif is_true_pullback_buy:
                 final_code = "PULLBACK_BUY"
-                final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 밴드폭 넉넉함({bandwidth:.1f}%) + 눌림목 동조 2점 달성 및 5일선/20일선 안착! <b>[2단계 승순 확대 30% 진격 타점]</b>이시네. (★ <b>방어선: {stop_loss_label}</b>)"
+                final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 밴드폭 넉넉함({bandwidth:.1f}%) + 눌림목 동조 2점 달성 및 5일/20일선 안착!"
             else:
                 final_code = "WAIT_GENERAL"
                 if is_down_trend_v:
-                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 <b>하방 압력 및 하락세</b>이므로 섣부른 진입을 철통 차단하고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 <b>하방 압력 및 하락세</b>이므로 섣부른 진입을 철통 차단하고 <b>[관망]</b> 하시게!"
                 elif bandwidth < 25.0 and p >= mid_line:
-                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>밴드폭이 {bandwidth:.1f}%로 25% 미만</b>이오! 상단 목표선이 가까워 먹을 자리가 부족하므로 눌림목 매수를 잠그고 <b>[관망]</b>하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>밴드폭 {bandwidth:.1f}%로 25% 미만</b>이오! 상단 목표선이 가까워 먹을 자리가 부족하오니 섣부른 진입을 자제하시게."
                 elif is_above_defense:
-                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 주가가 <b>성벽 위({defense_line:{fmt_p}}{currency})</b>에 안착해 있으므로 <b>5일선 기세를 타며 홀딩/관망</b> 자리이네! (★ <b>방어선: {stop_loss_label}</b>)"
+                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 주가가 <b>성벽 위({defense_line:{fmt_p}}{currency})</b>에 안착해 있으므로 5일선 기준 홀딩하시게."
                 else:
-                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 주가가 <b>성벽({defense_line:{fmt_p}}{currency}) 아래</b>에 있으므로 <b>성벽 탈환 대기 및 홀딩/관망</b> 자리이네! (★ <b>방어선: {stop_loss_label}</b>)"
-
+                    final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 주가가 <b>성벽({defense_line:{fmt_p}}{currency}) 아래</b>에 있으므로 성벽 탈환 대기 중이시네."
             indicator_verify_text = (
                 f"{ma_price_summary}<br>"
                 f"• <b>[추세 정밀 판독]:</b> {trend_status}<br>"
