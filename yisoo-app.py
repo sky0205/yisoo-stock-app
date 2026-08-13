@@ -295,7 +295,27 @@ if symbol:
 
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
-            # ★ [ma_price_summary 및 trend_status 변수 정의 누락 해결 완료]
+            # 진바닥 동조 점수 연산 (bottom_score 정의 추가 완료)
+            bb_bot_series = (df['Close'] <= (low_b * 1.02)).astype(int)
+            rsi_bot_series = (rsi_series <= 35).astype(int)
+            will_bot_series = (will_series <= -80).astype(int)
+            bottom_score_series = bb_bot_series + rsi_bot_series + will_bot_series
+            bottom_score = bottom_score_series.iloc[-1]
+            recent_bottom_memory = (bottom_score_series.iloc[-3:].max() >= 2)
+
+            is_bottom_disparity_safe = (0 <= bias_ma5 <= 3.0)
+            is_bottom_buy_raw = ((recent_bottom_memory or bottom_score >= 2) and is_ma5_safe and is_bottom_disparity_safe)
+
+            if bottom_score == 3:
+                bottom_status_str = "<b>(오늘 진바닥 3점 만점 달성!)</b>"
+                bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 진바닥 3점 달성 + 일봉 5일선 종가 안착 완료!"
+            elif recent_bottom_memory or bottom_score >= 2:
+                bottom_status_str = "<b>(최근 3일 내 바닥권 2점 이상 기록 유효!)</b>"
+                bottom_action_str = f"➔ <b>[1단계 매수 실행]</b> 바닥권 기록 포착 후 일봉 5일선 종가 안착 완료!"
+            else:
+                bottom_status_str = "<b>(조건 미흡)</b>"
+                bottom_action_str = "➔ <b>[관망]</b> 매수 보류"
+
             ma5_str = f"{ma5_val:{fmt_p}}{currency}"
             ma20_str = f"{mid_line:{fmt_p}}{currency}"
             ma60_str = f"{ma60_val:{fmt_p}}{currency}"
@@ -329,11 +349,15 @@ if symbol:
             is_uptrend = (p >= mid_line) or (ma20_slope > 0)
             if (not is_uptrend) or (p < mid_line) or (bandwidth < 25.0):
                 pullback_rebound_score = 0
+                pullback_status_str = "<b>(국면 불일치)</b>"
+                pullback_action_str = "➔ <b>[관망]</b>"
             else:
                 p_will = 1 if will_val <= -50 else 0
                 p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.01) else 0
                 p_rsi = 1 if (40 <= rsi_val <= 55) else 0
                 pullback_rebound_score = p_will + p_bb + p_rsi
+                pullback_status_str = f"<b>(조건 만족 / 밴드폭 {bandwidth:.1f}%)</b>"
+                pullback_action_str = "➔ <b>[진격 타점]</b>"
 
             is_true_pullback_buy = (
                 (p >= mid_line) 
@@ -347,7 +371,7 @@ if symbol:
             is_near_target = (p >= up_b * 0.98) 
             is_near_wall = (defense_link_idx > 1 and defense_line * 0.98 <= p <= defense_line * 1.02) and (p < up_b * 0.98) and (vol_strength >= 80)
 
-            # ★ [최종 판독 분기점: ma_price_summary 정의 완료]
+            # ★ [최종 판독 분기점: bottom_score 정의 누락 해결 완료]
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -381,8 +405,8 @@ if symbol:
                 f"{ma_price_summary}<br>"
                 f"• <b>[추세 정밀 판독]:</b> {trend_status}<br>"
                 f"• <b>[지표 검증 연산]</b><br>"
-                f"   - <b>진바닥 동조:</b> {bottom_score}/3점 (확인 완료)<br>"
-                f"   - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 (확인 완료)"
+                f"   - <b>진바닥 동조:</b> {bottom_score}/3점 {bottom_status_str} {bottom_action_str}<br>"
+                f"   - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
                 f"{squeeze_info_str}"
             )
 
