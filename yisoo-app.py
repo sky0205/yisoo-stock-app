@@ -245,8 +245,15 @@ if symbol:
 
             v_avg5 = float(df['Volume'].iloc[-6:-1].mean()) if len(df) >= 6 else float(df['Volume'].mean())
     
-            # ★ [장중 시간 비례 환산: 390분 기준 가중치 보정]
-            v_curr_adjusted = v_curr * (390.0 / max(elapsed_minutes, 1)) if 'elapsed_minutes' in locals() else v_curr
+            # ★ [실시간 장중 경과 시간 기반 390분 환산 보정]
+            import datetime
+            now_time = datetime.datetime.now()
+            # 한국 시간 혹은 미국 장 기준 경과 분 산출 (예시: 오전 9시 정각 또는 장 시작 시각 기준 경과 분)
+            # 현재 시각의 분을 계산하여 대입
+            elapsed_minutes = max((now_time.hour * 60 + now_time.minute) - (9 * 60 + 30), 30) # 최소 30분 보장
+            if elapsed_minutes > 390: elapsed_minutes = 390
+    
+            v_curr_adjusted = v_curr * (390.0 / elapsed_minutes)
             v_ratio = (v_curr_adjusted / v_avg5) * 100 if v_avg5 > 0 else 0
     
             p_diff, p_chg = p - prev_p, ((p - prev_p) / prev_p) * 100 if prev_p > 0 else 0
