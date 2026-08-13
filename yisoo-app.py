@@ -514,7 +514,11 @@ if symbol:
                 v_status, v_adv = "거래절벽", f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! 수급이 마르고 동력이 없으니 속지 마시게."
             
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} ({'수동 연산 모드' if is_manual_mode else f'실시간 {v_ratio:.1f}% / 5일평균대비'})</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
-
+            if final_code == "MA5_EXIT":
+                sig, col, s_adv = "⚠️ [관망] 단기 생명선(5일선) 이탈", "#D32F2F", f"• ⚠️ 주가가 5일선 아래로 이탈했으니 종가 안착 전까지 손가락을 묶으시게.<br>• 🚀 [방어선] {stop_loss_label}"
+            elif final_code == "VOLUME_CLIFF":
+                sig, col, s_adv = "🟡 [관망] 극심한 거래절벽 / 수급 마름", "#E0A800", f"• ⚠️ 수급이 말라붙어 동력이 없으니 섣부른 진입은 자제하시게.<br>• 🚀 [방어선] {stop_loss_label}"
+            elif final_code == "STOP_LOSS_ALERT":
             if final_code == "STOP_LOSS_ALERT":
                 sig, col, s_adv = "🚨 [비상 손절] 방어선 붕괴!", "#D32F2F", f"• <b>[긴급 집행] {stop_reason}!</b> 추가 손실을 막기 위해 미련 없이 즉시 전량 칼손절 후퇴하시게."
             elif final_code == "SELL_ZONE":
