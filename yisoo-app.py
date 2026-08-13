@@ -370,7 +370,7 @@ if symbol:
             prev_low_20 = float(df['Low'].iloc[-21:-1].min()) if len(df) > 20 else float(df['Low'].min())
             is_above_ma20 = (p >= mid_line)
 
-            # ★ [추세 모멘텀 플래그 추가]: 상승장 vs 하락장 칼날 구분
+            # ★ [추세 모멘텀 플래그 추가]: 상승장 판단
             is_uptrend_momentum = (ma5_val > mid_line) and (p >= ma5_val) and (p_chg >= 0)
 
             is_surge_bottom = (p_chg >= 5.0) or (vol_strength >= 150)
@@ -541,6 +541,7 @@ if symbol:
             is_engine_reverse = (m_l < s_l)
             is_macd_turning = (m_l < s_l and m_diff_curr > m_diff_prev)
 
+            # ★ [수확 목표선 근접도(2% 이내) 계산]
             margin_to_target = (up_b - p) / p if p > 0 else 0
             is_too_close_to_target = margin_to_target < 0.02
 
@@ -585,7 +586,7 @@ if symbol:
                 and (bandwidth >= 25.0 or is_uptrend_momentum)
             )
 
-            # ★ [상승 추세 중 수확 목표선 과열권 도달 시 무조건 매도 차단 -> 홀딩/분할 익절 분기]
+            # ★ [최종 판독 분기점: 목표선 코앞이면 무조건 '매수(PULLBACK_BUY)' 차단]
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -601,9 +602,16 @@ if symbol:
             elif is_breakout and p >= mid_line: 
                 final_code = "BREAKOUT" 
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상투 과열권 수급 돌파]</b> 분출 중! 보유자는 분할 익절, 미보유자는 추격 금지! (★ <b>방어선: {stop_loss_label}</b>)"
-            elif (is_too_close_to_target or top_score >= 2 or p >= up_b) and not is_uptrend_momentum:
+            
+            # [수정 핵심]: 상승 모멘텀이 있더라도 목표선 코앞(2% 이내)이거나 상단을 터치했으면 SELL_ZONE 발동
+            elif is_too_close_to_target or top_score >= 2 or p >= up_b:
                 final_code = "SELL_ZONE"
-                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 수확 목표선 및 과열권 진입! <b>[보유자]는 분할 매도로 수익 확정</b>에 들어가시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                if is_uptrend_momentum:
+                    final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 상승 기세가 빳빳하나 <b>수확 목표선 코앞(과열권)</b>이오! <b>[미보유자] 추격매수 절대 금지</b>, [보유자]는 분할 익절 및 5일선 기준 홀딩하시게! (★ <b>방어선: {stop_loss_label}</b>)"
+                else:
+                    final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 수확 목표선 및 과열권 진입! <b>[보유자]는 분할 매도로 수익 확정</b>에 들어가시게! (★ <b>방어선: {stop_loss_label}</b>)"
+            
+            # 목표선 근처가 아닐 때만 매수(진격) 신호 허용
             elif is_true_pullback_buy or is_uptrend_momentum:
                 final_code = "PULLBACK_BUY"
                 final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>상승 추세 모멘텀 및 5일/20일선 안착 빳빳함!</b> <b>[추세 유지 및 승순 확대 30% 진격 타점]</b>이시네. (★ <b>방어선: {stop_loss_label}</b>)"
@@ -661,9 +669,14 @@ if symbol:
                 col = "#D32F2F" 
                 s_adv = f"• <b>[긴급 집행] {stop_reason}!</b> 추가 손실을 막기 위해 미련 없이 즉시 전량 칼손절 후퇴하시게."
             elif final_code == "SELL_ZONE":
-                sig = "🟢 [매도] 푸른 수확 / 이익실현 타점!"
-                col = "#388E3C" 
-                s_adv = f"• <b>[보유자] 🚨 수확 목표 달성! 보유 물량 30~50% 즉시 현금화(매도)</b><br>• <b>[미보유자]</b> ✋ 추격매수 금지 (수확목표선 {up_b:{fmt_p}}{currency} 고점 저항대)<br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
+                if is_uptrend_momentum:
+                    sig = "🟢 [상단 주의] 추격매수 금지 / 수확 목표선 코앞!"
+                    col = "#388E3C" 
+                    s_adv = f"• <b>[미보유자] ✋ 탐욕의 끝단이오! 추격매수 절대 금지!</b><br>• <b>[보유자]</b> 상승 기세나 목표선 인접이므로 분할 익절하며 5일선 기준 홀딩<br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
+                else:
+                    sig = "🟢 [매도] 푸른 수확 / 이익실현 타점!"
+                    col = "#388E3C" 
+                    s_adv = f"• <b>[보유자] 🚨 수확 목표 달성! 보유 물량 30~50% 즉시 현금화(매도)</b><br>• <b>[미보유자]</b> ✋ 추격매수 금지 (수확목표선 {up_b:{fmt_p}}{currency} 고점 저항대)<br>• 🚀 <b>[필수 방어선]</b> {stop_loss_label}"
             elif final_code == "BREAKOUT":
                 sig = "🟢 [상투 돌파] 푸른 수확 / 분할 익절 타점!"
                 col = "#388E3C" 
@@ -755,14 +768,15 @@ if symbol:
             i1, i2, i3, i4 = st.columns(4)
             
             with i1:
+                # [수정 핵심]: 상승장이더라도 목표선 코앞이면 확실하게 짚고 넘어감
                 if final_code == "BOTTOM_BUY":
                     bb_diag = f"🔴 <b>[진바닥 선취매 공략 구간] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 바닥권 과매도 및 5일선 안착 검증.<br>• <b>진단:</b> 진바닥 기록 포착 후 5일선 종가 안착 완료! (밴드폭 무관) 1단계 선취매(20%) 집행 구역이오."
-                elif final_code == "PULLBACK_BUY" or is_uptrend_momentum:
-                    bb_diag = f"🔵 <b>[상승 추세 유지 및 지지 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 상방 기세 유지.<br>• <b>진단:</b> 5일선/20일선 위에서 기세를 타고 우상향 진격 중이므로 추세를 믿고 홀딩 및 진격하는 구역이오."
                 elif final_code == "STOP_LOSS_ALERT":
                     bb_diag = f"🚨 <b>[방어선 붕괴 비상 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 손절 마지노선 이탈 감지.<br>• <b>진단:</b> 주요 방어선이 무너졌으니 미련 없이 전량 칼손절 후퇴하시게."
-                elif p >= up_b and not is_uptrend_momentum: 
-                    bb_diag = f"👺 <b>[수확 목표선(상단) 과열] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 주가 상단 한계선 접촉.<br>• <b>진단:</b> 탐욕의 끝단이니 신규 매수를 금지하고 익절을 집행하시게."
+                elif p >= up_b * 0.98: 
+                    bb_diag = f"👺 <b>[수확 목표선(상단) 과열 경계] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 주가 상단 한계선 접촉 및 탐욕 차단.<br>• <b>진단:</b> 상단선에 바짝 붙은 탐욕의 끝단이니 신규 진입(추격매수)을 철저히 금지하고 이익을 지켜내시게."
+                elif final_code == "PULLBACK_BUY" or is_uptrend_momentum:
+                    bb_diag = f"🔵 <b>[상승 추세 유지 및 지지 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상승 추세 속 상방 기세 유지.<br>• <b>진단:</b> 5일선/20일선 위에서 기세를 타고 우상향 진격 중이므로 추세를 믿고 홀딩 및 진격하는 구역이오."
                 elif is_breakout: 
                     bb_diag = f"🚀 <b>[상투 과열권 수급 돌파] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상단 저항선 돌파 강도 측정.<br>• <b>진단:</b> 상투 과열권 장대양봉 돌파! 보유자는 분할 수확(매도)하고, 미보유자는 추격매수를 절대 금하시게."
                 elif is_down_trend_v:
