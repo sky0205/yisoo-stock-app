@@ -380,7 +380,6 @@ if symbol:
             is_above_ma20 = (p >= mid_line)
 
             # ★ [손절가 5% 고정 원칙 적용: 할아버지의 엄격한 손절 룰 반영]
-            # 진바닥 1단계 진입 시 매수가 대비 -5% 또는 전저점/5일선 기준 중 더 촘촘한 방어선 선택
             stop_loss_price = p * 0.95
             stop_loss_label = f"진바닥 입질가 대비 -5% 칼손절({stop_loss_price:{fmt_p}}{currency})"
 
@@ -505,20 +504,15 @@ if symbol:
             # ==============================================================================
             # ★ [할아버지 3단계 매수 & 성벽 음봉 매도 로직 이식]
             # ==============================================================================
-            # 1단계: 진바닥 입질 매수 (지표 2개 이상 터치 + 거래량 유입)
             is_bottom_entry_signal = (bottom_score >= 2) and (vol_strength >= 80)
-
-            # 2단계: 진바닥 탈출 추가 매수 (5일선 위 안착)
             is_escape_buy_signal = is_ma5_safe and (bottom_score >= 1 or recent_bottom_memory)
 
-            # 3단계: 눌림목 추가 매수 (5일선, 20일선 위 안착 + 밴드폭 넉넉함)
             p_will = 1 if will_val <= -50 else 0
             p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.01) else 0
             p_rsi = 1 if (40 <= rsi_val <= 55) else 0
             pullback_rebound_score = p_will + p_bb + p_rsi
             is_pullback_buy_signal = (p >= mid_line) and is_ma5_safe and (pullback_rebound_score >= 2) and (vol_strength >= 80) and (bandwidth >= 25.0)
 
-            # 성벽 위 및 목표선 도달 / 음봉 매도 로직
             target_price_100 = up_b
             is_on_the_wall = (p >= target_price_100 * 0.95) and (p < target_price_100)
             is_target_reached = p >= target_price_100
@@ -545,7 +539,7 @@ if symbol:
                 else:
                     pullback_action_str = "➔ <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
 
-          # --- [최종 결론 판정: 성벽 위 음봉 매도 반영 및 전체 조건 통합] ---
+            # --- [최종 결론 판정: 성벽 위 음봉 매도 반영 및 최우선 순위 격상] ---
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -619,7 +613,7 @@ if symbol:
                 )
             elif final_code == "YELLOW_CAUTION":
                 sig = "🟡 [경계] 성벽 위 공방 / 매도 준비!"
-                col = "#EF6C00" # 진한 오렌지색으로 변경하며 관망과 확실히 구분
+                col = "#EF6C00" 
                 s_adv = (
                     " • <b>[경계 태세]</b> 성벽 위 진입! 추격 매수는 철저히 차단하고, <b>수확</b>"
                     " 목표선 도달 시 매도할 준비를 하시게."
@@ -627,19 +621,20 @@ if symbol:
             elif final_code == "BOTTOM_ENTRY":
                 sig = "🟢 [매수] 1단계 진바닥 입질 매수 (소량)"
                 col = "#388E3C"
-                s_adv = f" • <b>[입질 진격]</b> 진바닥 터치 + 거래량 유입 포착! 소량 씨앗 뿌리기 진격 (손절 -5% 철저 준수)."
+                s_adv = " • <b>[입질 진격]</b> 진바닥 터치 + 거래량 유입 포착! 소량 씨앗 뿌리기 진격 (손절 -5% 철저 준수)."
             elif final_code == "ESCAPE_BUY":
                 sig = "🟢 [매수] 2단계 진바닥 탈출 추가 매수 (5일선 위)"
                 col = "#2E7D32"
-                s_adv = f" • <b>[추가 진격]</b> 거래량이 실리며 5일선 위 안착 성공! 배팅 비중을 늘려 밭을 다짐."
+                s_adv = " • <b>[추가 진격]</b> 거래량이 실리며 5일선 위 안착 성공! 배팅 비중을 늘려 밭을 다짐."
             elif final_code == "PULLBACK_BUY":
                 sig = "🔵 [매수] 3단계 눌림목 추가 매수 (승수 확대)"
                 col = "#1976D2"
-                s_adv = f" • <b>[승수 확대]</b> 5일선·20일선 위 안착 및 활주로 확보 완료! 알짜배기 추가 매수."
+                s_adv = " • <b>[승수 확대]</b> 5일선·20일선 위 안착 및 활주로 확보 완료! 알짜배기 추가 매수."
             else:
                 sig = "🟡 [관망] 조건 미충족 / 뇌동매매 금지"
                 col = "#FBC02D"
-                s_adv = f" • <b>[관망 유지]</b> 확실한 바닥 신호나 매수/매도 조건이 맞을 때까지 손가락을 묶고 대기하시게."
+                s_adv = " • <b>[관망 유지]</b> 확실한 바닥 신호나 매수/매도 조건이 맞을 때까지 손가락을 묶고 대기하시게."
+            
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><div class='signal-subtext'>{s_adv}</div></div>", unsafe_allow_html=True)
 
             c1, c2, c3 = st.columns(3)
@@ -663,10 +658,8 @@ if symbol:
             if m_l > s_l:
                 macd_strategy_msg = "<b>🔥 엔진 정회전 완료 (순풍 구역)</b><br>• <b>역할:</b> 상승 모멘텀 유지.<br>• <b>진단:</b> 엔진 정회전 완료! 바닥 입질 후 성벽을 향해 본대 진격 신호탄이 터졌네."
             else:
-                if m_l > s_l:
-                    macd_strategy_msg = "<b>🔥 엔진 정회전 완료 (순풍 구역)</b><br>• <b>역할:</b> 상승 모멘텀 유지.<br>• <b>진단:</b> 엔진 정회전 완료! 바닥 입질 후 성벽을 향해 본대 진격 가능구역이오."
-                else:
-                    macd_strategy_msg = "⚙️ <b>엔진 역회전 상태</b><br>• <b>역할:</b> 하락 조정 모멘텀.<br>• <b>진단:</b> " + ("🚀 [엔진 시동] 역회전폭 급감! 바닥에서 다시 고개를 치켜드는 <b>반격의 시동을 거는 밸브 개방 구역</b>이네." if m_l > s_l else "⚠️ 역회전 심화! 엔진 거꾸로 도는 차니 절대 진입 금지이오.")
+                macd_strategy_msg = "⚙️ <b>엔진 역회전 상태</b><br>• <b>역할:</b> 하락 조정 모멘텀.<br>• <b>진단:</b> 역회전 심화! 섣부른 매수를 금지하고 관망하시게."
+
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
 <div style='margin-bottom: 20px;'>
