@@ -502,8 +502,17 @@ if symbol:
                 stop_reason = f"진바닥 방어선(-5%) 이탈 붕괴"
 
             # ==============================================================================
-            # ★ [할아버지 3단계 매수 & 성벽 음봉 매도 로직 이식]
+            # ★ [할아버지 성벽 방어선 기준 진단 & 음봉 매도 로직 개편]
             # ==============================================================================
+            defense_link_idx = min(21, len(df))
+            defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
+
+            target_price_100 = up_b
+            is_target_reached = p >= target_price_100
+            
+            # 성벽(방어선) 위 안착 여부 판정 (현재가가 방어선 이상이면서 수확목표선 미만일 때)
+            is_on_the_wall = (p >= defense_line) and (p < target_price_100)
+
             is_bottom_entry_signal = (bottom_score >= 2) and (vol_strength >= 80)
             is_escape_buy_signal = is_ma5_safe and (bottom_score >= 1 or recent_bottom_memory)
 
@@ -512,10 +521,6 @@ if symbol:
             p_rsi = 1 if (40 <= rsi_val <= 55) else 0
             pullback_rebound_score = p_will + p_bb + p_rsi
             is_pullback_buy_signal = (p >= mid_line) and is_ma5_safe and (pullback_rebound_score >= 2) and (vol_strength >= 80) and (bandwidth >= 25.0)
-
-            target_price_100 = up_b
-            is_on_the_wall = (p >= target_price_100 * 0.95) and (p < target_price_100)
-            is_target_reached = p >= target_price_100
 
             if bottom_score >= 2:
                 bottom_status_str = f"<b>(진바닥 지표 {bottom_score}개 터치 달성!)</b>"
@@ -539,13 +544,13 @@ if symbol:
                 else:
                     pullback_action_str = "➔ <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
 
-            # --- [최종 결론 판정: 성벽 위 음봉 매도 반영 및 최우선 순위 격상] ---
+            # --- [최종 결론 판정: 성벽 위 음봉 매도 반영 최우선 격상] ---
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
             elif is_on_the_wall and is_bearish_candle:
                 final_code = "RED_SELL_WARNING"
-                final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[성벽 위 음봉 발생]</b> 성벽 위 공방 중 음봉이 떨어졌으니, 목표선 미도달이라도 선제적 익절로 수익을 지키시게!"
+                final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[성벽 위 음봉 발생]</b> 성벽(방어선) 위 공방 중 음봉이 떨어졌으니, 목표선 미도달이라도 선제적 익절로 수익을 지키시게!"
             elif is_target_reached:
                 final_code = "RED_SELL_TARGET"
                 final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수확 목표선 도달]</b> 성벽 위 목표선 도달 완료! 즉시 분할 익절 및 전량 매도로 수익 확정하시게."
@@ -608,14 +613,14 @@ if symbol:
                 sig = "🔴 [매도] 성벽 위 음봉 발생! 선제적 익절 권유"
                 col = "#D32F2F"
                 s_adv = (
-                    " • <b>[경계 익절]</b> 성벽 위 공방 중 음봉이 떨어졌네! 목표선 미도달이나 "
+                    " • <b>[경계 익절]</b> 성벽(방어선) 위 공방 중 음봉이 떨어졌네! 목표선 미도달이나 "
                     "기세 꺾이기 전에 <b>선제적 분할 매도</b>로 수익을 지키시게."
                 )
             elif final_code == "YELLOW_CAUTION":
                 sig = "🟡 [경계] 성벽 위 공방 / 매도 준비!"
                 col = "#EF6C00" 
                 s_adv = (
-                    " • <b>[경계 태세]</b> 성벽 위 진입! 추격 매수는 철저히 차단하고, <b>수확</b>"
+                    " • <b>[경계 태세]</b> 성벽(방어선) 위 진입! 추격 매수는 철저히 차단하고, <b>수확</b>"
                     " 목표선 도달 시 매도할 준비를 하시게."
                 )
             elif final_code == "BOTTOM_ENTRY":
