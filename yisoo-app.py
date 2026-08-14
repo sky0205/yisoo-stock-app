@@ -519,9 +519,9 @@ if symbol:
             is_pullback_buy_signal = (p >= mid_line) and is_ma5_safe and (pullback_rebound_score >= 2) and (vol_strength >= 80) and (bandwidth >= 25.0)
 
             # 성벽 위 및 목표선 도달 / 음봉 매도 로직
-            target_price_97 = up_b * 0.97
-            is_on_the_wall = (p >= target_price_97 * 0.95) and (p < target_price_97)
-            is_target_reached = (p >= target_price_97)
+            target_price_100 = up_b
+            is_on_the_wall = (p >= target_price_100 * 0.95) and (p < target_price_100)
+            is_target_reached = p >= target_price_100
 
             if bottom_score >= 2:
                 bottom_status_str = f"<b>(진바닥 지표 {bottom_score}개 터치 달성!)</b>"
@@ -587,7 +587,7 @@ if symbol:
                 if p >= user_avg_price:
                     holder_guide_msg = (
                         f"📈 <b>[수익권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 수익률: +{profit_rate:.2f}%)]</b><br>"
-                        f"• 5일선({ma5_val:{fmt_p}}{currency}) 사수 여부를 주시하시고, 수확 목표선({target_price_97:{fmt_p}}{currency} 이상)까지 자신 있게 홀딩하시게.<br>"
+                        f"• 5일선({ma5_val:{fmt_p}}{currency}) 사수 여부를 주시하시고, 수확 목표선({target_price_100:{fmt_p}}{currency})까지 자신 있게 홀딩하시게.<br>"
                         f"• 성벽 위에서 음봉이 떨어지거나 꺾이면 지체 없이 선제적 익절로 수익을 확정하시게."
                     )
                 else:
@@ -600,16 +600,16 @@ if symbol:
             # 신호등 박스 색상 및 문구 매핑
             if final_code == "STOP_LOSS_ALERT":
                 sig = "🚨 [비상 손절] 방어선(-5%) 붕괴! 전량 칼손절 후퇴!"
-                col = "#D32F2F" 
+                col = "#D32F2F"
                 s_adv = f"• <b>[긴급 집행] {stop_reason}!</b> 추가 손실을 막기 위해 미련 없이 즉시 전량 칼손절 후퇴하시게."
             elif final_code == "RED_SELL_TARGET":
-              sig = "🔴 [매도] 수확 목표선(97%) 도달! 이익실현 타점!"
-              col = "#D32F2F"
-              s_adv = (
-                  "• 🎯 <b>[수확 완료] 목표선 97%에 늠름하게 도달했네!</b> 물량 30~50%를"
-                  " 매도하여 수익을 확실하게 챙기시게.<br>• ✋ <b>[미보유자]</b> 고가 추격"
-                  " 매수 절대 금지!"
-              )
+                sig = "🔴 [매도] 수확 목표선 도달! 이익실현 타점!"
+                col = "#D32F2F"
+                s_adv = (
+                    "• 🎯 <b>[수확 완료] 수확 목표선에 늠름하게 도달했네!</b> 물량 30~50%를 "
+                    "매도하여 수익을 확실하게 챙기시게.<br>• ✋ <b>[미보유자]</b> 고가 추격 "
+                    "매수 절대 금지!"
+                )
 
             elif final_code == "RED_SELL_WARNING":
               sig = "🔴 [매도] 성벽 위 음봉 발생! 선제적 익절 권유"
