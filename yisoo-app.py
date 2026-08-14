@@ -377,7 +377,7 @@ if symbol:
             ma20_slope = (df['MA20'].iloc[-1] - df['MA20'].iloc[-5]) if len(df) >= 5 else 0
             
             prev_low = float(df['Low'].iloc[-61:-1].min()) if len(df) > 60 else float(df['Low'].min())
-            is_below_ma5 = (p < ma_5)
+            is_below_ma5 = (p < df['Close'].rolling(window=5).mean().iloc[-1])
 
             # ★ [손절가 5% 고정 원칙 적용: 할아버지의 엄격한 손절 룰 반영]
             stop_loss_price = p * 0.95
