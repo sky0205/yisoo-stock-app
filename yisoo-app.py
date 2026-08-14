@@ -379,14 +379,15 @@ if symbol:
             prev_low = float(df['Low'].iloc[-61:-1].min()) if len(df) > 60 else float(df['Low'].min())
             is_below_ma5 = (p < df['Close'].rolling(window=5).mean().iloc[-1])
 
-            # ★ [실전 손절 원칙 적용: 5일선 위는 5일선 -3%, 바닥권은 최근 전저점 이탈]
+           # ★ [실전 손절 원칙 적용: 5일선 이탈 시엔 가벼운 체크, 전저점 이탈 시엔 완전한 칼손절]
             if not is_below_ma5:
+                # 단기 트레이딩 구간: 5일선 -3% 이탈 시 가벼운 비중 축소/익절 관점 체크
                 stop_loss_price = df['Close'].rolling(window=5).mean().iloc[-1] * 0.97
-                stop_loss_label = f"5일선 기준 -3% 칼손절({stop_loss_price:{fmt_p}}{currency})"
+                stop_loss_label = f"🛡️ 단기 추세 체크포인트: 5일선 -3% 이탈 시 비중 조절 및 관망({stop_loss_price:{fmt_p}}{currency})"
             else:
+                # 바닥권 구간: 전저점 이탈 시엔 완전한 칼손절 경보
                 stop_loss_price = prev_low
-                stop_loss_label = f"바닥권 전저점 이탈 마지노선({stop_loss_price:{fmt_p}}{currency})"
-
+                stop_loss_label = f"🚨 칼손절 경보: 바닥권 전저점 이탈 마지노선({stop_loss_price:{fmt_p}}{currency})"
             defense_link_idx = min(21, len(df))
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
