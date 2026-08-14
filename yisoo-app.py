@@ -570,22 +570,26 @@ if symbol:
                 sig = "🟡 [경계] 성벽 위 공방 / 매도 준비!"
                 col = "#EF6C00"
                 final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[성벽 위 진입 및 공방]</b> 추격 매수는 절대 금하고, 매도 준비 및 경계 태세를 갖추시게!"
-            # 573번 줄 수정:
-            elif is_bottom_entry_signal and not is_stop_loss_triggered and vol_strength >= 70:
+            ## 1. 거래량(80점 이상) 실린 정상 1단계 바닥 입질 매수
+            elif is_bottom_entry_signal and not is_stop_loss_triggered:
                 final_code = "BOTTOM_ENTRY"
                 sig = "🟢 [매입] 1단계 진바닥 입질 매수 (소량)"
                 col = "#388E3C"
-                final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 입질 매수]</b> 주요 지표 터치 + 거래량 유입! 소량 씨앗 뿌리기 진격."
-            elif is_escape_buy_signal and not is_stop_loss_triggered and vol_strength >= 70:
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 입질 매수]</b> 주요 지표 터치 + 거래량 유입 확인! 분할 매수 시작."
+
+            # 2. 거래량(80점 이상) 실린 정상 2단계 바닥 탈출 매수
+            elif is_escape_buy_signal and not is_stop_loss_triggered and vol_strength >= 80:
                 final_code = "ESCAPE_BUY"
                 sig = "🟢 [매수] 2단계 진바닥 탈출 추가 매수 (5일선 위)"
                 col = "#2E7D32"
-                final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 탈출 매수]</b> 거래량이 살리며 5일선 위 안착 성공! 추가 매수로 배팅 확대."
-            elif (is_escape_buy_signal or is_bottom_entry_signal) and not is_stop_loss_triggered and vol_strength < 70:
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 탈출 매수]</b> 거래량이 실리며 5일선 위 안착 성공! 배팅 비중을 늘려 밭을 다짐."
+
+            # 3. ★ [핵심 수정] 지표는 맞았으나 거래량(80점 미만)이 부족하여 대기하는 분기
+            elif (bottom_score >= 2 or is_escape_buy_signal) and not is_stop_loss_triggered and vol_strength < 80:
                 final_code = "WAIT_VOLUME"
                 sig = "🟡 [입질 대기] 지표 충족 / 거래량 수반 대기"
                 col = "#E65100"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수급 부진]</b> 바닥 탈출 기술적 지표는 충족했으나 거래량이 실리지 않은 속임수 구간이니, 확실한 거래량 폭발을 확인 후 진입하시게."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수급 부진]</b> 바닥 지표({bottom_score}개)는 충족했으나 거래량이 실리지 않은 속임수 구간이니, 확실한 거래량 유입을 확인 후 진입하시게."
             elif is_pullback_buy_signal and not is_stop_loss_triggered:
                 final_code = "PULLBACK_BUY"
                 sig = "🔵 [매수] 3단계 눌림목 추가 매수 (승수 확대)"
