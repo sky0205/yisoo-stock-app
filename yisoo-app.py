@@ -508,7 +508,7 @@ if symbol:
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
             target_price_100 = up_b
-            is_target_reached = p >= target_price_100
+            is_target_reached = p >= (target_price_100 * 0.97)
             
             # 성벽(방어선) 위 안착 여부 판정 (현재가가 방어선 이상이면서 수확목표선 미만일 때)
             is_on_the_wall = (p >= defense_line) and (p < target_price_100)
