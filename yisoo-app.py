@@ -377,17 +377,16 @@ if symbol:
             ma20_slope = (df['MA20'].iloc[-1] - df['MA20'].iloc[-5]) if len(df) >= 5 else 0
             
             prev_low = float(df['Low'].iloc[-61:-1].min()) if len(df) > 60 else float(df['Low'].min())
-            is_below_ma5 = (p < df['Close'].rolling(window=5).mean().iloc[-1])
+            is_below_ma5 = (p < ma5_val)
 
-           # ★ [실전 손절 원칙 적용: 5일선 이탈 시엔 가벼운 체크, 전저점 이탈 시엔 완전한 칼손절]
+            # ★ [실전 손절 원칙 적용: 5일선 이탈 시엔 가벼운 체크, 전저점 이탈 시엔 완전한 칼손절]
             if not is_below_ma5:
-                # 단기 트레이딩 구간: 5일선 -3% 이탈 시 가벼운 비중 축소/익절 관점 체크
-                stop_loss_price = df['Close'].rolling(window=5).mean().iloc[-1] * 0.97
+                stop_loss_price = ma5_val * 0.97
                 stop_loss_label = f"🛡️ 단기 추세 체크포인트: 5일선 -3% 이탈 시 비중 조절 및 관망({stop_loss_price:{fmt_p}}{currency})"
             else:
-                # 바닥권 구간: 전저점 이탈 시엔 완전한 칼손절 경보
                 stop_loss_price = prev_low
                 stop_loss_label = f"🚨 칼손절 경보: 바닥권 전저점 이탈 마지노선({stop_loss_price:{fmt_p}}{currency})"
+
             defense_link_idx = min(21, len(df))
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
@@ -507,11 +506,8 @@ if symbol:
                 stop_reason = f"바닥권 전저점 이탈 마지노선"
 
             # ==============================================================================
-            # ★ [할아버지 성벽 방어선 기준 진단 & 음봉 매도 로직 개편]
+            # ★ [할아버지 성벽 방어선 기준 진단 & 음봉 매도 로직]
             # ==============================================================================
-            defense_link_idx = min(21, len(df))
-            defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
-
             target_price_100 = up_b
             is_target_reached = p >= (target_price_100 * 0.97)
             
@@ -549,7 +545,7 @@ if symbol:
                 else:
                     pullback_action_str = "➔ <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
 
-            # ★ [실전 리스크 관리: 전저점 이탈 시에만 상단 경보 및 사이렌 발동]
+            # ★ [실전 리스크 관리: 신호 판정 및 우선순위 분기]
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
@@ -610,27 +606,27 @@ if symbol:
                 f"{squeeze_info_str}"
             )
 
+            # --- [수정 완료: 보유 평단가 맞춤형 실전 대응 가이드] ---
+            ma5_minus_3 = ma5_val * 0.97
+
             if user_avg_price <= 0:
                 holder_guide_msg = f"현재 추세 탐색 및 방향 정립 구간이니 성벽({defense_line:{fmt_p}}{currency})이나 5일선 사수 여부를 확인하며 차분히 보유 판단을 내리시게. (★ <b>손절 마지노선: {stop_loss_label}</b>)"
             else:
                 profit_rate = ((p - user_avg_price) / user_avg_price) * 100
                 if p >= user_avg_price:
                     holder_guide_msg = (
-                        f" • <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br>"
-                        f" • <b>5일선({ma5_val:{fmt_p}}{currency}) 아래에서는 추측 추가 매수(물타기)를 절대 금지하네.</b><br>"
-                        f" • <b>단기 트레이딩:</b> 5일선 -3% 이탈 시 비중 조절<br>"
-                        f" • <b>최후 방어선:</b> 바닥권 전저점 이탈 시 미련 없이 칼손절 후퇴하시게."
+                        f" • <b>[수익권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 수익률: +{profit_rate:.2f}%)]</b><br>"
+                        f" • <b>기세 지속:</b> 5일선({ma5_val:{fmt_p}}{currency})을 이탈하지 않는 한 성벽 및 수확목표선까지 추세를 즐기시게.<br>"
+                        f" • <b>단기 트레이딩:</b> 5일선 -3% 이탈 시 수익 보존을 위해 일부 분할 익절({ma5_minus_3:{fmt_p}}{currency})<br>"
+                        f" • <b>수익 확정선:</b> 성벽 위 음봉 발생 또는 볼린저 상단 도달 시 분할 매도 집행."
                     )
-                  
                 else:
-                    prev_low = low_b if 'low_b' in locals() else (stop_loss_price if 'stop_loss_price' in locals() else ma5_minus_3 * 0.98)
                     holder_guide_msg = (
                         f" • <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br>"
                         f" • <b>5일선({ma5_val:{fmt_p}}{currency}) 아래에서는 추측 추가 매수(물타기)를 절대 금지하네.</b><br>"
-                        f" • <b>단기 트레이딩:</b> 5일선 -3% 이탈 시 비중 조절 및 관망({ma5_minus_3:{fmt_p}}{currency})<br>"
-                        f" • <b>최후 방어선:</b> 바닥권 전저점 이탈 시 미련 없이 칼손절 후퇴({prev_low:{fmt_p}}{currency})"
+                        f" • <b>단기 트레이딩:</b> 5일선 -3% 이탈 시 추가 하락 방어를 위해 비중 조절({ma5_minus_3:{fmt_p}}{currency})<br>"
+                        f" • <b>최후 방어선:</b> 바닥권 전저점({stop_loss_price:{fmt_p}}{currency}) 이탈 시 미련 없이 전량 칼손절 후퇴."
                     )
-                 
 
             # 신호등 박스 색상 및 문구 매핑
             if final_code == "STOP_LOSS_ALERT":
@@ -661,7 +657,6 @@ if symbol:
                 sig = "🔵 [매수] 3단계 눌림목 추가 매수 (승수 확대)"
                 col = "#1976D2"
                 s_adv = " • <b>[승수 확대]</b> 5일선·20일선 위 안착 및 활주로 확보로 알짜배기 추가 매수 집행."
-            # ▼ 663번 줄 바로 아래에 새로 추가할 코드 ▼
             elif final_code == "WAIT_VOLUME":
                 sig = "🟡 [입질 대기] 지표 충족 / 거래량 수반 대기"
                 col = "#E65100"
@@ -734,6 +729,8 @@ if symbol:
                     bb_diag = f"🔴 <b>[1단계 진바닥 입질 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 바닥권 선취매.<br>• <b>진단:</b> 지표 터치 + 거래량 유입! 소량 입질 매수 시작 (손절 -5% 설정)."
                 elif final_code == "ESCAPE_BUY":
                     bb_diag = f"🟢 <b>[2단계 진바닥 탈출 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 5일선 안착 후 배팅 확대.<br>• <b>진단:</b> 거래량 실리며 5일선 위 안착 성공! 추가 매수로 비중 확대."
+                elif final_code == "WAIT_VOLUME":
+                    bb_diag = f"🟡 <b>[수급 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 속임수 반등 차단.<br>• <b>진단:</b> 바닥 기술 지표는 달성했으나 거래량이 부족하니, 확실한 수급 유입 전까지 진입 보류."
                 elif final_code == "PULLBACK_BUY":
                     bb_diag = f"🔵 <b>[3단계 눌림목 추가 매수 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 추세 속 승수 확대.<br>• <b>진단:</b> 5·20일선 위 안정적 안착 및 활주로 확보로 알짜배기 추가 매수 집행."
                 elif final_code in ["RED_SELL_TARGET", "RED_SELL_WARNING"]:
@@ -759,7 +756,7 @@ if symbol:
                 will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
                 if will_val >= -20: 
                     w_status = "<b>🚀 상방 돌파 도전 구역</b><br>• <b>역할:</b> 단기 상향 압력 측정.<br>• <b>진단:</b> 성벽 위 목표선 근접 구역이오. 음봉 발생 시 선제적 매도 대비."
-                elif will_val <= -80:
+                elif will_val <= -80: 
                     w_status = "<b>🏳️ 개미 항복 구역</b><br>• <b>역할:</b> 세력 선취매 및 반전 포착.<br>• <b>진단:</b> 🧊 <b>[바닥 침체]</b> -80 밑 투매 진행 중! 지표 동조 및 거래량 유입 시 입질 대기."
                 else: 
                     w_status = "<b>⚖️ 중간 지대</b><br>• <b>역할:</b> 추세 방향 탐색.<br>• <b>진단:</b> 상/하방 방향 탐색 중."
