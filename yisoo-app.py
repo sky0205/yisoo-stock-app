@@ -571,7 +571,7 @@ if symbol:
                 col = "#EF6C00"
                 final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[성벽 위 진입 및 공방]</b> 추격 매수는 절대 금하고, 매도 준비 및 경계 태세를 갖추시게!"
             ## 1. 거래량(80점 이상) 실린 정상 1단계 바닥 입질 매수
-            elif is_bottom_entry_signal and not is_stop_loss_triggered:
+            elif is_bottom_entry_signal and not is_stop_loss_triggered and vol_strength >= 80:
                 final_code = "BOTTOM_ENTRY"
                 sig = "🟢 [매입] 1단계 진바닥 입질 매수 (소량)"
                 col = "#388E3C"
@@ -584,7 +584,7 @@ if symbol:
                 col = "#2E7D32"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 탈출 매수]</b> 거래량이 실리며 5일선 위 안착 성공! 배팅 비중을 늘려 밭을 다짐."
 
-            # 3. ★ [핵심 수정] 지표는 맞았으나 거래량(80점 미만)이 부족하여 대기하는 분기
+            # 3. ★ [핵심] 지표는 맞았으나 거래량(80점 미만)이 부족하여 대기하는 분기
             elif (bottom_score >= 2 or is_escape_buy_signal) and not is_stop_loss_triggered and vol_strength < 80:
                 final_code = "WAIT_VOLUME"
                 sig = "🟡 [입질 대기] 지표 충족 / 거래량 수반 대기"
