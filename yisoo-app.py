@@ -613,7 +613,7 @@ if symbol:
                     )
                   
                 else:
-                    prev_low = bb_lower if 'bb_lower' in locals() else (stop_loss_price if 'stop_loss_price' in locals() else ma5_minus_3 * 0.98)
+                    prev_low = low_b if 'low_b' in locals() else (stop_loss_price if 'stop_loss_price' in locals() else ma5_minus_3 * 0.98)
                     holder_guide_msg = (
                         f" • <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br>"
                         f" • <b>5일선({ma5_val:{fmt_p}}{currency}) 아래에서는 추측 추가 매수(물타기)를 절대 금지하네.</b><br>"
