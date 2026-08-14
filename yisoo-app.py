@@ -423,7 +423,7 @@ if symbol:
                 squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 활주로가 넉넉히 트였으니 정석 눌림목 타점을 공략하시게."
 
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
-            is_bearish_candle = float(df['Close'].iloc[-1]) < float(df['Open'].iloc[-1]) # 음봉 발생 판정
+            is_bearish_candle = p < prev_p
 
             if is_kr:
                 core_vault = {"005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기", "257720": "실리콘투", "058610": "에스피지"}
