@@ -581,6 +581,11 @@ if symbol:
                 sig = "🟢 [매수] 2단계 진바닥 탈출 추가 매수 (5일선 위)"
                 col = "#2E7D32"
                 final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 탈출 매수]</b> 거래량이 살리며 5일선 위 안착 성공! 추가 매수로 배팅 확대."
+            elif (is_escape_buy_signal or is_bottom_entry_signal) and not is_stop_loss_triggered and vol_strength < 70:
+                final_code = "WAIT_VOLUME"
+                sig = "🟡 [입질 대기] 지표 충족 / 거래량 수반 대기"
+                col = "#E65100"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수급 부진]</b> 바닥 탈출 기술적 지표는 충족했으나 거래량이 실리지 않은 속임수 구간이니, 확실한 거래량 폭발을 확인 후 진입하시게."
             elif is_pullback_buy_signal and not is_stop_loss_triggered:
                 final_code = "PULLBACK_BUY"
                 sig = "🔵 [매수] 3단계 눌림목 추가 매수 (승수 확대)"
