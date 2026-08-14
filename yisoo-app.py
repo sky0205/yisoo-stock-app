@@ -501,10 +501,10 @@ if symbol:
             stop_reason = ""
             if user_avg_price > 0 and p < stop_loss_price:
                 is_stop_loss_triggered = True
-                stop_reason = f"보유 평단가 대비 손절 마지노선(-5%) 붕괴"
-            elif (recent_bottom_memory or bottom_score >= 2) and p < stop_loss_price:
+                stop_reason = f"보유 평단가 대비 손절 마지노선 이탈"
+            elif (recent_bottom_memory or bottom_score >= 2) and p < prev_low:
                 is_stop_loss_triggered = True
-                stop_reason = f"진바닥 방어선(-5%) 이탈 붕괴"
+                stop_reason = f"바닥권 전저점 이탈 마지노선"
 
             # ==============================================================================
             # ★ [할아버지 성벽 방어선 기준 진단 & 음봉 매도 로직 개편]
@@ -530,11 +530,11 @@ if symbol:
             if bottom_score >= 2:
                 bottom_status_str = f"<b>(진바닥 지표 {bottom_score}개 터치 달성!)</b>"
                 if is_stop_loss_triggered:
-                    bottom_action_str = f"➔ <b>[비상 후퇴]</b> 방어선(-5%) 붕괴로 매수 금지"
+                    bottom_action_str = f"→ <b>[비상 후퇴]</b> 바닥권 전저점 이탈로 매수 금지"
                 elif vol_strength < 80:
-                    bottom_action_str = f"➔ <b>[입질 대기]</b> 지표 충족이나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
+                    bottom_action_str = f"→ <b>[입질 대기]</b> 지표 충족이나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
                 else:
-                    bottom_action_str = f"➔ <b>[1단계 진바닥 입질 매수]</b> 지표 충족 + 거래량 유입! 소량 입질 매수 시작 (손절 -5% 설정)"
+                    bottom_action_str = f"→ <b>[1단계 진바닥 입질 매수]</b> 지표 충족 + 거래량 유입! 소량 입질 매수 시작 (전저점 방어선 기준 준수)."
             else:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
@@ -606,10 +606,12 @@ if symbol:
                 profit_rate = ((p - user_avg_price) / user_avg_price) * 100
                 if p >= user_avg_price:
                     holder_guide_msg = (
-                        f"📈 <b>[수익권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 수익률: +{profit_rate:.2f}%)]</b><br>"
-                        f"• 5일선({ma5_val:{fmt_p}}{currency}) 사수 여부를 주시하시고, 수확 목표선({target_price_100:{fmt_p}}{currency})까지 자신 있게 홀딩하시게.<br>"
-                        f"• 성벽 위에서 음봉이 떨어지거나 꺾이면 지체 없이 선제적 익절로 수익을 확정하시게."
+                        f" • <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br>"
+                        f" • <b>5일선({ma5_val:{fmt_p}}{currency}) 아래에서는 추측 추가 매수(물타기)를 절대 금지하네.</b><br>"
+                        f" • <b>단기 트레이딩:</b> 5일선 -3% 이탈 시 비중 조절<br>"
+                        f" • <b>최후 방어선:</b> 바닥권 전저점 이탈 시 미련 없이 칼손절 후퇴하시게."
                     )
+                  
                 else:
                     holder_guide_msg = (
                         f"📉 <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br>"
@@ -619,35 +621,25 @@ if symbol:
 
             # 신호등 박스 색상 및 문구 매핑
             if final_code == "STOP_LOSS_ALERT":
-                sig = "🚨 [비상 손절] 방어선(-5%) 붕괴! 전량 칼손절 후퇴!"
+                sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
                 col = "#D32F2F"
                 s_adv = f" • <b>[긴급 집행] {stop_reason}!</b> 추가 손실을 막기 위해 미련 없이 즉시 전량 칼손절 후퇴하시게."
             elif final_code == "RED_SELL_TARGET":
                 sig = "🔴 [매도] 수확 목표선 도달! 이익실현 타점!"
                 col = "#D32F2F"
-                s_adv = (
-                    " • <b>[수확 완료]</b> 수확 목표선에 늠늠하게 도달했네! 물량 30~50%를 "
-                    "매도하며 수익을 확실하게 챙기시게.<br> • <b>[미보유자]</b> 고가 추격 "
-                    "매수 절대 금지!"
-                )
+                s_adv = " • <b>[수확 완료]</b> 수확 목표선에 능능하게 도달했네! 물량 30~50%를 매도하며 수익을 확실하게 챙기시게.<br> • <b>[미보유자]</b> 고가 추격 매수 절대 금지!"
             elif final_code == "RED_SELL_WARNING":
-                sig = "🔴 [매도] 성벽 위 음봉 발생! 선제적 익절 권유"
+                sig = "🟣 [매도] 성벽 위 음봉 발생! 선제적 익절 권유"
                 col = "#D32F2F"
-                s_adv = (
-                    " • <b>[경계 익절]</b> 성벽(방어선) 위 공방 중 음봉이 떨어졌네! 목표선 미도달이나 "
-                    "기세 꺾이기 전에 <b>선제적 분할 매도</b>로 수익을 지키시게."
-                )
+                s_adv = " • <b>[경계 익절]</b> 성벽(방어선) 위 공방 중 음봉이 떨어졌네! 목표선 미달이나 기세 꺾이기 전에 <b>선제적 분할 매도</b>로 수익을 지키시게."
             elif final_code == "YELLOW_CAUTION":
                 sig = "🟡 [경계] 성벽 위 공방 / 매도 준비!"
-                col = "#EF6C00" 
-                s_adv = (
-                    " • <b>[경계 태세]</b> 성벽(방어선) 위 진입! 추격 매수는 철저히 차단하고, <b>수확</b>"
-                    " 목표선 도달 시 매도할 준비를 하시게."
-                )
+                col = "#EF6C00"
+                s_adv = " • <b>[경계 태세]</b> 성벽(방어선) 위 진입! 추격 매수는 철저히 차단하고, <b>수확</b> 목표선 도달 시 매도할 준비를 하시게."
             elif final_code == "BOTTOM_ENTRY":
-                sig = "🟢 [매수] 1단계 진바닥 입질 매수 (소량)"
+                sig = "🟢 [매입] 1단계 진바닥 입질 매수 (소량)"
                 col = "#388E3C"
-                s_adv = " • <b>[입질 진격]</b> 진바닥 터치 + 거래량 유입 포착! 소량 씨앗 뿌리기 진격 (손절 -5% 철저 준수)."
+                s_adv = " • <b>[입질 진격]</b> 진바닥 터치 + 거래량 유입 포착! 소량 씨앗 뿌리기 진격 (전저점 방어선 철저 준수)."
             elif final_code == "ESCAPE_BUY":
                 sig = "🟢 [매수] 2단계 진바닥 탈출 추가 매수 (5일선 위)"
                 col = "#2E7D32"
@@ -655,7 +647,7 @@ if symbol:
             elif final_code == "PULLBACK_BUY":
                 sig = "🔵 [매수] 3단계 눌림목 추가 매수 (승수 확대)"
                 col = "#1976D2"
-                s_adv = " • <b>[승수 확대]</b> 5일선·20일선 위 안착 및 활주로 확보 완료! 알짜배기 추가 매수."
+                s_adv = " • <b>[승수 확대]</b> 5일선·20일선 위 안착 및 활주로 확보로 알짜배기 추가 매수 집행."
             else:
                 sig = "🟡 [관망] 조건 미충족 / 뇌동매매 금지"
                 col = "#FBC02D"
