@@ -654,7 +654,7 @@ if symbol:
 
             c1, c2, c3 = st.columns(3)
             with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선 (볼린저하단)</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
-            with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선 (97% 기준)</p><p style='color:#D32F2F; font-size:32px;'>{format(target_price_97, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선 (97% 기준)</p><p style='color:#D32F2F; font-size:32px;'>{format(target_price_100, fmt_p)}</p></div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
 
             if defense_line > up_b:
