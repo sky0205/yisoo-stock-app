@@ -617,8 +617,7 @@ if symbol:
                         f" • <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br>"
                         f" • <b>5일선({ma5_val:{fmt_p}}{currency}) 아래에서는 추측 추가 매수(물타기)를 절대 금지하네.</b><br>"
                         f" • <b>단기 트레이딩:</b> 5일선 -3% 이탈 시 비중 조절 및 관망({ma5_minus_3:{fmt_p}}{currency})<br>"
-                        # 아래처럼 prev_low가 없으니 계산식을 직접 넣어주거나 정의해 주면 되옵니다!
-                        f" • <b>최후 방어선:</b> 바닥권 전저점 이탈 시 미련 없이 칼손절 후퇴({recent_bottom_price:{fmt_p}}{currency})"
+                        f" • <b>최후 방어선:</b> 바닥권 전저점 이탈 시 미련 없이 칼손절 후퇴({prev_low:{fmt_p}}{currency})"
                     )
                  
 
