@@ -376,8 +376,8 @@ if symbol:
             ma120_val = df['MA120'].iloc[-1] if len(df) >= 120 else mid_line
             ma20_slope = (df['MA20'].iloc[-1] - df['MA20'].iloc[-5]) if len(df) >= 5 else 0
             
-            prev_low_20 = float(df['Low'].iloc[-21:-1].min()) if len(df) > 20 else float(df['Low'].min())
-            is_above_ma20 = (p >= mid_line)
+            prev_low = float(df['Low'].iloc[-61:-1].min()) if len(df) > 60 else float(df['Low'].min())
+            is_below_ma5 = (p < ma_5)
 
             # ★ [손절가 5% 고정 원칙 적용: 할아버지의 엄격한 손절 룰 반영]
             stop_loss_price = p * 0.95
