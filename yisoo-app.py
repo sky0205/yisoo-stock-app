@@ -566,9 +566,9 @@ if symbol:
                 final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[바닥권 전저점 방어선 붕괴]</b> 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
             elif is_on_the_wall and is_bearish_candle:
                 final_code = "RED_SELL_WARNING"
-                sig = "🟣 [매도] 성벽 위 음봉 발생! 선제적 익절 권유"
-                col = "#D32F2F"
-                final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[성벽 위 음봉 발생]</b> 성벽(방어선) 위 공방 중 음봉이 떨어졌으니, 목표선 미달이라도 선제적 분할 매도로 수익을 지키시게."
+                sig = "🟡 [경계] 성벽 위 음봉 출현 / 분할 익절 준비"
+                col = "#EF6C00"
+                final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[성벽 위 음봉 출현]</b> 성벽(방어선) 위에서 음봉이 발생했으니, 5일선 사수 여부를 살피며 기세 둔화 시 분할 익절할 준비를 하시게."
             elif is_target_reached:
                 final_code = "RED_SELL_TARGET"
                 sig = "🔴 [매도] 수확 목표선 도달! 이익실현 타점!"
@@ -651,9 +651,9 @@ if symbol:
                 col = "#D32F2F"
                 s_adv = " • <b>[수확 완료]</b> 수확 목표선에 거뜬히 도달했네! 물량 30~50%를 매도하며 수익을 확실하게 챙기시게.<br> • <b>[미보유자]</b> 고가 추격 매수 절대 금지!"
             elif final_code == "RED_SELL_WARNING":
-                sig = "🟣 [매도] 성벽 위 음봉 발생! 선제적 익절 권유"
-                col = "#D32F2F"
-                s_adv = " • <b>[경계 익절]</b> 성벽(방어선) 위 공방 중 음봉이 발생했네! 기세가 꺾이기 전에 선제적으로 분할 익절하시게."
+                sig = "🟡 [경계] 성벽 위 음봉 출현 / 분할 익절 준비"
+                col = "#EF6C00"
+                s_adv = " • <b>[경계 태세]</b> 성벽(방어선) 위에서 음봉이 발생했네! 5일선 지지 여부를 확인하며 기세가 꺾일 때를 대비해 분할 익절 준비를 하시게."
             elif final_code == "YELLOW_CAUTION":
                 sig = "🟡 [경계] 성벽 위 공방 / 매도 준비!"
                 col = "#EF6C00"
