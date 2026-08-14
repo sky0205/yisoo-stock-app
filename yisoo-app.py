@@ -67,7 +67,7 @@ def calculate_kelly_size(win_rate, win_loss_ratio, fraction=0.5):
     return round(safe_kelly, 1)
 
 # 1. 스타일 및 화면 구성
-st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36061", layout="wide")
+st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36062", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #ECEFF1; } 
@@ -157,7 +157,7 @@ def display_global_risk():
         st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36061")
+st.title("🧐 이수할아버지의 냉정 진단기 v36062 (ATR 100점 완성판)")
 display_global_risk(); st.divider()
 
 # ==============================================================================
@@ -376,13 +376,26 @@ if symbol:
             ma120_val = df['MA120'].iloc[-1] if len(df) >= 120 else mid_line
             ma20_slope = (df['MA20'].iloc[-1] - df['MA20'].iloc[-5]) if len(df) >= 5 else 0
             
+            # --- [100점 완성] ATR(14) 변동성 기반 동적 숨결 연산 ---
+            tr1 = df['High'] - df['Low']
+            tr2 = (df['High'] - df['Close'].shift(1)).abs()
+            tr3 = (df['Low'] - df['Close'].shift(1)).abs()
+            tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+            atr_14 = float(tr.rolling(14).mean().iloc[-1]) if len(df) >= 14 else float(tr.mean())
+            
+            # 종목 변동성에 따라 손절 버퍼를 2.0% ~ 5.0% 사이로 자동 최적화
+            atr_ratio = (atr_14 / ma5_val) if ma5_val > 0 else 0.03
+            dynamic_stop_rate = max(0.02, min(0.05, atr_ratio))  # 최소 2% ~ 최대 5% 제한
+            dynamic_stop_pct = dynamic_stop_rate * 100
+            dynamic_stop_price = ma5_val * (1 - dynamic_stop_rate)
+
             prev_low = float(df['Low'].iloc[-61:-1].min()) if len(df) > 60 else float(df['Low'].min())
             is_below_ma5 = (p < ma5_val)
 
-            # ★ [실전 손절 원칙 적용: 5일선 이탈 시엔 가벼운 체크, 전저점 이탈 시엔 완전한 칼손절]
+            # ★ [실전 손절 원칙: 변동성 맞춤형 동적 체크포인트]
             if not is_below_ma5:
-                stop_loss_price = ma5_val * 0.97
-                stop_loss_label = f"🛡️ 단기 추세 체크포인트: 5일선 -3% 이탈 시 비중 조절 및 관망({stop_loss_price:{fmt_p}}{currency})"
+                stop_loss_price = dynamic_stop_price
+                stop_loss_label = f"🛡️ 단기 추세 체크포인트: 5일선 -{dynamic_stop_pct:.1f}% 이탈 시 비중 조절 및 관망({stop_loss_price:{fmt_p}}{currency})"
             else:
                 stop_loss_price = prev_low
                 stop_loss_label = f"🚨 칼손절 경보: 바닥권 전저점 이탈 마지노선({stop_loss_price:{fmt_p}}{currency})"
@@ -606,8 +619,8 @@ if symbol:
                 f"{squeeze_info_str}"
             )
 
-            # --- [수정 완료: 보유 평단가 맞춤형 실전 대응 가이드] ---
-            ma5_minus_3 = ma5_val * 0.97
+            # --- [수정 완료: 보유 평단가 맞춤형 실전 대응 가이드 (ATR 동적 반영)] ---
+            ma5_dynamic_stop = dynamic_stop_price
 
             if user_avg_price <= 0:
                 holder_guide_msg = f"현재 추세 탐색 및 방향 정립 구간이니 성벽({defense_line:{fmt_p}}{currency})이나 5일선 사수 여부를 확인하며 차분히 보유 판단을 내리시게. (★ <b>손절 마지노선: {stop_loss_label}</b>)"
@@ -617,14 +630,14 @@ if symbol:
                     holder_guide_msg = (
                         f" • <b>[수익권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 수익률: +{profit_rate:.2f}%)]</b><br>"
                         f" • <b>기세 지속:</b> 5일선({ma5_val:{fmt_p}}{currency})을 이탈하지 않는 한 성벽 및 수확목표선까지 추세를 즐기시게.<br>"
-                        f" • <b>단기 트레이딩:</b> 5일선 -3% 이탈 시 수익 보존을 위해 일부 분할 익절({ma5_minus_3:{fmt_p}}{currency})<br>"
+                        f" • <b>단기 트레이딩:</b> 5일선 -{dynamic_stop_pct:.1f}% 이탈 시 수익 보존을 위해 일부 분할 익절({ma5_dynamic_stop:{fmt_p}}{currency})<br>"
                         f" • <b>수익 확정선:</b> 성벽 위 음봉 발생 또는 볼린저 상단 도달 시 분할 매도 집행."
                     )
                 else:
                     holder_guide_msg = (
                         f" • <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br>"
                         f" • <b>5일선({ma5_val:{fmt_p}}{currency}) 아래에서는 추측 추가 매수(물타기)를 절대 금지하네.</b><br>"
-                        f" • <b>단기 트레이딩:</b> 5일선 -3% 이탈 시 추가 하락 방어를 위해 비중 조절({ma5_minus_3:{fmt_p}}{currency})<br>"
+                        f" • <b>단기 트레이딩:</b> 5일선 -{dynamic_stop_pct:.1f}% 이탈 시 추가 하락 방어를 위해 비중 조절({ma5_dynamic_stop:{fmt_p}}{currency})<br>"
                         f" • <b>최후 방어선:</b> 바닥권 전저점({stop_loss_price:{fmt_p}}{currency}) 이탈 시 미련 없이 전량 칼손절 후퇴."
                     )
 
