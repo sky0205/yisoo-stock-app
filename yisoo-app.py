@@ -381,7 +381,7 @@ if symbol:
 
             # ★ [실전 손절 원칙 적용: 5일선 위는 5일선 -3%, 바닥권은 최근 전저점 이탈]
             if not is_below_ma5:
-                stop_loss_price = ma_5 * 0.97
+                stop_loss_price = df['Close'].rolling(window=5).mean().iloc[-1] * 0.97
                 stop_loss_label = f"5일선 기준 -3% 칼손절({stop_loss_price:{fmt_p}}{currency})"
             else:
                 stop_loss_price = prev_low
