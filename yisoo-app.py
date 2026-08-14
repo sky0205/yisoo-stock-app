@@ -379,9 +379,13 @@ if symbol:
             prev_low = float(df['Low'].iloc[-61:-1].min()) if len(df) > 60 else float(df['Low'].min())
             is_below_ma5 = (p < df['Close'].rolling(window=5).mean().iloc[-1])
 
-            # ★ [손절가 5% 고정 원칙 적용: 할아버지의 엄격한 손절 룰 반영]
-            stop_loss_price = p * 0.95
-            stop_loss_label = f"진바닥 입질가 대비 -5% 칼손절({stop_loss_price:{fmt_p}}{currency})"
+            # ★ [실전 손절 원칙 적용: 5일선 위는 5일선 -3%, 바닥권은 최근 전저점 이탈]
+            if not is_below_ma5:
+                stop_loss_price = ma_5 * 0.97
+                stop_loss_label = f"5일선 기준 -3% 칼손절({stop_loss_price:{fmt_p}}{currency})"
+            else:
+                stop_loss_price = prev_low
+                stop_loss_label = f"바닥권 전저점 이탈 마지노선({stop_loss_price:{fmt_p}}{currency})"
 
             defense_link_idx = min(21, len(df))
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
