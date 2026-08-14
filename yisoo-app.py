@@ -673,7 +673,10 @@ if symbol:
             if m_l > s_l:
                 macd_strategy_msg = "<b>🔥 엔진 정회전 완료 (순풍 구역)</b><br>• <b>역할:</b> 상승 모멘텀 유지.<br>• <b>진단:</b> 엔진 정회전 완료! 바닥 입질 후 성벽을 향해 본대 진격 신호탄이 터졌네."
             else:
-                mac_strategy_msg = "⚙️ <b>엔진 역회전 상태</b><br>• <b>역할:</b> 하락 조정 모멘텀.<br>• <b>진단:</b> " + ("🚀 [엔진 시동] 역회전폭 급감! 바닥에서 다시 고개를 치켜드는 <b>반격의 시동을 거는 밸브 개방 구역</b>이네." if m_l > s_l else "⚠️ 역회전 심화! 엔진 거꾸로 도는 차니 절대 진입 금지이오.")
+                if m_l > s_l:
+                    macd_strategy_msg = "<b>🔥 엔진 정회전 완료 (순풍 구역)</b><br>• <b>역할:</b> 상승 모멘텀 유지.<br>• <b>진단:</b> 엔진 정회전 완료! 바닥 입질 후 성벽을 향해 본대 진격 가능구역이오."
+                else:
+                    macd_strategy_msg = "⚙️ <b>엔진 역회전 상태</b><br>• <b>역할:</b> 하락 조정 모멘텀.<br>• <b>진단:</b> " + ("🚀 [엔진 시동] 역회전폭 급감! 바닥에서 다시 고개를 치켜드는 <b>반격의 시동을 거는 밸브 개방 구역</b>이네." if m_l > s_l else "⚠️ 역회전 심화! 엔진 거꾸로 도는 차니 절대 진입 금지이오.")
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
 <div style='margin-bottom: 20px;'>
