@@ -545,7 +545,7 @@ if symbol:
                 else:
                     pullback_action_str = "➔ <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
 
-          # --- [최종 결론 판정: 성벽 위 음봉 매도 반영 최우선] ---
+          # --- [최종 결론 판정: 성벽 위 음봉 매도 반영 및 전체 조건 통합] ---
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
@@ -560,7 +560,7 @@ if symbol:
                 final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[성벽 위 진입 및 공방]</b> 추격 매수는 절대 금지하고, 매도 준비 및 경계 태세를 갖추시게!"
             elif is_bottom_entry_signal and not is_stop_loss_triggered:
                 final_code = "BOTTOM_ENTRY"
-                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 입질 매수]</b> 주요 지표 터치 + 거래량 유입! 소량 입질 매수 시작 (손절선 -5% 설정)."
+                final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 입질 매수]</b> 주요 지표 터치 + 거래량 유입! 소량 입질 매수 시작 (손절 -5% 설정)."
             elif is_escape_buy_signal and not is_stop_loss_triggered:
                 final_code = "ESCAPE_BUY"
                 final_adv = f"🟢 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 탈출 매수]</b> 거래량이 실리며 5일선 위 안착 성공! 추가 매수로 배팅 확대."
@@ -569,7 +569,7 @@ if symbol:
                 final_adv = f"🔵 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[눌림목 추가 매수]</b> 5일선·20일선 위 안정적 안착 및 활주로 확보! 승수 확대."
             else:
                 final_code = "WAIT_GENERAL"
-                final_adv = f"🧐 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 조건 미충족 상태이므로 뇌동매매를 금하고 관망세 유지하시게!"
+                final_adv = f"🟡 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 조건 미충족 상태이므로 뇌동매매를 금하고 관망세 유지하시게!"
 
             indicator_verify_text = (
                 f"{ma_price_summary}<br>"
