@@ -545,13 +545,13 @@ if symbol:
                 else:
                     pullback_action_str = "➔ <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
 
-            # --- [최종 결론 판정: 고가 추격 금지 및 성벽 음봉 매도 반영] ---
+           # --- [최종 결론 판정: 고가 추격 금지 및 성벽 음봉 매도 반영] ---
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 final_adv = f"🚨 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{stop_reason}]</b> 방어선 완전 함락! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
             elif is_target_reached:
                 final_code = "RED_SELL_TARGET"
-                final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수확 목표선 97% 도달]</b> 성벽 위 목표선 도달 완료! 즉시 분할 익절 및 전량 매도로 수익 확정하시게!"
+                final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수확 목표선 도달]</b> 성벽 위 목표선 도달 완료! 즉시 분할 익절 및 전량 매도로 수익 확정하시게."
             elif is_on_the_wall and is_bearish_candle:
                 final_code = "RED_SELL_WARNING"
                 final_adv = f"🔴 <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[성벽 위 공방 중 음봉 발생]</b> 목표선 미도달이나 선제적 매도 익절을 권유하네! 수익을 지키시게."
