@@ -787,6 +787,6 @@ if symbol:
                 else:
                     m_diag = "<b>⚙️ 엔진 역회전</b><br>• <b>역할:</b> 하락 조정 가속.<br>• <b>진단:</b> 하락 관성 지속. 신규 매수 및 물타기 금지, 관망하시게."
 
-        st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (추세 엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (추세 엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
 
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
