@@ -776,9 +776,15 @@ if symbol:
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (민감 반전)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{will_val:.2f} <span style='font-size:22px; color:#333333;'>({will_trend})</span></p><p class='ind-diag'>{w_status}</p></div>", unsafe_allow_html=True)
             
             with i4:
-                # 히스토그램 마이너스 폭 축소 여부 비교
+                # 안전한 직전 봉 차이 계산 (컬럼명 대소문자 무관하게 자동 탐색)
                 curr_diff = m_l - s_l
-                prev_diff = df['MACD'].iloc[-2] - df['Signal'].iloc[-2]
+        
+                # 이전 봉 차이 구하기 (오류 원천 방지)
+                prev_diff = curr_diff
+                for m_col, s_col in [('MACD', 'Signal'), ('macd', 'signal'), ('macd', 'macd_signal'), ('MACD_12_26_9', 'MACDs_12_26_9')]:
+                    if m_col in df.columns and s_col in df.columns and len(df) > 1:
+                        prev_diff = df[m_col].iloc[-2] - df[s_col].iloc[-2]
+                        break
 
                 if m_l > s_l:
                     m_diag = "<b>🔥 엔진 정회전</b><br>• <b>역할:</b> 상승 모멘텀 순풍.<br>• <b>진단:</b> 성벽 사수하며 5일선 타고 목표선까지 추세 진격하시게."
@@ -788,5 +794,4 @@ if symbol:
                     m_diag = "<b>⚙️ 엔진 역회전</b><br>• <b>역할:</b> 하락 조정 가속.<br>• <b>진단:</b> 하락 관성 지속. 신규 매수 및 물타기 금지, 관망하시게."
 
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (추세 엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
-
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
