@@ -776,16 +776,29 @@ if symbol:
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (민감 반전)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{will_val:.2f} <span style='font-size:22px; color:#333333;'>({will_trend})</span></p><p class='ind-diag'>{w_status}</p></div>", unsafe_allow_html=True)
             
             with i4:
-                # 안전한 직전 봉 차이 계산 (컬럼명 대소문자 무관하게 자동 탐색)
+                # 1) 현재 MACD 차이 (히스토그램)
                 curr_diff = m_l - s_l
         
-                # 이전 봉 차이 구하기 (오류 원천 방지)
-                prev_diff = curr_diff
-                for m_col, s_col in [('MACD', 'Signal'), ('macd', 'signal'), ('macd', 'macd_signal'), ('MACD_12_26_9', 'MACDs_12_26_9')]:
-                    if m_col in df.columns and s_col in df.columns and len(df) > 1:
-                        prev_diff = df[m_col].iloc[-2] - df[s_col].iloc[-2]
+                # 2) 직전 봉 MACD 차이 구하기 (모든 컬럼 자동 탐색)
+                prev_diff = None
+                for col in df.columns:
+                    if 'macd' in str(col).lower() and not any(x in str(col).lower() for x in ['sig', 'hist', 'h']):
+                        # MACD 컬럼 발견 시 직전값 계산
+                        m_series = df[col]
+                        s_series = None
+                        for scol in df.columns:
+                            if 'sig' in str(scol).lower():
+                                s_series = df[scol]
+                                break
+                        if s_series is not None and len(df) > 1:
+                            prev_diff = m_series.iloc[-2] - s_series.iloc[-2]
                         break
 
+                # 컬럼을 못 찾은 경우 대비 안전장치 (기본값)
+                if prev_diff is None:
+                    prev_diff = curr_diff
+
+                # 3) 3단계 상태 판정
                 if m_l > s_l:
                     m_diag = "<b>🔥 엔진 정회전</b><br>• <b>역할:</b> 상승 모멘텀 순풍.<br>• <b>진단:</b> 성벽 사수하며 5일선 타고 목표선까지 추세 진격하시게."
                 elif curr_diff > prev_diff:
