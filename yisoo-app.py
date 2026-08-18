@@ -76,7 +76,7 @@ st.markdown("""
     .vol-sub-text { font-size: 20px !important; color: #1565C0 !important; line-height: 1.6; background-color: #FFFFFF; padding: 12px; border-radius: 8px; border-left: 6px solid #1E88E5; }
     .signal-box { padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); }
     .signal-box * { color: #FFFFFF !important; }
-    .signal-text { font-size: 48px !important; font-weight: 900 !important; color: #FFFFFF !important; }
+    .signal-text { font-size: 44px !important; font-weight: 900 !important; color: #FFFFFF !important; }
     .signal-subtext { font-size: 22px !important; color: #FFFFFF !important; line-height: 1.6; margin-top: 10px; }
     .trend-card { background-color: #FFFFFF; padding: 30px; border-radius: 20px; border: 5px solid #D32F2F; margin: 20px 0; }
     .trend-title { font-size: 32px !important; color: #D32F2F !important; border-bottom: 3px solid #FFEBEE; padding-bottom: 12px; margin-bottom: 20px; }
@@ -345,7 +345,7 @@ if symbol:
             else:
                 vol_strength = vol_strength_auto
 
-            # 보조지표 연산
+            # 보조지표 연산 (RSI 14/9, Williams %R 14/6, MACD 12/26/9, BB 20/2)
             delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
             rsi_val, rsi_prev = rsi_series.iloc[-1], rsi_series.iloc[-2]
@@ -358,6 +358,13 @@ if symbol:
             sig_line = macd.ewm(span=9).mean()
             m_l, s_l, m_p, s_p = macd.iloc[-1], sig_line.iloc[-1], macd.iloc[-2], sig_line.iloc[-2]
             
+            # MACD 엔진 상태 정밀 계산
+            curr_diff = m_l - s_l
+            prev_diff = m_p - s_p
+            is_macd_bullish = (m_l > s_l)
+            is_macd_recovering = (curr_diff > prev_diff) # 역회전 감소/반등 시동
+            is_macd_reverse_deepening = (not is_macd_bullish) and (not is_macd_recovering) # 순수 하락가속
+
             df['MA5'] = df['Close'].rolling(5).mean()
             df['MA20'] = df['Close'].rolling(20).mean()
             df['MA60'] = df['Close'].rolling(60).mean()
@@ -376,23 +383,21 @@ if symbol:
             ma120_val = df['MA120'].iloc[-1] if len(df) >= 120 else mid_line
             ma20_slope = (df['MA20'].iloc[-1] - df['MA20'].iloc[-5]) if len(df) >= 5 else 0
             
-            # --- [100점 완성] ATR(14) 변동성 기반 동적 숨결 연산 ---
+            # ATR(14) 변동성 연산
             tr1 = df['High'] - df['Low']
             tr2 = (df['High'] - df['Close'].shift(1)).abs()
             tr3 = (df['Low'] - df['Close'].shift(1)).abs()
             tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
             atr_14 = float(tr.rolling(14).mean().iloc[-1]) if len(df) >= 14 else float(tr.mean())
             
-            # 종목 변동성에 따라 손절 버퍼를 2.0% ~ 5.0% 사이로 자동 최적화
             atr_ratio = (atr_14 / ma5_val) if ma5_val > 0 else 0.03
-            dynamic_stop_rate = max(0.02, min(0.05, atr_ratio))  # 최소 2% ~ 최대 5% 제한
+            dynamic_stop_rate = max(0.02, min(0.05, atr_ratio))
             dynamic_stop_pct = dynamic_stop_rate * 100
             dynamic_stop_price = ma5_val * (1 - dynamic_stop_rate)
 
             prev_low = float(df['Low'].iloc[-61:-1].min()) if len(df) > 60 else float(df['Low'].min())
             is_below_ma5 = (p < ma5_val)
 
-            # ★ [실전 손절 원칙: 변동성 맞춤형 동적 체크포인트]
             if not is_below_ma5:
                 stop_loss_price = dynamic_stop_price
                 stop_loss_label = f"🛡️ 단기 추세 체크포인트: 5일선 -{dynamic_stop_pct:.1f}% 이탈 시 비중 조절 및 관망({stop_loss_price:{fmt_p}}{currency})"
@@ -405,8 +410,6 @@ if symbol:
 
             high_52w = float(df['High'].rolling(window=250, min_periods=1).max().iloc[-1])
             low_52w = float(df['Low'].rolling(window=250, min_periods=1).min().iloc[-1])
-            is_new_high = (p >= high_52w * 0.99)
-            is_new_low = (p <= low_52w * 1.01)
 
             is_bullish = (ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
             is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
@@ -495,6 +498,9 @@ if symbol:
             
             st.markdown(f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전황: {v_status} ({'수동 연산 모드' if is_manual_mode else f'실시간 {v_ratio:.1f}% / 5일평균대비'})</div><div class='vol-sub-text'>{v_adv}</div></div>", unsafe_allow_html=True)
 
+            # ==============================================================================
+            # ★ [지표 정밀 연산 및 채점부]
+            # ==============================================================================
             bb_bot_series = (df['Close'] <= (low_b * 1.02)).astype(int)
             rsi_bot_series = (rsi_series <= 35).astype(int)
             will_bot_series = (will_series <= -80).astype(int)
@@ -503,10 +509,11 @@ if symbol:
             bottom_score = bottom_score_series.iloc[-1]
             recent_bottom_memory = (bottom_score_series.iloc[-3:].max() >= 2)
 
-            is_uptrend = (p >= mid_line) or (ma20_slope > 0)
-            
-            bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
-            bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
+            # 눌림목 동조 연산
+            p_will = 1 if will_val <= -50 else 0
+            p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.02) else 0
+            p_rsi = 1 if (40 <= rsi_val <= 55) else 0
+            pullback_rebound_score = p_will + p_bb + p_rsi
 
             # --- [손절 조건 검증] ---
             is_stop_loss_triggered = False
@@ -518,92 +525,137 @@ if symbol:
                 is_stop_loss_triggered = True
                 stop_reason = f"바닥권 전저점 이탈 마지노선"
 
-            # ==============================================================================
-            # ★ [할아버지 성벽 방어선 기준 진단 & 음봉 매도 로직]
-            # ==============================================================================
+            # 성벽 & 수확목표선
             target_price_100 = up_b
             is_target_reached = p >= (target_price_100 * 0.97)
-            
-            # 성벽(방어선) 위 안착 여부 판정 (현재가가 방어선 이상이면서 수확목표선 미만일 때)
             is_on_the_wall = (p >= defense_line) and (p < target_price_100)
 
-            is_bottom_entry_signal = (bottom_score >= 2) and (vol_strength >= 80)
-            is_escape_buy_signal = is_ma5_safe and (bottom_score >= 1 or recent_bottom_memory)
+            # ==============================================================================
+            # ★ [지표-신호등 100% 일치화 판정 엔진 (완벽 동기화)]
+            # ==============================================================================
+            # 1) 바닥 지표 통과 조건 (지표 2개 이상 동조 or 최근 3봉내 2개 이상 지지)
+            is_bottom_indicator_ok = (bottom_score >= 2 or recent_bottom_memory)
+            
+            # 2) 밴드폭 및 엔진 필터 통과 조건
+            is_bandwidth_ok = (bandwidth >= 25.0)
+            is_macd_not_deepening = not is_macd_reverse_deepening  # 최소한 하락 역회전 가속이 아니어야 함
 
-            p_will = 1 if will_val <= -50 else 0
-            p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.01) else 0
-            p_rsi = 1 if (40 <= rsi_val <= 55) else 0
-            pullback_rebound_score = p_will + p_bb + p_rsi
-            is_pullback_buy_signal = (p >= mid_line) and is_ma5_safe and (pullback_rebound_score >= 2) and (vol_strength >= 80) and (bandwidth >= 25.0)
+            # [핵심] 1단계 진바닥 입질 매수 성립 요건
+            is_bottom_entry_signal = (bottom_score >= 2) and (vol_strength >= 80) and is_bandwidth_ok and is_macd_not_deepening
 
+            # [핵심] 2단계 진바닥 탈출 매수 성립 요건 (5일선 위 + 지표동조 + 밴드폭 + MACD반등/정회전 + 거래량)
+            is_escape_buy_signal = is_ma5_safe and is_bottom_indicator_ok and is_bandwidth_ok and is_macd_not_deepening and (vol_strength >= 80)
+
+            # [핵심] 3단계 눌림목 추가 매수 성립 요건 (20일선 지지 + 5일선 위 + 눌림목 동조 ≥ 2점 + 밴드폭 ≥ 25% + 거래량 + MACD)
+            is_pullback_buy_signal = (p >= mid_line) and is_ma5_safe and (pullback_rebound_score >= 2) and (vol_strength >= 80) and is_bandwidth_ok and is_macd_not_deepening
+
+            # 하단 세부 설명 텍스트 동기화
             if bottom_score >= 2:
                 bottom_status_str = f"<b>(진바닥 지표 {bottom_score}개 터치 달성!)</b>"
                 if is_stop_loss_triggered:
                     bottom_action_str = f"→ <b>[비상 후퇴]</b> 바닥권 전저점 이탈로 매수 금지"
                 elif vol_strength < 80:
                     bottom_action_str = f"→ <b>[입질 대기]</b> 지표 충족이나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
+                elif not is_bandwidth_ok:
+                    bottom_action_str = f"→ <b>[매수 보류]</b> 밴드폭 협소({bandwidth:.1f}%)로 먹을 자리 부족하여 관망"
+                elif is_macd_reverse_deepening:
+                    bottom_action_str = f"→ <b>[매수 보류]</b> MACD 엔진 역회전 가속 중이므로 진입 금지"
                 else:
                     bottom_action_str = f"→ <b>[1단계 진바닥 입질 매수]</b> 지표 충족 + 거래량 유입! 소량 입질 매수 시작 (전저점 방어선 기준 준수)."
             else:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
-            if bandwidth < 25.0 and p >= mid_line:
+            if not is_bandwidth_ok and p >= mid_line:
                 pullback_status_str = f"<b>(밴드폭 협소 {bandwidth:.1f}%)</b>"
                 pullback_action_str = "➔ <b>[매수 보류]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승수 확대 금지"
             else:
                 pullback_status_str = f"<b>(조건 만족 / 밴드폭 {bandwidth:.1f}%)</b>"
                 if is_pullback_buy_signal:
-                    pullback_action_str = "➔ <b>[3단계 눌림목 추가 매수]</b> 5·20일선 위 안착 + 승수 확대 진격!"
+                    pullback_action_str = "➔ <b>[3단계 눌림목 추가 매수]</b> 5·20일선 위 안착 + 지표 동조 확인, 승수 확대 진격!"
+                elif pullback_rebound_score < 2:
+                    pullback_action_str = "➔ <b>[지표 미흡]</b> 눌림목 동조 점수 부족(2점 미만)으로 돌파/안착 대기"
+                elif is_macd_reverse_deepening:
+                    pullback_action_str = "➔ <b>[엔진 역회전]</b> MACD 하락 가속 중이므로 관망"
                 else:
                     pullback_action_str = "➔ <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
 
-            # ★ [실전 리스크 관리: 신호 판정 및 우선순위 분기]
+            # ==============================================================================
+            # ★ [신호등 분기: 지표 설명과 100% 일치하도록 완벽 매핑]
+            # ==============================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
                 col = "#D32F2F"
                 final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[바닥권 전저점 방어선 붕괴]</b> 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
+            
             elif is_on_the_wall and is_bearish_candle:
                 final_code = "RED_SELL_WARNING"
                 sig = "🟡 [경계] 성벽 위 음봉 출현 / 분할 익절 준비"
                 col = "#EF6C00"
                 final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[성벽 위 음봉 출현]</b> 성벽(방어선) 위에서 음봉이 발생했으니, 5일선 사수 여부를 살피며 기세 둔화 시 분할 익절할 준비를 하시게."
+            
             elif is_target_reached:
                 final_code = "RED_SELL_TARGET"
                 sig = "🔴 [매도] 수확 목표선 도달! 이익실현 타점!"
                 col = "#D32F2F"
                 final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수확 목표선 도달]</b> 성벽 위 목표선 도달 완료! 즉시 분할 익절 및 전량 매도로 수익을 확정하시게."
+            
             elif is_on_the_wall:
                 final_code = "YELLOW_CAUTION"
                 sig = "🟡 [경계] 성벽 위 공방 / 매도 준비!"
                 col = "#EF6C00"
                 final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[성벽 위 진입 및 공방]</b> 추격 매수는 절대 금하고, 매도 준비 및 경계 태세를 갖추시게!"
-            ## 1. 거래량(80점 이상) 실린 정상 1단계 바닥 입질 매수
-            elif is_bottom_entry_signal and not is_stop_loss_triggered and vol_strength >= 80:
+            
+            # [진짜 1단계 매수] 지표 + 거래량 + 밴드폭 + MACD 100% 충족
+            elif is_bottom_entry_signal:
                 final_code = "BOTTOM_ENTRY"
                 sig = "🟢 [매입] 1단계 진바닥 입질 매수 (소량)"
                 col = "#388E3C"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 입질 매수]</b> 주요 지표 터치 + 거래량 유입 확인! 분할 매수 시작."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 입질 매수]</b> 3중 지표 터치 + 거래량 유입 확인! 분할 매수 시작."
 
-            # 2. 거래량(80점 이상) 실린 정상 2단계 바닥 탈출 매수
-            elif is_escape_buy_signal and not is_stop_loss_triggered and vol_strength >= 80:
+            # [진짜 2단계 매수] 5일선 위 + 지표동조 + 거래량 + 밴드폭 + MACD 100% 충족
+            elif is_escape_buy_signal:
                 final_code = "ESCAPE_BUY"
-                sig = "🟢 [매수] 2단계 진바닥 탈출 추가 매수 (5일선 위)"
+                sig = "🟢 [매수] 2단계 진바닥 탈출 추가 매수 (지표 동조 확인)"
                 col = "#2E7D32"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 탈출 매수]</b> 거래량이 실리며 5일선 위 안착 성공! 배팅 비중을 늘려 밭을 다짐."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 탈출 매수]</b> 지표 동조 및 거래량이 실리며 5일선 위 안착 성공! 배팅 비중을 늘려 밭을 다짐."
 
-            # 3. ★ [핵심] 지표는 맞았으나 거래량(80점 미만)이 부족하여 대기하는 분기
-            elif (bottom_score >= 2 or is_escape_buy_signal) and not is_stop_loss_triggered and vol_strength < 80:
-                final_code = "WAIT_VOLUME"
-                sig = "🟡 [입질 대기] 지표 충족 / 거래량 수반 대기"
-                col = "#E65100"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수급 부진]</b> 바닥 지표({bottom_score}개)는 충족했으나 거래량이 실리지 않은 속임수 구간이니, 확실한 거래량 유입을 확인 후 진입하시게."
-            elif is_pullback_buy_signal and not is_stop_loss_triggered:
+            # [진짜 3단계 눌림목 매수] 5/20일선 위 + 눌림목동조 2점이상 + 거래량 + 밴드폭 + MACD 100% 충족
+            elif is_pullback_buy_signal:
                 final_code = "PULLBACK_BUY"
                 sig = "🔵 [매수] 3단계 눌림목 추가 매수 (승수 확대)"
                 col = "#1976D2"
                 final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[승수 확대]</b> 5일선·20일선 위 안정적 안착 및 활주로 확보 완료! 알짜배기 추가 매수."
+
+            # [상충 방지 필터 1] 5일선 위에 있으나 지표 미달 또는 MACD 역회전인 경우 (애플 사례)
+            elif is_ma5_safe and (not is_bottom_indicator_ok or not is_bandwidth_ok or is_macd_reverse_deepening):
+                final_code = "WAIT_INDICATOR"
+                if not is_bandwidth_ok:
+                    sig = "🟡 [관망/보류] 5일선 회복 중이나 밴드폭 협소 (먹을자리 부족)"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 5일선 위에는 있으나 밴드폭이 25% 미만으로 좁아 상방 공간이 부족하니 섣부른 진입을 금하시게."
+                elif is_macd_reverse_deepening:
+                    sig = "🟡 [관망/보류] 5일선 회복 중이나 엔진 역회전 가속 (진입 자제)"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[엔진 역회전]</b> 5일선 위 안착 시도 중이나 MACD 하락 압력이 지속되므로 속임수 반등을 주의하고 관망하시게."
+                else:
+                    sig = "🟡 [관망/보류] 5일선 회복 시도 중이나 지표 미흡 (섣부른 진입 자제)"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[지표 미흡]</b> 5일선은 넘었으나 바닥 지표 동조({bottom_score}개)가 부족하므로 외바닥 속임수를 경계하고 관망하시게."
+                col = "#F57C00"
+
+            # [상충 방지 필터 2] 바닥 지표는 맞았으나 거래량 부족
+            elif (bottom_score >= 2 or recent_bottom_memory) and vol_strength < 80:
+                final_code = "WAIT_VOLUME"
+                sig = "🟡 [입질 대기] 지표 충족 / 거래량 수반 대기"
+                col = "#E65100"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수급 부진]</b> 바닥 지표({bottom_score}개)는 충족했으나 거래량이 실리지 않은 속임수 구간이니, 확실한 거래량 유입을 확인 후 진입하시게."
+
+            # [상충 방지 필터 3] 20일선 부근 눌림목 영역이나 지표 점수 미흡 또는 밴드폭 협소
+            elif (p >= mid_line * 0.98 and p <= mid_line * 1.03) and (pullback_rebound_score < 2 or not is_bandwidth_ok):
+                final_code = "WAIT_PULLBACK"
+                sig = "🟡 [관망/보류] 눌림목 영역 도달했으나 지표 미흡 (이탈 위험)"
+                col = "#F57C00"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[눌림목 지표 미흡]</b> 20일선 부근에 위치하나 동조 점수({pullback_rebound_score}/3점) 또는 밴드폭({bandwidth:.1f}%)이 기준에 못 미치니 지지 확인 전까지 관망하시게."
+
             else:
                 final_code = "WAIT_GENERAL"
                 sig = "🟡 [관망] 조건 미충족 / 뇌동매매 금지"
@@ -619,7 +671,7 @@ if symbol:
                 f"{squeeze_info_str}"
             )
 
-            # --- [수정 완료: 보유 평단가 맞춤형 실전 대응 가이드 (ATR 동적 반영)] ---
+            # --- 보유 평단가 맞춤형 실전 대응 가이드 (ATR 동적 반영) ---
             ma5_dynamic_stop = dynamic_stop_price
 
             if user_avg_price <= 0:
@@ -641,42 +693,28 @@ if symbol:
                         f" • <b>최후 방어선:</b> 바닥권 전저점({stop_loss_price:{fmt_p}}{currency}) 이탈 시 미련 없이 전량 칼손절 후퇴."
                     )
 
-            # 신호등 박스 색상 및 문구 매핑
+            # 신호등 설명글 보정
             if final_code == "STOP_LOSS_ALERT":
-                sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
-                col = "#D32F2F"
                 s_adv = f" • <b>[긴급 집행] {stop_reason}!</b> 추가 손실을 막기 위해 미련 없이 즉시 전량 칼손절 후퇴하시게."
             elif final_code == "RED_SELL_TARGET":
-                sig = "🔴 [매도] 수확 목표선 도달! 이익실현 타점!"
-                col = "#D32F2F"
                 s_adv = " • <b>[수확 완료]</b> 수확 목표선에 거뜬히 도달했네! 물량 30~50%를 매도하며 수익을 확실하게 챙기시게.<br> • <b>[미보유자]</b> 고가 추격 매수 절대 금지!"
             elif final_code == "RED_SELL_WARNING":
-                sig = "🟡 [경계] 성벽 위 음봉 출현 / 분할 익절 준비"
-                col = "#EF6C00"
                 s_adv = " • <b>[경계 태세]</b> 성벽(방어선) 위에서 음봉이 발생했네! 5일선 지지 여부를 확인하며 기세가 꺾일 때를 대비해 분할 익절 준비를 하시게."
             elif final_code == "YELLOW_CAUTION":
-                sig = "🟡 [경계] 성벽 위 공방 / 매도 준비!"
-                col = "#EF6C00"
                 s_adv = " • <b>[경계 태세]</b> 성벽(방어선) 위 진입! 추격 매수는 철저히 차단하고, <b>수확</b> 목표선 도달 시 매도할 준비를 하시게."
             elif final_code == "BOTTOM_ENTRY":
-                sig = "🟢 [매입] 1단계 진바닥 입질 매수 (소량)"
-                col = "#388E3C"
                 s_adv = " • <b>[입질 진격]</b> 진바닥 터치 + 거래량 유입 포착! 소량 씨앗 뿌리기 진격 (전저점 방어선 철저 준수)."
             elif final_code == "ESCAPE_BUY":
-                sig = "🟢 [매수] 2단계 진바닥 탈출 추가 매수 (5일선 위)"
-                col = "#2E7D32"
-                s_adv = " • <b>[추가 진격]</b> 거래량이 실리며 5일선 위 안착 성공! 배팅 비중을 늘려 밭을 다짐."
+                s_adv = " • <b>[추가 진격]</b> 지표 동조 및 거래량이 실리며 5일선 위 안착 성공! 배팅 비중을 늘려 밭을 다짐."
             elif final_code == "PULLBACK_BUY":
-                sig = "🔵 [매수] 3단계 눌림목 추가 매수 (승수 확대)"
-                col = "#1976D2"
                 s_adv = " • <b>[승수 확대]</b> 5일선·20일선 위 안착 및 활주로 확보로 알짜배기 추가 매수 집행."
+            elif final_code == "WAIT_INDICATOR":
+                s_adv = " • <b>[지표 검증 대기]</b> 5일선 위에 있으나 바닥 지표 미충족, 밴드폭 협소, 또는 MACD 하락세 지속 중이오! 뇌동 진입을 엄격히 금함."
+            elif final_code == "WAIT_PULLBACK":
+                s_adv = " • <b>[눌림목 지지 대기]</b> 20일선 영역이나 지표 동조 미흡! 확실한 지지 캔들과 거래량 확인 전까지 매수 보류."
             elif final_code == "WAIT_VOLUME":
-                sig = "🟡 [입질 대기] 지표 충족 / 거래량 수반 대기"
-                col = "#E65100"
                 s_adv = " • <b>[수급 대기]</b> 기술적 바닥 신호는 충족했으나 거래량이 부족하니, 확실한 거래량 폭발 전까지 진입을 보류하시게."
             else:
-                sig = "🟡 [관망] 조건 미충족 / 뇌동매매 금지"
-                col = "#FBC02D"
                 s_adv = " • <b>[관망 유지]</b> 확실한 바닥 신호나 매수/매도 조건이 맞을 때까지 손가락을 묶고 대기하시게."
             
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><div class='signal-subtext'>{s_adv}</div></div>", unsafe_allow_html=True)
@@ -699,10 +737,12 @@ if symbol:
                 else:
                     def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래로 함락된 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지 마시게.</b>"
 
-            if m_l > s_l:
+            if is_macd_bullish:
                 macd_strategy_msg = "<b>🔥 엔진 정회전 완료 (순풍 구역)</b><br>• <b>역할:</b> 상승 모멘텀 유지.<br>• <b>진단:</b> 엔진 정회전 완료! 바닥 입질 후 성벽을 향해 본대 진격 신호탄이 터졌네."
+            elif is_macd_recovering:
+                macd_strategy_msg = "<b>🌤️ 엔진 역회전 감소 (반등 시동)</b><br>• <b>역할:</b> 하락 둔화 및 바닥 다지기.<br>• <b>진단:</b> 매도세가 잦아들며 반등 채비 중이오. 5일선 안착 여부를 확인하시게."
             else:
-                macd_strategy_msg = "⚙️ <b>엔진 역회전 상태</b><br>• <b>역할:</b> 하락 조정 모멘텀.<br>• <b>진단:</b> 역회전 심화! 섣부른 매수를 금지하고 관망하시게."
+                macd_strategy_msg = "⚙️ <b>엔진 역회전 심화</b><br>• <b>역할:</b> 하락 조정 모멘텀.<br>• <b>진단:</b> 역회전 심화! 섣부른 매수를 금지하고 관망하시게."
 
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
@@ -750,6 +790,8 @@ if symbol:
                     bb_diag = f"🔴 <b>[성벽 위 수확 및 음봉 익절 구간]</b><br>• <b>역할:</b> 고점 수익 확정.<br>• <b>진단:</b> 목표선 도달 또는 성벽 위 음봉 발생으로 선제적 익절 실행."
                 elif final_code == "YELLOW_CAUTION":
                     bb_diag = f"🟡 <b>[성벽 위 경계 및 추격 차단 구역]</b><br>• <b>역할:</b> 고가 추격 매수 원천 차단.<br>• <b>진단:</b> 성벽 위 공방 중이므로 신규 매수를 금지하고 익절 타이밍을 노림."
+                elif final_code in ["WAIT_INDICATOR", "WAIT_PULLBACK"]:
+                    bb_diag = f"🟡 <b>[지표/밴드폭 검증 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 속임수 휩소 방지.<br>• <b>진단:</b> 이평선에는 닿았으나 세부 지표 및 밴드폭 기준 미달로 관망 유지."
                 else:
                     bb_diag = f"⚖️ <b>[관망 및 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 뇌동매매 방지.<br>• <b>진단:</b> 명확한 바닥/추세 신호가 뜰 때까지 손가락을 묶고 관망 유지."
                 
@@ -776,35 +818,12 @@ if symbol:
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (민감 반전)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{will_val:.2f} <span style='font-size:22px; color:#333333;'>({will_trend})</span></p><p class='ind-diag'>{w_status}</p></div>", unsafe_allow_html=True)
             
             with i4:
-                # 1) 현재 MACD 차이 (히스토그램)
-                curr_diff = m_l - s_l
-        
-                # 2) 직전 봉 MACD 차이 구하기 (모든 컬럼 자동 탐색)
-                prev_diff = None
-                for col in df.columns:
-                    if 'macd' in str(col).lower() and not any(x in str(col).lower() for x in ['sig', 'hist', 'h']):
-                        # MACD 컬럼 발견 시 직전값 계산
-                        m_series = df[col]
-                        s_series = None
-                        for scol in df.columns:
-                            if 'sig' in str(scol).lower():
-                                s_series = df[scol]
-                                break
-                        if s_series is not None and len(df) > 1:
-                            prev_diff = m_series.iloc[-2] - s_series.iloc[-2]
-                        break
-
-                # 컬럼을 못 찾은 경우 대비 안전장치 (기본값)
-                if prev_diff is None:
-                    prev_diff = curr_diff
-
-                # 3) 3단계 상태 판정
-                if m_l > s_l:
+                if is_macd_bullish:
                     m_diag = "<b>🔥 엔진 정회전</b><br>• <b>역할:</b> 상승 모멘텀 순풍.<br>• <b>진단:</b> 성벽 사수하며 5일선 타고 목표선까지 추세 진격하시게."
-                elif curr_diff > prev_diff:
+                elif is_macd_recovering:
                     m_diag = "<b>🌤️ 역회전 감소</b><br>• <b>역할:</b> 하락 둔화 / 반등 시동.<br>• <b>진단:</b> 매도세 소멸 중! 5일선 안착(2단계) 및 거래량 확인 시 추매 준비하시게."
                 else:
-                    m_diag = "<b>⚙️ 엔진 역회전</b><br>• <b>역할:</b> 하락 조정 가속.<br>• <b>진단:</b> 하락 관성 지속. 신규 매수 및 물타기 금지, 관망하시게."
+                    m_diag = "<b>⚙️ 엔진 역회전 심화</b><br>• <b>역할:</b> 하락 조정 가속.<br>• <b>진단:</b> 하락 관성 지속. 신규 매수 및 물타기 금지, 관망하시게."
 
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (추세 엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
     except Exception as e: st.error(f"👵 아이구! 오류: {e}")
