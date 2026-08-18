@@ -383,6 +383,11 @@ if symbol:
             ma120_val = df['MA120'].iloc[-1] if len(df) >= 120 else mid_line
             ma20_slope = (df['MA20'].iloc[-1] - df['MA20'].iloc[-5]) if len(df) >= 5 else 0
             
+            # ★ 5일선 및 20일선 이격도 정밀 연산
+            bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
+            bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
+            is_over_extended_5 = (bias_ma5 >= 5.0)  # ★ [원칙] 5일선 대비 5% 이상 붕 뜨면 과다이격
+
             # ATR(14) 변동성 연산
             tr1 = df['High'] - df['Low']
             tr2 = (df['High'] - df['Close'].shift(1)).abs()
@@ -428,7 +433,7 @@ if symbol:
 
             ma_price_summary = (
                 f"<br>• 📌 <b>[주요 이동평균선 현황]</b><br>"
-                f"&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str}</span> | "
+                f"&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str} (이격: {bias_ma5:+.1f}%)</span> | "
                 f"<span style='color:#1976D2; font-weight:bold;'>🔵 20일선: {ma20_str}</span> | "
                 f"<span style='color:#388E3C; font-weight:bold;'>🟢 60일선: {ma60_str}</span> | "
                 f"<span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
@@ -547,7 +552,7 @@ if symbol:
             is_pullback_buy_signal = (p >= mid_line) and is_ma5_safe and (pullback_rebound_score >= 2) and (vol_strength >= 80) and is_bandwidth_ok and is_macd_not_deepening
 
             # ==============================================================================
-            # ★ [3번 지표 세부 설명 글씨도 2~3일 바닥 기억을 완벽히 인식하여 동기화]
+            # ★ [3번 지표 세부 설명 글씨도 2~3일 바닥 기억 & 이격도를 완벽히 인식하여 동기화]
             # ==============================================================================
             if bottom_score >= 2:
                 bottom_status_str = f"<b>(당일 진바닥 지표 {bottom_score}개 터치 달성!)</b>"
@@ -563,6 +568,8 @@ if symbol:
                 bottom_status_str = f"<b>(최근 2~3일 내 진바닥 확인 완료!)</b>"
                 if is_stop_loss_triggered:
                     bottom_action_str = f"→ <b>[비상 후퇴]</b> 바닥권 전저점 이탈로 매수 금지"
+                elif is_over_extended_5:
+                    bottom_action_str = f"→ <b>[추격 매수 금지]</b> 5일선 대비 +{bias_ma5:.1f}% 과다이격 발생으로 관망 대기."
                 elif is_escape_buy_signal:
                     bottom_action_str = f"→ <b>[2단계 진바닥 탈출]</b> 바닥 다진 후 5일선 위 안착 성공! 추가 매수 유효."
                 elif not is_ma5_safe:
@@ -580,7 +587,9 @@ if symbol:
                 pullback_action_str = "➔ <b>[매수 보류]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승수 확대 금지"
             else:
                 pullback_status_str = f"<b>(조건 만족 / 밴드폭 {bandwidth:.1f}%)</b>"
-                if is_pullback_buy_signal:
+                if is_over_extended_5 and (p >= mid_line):
+                    pullback_action_str = f"➔ <b>[추격 매수 금지]</b> 5일선 대비 +{bias_ma5:.1f}% 과다이격 발생으로 눌림목 지지 대기"
+                elif is_pullback_buy_signal:
                     pullback_action_str = "➔ <b>[3단계 눌림목 추가 매수]</b> 5·20일선 위 안착 + 지표 동조 확인, 승수 확대 진격!"
                 elif pullback_rebound_score < 2:
                     pullback_action_str = "➔ <b>[지표 미흡]</b> 눌림목 동조 점수 부족(2점 미만)으로 돌파/안착 대기"
@@ -590,7 +599,7 @@ if symbol:
                     pullback_action_str = "➔ <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
 
             # ==============================================================================
-            # ★ [신호등 분기: 지표 설명 & 최종 결론과 100% 일체형 매핑]
+            # ★ [신호등 분기: 과다이격(5% 이상) 필터를 최우선 적용하여 완벽 일치]
             # ==============================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -615,6 +624,13 @@ if symbol:
                 sig = "🟡 [경계] 성벽 위 공방 / 매도 준비!"
                 col = "#EF6C00"
                 final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[성벽 위 진입 및 공방]</b> 추격 매수는 절대 금하고, 매도 준비 및 경계 태세를 갖추시게!"
+
+            # ★ [핵심 추가] 2단계 탈출/3단계 눌림목 자리이나 5일선 대비 5% 이상 붕 뜬 경우 (과다이격 차단)
+            elif (is_escape_buy_signal or is_pullback_buy_signal) and is_over_extended_5:
+                final_code = "WAIT_OVER_EXTENDED"
+                sig = f"🟡 [관망/경계] 5일선 과다이격(+{bias_ma5:.1f}%) / 추격 매수 금지"
+                col = "#F57C00"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[5일선 과다이격(+{bias_ma5:.1f}%)]</b> 주가가 5일선에서 5% 이상 벌어져 단기 차익 매물(되돌림) 위험이 크니, 5일선 부근으로 숨고르기할 때까지 추격 매수를 엄금하시게."
             
             # [진짜 1단계 매수] 당일 바닥 2개 이상 + 거래량 + MACD진정
             elif is_bottom_entry_signal:
@@ -623,14 +639,14 @@ if symbol:
                 col = "#388E3C"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 입질 매수]</b> 3중 지표 터치 + 거래량 유입 확인! 분할 매수 시작."
 
-            # [진짜 2단계 매수] 5일선 위 + 최근 바닥기억 확인 + 거래량 + MACD진정
+            # [진짜 2단계 매수] 5일선 위 + 최근 바닥기억 확인 + 거래량 + MACD진정 (이격도 5% 미만 정상)
             elif is_escape_buy_signal:
                 final_code = "ESCAPE_BUY"
                 sig = "🟢 [매수] 2단계 진바닥 탈출 추가 매수 (5일선 위 안착)"
                 col = "#2E7D32"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 탈출 매수]</b> 최근 바닥 다진 후 거래량이 실리며 5일선 위 안착 성공! 배팅 비중을 늘려 밭을 다짐."
 
-            # [진짜 3단계 눌림목 매수] 5/20일선 위 + 눌림목동조 2점이상 + 거래량 + 밴드폭 25% + MACD 100% 충족
+            # [진짜 3단계 눌림목 매수] 5/20일선 위 + 눌림목동조 2점이상 + 거래량 + 밴드폭 25% + MACD (이격도 5% 미만 정상)
             elif is_pullback_buy_signal:
                 final_code = "PULLBACK_BUY"
                 sig = "🔵 [매수] 3단계 눌림목 추가 매수 (승수 확대)"
@@ -715,6 +731,8 @@ if symbol:
                 s_adv = " • <b>[경계 태세]</b> 성벽(방어선) 위에서 음봉이 발생했네! 5일선 지지 여부를 확인하며 기세가 꺾일 때를 대비해 분할 익절 준비를 하시게."
             elif final_code == "YELLOW_CAUTION":
                 s_adv = " • <b>[경계 태세]</b> 성벽(방어선) 위 진입! 추격 매수는 철저히 차단하고, <b>수확</b> 목표선 도달 시 매도할 준비를 하시게."
+            elif final_code == "WAIT_OVER_EXTENDED":
+                s_adv = f" • <b>[과다이격 경계]</b> 5일선 대비 +{bias_ma5:.1f}% 벌어져 단기 과열 구간이오! 5일선 부근으로 이격을 좁힐 때까지 추격 매수 절대 금지."
             elif final_code == "BOTTOM_ENTRY":
                 s_adv = " • <b>[입질 진격]</b> 진바닥 터치 + 거래량 유입 포착! 소량 씨앗 뿌리기 진격 (전저점 방어선 철저 준수)."
             elif final_code == "ESCAPE_BUY":
@@ -803,6 +821,8 @@ if symbol:
                     bb_diag = f"🔴 <b>[성벽 위 수확 및 음봉 익절 구간]</b><br>• <b>역할:</b> 고점 수익 확정.<br>• <b>진단:</b> 목표선 도달 또는 성벽 위 음봉 발생으로 선제적 익절 실행."
                 elif final_code == "YELLOW_CAUTION":
                     bb_diag = f"🟡 <b>[성벽 위 경계 및 추격 차단 구역]</b><br>• <b>역할:</b> 고가 추격 매수 원천 차단.<br>• <b>진단:</b> 성벽 위 공방 중이므로 신규 매수를 금지하고 익절 타이밍을 노림."
+                elif final_code == "WAIT_OVER_EXTENDED":
+                    bb_diag = f"🟡 <b>[과다이격 추격 금지 구역] (5일선 이격: +{bias_ma5:.1f}%)</b><br>• <b>역할:</b> 고점 물림 방지.<br>• <b>진단:</b> 5일선 대비 5% 이상 벌어졌으니 5일선 부근 숨고르기까지 매수 보류."
                 elif final_code in ["WAIT_INDICATOR", "WAIT_MACD", "WAIT_PULLBACK"]:
                     bb_diag = f"🟡 <b>[지표/밴드폭 검증 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 속임수 휩소 방지.<br>• <b>진단:</b> 이평선에는 닿았으나 세부 지표 및 밴드폭 기준 미달로 관망 유지."
                 else:
