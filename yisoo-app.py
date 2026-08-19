@@ -391,10 +391,10 @@ if symbol:
             # ★ 5일선 및 20일선 이격도 정밀 연산
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
-            is_over_extended_5 = (bias_ma5 >= 5.0)  # 5일선 대비 5% 이상 벌어지면 과다이격 차단
+            is_over_extended_5 = (bias_ma5 >= 5.0)
 
             # ==============================================================================
-            # ★ [정밀 캔들 형태 판독: 양봉 및 세력 밑꼬리 음봉 구제 장치]
+            # ★ [캔들 판독 정밀화: 바닥 전용 밑꼬리와 추세 전용 밑꼬리 분리]
             # ==============================================================================
             today_open = float(df['Open'].iloc[-1])
             today_high = float(df['High'].iloc[-1])
@@ -407,21 +407,16 @@ if symbol:
             # 1) 순수 양봉 여부
             is_pure_bullish_candle = (p >= today_open)
 
-            # 2) 혹독한 3중 안전 밑꼬리 음봉 조건
-            # - 아래꼬리가 전체 캔들 길이의 45% 이상이거나 몸통의 1.3배 이상
-            # - 5일선 위 사수 (종가가 5일선 이상)
-            # - 전일 대비 과도한 폭락이 아닐 것 (전일비 -1.5% 이내로 방어)
-            is_strong_lower_tail = (
-                (lower_tail >= candle_range * 0.45 or lower_tail >= body_len * 1.3) and
-                (p >= ma5_val) and
-                (p_chg >= -1.5)
-            )
+            # 2) 바닥 전용 밑꼬리 (5일선 무관! 극단 바닥에서 세력이 꼬리 달고 말아올린 봉)
+            is_bottom_lower_tail = (lower_tail >= candle_range * 0.45) or (lower_tail >= body_len * 1.3)
+            is_valid_bottom_candle = is_pure_bullish_candle or is_bottom_lower_tail
 
-            # 3) 최종 유효 캔들 판정 (1·2·3단계 매수 공통 허용)
-            is_valid_buy_candle = is_pure_bullish_candle or is_strong_lower_tail
+            # 3) 2·3단계 추세용 밑꼬리 (5일선 사수 + 전일비 방어 필수)
+            is_trend_lower_tail = is_bottom_lower_tail and (p >= ma5_val) and (p_chg >= -1.5)
+            is_valid_buy_candle = is_pure_bullish_candle or is_trend_lower_tail
 
-            # 4) 성벽 위 경계용 음봉 (순수 음봉이면서 밑꼬리도 약한 경우만 경계 음봉으로 판정)
-            is_bearish_candle = (p < today_open) and (not is_strong_lower_tail)
+            # 4) 성벽 위 경계용 음봉
+            is_bearish_candle = (p < today_open) and (not is_trend_lower_tail)
 
             # ATR(14) 변동성 연산
             tr1 = df['High'] - df['Low']
@@ -570,23 +565,23 @@ if symbol:
             is_on_the_wall = (p >= defense_line) and (p < target_price_100)
 
             # ==============================================================================
-            # ★ [1·2·3단계 매수 판정에 is_valid_buy_candle 동시 적용]
+            # ★ [1·2·3단계 매수 판정: 1단계는 5일선 무관 바닥캔들 / 2·3단계는 5일선 필수 추세캔들]
             # ==============================================================================
             is_bottom_indicator_ok = (bottom_score >= 2 or recent_bottom_memory)
             is_macd_not_deepening = not is_macd_reverse_deepening
             is_bandwidth_ok = (bandwidth >= 25.0)
 
-            # 1단계 진바닥 입질 매수 (바닥 2개 이상 + 거래량 80점 + MACD 역회전 가속 아님 + 유효 캔들)
-            is_bottom_entry_signal = (bottom_score >= 2) and (vol_strength >= 80) and is_macd_not_deepening and is_valid_buy_candle
+            # 1단계 진바닥 입질 매수 (5일선 무관! 바닥 2개 이상 + 거래량 80점 + MACD 역회전 가속 아님 + 바닥 지지캔들)
+            is_bottom_entry_signal = (bottom_score >= 2) and (vol_strength >= 80) and is_macd_not_deepening and is_valid_bottom_candle
 
-            # 2단계 진바닥 탈출 매수 (5일선 위 + 최근 바닥기억 + 거래량 80점 + MACD 역회전 가속 아님 + 유효 캔들)
+            # 2단계 진바닥 탈출 매수 (5일선 위 + 최근 바닥기억 + 거래량 80점 + MACD 역회전 가속 아님 + 추세 유효캔들)
             is_escape_buy_signal = is_ma5_safe and is_bottom_indicator_ok and (vol_strength >= 80) and is_macd_not_deepening and is_valid_buy_candle
 
-            # 3단계 눌림목 추가 매수 (20일선 위 + 5일선 위 + 눌림목 동조 ≥ 2점 + 밴드폭 ≥ 25% + 거래량 + MACD + 유효 캔들)
+            # 3단계 눌림목 추가 매수 (20일선 위 + 5일선 위 + 눌림목 동조 ≥ 2점 + 밴드폭 ≥ 25% + 거래량 + MACD + 추세 유효캔들)
             is_pullback_buy_signal = (p >= mid_line) and is_ma5_safe and (pullback_rebound_score >= 2) and (vol_strength >= 80) and is_bandwidth_ok and is_macd_not_deepening and is_valid_buy_candle
 
             # ==============================================================================
-            # ★ [3번 지표 세부 설명: 밴드폭 수치를 앞으로 배치하여 직관성 강화]
+            # ★ [3번 지표 세부 설명]
             # ==============================================================================
             if bottom_score >= 2:
                 bottom_status_str = f"<b>(당일 진바닥 지표 {bottom_score}개 터치 달성!)</b>"
@@ -596,10 +591,10 @@ if symbol:
                     bottom_action_str = f"→ <b>[입질 대기]</b> 지표 충족이나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
                 elif is_macd_reverse_deepening:
                     bottom_action_str = f"→ <b>[매수 보류]</b> MACD 엔진 역회전 심화 중이므로 진입 금지"
-                elif not is_valid_buy_candle:
+                elif not is_valid_bottom_candle:
                     bottom_action_str = f"→ <b>[캔들 대기]</b> 지표 충족했으나 음봉 매도세 지속으로 매수 보류"
                 else:
-                    bottom_action_str = f"→ <b>[1단계 진바닥 입질 매수]</b> 지표 충족 + 거래량 유입! 소량 입질 매수 시작 (전저점 방어선 기준 준수)."
+                    bottom_action_str = f"→ <b>[1단계 진바닥 입질 매수]</b> 지표 충족 + 거래량 유입 + 바닥 지지! 소량 입질 매수 시작."
             elif recent_bottom_memory:
                 bottom_status_str = f"<b>(최근 2~3일 내 진바닥 확인 완료!)</b>"
                 if is_stop_loss_triggered:
@@ -620,7 +615,6 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
-            # ★ [수정 완료: 밴드폭 수치 앞배치]
             if not is_bandwidth_ok and p >= mid_line:
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 협소·미흡)</b>"
                 pullback_action_str = "➔ <b>[매수 보류]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승수 확대 금지"
@@ -676,7 +670,7 @@ if symbol:
                 final_code = "BOTTOM_ENTRY"
                 sig = "🟢 [매입] 1단계 진바닥 입질 매수 (소량)"
                 col = "#388E3C"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 입질 매수]</b> 3중 지표 터치 + 거래량 유입 + 지지 캔들 확인! 분할 매수 시작."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 입질 매수]</b> 3중 지표 터치 + 거래량 유입 + 바닥 지지 확인! 소량 씨앗 뿌리기 진격."
 
             elif is_escape_buy_signal:
                 final_code = "ESCAPE_BUY"
@@ -767,7 +761,7 @@ if symbol:
             elif final_code == "WAIT_OVER_EXTENDED":
                 s_adv = f" • <b>[과다이격 경계]</b> 5일선 대비 +{bias_ma5:.1f}% 벌어져 단기 과열 구간이오! 5일선 부근으로 이격을 좁힐 때까지 추격 매수 절대 금지."
             elif final_code == "BOTTOM_ENTRY":
-                s_adv = " • <b>[입질 진격]</b> 진바닥 터치 + 거래량 유입 + 지지 캔들 포착! 소량 씨앗 뿌리기 진격 (전저점 방어선 철저 준수)."
+                s_adv = " • <b>[입질 진격]</b> 진바닥 터치 + 거래량 유입 + 바닥 지지 캔들 포착! 소량 씨앗 뿌리기 진격 (전저점 방어선 철저 준수)."
             elif final_code == "ESCAPE_BUY":
                 s_adv = " • <b>[추가 진격]</b> 최근 바닥 다진 후 거래량이 실리며 5일선 위 안착 성공! 배팅 비중을 늘려 밭을 다짐."
             elif final_code == "PULLBACK_BUY":
@@ -836,7 +830,7 @@ if symbol:
             
             with i1:
                 if final_code == "BOTTOM_ENTRY":
-                    bb_diag = f"🔴 <b>[1단계 진바닥 입질 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 바닥권 선취매.<br>• <b>진단:</b> 지표 터치 + 거래량 유입 + 지지 캔들! 소량 입질 매수 시작 (손절 -5% 설정)."
+                    bb_diag = f"🔴 <b>[1단계 진바닥 입질 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 바닥권 선취매.<br>• <b>진단:</b> 지표 터치 + 거래량 유입 + 바닥 지지! 소량 입질 매수 시작 (전저점 마지노선 준수)."
                 elif final_code == "ESCAPE_BUY":
                     bb_diag = f"🟢 <b>[2단계 진바닥 탈출 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 5일선 안착 후 배팅 확대.<br>• <b>진단:</b> 최근 바닥 확인 후 5일선 위 안착 성공! 추가 매수로 비중 확대."
                 elif final_code == "WAIT_VOLUME":
