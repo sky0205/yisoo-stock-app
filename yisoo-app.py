@@ -287,12 +287,12 @@ if symbol:
             if not is_kr and us_prev_p and us_prev_p > 0:
                 prev_p = us_prev_p
             else:
-                if len(df) >= 2:
-                    prev_p = float(df['Close'].iloc[-2])
-                elif len(df) == 1:
-                    prev_p = float(df['Close'].iloc[-1])
+                if today_date in df.index:
+                    # 이미 오늘자 행이 들어와 있는 장중/마감 후
+                    prev_p = float(df['Close'].iloc[-2]) if len(df) >= 2 else p
                 else:
-                    prev_p = p
+                # 아직 장 시작 전 (df의 마지막 행이 바로 '어제 종가')
+                    prev_p = float(df['Close'].iloc[-1]) if len(df) >= 1 else p
 
             if today_date in df.index:
                 df.loc[today_date, 'Close'] = p
