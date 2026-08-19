@@ -358,12 +358,30 @@ if symbol:
             sig_line = macd.ewm(span=9).mean()
             m_l, s_l, m_p, s_p = macd.iloc[-1], sig_line.iloc[-1], macd.iloc[-2], sig_line.iloc[-2]
             
-            # MACD 엔진 상태 정밀 계산
+            # ==============================================================================
+            # ★ [MACD 엔진 4단계 정밀 분기: 정회전 가속/둔화 및 역회전 감소/심화]
+            # ==============================================================================
             curr_diff = m_l - s_l
             prev_diff = m_p - s_p
             is_macd_bullish = (m_l > s_l)
-            is_macd_recovering = (curr_diff > prev_diff) # 역회전 감소/반등 시동
-            is_macd_reverse_deepening = (not is_macd_bullish) and (not is_macd_recovering) # 하락 가속 중
+
+            is_macd_accelerating = is_macd_bullish and (curr_diff >= prev_diff)           # 🔥 정회전 가속 (화력 폭발)
+            is_macd_decelerating = is_macd_bullish and (curr_diff < prev_diff)            # ⚠️ 정회전 둔화 (탄력 저하)
+            is_macd_recovering = (not is_macd_bullish) and (curr_diff > prev_diff)        # 🌤️ 역회전 감소 (반등 시동)
+            is_macd_reverse_deepening = (not is_macd_bullish) and (curr_diff <= prev_diff)# ⚙️ 역회전 심화 (하락 가속)
+
+            if is_macd_accelerating:
+                macd_status_name = "🔥 엔진 정회전 가속"
+                macd_strategy_msg = "<b>🔥 엔진 정회전 가속 (엑셀 풀가동)</b><br>• <b>역할:</b> 상승 추진력 폭발.<br>• <b>진단:</b> 상승 가속도가 날마다 붙고 있네! 성벽을 향해 든든하게 추세를 즐기시게."
+            elif is_macd_decelerating:
+                macd_status_name = "⚠️ 엔진 정회전 둔화"
+                macd_strategy_msg = "<b>⚠️ 엔진 정회전 둔화 (탄력 저하 경보)</b><br>• <b>역할:</b> 상승 탄력 둔화 감지.<br>• <b>진단:</b> 상승세는 유지 중이나 추진력이 꺾였으니, 신규 매수를 자제하고 성벽 위 분할 익절을 준비하시게."
+            elif is_macd_recovering:
+                macd_status_name = "🌤️ 역회전 감소"
+                macd_strategy_msg = "<b>🌤️ 엔진 역회전 감소 (반등 시동)</b><br>• <b>역할:</b> 하락 둔화 및 바닥 다지기.<br>• <b>진단:</b> 매도세가 잦아들며 반등 채비 중이오. 5일선 안착 여부를 확인하시게."
+            else:
+                macd_status_name = "⚙️ 엔진 역회전 심화"
+                macd_strategy_msg = "<b>⚙️ 엔진 역회전 심화 (하락 가속)</b><br>• <b>역할:</b> 하락 조정 가속.<br>• <b>진단:</b> 하락 관성 지속. 섣부른 매수 및 물타기를 절대 금지하고 관망하시게."
 
             df['MA5'] = df['Close'].rolling(5).mean()
             df['MA20'] = df['Close'].rolling(20).mean()
@@ -561,7 +579,7 @@ if symbol:
                 elif vol_strength < 80:
                     bottom_action_str = f"→ <b>[입질 대기]</b> 지표 충족이나 거래량 부족({vol_strength:.1f}점)으로 매수 보류"
                 elif is_macd_reverse_deepening:
-                    bottom_action_str = f"→ <b>[매수 보류]</b> MACD 엔진 역회전 가속 중이므로 진입 금지"
+                    bottom_action_str = f"→ <b>[매수 보류]</b> MACD 엔진 역회전 심화 중이므로 진입 금지"
                 else:
                     bottom_action_str = f"→ <b>[1단계 진바닥 입질 매수]</b> 지표 충족 + 거래량 유입! 소량 입질 매수 시작 (전저점 방어선 기준 준수)."
             elif recent_bottom_memory:
@@ -594,7 +612,7 @@ if symbol:
                 elif pullback_rebound_score < 2:
                     pullback_action_str = "➔ <b>[지표 미흡]</b> 눌림목 동조 점수 부족(2점 미만)으로 돌파/안착 대기"
                 elif is_macd_reverse_deepening:
-                    pullback_action_str = "➔ <b>[엔진 역회전]</b> MACD 하락 가속 중이므로 관망"
+                    pullback_action_str = "➔ <b>[엔진 역회전 심화]</b> MACD 하락 가속 중이므로 관망"
                 else:
                     pullback_action_str = "➔ <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
 
@@ -625,7 +643,7 @@ if symbol:
                 col = "#EF6C00"
                 final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[성벽 위 진입 및 공방]</b> 추격 매수는 절대 금하고, 매도 준비 및 경계 태세를 갖추시게!"
 
-            # ★ [핵심 추가] 2단계 탈출/3단계 눌림목 자리이나 5일선 대비 5% 이상 붕 뜬 경우 (과다이격 차단)
+            # ★ [과다이격 차단] 2단계 탈출/3단계 눌림목 자리이나 5일선 대비 5% 이상 붕 뜬 경우
             elif (is_escape_buy_signal or is_pullback_buy_signal) and is_over_extended_5:
                 final_code = "WAIT_OVER_EXTENDED"
                 sig = f"🟡 [관망/경계] 5일선 과다이격(+{bias_ma5:.1f}%) / 추격 매수 금지"
@@ -663,9 +681,9 @@ if symbol:
             # [상충 방지 필터 2] 5일선 위 안착 및 바닥 확인되었으나 MACD 하락 가속 중
             elif is_ma5_safe and is_macd_reverse_deepening:
                 final_code = "WAIT_MACD"
-                sig = "🟡 [관망/보류] 5일선 회복 중이나 엔진 역회전 가속 (진입 자제)"
+                sig = "🟡 [관망/보류] 5일선 회복 중이나 엔진 역회전 심화 (진입 자제)"
                 col = "#F57C00"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[엔진 역회전]</b> 5일선 위 안착 시도 중이나 MACD 하락 압력이 지속되므로 속임수 반등을 주의하고 관망하시게."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[엔진 역회전 심화]</b> 5일선 위 안착 시도 중이나 MACD 하락 압력이 가속되므로 속임수 반등을 주의하고 관망하시게."
 
             # [상충 방지 필터 3] 바닥 지표는 맞았으나 거래량 부족
             elif (bottom_score >= 2 or recent_bottom_memory) and vol_strength < 80:
@@ -768,13 +786,6 @@ if symbol:
                 else:
                     def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래로 함락된 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지 마시게.</b>"
 
-            if is_macd_bullish:
-                macd_strategy_msg = "<b>🔥 엔진 정회전 완료 (순풍 구역)</b><br>• <b>역할:</b> 상승 모멘텀 유지.<br>• <b>진단:</b> 엔진 정회전 완료! 바닥 입질 후 성벽을 향해 본대 진격 신호탄이 터졌네."
-            elif is_macd_recovering:
-                macd_strategy_msg = "<b>🌤️ 엔진 역회전 감소 (반등 시동)</b><br>• <b>역할:</b> 하락 둔화 및 바닥 다지기.<br>• <b>진단:</b> 매도세가 잦아들며 반등 채비 중이오. 5일선 안착 여부를 확인하시게."
-            else:
-                macd_strategy_msg = "⚙️ <b>엔진 역회전 심화</b><br>• <b>역할:</b> 하락 조정 모멘텀.<br>• <b>진단:</b> 역회전 심화! 섣부른 매수를 금지하고 관망하시게."
-
             st.markdown(f"""<div class='trend-card'>
 <div class='trend-title'>⚔️ 실전 필살 대응 전략</div>
 <div style='margin-bottom: 20px;'>
@@ -851,8 +862,10 @@ if symbol:
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (민감 반전)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{will_val:.2f} <span style='font-size:22px; color:#333333;'>({will_trend})</span></p><p class='ind-diag'>{w_status}</p></div>", unsafe_allow_html=True)
             
             with i4:
-                if is_macd_bullish:
-                    m_diag = "<b>🔥 엔진 정회전</b><br>• <b>역할:</b> 상승 모멘텀 순풍.<br>• <b>진단:</b> 성벽 사수하며 5일선 타고 목표선까지 추세 진격하시게."
+                if is_macd_accelerating:
+                    m_diag = "<b>🔥 엔진 정회전 가속</b><br>• <b>역할:</b> 상승 추진력 폭발.<br>• <b>진단:</b> 성벽 사수하며 5일선 타고 목표선까지 거침없이 진격하시게."
+                elif is_macd_decelerating:
+                    m_diag = "<b>⚠️ 엔진 정회전 둔화</b><br>• <b>역할:</b> 상승 탄력 저하 감지.<br>• <b>진단:</b> 상승세는 유지 중이나 추진력이 꺾였으니, 성벽 위 분할 익절을 준비하시게."
                 elif is_macd_recovering:
                     m_diag = "<b>🌤️ 역회전 감소</b><br>• <b>역할:</b> 하락 둔화 / 반등 시동.<br>• <b>진단:</b> 매도세 소멸 중! 5일선 안착(2단계) 및 거래량 확인 시 추매 준비하시게."
                 else:
