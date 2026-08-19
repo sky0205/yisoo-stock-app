@@ -601,10 +601,10 @@ if symbol:
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
             if not is_bandwidth_ok and p >= mid_line:
-                pullback_status_str = f"<b>(밴드폭 협소 {bandwidth:.1f}%)</b>"
+                pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 협소·미흡)</b>"
                 pullback_action_str = "➔ <b>[매수 보류]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승수 확대 금지"
             else:
-                pullback_status_str = f"<b>(조건 만족 / 밴드폭 {bandwidth:.1f}%)</b>"
+                pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 조건 만족)</b>"
                 if is_over_extended_5 and (p >= mid_line):
                     pullback_action_str = f"➔ <b>[추격 매수 금지]</b> 5일선 대비 +{bias_ma5:.1f}% 과다이격 발생으로 눌림목 지지 대기"
                 elif is_pullback_buy_signal:
