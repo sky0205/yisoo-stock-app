@@ -117,31 +117,46 @@ def display_global_risk():
         c4.metric("미 국채 10년 (TNX)", f"{tnx_val:.3f}%", f"{tnx_chg:+.2f}%")
         c5.metric("원/달러 환율", f"{u_val:,.2f}원", f"{u_chg:+.2f}%")
         
-        macro_alerts = []
-        if tnx_val >= 4.5: 
-            macro_alerts.append(f"🚨 [금리 발작] 국채 금리 {tnx_val:.3f}% 돌파!")
-        
-        if u_val >= 1500:
-            macro_alerts.append(f"☠️ [환율 대공황 비상] 원/달러 {u_val:,.2f}원! 1,500원선 완전 붕괴! 과거 1,550원 악몽 재현, 국가 경제 및 증시 전면 초토화 경보!")
-        elif u_val >= 1480:
-            macro_alerts.append(f"☠️ [환율 초비상] 원/달러 {u_val:,.2f}원! 1,480원 임계점 폭풍 돌파, 외인 자금 대이탈 경보!")
-        elif u_val >= 1450:
-            macro_alerts.append(f"🚨 [환율 격랑] 원/달러 {u_val:,.2f}원! 1,480원 고지를 목전에 둔 마지노선 위협!")
-        elif u_val >= 1400:
-            macro_alerts.append(f"⚠️ [환율 경계] 원/달러 {u_val:,.2f}원! 1,400원대 고착화 주의!")
-        
-        if u_chg > 0.3:
-            macro_alerts.append(f"📈 [환율 급등] 오늘 환율 {u_chg:+.2f}% 치솟는 중!")
-        elif u_chg < -0.3:
-            macro_alerts.append(f"📉 [환율 안정] 환율 {u_chg:+.2f}% 진정세.")
-        
-        if macro_alerts:
-            adv = " ".join(macro_alerts)
-        elif n_chg > 0.5 and tnx_chg < 0:
-            adv = "🔥 [골디락스 진입] 지수 상승과 금리 하락, 기세 타시게."
+        # 1. 미 증시 3대 지수 평균 진단
+        avg_us_chg = (n_chg + s_chg + d_chg) / 3
+        if avg_us_chg >= 1.0:
+            market_mood = "미 3대 지수 동반 훈풍 속 안도 랠리"
+        elif avg_us_chg > 0:
+            market_mood = "미 3대 지수 눈치보기 속 강보합 마감"
+        elif avg_us_chg <= -1.0:
+            market_mood = "미 3대 지수 동반 급락으로 투심 냉각"
         else:
-            adv = "🧐 [눈치싸움 중] 세력들이 간 보고 있구먼."
-        st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
+            market_mood = "미 3대 지수 혼조세 속 숨고르기 진행"
+
+        # 2. 금리 & 환율 매크로 리스크 진단
+        macro_alerts = []
+        if tnx_val >= 4.5:
+            macro_alerts.append(f"🚨 [금리 발작] 국채 금리 {tnx_val:.3f}% 돌파!")
+        elif tnx_val <= 3.8:
+            macro_alerts.append(f"🌱 [금리 안정] 국채 금리 {tnx_val:.3f}% 안정권 진입")
+
+        if u_val >= 1400:
+            macro_alerts.append(f"⚠️ [환율 경계] 원/달러 {u_val:,.2f}원 고환율 압박 지속")
+        elif u_val <= 1330:
+            macro_alerts.append(f"💵 [환율 우호] 원/달러 {u_val:,.2f}원 안정")
+
+        if u_chg > 0.3:
+            macro_alerts.append(f"📈 오늘 환율 {u_chg:+.2f}% 치솟는 중!")
+        elif u_chg < -0.3:
+            macro_alerts.append(f"📉 오늘 환율 {u_chg:+.2f}% 진정세")
+
+        # 3. 종합 행동 전략
+        if tnx_val >= 4.5 or u_val >= 1380:
+            strategy = "외인 수급 이탈 우려로 상단 저항이 강하니 추격매수 금지, 5일선 및 방어선 위주로 보수적 대응하시게."
+        elif avg_us_chg > 0.5 and tnx_val < 4.2 and u_val < 1350:
+            strategy = "매크로 환경이 우호적이니 거래량 실린 정석 눌림목 주도주 위주로 적극 공략하시게."
+        else:
+            strategy = "장 초반 뇌동매매를 삼가고 지표 동조와 5일선 안착 여부를 끝까지 확인 후 진입하시게."
+
+        macro_text = " | ".join(macro_alerts) if macro_alerts else "매크로 특이 동향 없음"
+        
+        # 화면 표출
+        st.info(f"🧐 **이수 할배의 글로벌 판독:** {market_mood}!\n\n- {macro_text}\n- 💡 **[대응 전략]** {strategy}")
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
 st.title("🧐 이수할아버지의 냉정 진단기 v36062 (ATR 100점 완성판)")
