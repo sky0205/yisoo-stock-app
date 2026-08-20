@@ -135,10 +135,14 @@ def display_global_risk():
         elif tnx_val <= 3.8:
             macro_alerts.append(f"🌱 [금리 안정] 국채 금리 {tnx_val:.3f}% 안정권 진입")
 
-        if u_val >= 1400:
-            macro_alerts.append(f"⚠️ [환율 경계] 원/달러 {u_val:,.2f}원 고환율 압박 지속")
+        if u_val >= 1450:
+            macro_alerts.append(f"🚨 [환율 격랑] 원/달러 {u_val:,.2f}원! 초위험 고환율 비상!")
+        elif u_val >= 1400:
+            macro_alerts.append(f"⚠️ [환율 경계] 원/달러 {u_val:,.2f}원 1,400원대 고착화 압박!")
+        elif u_val >= 1380:
+            macro_alerts.append(f"⚡ [환율 분기점] 원/달러 {u_val:,.2f}원! 1,400원 하회했으나 안심은 금물(외인 눈치보기)")
         elif u_val <= 1330:
-            macro_alerts.append(f"💵 [환율 우호] 원/달러 {u_val:,.2f}원 안정")
+            macro_alerts.append(f"💵 [환율 우호] 원/달러 {u_val:,.2f}원 하향 안정세")
 
         if u_chg > 0.3:
             macro_alerts.append(f"📈 오늘 환율 {u_chg:+.2f}% 치솟는 중!")
