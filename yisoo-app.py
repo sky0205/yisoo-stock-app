@@ -117,16 +117,23 @@ def display_global_risk():
         c4.metric("미 국채 10년 (TNX)", f"{tnx_val:.3f}%", f"{tnx_chg:+.2f}%")
         c5.metric("원/달러 환율", f"{u_val:,.2f}원", f"{u_chg:+.2f}%")
         
-        # 1. 미 증시 3대 지수 평균 진단
+       # 1. 미 증시 3대 지수 평균 및 방향성 진단
         avg_us_chg = (n_chg + s_chg + d_chg) / 3
-        if avg_us_chg >= 1.0:
-            market_mood = "미 3대 지수 동반 훈풍 속 안도 랠리"
-        elif avg_us_chg > 0:
-            market_mood = "미 3대 지수 눈치보기 속 강보합 마감"
-        elif avg_us_chg <= -1.0:
-            market_mood = "미 3대 지수 동반 급락으로 투심 냉각"
+        pos_cnt = sum([n_chg > 0, s_chg > 0, d_chg > 0])
+        neg_cnt = sum([n_chg < 0, s_chg < 0, d_chg < 0])
+
+        if pos_cnt == 3:
+            if avg_us_chg >= 1.0:
+                market_mood = "미 3대 지수 동반 훈풍 속 안도 랠리!"
+            else:
+                market_mood = "미 3대 지수 일제히 상승 마감!"
+        elif neg_cnt == 3:
+            if avg_us_chg <= -1.0:
+                market_mood = "미 3대 지수 동반 급락으로 투심 냉각!"
+            else:
+                market_mood = "미 3대 지수 일제히 하락 (전면 약세 국면)!"
         else:
-            market_mood = "미 3대 지수 혼조세 속 숨고르기 진행"
+            market_mood = "미 3대 지수 혼조세 속 숨고르기 진행!"
 
         # 2. 금리 & 환율 매크로 리스크 진단
         macro_alerts = []
