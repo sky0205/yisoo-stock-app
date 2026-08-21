@@ -645,19 +645,20 @@ if symbol:
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 협소·미흡)</b>"
                 pullback_action_str = "➔ <b>[매수 보류]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승수 확대 금지"
             else:
-                pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 조건 만족)</b>"
-                if is_over_extended_5 and (p >= mid_line):
-                    pullback_action_str = f"➔ <b>[추격 매수 금지]</b> 5일선 대비 +{bias_ma5:.1f}% 과다이격 발생으로 눌림목 지지 대기"
-                elif not is_valid_buy_candle:
-                    pullback_action_str = "➔ <b>[캔들 확인 대기]</b> 눌림목 영역이나 캔들 지지(양봉/밑꼬리) 미흡으로 관망"
-                elif is_pullback_buy_signal:
-                    pullback_action_str = "➔ <b>[3단계 눌림목 추가 매수]</b> 5·20일선 위 안착 + 지표 동조 확인, 승수 확대 진격!"
+                if pullback_rebound_score == 0:
+                    pullback_action_str = "-> <b>[관망]</b> 눌림목 지표 조건 미충족"
                 elif pullback_rebound_score < 2:
-                    pullback_action_str = "➔ <b>[지표 미흡]</b> 눌림목 동조 점수 부족(2점 미만)으로 돌파/안착 대기"
+                    pullback_action_str = f"-> <b>[지표 미흡]</b> 눌림목 동조 점수 부족({pullback_rebound_score}점)으로 돌파/안착 대기"
+                elif is_over_extended_5 and (p >= mid_line):
+                    pullback_action_str = f"-> <b>[추격 매수 금지]</b> 5일선 대비 +{bias_ma5:.1f}% 과다이격 발생으로 눌림목 지지 대기"
+                elif not is_valid_buy_candle:
+                    pullback_action_str = "-> <b>[캔들 확인 대기]</b> 눌림목 영역이나 캔들 지지(양봉/밑꼬리) 미흡으로 관망"
                 elif is_macd_reverse_deepening:
-                    pullback_action_str = "➔ <b>[엔진 역회전 심화]</b> MACD 하락 가속 중이므로 관망"
+                    pullback_action_str = "-> <b>[엔진 역회전 심화]</b> MACD 하락 가속 중이므로 관망"
+                elif is_pullback_buy_signal:
+                    pullback_action_str = "-> <b>[3단계 눌림목 추가 매수]</b> 5·20일선 위 안착 + 지표 동조 확인, 승수 확대 진격!"
                 else:
-                    pullback_action_str = "➔ <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
+                    pullback_action_str = "-> <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
 
             # ==============================================================================
             # ★ [신호등 분기: 완벽 동기화]
