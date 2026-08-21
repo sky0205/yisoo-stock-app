@@ -497,7 +497,7 @@ if symbol:
 
             if is_squeeze:
                 squeeze_info_str = f"<br>• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 얕은 조정 후 폭발할 수 있으니 돌파 시 정면 대응하시게."
-            elif bandwidth < 25.0:
+            elif bandwidth < 20.0:
                 squeeze_info_str = f"<br>• 🟡 <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 밴드폭이 25% 미만이오! 눌림목 공략 시 먹을 자리가 부족하니 무리한 진입을 자제하시게."
             else:
                 squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 활주로가 넉넉히 트였으니 정석 눌림목 타점을 공략하시게."
@@ -595,7 +595,7 @@ if symbol:
             # ==============================================================================
             is_bottom_indicator_ok = (bottom_score >= 2 or recent_bottom_memory)
             is_macd_not_deepening = not is_macd_reverse_deepening
-            is_bandwidth_ok = (bandwidth >= 25.0)
+            is_bandwidth_ok = (bandwidth >= 20.0)
 
             # 1단계 진바닥 입질 매수 (5일선 무관! 바닥 2개 이상 + 거래량 80점 + MACD 역회전 가속 아님 + 바닥 지지캔들)
             is_bottom_entry_signal = (bottom_score >= 2) and (vol_strength >= 80) and is_macd_not_deepening and is_valid_bottom_candle
@@ -603,7 +603,7 @@ if symbol:
             # 2단계 진바닥 탈출 매수 (5일선 위 + 최근 바닥기억 + 거래량 80점 + MACD 역회전 가속 아님 + 추세 유효캔들)
             is_escape_buy_signal = is_ma5_safe and is_bottom_indicator_ok and (vol_strength >= 80) and is_macd_not_deepening and is_valid_buy_candle
 
-            # 3단계 눌림목 추가 매수 (20일선 위 + 5일선 위 + 눌림목 동조 ≥ 2점 + 밴드폭 ≥ 25% + 거래량 + MACD + 추세 유효캔들)
+            # 3단계 눌림목 추가 매수 (20일선 위 + 5일선 위 + 눌림목 동조 ≥ 2점 + 밴드폭 ≥ 20% + 거래량 + MACD + 추세 유효캔들)
             is_pullback_buy_signal = (p >= mid_line) and is_ma5_safe and (pullback_rebound_score >= 2) and (vol_strength >= 80) and is_bandwidth_ok and is_macd_not_deepening and is_valid_buy_candle
 
             # ==============================================================================
@@ -734,7 +734,7 @@ if symbol:
                 final_code = "WAIT_PULLBACK"
                 if not is_bandwidth_ok:
                     sig = "🟡 [관망/보류] 눌림목 영역이나 밴드폭 협소 (먹을자리 부족)"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승수 확대 금지."
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 밴드폭 20% 미만으로 먹을 자리가 부족하여 승수 확대 금지."
                 else:
                     sig = "🟡 [관망/보류] 눌림목 영역 도달했으나 지표 동조 미흡"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[눌림목 지표 미흡]</b> 20일선 부근이나 지표 동조({pullback_rebound_score}점) 및 지지 캔들 확인 전까지 매수 보류."
