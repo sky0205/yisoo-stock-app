@@ -498,7 +498,7 @@ if symbol:
             if is_squeeze:
                 squeeze_info_str = f"<br>• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축되었구먼! 얕은 조정 후 폭발할 수 있으니 돌파 시 정면 대응하시게."
             elif bandwidth < 20.0:
-                squeeze_info_str = f"<br>• 🟡 <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 밴드폭이 25% 미만이오! 눌림목 공략 시 먹을 자리가 부족하니 무리한 진입을 자제하시게."
+                squeeze_info_str = f"<br>• 🟡 <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 밴드폭이 20% 미만이오! 눌림목 공략 시 먹을 자리가 부족하니 무리한 진입을 자제하시게."
             else:
                 squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 활주로가 넉넉히 트였으니 정석 눌림목 타점을 공략하시게."
 
@@ -643,7 +643,7 @@ if symbol:
 
             if not is_bandwidth_ok:
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 협소·미흡)</b>"
-                pullback_action_str = "-> <b>[매수 보류]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승수 확대 금지"
+                pullback_action_str = "-> <b>[매수 보류]</b> 밴드폭 20% 미만으로 먹을 자리가 부족하여 승수 확대 금지"
             else:
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 조건 만족)</b>"
                 if pullback_rebound_score == 0:
