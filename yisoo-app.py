@@ -730,21 +730,21 @@ if symbol:
                 col = "#E65100"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수급 부진]</b> 바닥 지표는 확인했으나 거래량이 실리지 않은 속임수 구간이니, 확실한 거래량 유입을 확인 후 진입하시게."
 
-            elif (p >= mid_line * 0.98 and p <= mid_line * 1.03) and (pullback_rebound_score < 2 or not is_bandwidth_ok):
+            elif (p >= mid_line * 0.98 and p <= mid_line * 1.03) and (pullback_rebound_score >= 1) and (pullback_rebound_score < 2 or not is_bandwidth_ok):
                 final_code = "WAIT_PULLBACK"
                 if not is_bandwidth_ok:
                     sig = "🟡 [관망/보류] 눌림목 영역이나 밴드폭 협소 (먹을자리 부족)"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 20일선 부근이나 밴드폭이 25% 미만으로 좁아 상방 공간이 부족하니 섣부른 진입을 금하시게."
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승수 확대 금지."
                 else:
-                    sig = "🟡 [관망/보류] 눌림목 영역 도달했으나 지표 미흡 (이탈 위험)"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[눌림목 지표 미흡]</b> 20일선 부근에 위치하나 동조 점수({pullback_rebound_score}/3점)가 기준에 못 미치니 지지 확인 전까지 관망하시게."
+                    sig = "🟡 [관망/보류] 눌림목 영역 도달했으나 지표 동조 미흡"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[눌림목 지표 미흡]</b> 20일선 부근이나 지표 동조({pullback_rebound_score}점) 및 지지 캔들 확인 전까지 매수 보류."
                 col = "#F57C00"
-
+            
             else:
                 final_code = "WAIT_GENERAL"
                 sig = "🟡 [관망] 조건 미충족 / 뇌동매매 금지"
                 col = "#FBC02D"
-                final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 조건 미충족 상태이므로 뇌동매매를 금하고 관망세 유지하시게!"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
 
             indicator_verify_text = (
                 f"{ma_price_summary}<br>"
