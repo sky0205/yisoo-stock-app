@@ -643,8 +643,9 @@ if symbol:
 
             if not is_bandwidth_ok:
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 협소·미흡)</b>"
-                pullback_action_str = "➔ <b>[매수 보류]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승수 확대 금지"
+                pullback_action_str = "-> <b>[매수 보류]</b> 밴드폭 25% 미만으로 먹을 자리가 부족하여 승수 확대 금지"
             else:
+                pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 조건 만족)</b>"
                 if pullback_rebound_score == 0:
                     pullback_action_str = "-> <b>[관망]</b> 눌림목 지표 조건 미충족"
                 elif pullback_rebound_score < 2:
