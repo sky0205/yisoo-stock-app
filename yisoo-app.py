@@ -495,9 +495,7 @@ if symbol:
                 f"<span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
             )
 
-            if is_escape_buy_signal:
-                squeeze_info_str = ""  # 2단계 진바닥 탈출 시에는 밴드폭 경고 문구를 아예 숨김
-            elif is_squeeze:
+            if is_squeeze:
                 squeeze_info_str = f"<br>• ⚡ <b>[밴드폭 극초축소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축..."
             elif bandwidth < 20.0:
                 squeeze_info_str = f"<br>• 🟡 <b>[밴드폭 협소({bandwidth:.1f}%)]</b> 밴드폭이 20% 미만이오!..."
