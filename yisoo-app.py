@@ -714,7 +714,7 @@ if symbol:
 
             elif is_ma5_safe and not is_bottom_indicator_ok:
                 final_code = "WAIT_INDICATOR"
-                sig = "🟡 [관망/보류] 5일선 회복 시도 중이나 지표 미흡 (외바닥 주의)"
+                sig = "🟡 [관망/보류] 5일선 안착했으나 보조지표 미흡 (외바닥 주의)"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[지표 미흡]</b> 5일선은 넘었으나 최근 바닥 지표 동조({bottom_score}개)가 부족하므로 외바닥 속임수를 경계하고 관망하시게."
 
