@@ -644,6 +644,7 @@ if symbol:
             if is_escape_buy_signal:
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 진바닥 구간)</b>"
                 pullback_action_str = "-> <b>[진바닥 반등]</b> 바닥 탈출 국면이므로 5일선 사수 기준으로 대응"
+                squeeze_info_str = ""  # ★ 이 한 줄을 여기에 추가!
             elif not is_bandwidth_ok:
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 협소·미흡)</b>"
                 pullback_action_str = "-> <b>[매수 보류]</b> 밴드폭 20% 미만으로 먹을 자리가 부족하여 승수 확대 금지"
