@@ -750,12 +750,17 @@ if symbol:
                 col = "#FBC02D"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
 
+            # 진바닥 탈출 구간일 때는 진바닥 한 줄만, 그 외에는 눌림목 한 줄만 깔끔하게 출력
+            if is_escape_buy_signal or bottom_score >= 2 or recent_bottom_memory:
+                sub_indicator_str = f"  - <b>진바닥 입질 동조:</b> {bottom_score}개 터치 {bottom_status_str} {bottom_action_str}"
+            else:
+                sub_indicator_str = f"  - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
+            
             indicator_verify_text = (
                 f"{ma_price_summary}<br>"
                 f"• <b>[추세 정밀 판독]:</b> {trend_status}<br>"
                 f"• <b>[지표 검증 연산]</b><br>"
-                f"   - <b>진바닥 입질 동조:</b> {bottom_score}개 터치 {bottom_status_str} {bottom_action_str}<br>"
-                f"   - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
+                f"{sub_indicator_str}"
                 f"{squeeze_info_str}"
             )
 
