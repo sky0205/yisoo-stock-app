@@ -641,7 +641,10 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
-            if not is_bandwidth_ok:
+            if is_escape_buy_signal:
+                pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 진바닥 구간)</b>"
+                pullback_action_str = "-> <b>[진바닥 반등]</b> 바닥 탈출 국면이므로 5일선 사수 기준으로 대응"
+            elif not is_bandwidth_ok:
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 협소·미흡)</b>"
                 pullback_action_str = "-> <b>[매수 보류]</b> 밴드폭 20% 미만으로 먹을 자리가 부족하여 승수 확대 금지"
             else:
