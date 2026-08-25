@@ -628,7 +628,7 @@ if symbol:
                 elif is_over_extended_5:
                     bottom_action_str = f"→ <b>[추격 매수 금지]</b> 5일선 대비 +{bias_ma5:.1f}% 과다이격 발생으로 관망 대기."
                 elif not is_valid_buy_candle:
-                    bottom_action_str = f"→ <b>[캔들 대기]</b> 5일선 회복 시도 중이나 유효 캔들 미충족으로 관망."
+                    bottom_action_str = f"-> <b>[캔들 대기]</b> 5일선 안착했으나 유효 지지캔들 미충족으로 관망."
                 elif is_escape_buy_signal:
                     bottom_action_str = f"→ <b>[2단계 진바닥 탈출]</b> 바닥 다진 후 5일선 위 안착 성공! 추가 매수 유효."
                 elif not is_ma5_safe:
