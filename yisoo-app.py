@@ -117,7 +117,6 @@ def display_global_risk():
         c4.metric("미 국채 10년 (TNX)", f"{tnx_val:.3f}%", f"{tnx_chg:+.2f}%")
         c5.metric("원/달러 환율", f"{u_val:,.2f}원", f"{u_chg:+.2f}%")
         
-       # 1. 미 증시 3대 지수 평균 및 방향성 진단
         avg_us_chg = (n_chg + s_chg + d_chg) / 3
         pos_cnt = sum([n_chg > 0, s_chg > 0, d_chg > 0])
         neg_cnt = sum([n_chg < 0, s_chg < 0, d_chg < 0])
@@ -135,7 +134,6 @@ def display_global_risk():
         else:
             market_mood = "미 3대 지수 혼조세 속 숨고르기 진행!"
 
-        # 2. 금리 & 환율 매크로 리스크 진단
         macro_alerts = []
         if tnx_val >= 4.5:
             macro_alerts.append(f"🚨 [금리 발작] 국채 금리 {tnx_val:.3f}% 돌파!")
@@ -156,7 +154,6 @@ def display_global_risk():
         elif u_chg < -0.3:
             macro_alerts.append(f"📉 오늘 환율 {u_chg:+.2f}% 진정세")
 
-        # 3. 종합 행동 전략
         if tnx_val >= 4.5 or u_val >= 1380:
             strategy = "외인 수급 이탈 우려로 상단 저항이 강하니 추격매수 금지, 5일선 및 방어선 위주로 보수적 대응하시게."
         elif avg_us_chg > 0.5 and tnx_val < 4.2 and u_val < 1350:
@@ -166,7 +163,6 @@ def display_global_risk():
 
         macro_text = " | ".join(macro_alerts) if macro_alerts else "매크로 특이 동향 없음"
         
-        # 화면 표출
         st.info(f"🧐 **이수 할배의 글로벌 판독:** {market_mood}!\n\n- {macro_text}\n- 💡 **[대응 전략]** {strategy}")
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
@@ -314,10 +310,8 @@ if symbol:
                 prev_p = us_prev_p
             else:
                 if today_date in df.index:
-                    # 이미 오늘자 행이 들어와 있는 장중/마감 후
                     prev_p = float(df['Close'].iloc[-2]) if len(df) >= 2 else p
                 else:
-                # 아직 장 시작 전 (df의 마지막 행이 바로 '어제 종가')
                     prev_p = float(df['Close'].iloc[-1]) if len(df) >= 1 else p
 
             if today_date in df.index:
@@ -371,17 +365,14 @@ if symbol:
             sig_line = macd.ewm(span=9).mean()
             m_l, s_l, m_p, s_p = macd.iloc[-1], sig_line.iloc[-1], macd.iloc[-2], sig_line.iloc[-2]
             
-            # ==============================================================================
-            # ★ [MACD 엔진 4단계 정밀 분기]
-            # ==============================================================================
             curr_diff = m_l - s_l
             prev_diff = m_p - s_p
             is_macd_bullish = (m_l > s_l)
 
-            is_macd_accelerating = is_macd_bullish and (curr_diff >= prev_diff)           # 🔥 정회전 가속 (화력 폭발)
-            is_macd_decelerating = is_macd_bullish and (curr_diff < prev_diff)            # ⚠️ 정회전 둔화 (탄력 저하)
-            is_macd_recovering = (not is_macd_bullish) and (curr_diff > prev_diff)        # 🌤️ 역회전 감소 (반등 시동)
-            is_macd_reverse_deepening = (not is_macd_bullish) and (curr_diff <= prev_diff)# ⚙️ 역회전 심화 (하락 가속)
+            is_macd_accelerating = is_macd_bullish and (curr_diff >= prev_diff)
+            is_macd_decelerating = is_macd_bullish and (curr_diff < prev_diff)
+            is_macd_recovering = (not is_macd_bullish) and (curr_diff > prev_diff)
+            is_macd_reverse_deepening = (not is_macd_bullish) and (curr_diff <= prev_diff)
 
             if is_macd_accelerating:
                 macd_status_name = "🔥 엔진 정회전 가속"
@@ -412,16 +403,11 @@ if symbol:
             ma5_val = df['MA5'].iloc[-1] if len(df) >= 5 else mid_line
             ma60_val = df['MA60'].iloc[-1] if len(df) >= 60 else mid_line
             ma120_val = df['MA120'].iloc[-1] if len(df) >= 120 else mid_line
-            ma20_slope = (df['MA20'].iloc[-1] - df['MA20'].iloc[-5]) if len(df) >= 5 else 0
             
-            # ★ 5일선 및 20일선 이격도 정밀 연산
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
             is_over_extended_5 = (bias_ma5 >= 5.0)
 
-            # ==============================================================================
-            # ★ [캔들 판독 정밀화: 바닥 전용 밑꼬리와 추세 전용 밑꼬리 분리]
-            # ==============================================================================
             today_open = float(df['Open'].iloc[-1])
             today_high = float(df['High'].iloc[-1])
             today_low = float(df['Low'].iloc[-1])
@@ -430,18 +416,11 @@ if symbol:
             lower_tail = min(today_open, p) - today_low
             body_len = abs(today_open - p)
 
-            # 1) 순수 양봉 여부
             is_pure_bullish_candle = (p >= today_open)
-
-            # 2) 바닥 전용 밑꼬리 (5일선 무관! 극단 바닥에서 세력이 꼬리 달고 말아올린 봉)
             is_bottom_lower_tail = (lower_tail >= candle_range * 0.45) or (lower_tail >= body_len * 1.3)
             is_valid_bottom_candle = is_pure_bullish_candle or is_bottom_lower_tail
-
-            # 3) 2·3단계 추세용 밑꼬리 (5일선 사수 + 전일비 방어 필수)
             is_trend_lower_tail = is_bottom_lower_tail and (p >= ma5_val) and (p_chg >= -1.5)
             is_valid_buy_candle = is_pure_bullish_candle or is_trend_lower_tail
-
-            # 4) 성벽 위 경계용 음봉
             is_bearish_candle = (p < today_open) and (not is_trend_lower_tail)
 
             # ATR(14) 변동성 연산
@@ -469,11 +448,10 @@ if symbol:
             defense_link_idx = min(21, len(df))
             defense_line = float(df['High'].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
 
-            high_52w = float(df['High'].rolling(window=250, min_periods=1).max().iloc[-1])
-            low_52w = float(df['Low'].rolling(window=250, min_periods=1).min().iloc[-1])
-
+            # 추세 정밀 판독
             is_bullish = (ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
             is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
+            is_down_trend_structural = is_bearish or (p < mid_line and mid_line <= ma60_val)
             is_ma5_safe = (p >= ma5_val)
 
             ma5_str = f"{ma5_val:{fmt_p}}{currency}"
@@ -591,23 +569,23 @@ if symbol:
             is_on_the_wall = (p >= defense_line) and (p < target_price_100)
 
             # ==============================================================================
-            # ★ [1·2·3단계 매수 판정: 1단계는 5일선 무관 바닥캔들 / 2·3단계는 5일선 필수 추세캔들]
+            # ★ [1·2·3단계 매수 판정: 역배열 완벽 분리]
             # ==============================================================================
             is_bottom_indicator_ok = (bottom_score >= 2 or recent_bottom_memory)
             is_macd_not_deepening = not is_macd_reverse_deepening
             is_bandwidth_ok = (bandwidth >= 20.0)
 
-            # 1단계 진바닥 입질 매수 (5일선 무관! 바닥 2개 이상 + 거래량 80점 + MACD 역회전 가속 아님 + 바닥 지지캔들)
+            # 1단계 진바닥 입질 매수
             is_bottom_entry_signal = (bottom_score >= 2) and (vol_strength >= 80) and is_macd_not_deepening and is_valid_bottom_candle
 
-            # 2단계 진바닥 탈출 매수 (5일선 위 + 최근 바닥기억 + 거래량 80점 + MACD 역회전 가속 아님 + 추세 유효캔들)
+            # 2단계 진바닥 탈출 매수
             is_escape_buy_signal = is_ma5_safe and is_bottom_indicator_ok and (vol_strength >= 80) and is_macd_not_deepening and is_valid_buy_candle
 
-            # 3단계 눌림목 추가 매수 (20일선 위 + 5일선 위 + 눌림목 동조 ≥ 2점 + 밴드폭 ≥ 20% + 거래량 + MACD + 추세 유효캔들)
-            is_pullback_buy_signal = (p >= mid_line) and is_ma5_safe and (pullback_rebound_score >= 2) and (vol_strength >= 80) and is_bandwidth_ok and is_macd_not_deepening and is_valid_buy_candle
+            # 3단계 눌림목 추가 매수 (★ 역배열 하락 추세에서는 절대 발동 금지!)
+            is_pullback_buy_signal = (not is_down_trend_structural) and (p >= mid_line) and is_ma5_safe and (pullback_rebound_score >= 2) and (vol_strength >= 80) and is_bandwidth_ok and is_macd_not_deepening and is_valid_buy_candle
 
             # ==============================================================================
-            # ★ [3번 지표 세부 설명]
+            # ★ [지표 세부 텍스트: 이수할아버지 기준 역배열/진바닥 정밀 표기]
             # ==============================================================================
             if bottom_score >= 2:
                 bottom_status_str = f"<b>(당일 진바닥 지표 {bottom_score}개 터치 달성!)</b>"
@@ -641,10 +619,19 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
+            # ★ [눌림목 vs 진바닥 분기 완벽 교정]
             if is_escape_buy_signal:
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 진바닥 구간)</b>"
                 pullback_action_str = "-> <b>[진바닥 반등]</b> 바닥 탈출 국면이므로 5일선 사수 기준으로 대응"
-                squeeze_info_str = ""  # ★ 이 한 줄을 여기에 추가!
+                squeeze_info_str = ""
+            elif is_down_trend_structural:
+                # 역배열/하락 추세일 때는 눌림목 문구 원천 차단하고 '진바닥 탐색 중'으로 출력!
+                pullback_status_str = f"<b>(대세 역배열 하락 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
+                if not is_ma5_safe:
+                    pullback_action_str = "-> <b>[진바닥 탐색 중]</b> 역배열 지하실 하락 진행형 (5일선 미안착 / 칼날 관망)"
+                else:
+                    pullback_action_str = "-> <b>[진바닥 안착 시도]</b> 5일선 회복 시도 중이나 역배열 저항 경계"
+                squeeze_info_str = ""
             elif not is_bandwidth_ok:
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 협소·미흡)</b>"
                 pullback_action_str = "-> <b>[매수 보류]</b> 밴드폭 20% 미만으로 먹을 자리가 부족하여 승수 확대 금지"
@@ -716,7 +703,7 @@ if symbol:
                 col = "#1976D2"
                 final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[승수 확대]</b> 5일선·20일선 위 안정적 안착 및 활주로 확보 완료! 알짜배기 추가 매수."
 
-            elif is_ma5_safe and not is_bottom_indicator_ok:
+            elif is_ma5_safe and not is_bottom_indicator_ok and not is_down_trend_structural:
                 final_code = "WAIT_INDICATOR"
                 sig = "🟡 [관망/보류] 5일선 안착했으나 보조지표 미흡 (외바닥 주의)"
                 col = "#F57C00"
@@ -734,7 +721,14 @@ if symbol:
                 col = "#E65100"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수급 부진]</b> 바닥 지표는 확인했으나 거래량이 실리지 않은 속임수 구간이니, 확실한 거래량 유입을 확인 후 진입하시게."
 
-            elif (p >= mid_line * 0.98 and p <= mid_line * 1.03) and (pullback_rebound_score >= 1) and (pullback_rebound_score < 2 or not is_bandwidth_ok):
+            elif is_down_trend_structural and not is_ma5_safe:
+                # ★ 역배열 하락 중 5일선 아래 칼날 구간 전용 신호등
+                final_code = "WAIT_DOWNTREND_FALL"
+                sig = "🟡 [진바닥 탐색 중] 역배열 하락 진행 / 칼날 관망"
+                col = "#F57C00"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 탐색 중]</b> 대세 역배열 하락 추세 속에서 5일선 아래로 칼날이 떨어지는 중이니 섣부른 물타기를 금하고 손가락을 묶으시게."
+
+            elif (p >= mid_line * 0.98 and p <= mid_line * 1.03) and (pullback_rebound_score >= 1) and (not is_down_trend_structural):
                 final_code = "WAIT_PULLBACK"
                 if not is_bandwidth_ok:
                     sig = "🟡 [관망/보류] 눌림목 영역이나 밴드폭 협소 (먹을자리 부족)"
@@ -750,11 +744,14 @@ if symbol:
                 col = "#FBC02D"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
 
-            # 진바닥 탈출 구간일 때는 진바닥 한 줄만, 그 외에는 눌림목 한 줄만 깔끔하게 출력
-            if is_escape_buy_signal or bottom_score >= 2 or recent_bottom_memory:
-                sub_indicator_str = f"  - <b>진바닥 입질 동조:</b> {bottom_score}개 터치 {bottom_status_str} {bottom_action_str}"
+            # ★ [출력 분기: 진바닥 구간이거나 역배열 하락 추세일 때는 진바닥 진단만 출력]
+            if is_escape_buy_signal or bottom_score >= 2 or recent_bottom_memory or is_down_trend_structural:
+                if is_down_trend_structural and not (is_escape_buy_signal or bottom_score >= 2 or recent_bottom_memory):
+                    sub_indicator_str = f"   - <b>진바닥 탐색 현황:</b> {pullback_status_str} {pullback_action_str}"
+                else:
+                    sub_indicator_str = f"   - <b>진바닥 입질 동조:</b> {bottom_score}개 터치 {bottom_status_str} {bottom_action_str}"
             else:
-                sub_indicator_str = f"  - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
+                sub_indicator_str = f"   - <b>눌림목 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
             
             indicator_verify_text = (
                 f"{ma_price_summary}<br>"
@@ -805,6 +802,8 @@ if symbol:
                 s_adv = " • <b>[승수 확대]</b> 5일선·20일선 위 안착 및 활주로 확보로 알짜배기 추가 매수 집행."
             elif final_code in ["WAIT_INDICATOR", "WAIT_MACD"]:
                 s_adv = " • <b>[지표 검증 대기]</b> 5일선 위에 있으나 바닥 지표 미충족 또는 MACD 하락세 지속 중이오! 뇌동 진입을 엄격히 금함."
+            elif final_code == "WAIT_DOWNTREND_FALL":
+                s_adv = " • <b>[칼날 주의]</b> 대세 역배열 하락 관성이 주가를 누르고 있네! 바닥을 치고 5일선 위로 올라타기 전까지 절대 칼을 뽑지 마시게."
             elif final_code == "WAIT_PULLBACK":
                 s_adv = " • <b>[눌림목 지지 대기]</b> 20일선 영역이나 지표 동조 미흡 또는 밴드폭 협소! 확실한 지지 캔들과 거래량 확인 전까지 매수 보류."
             elif final_code == "WAIT_VOLUME":
@@ -872,6 +871,8 @@ if symbol:
                     bb_diag = f"🟢 <b>[2단계 진바닥 탈출 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 5일선 안착 후 배팅 확대.<br>• <b>진단:</b> 최근 바닥 확인 후 5일선 위 안착 성공! 추가 매수로 비중 확대."
                 elif final_code == "WAIT_VOLUME":
                     bb_diag = f"🟡 <b>[수급 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 속임수 반등 차단.<br>• <b>진단:</b> 바닥 기술 지표는 달성했으나 거래량이 부족하니, 확실한 수급 유입 전까지 진입 보류."
+                elif final_code == "WAIT_DOWNTREND_FALL":
+                    bb_diag = f"🟡 <b>[진바닥 탐색/칼날 관망 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 떨어지는 칼날 회피.<br>• <b>진단:</b> 대세 역배열 하락 구간이오. 5일선 안착 전까지 절대 매수하지 말고 관망하시게."
                 elif final_code == "PULLBACK_BUY":
                     bb_diag = f"🔵 <b>[3단계 눌림목 추가 매수 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 추세 속 승수 확대.<br>• <b>진단:</b> 5·20일선 위 안정적 안착 및 활주로 확보로 알짜배기 추가 매수 집행."
                 elif final_code in ["RED_SELL_TARGET", "RED_SELL_WARNING"]:
