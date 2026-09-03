@@ -6,12 +6,15 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
+import html
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
 def check_password():
-    """비밀번호를 확인하는 함수"""
+    """비밀번호를 확인하는 함수 (st.secrets 호환 보안 보수)"""
+    correct_pw = str(st.secrets.get("APP_PASSWORD", "1210"))
+
     def password_entered():
-        if st.session_state["password"] == "1210":  # 비밀번호 1210
+        if st.session_state["password"] == correct_pw:
             st.session_state["password_correct"] = True
             del st.session_state["password"]  # 비밀번호 기억 삭제
         else:
@@ -238,7 +241,7 @@ if symbol:
             try:
                 api_url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
                 headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)'}
-                res = requests.get(api_url, headers=headers, timeout=1)
+                res = requests.get(api_url, headers=headers, timeout=3)
                 if res.status_code == 200:
                     data = res.json()
                     auto_p = float(data['closePrice'].replace(",", ""))
@@ -250,7 +253,7 @@ if symbol:
             if not kr_fetched:
                 try:
                     url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-                    res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
+                    res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
                     soup = BeautifulSoup(res.text, 'html.parser')
                     auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
                     v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
@@ -488,7 +491,7 @@ if symbol:
                 if symbol not in core_vault:
                     try:
                         url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-                        res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1)
+                        res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
                         soup = BeautifulSoup(res.text, 'html.parser')
                         final_display_name = soup.select_one(".wrap_company h2 a").text.strip()
                     except:
@@ -512,9 +515,12 @@ if symbol:
                     except: kor_name = tk
                 final_display_name = f"{kor_name} ({tk})"
 
+            # XSS 방어 인코딩 처리
+            safe_display_name = html.escape(final_display_name)
+
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
-            st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{final_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'><p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{safe_display_name}</p><p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>", unsafe_allow_html=True)
 
             # --- [거래량 전황 판정] ---
             if is_manual_mode:
@@ -625,7 +631,6 @@ if symbol:
                 pullback_action_str = "-> <b>[진바닥 반등]</b> 바닥 탈출 국면이므로 5일선 사수 기준으로 대응"
                 squeeze_info_str = ""
             elif is_down_trend_structural:
-                # 역배열/하락 추세일 때는 눌림목 문구 원천 차단하고 '진바닥 탐색 중'으로 출력!
                 pullback_status_str = f"<b>(대세 역배열 하락 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
                 if not is_ma5_safe:
                     pullback_action_str = "-> <b>[진바닥 탐색 중]</b> 역배열 지하실 하락 진행형 (5일선 미안착 / 칼날 관망)"
