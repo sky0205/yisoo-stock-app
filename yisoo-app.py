@@ -548,7 +548,7 @@ if symbol:
       elif 12.0 <= bandwidth < 20.0:
         if p >= ma5_val:
           is_bandwidth_ok = (
-              True  # 5·20일선 위에 있으면 대형 우량주 정상 활주로 및 상방 돌파 인정!
+              True  # 5일선 위에 있으면 대형 우량주 정상 활주로 및 상방 돌파 인정!
           )
           bw_status_category = "SQUEEZE_BREAKOUT"
           bw_diag_msg = (
@@ -557,7 +557,7 @@ if symbol:
           )
           squeeze_info_str = (
               f"<br>• 🟢 <b>[밴드폭 응축돌파({bandwidth:.1f}%)]</b> 에너지를 잔뜩"
-              " 모은 뒤 5·20일선을 뚫고 올라섰네! 상방 분출 초입으로 유효하오."
+              " 모은 뒤 5일선을 뚫고 올라섰네! 상방 분출 초입으로 유효하오."
           )
         else:
           is_bandwidth_ok = False  # 5일선 아래면 하방 확장 폭탄 차단
@@ -1014,8 +1014,16 @@ if symbol:
           )
 
       # ==============================================================================
-      # ★ [신호등 분기: 완벽 동기화]
+      # ★ [신호등 분기: 오후 2시(14:00) 족쇄 반영 완벽 동기화]
       # ==============================================================================
+      # 14:00 이후 여부 판독 (국내장 정규장 기준)
+      if is_kr and not is_manual_mode:
+        is_afternoon_safe_time = (now_local.hour > 14) or (
+            now_local.hour == 14 and now_local.minute >= 0
+        )
+      else:
+        is_afternoon_safe_time = True
+
       if is_stop_loss_triggered:
         final_code = "STOP_LOSS_ALERT"
         sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
@@ -1071,35 +1079,64 @@ if symbol:
             " 때까지 추격 매수를 엄금하시게."
         )
 
+      # 🟢 [1단계 진바닥 입질 매수] (녹색불 유지 + 시간 족쇄)
       elif is_bottom_entry_signal:
         final_code = "BOTTOM_ENTRY"
-        sig = "🟢 [매입] 1단계 진바닥 입질 매수 (소량)"
         col = "#388E3C"
-        final_adv = (
-            f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥"
-            " 입질 매수]</b> 3중 지표 터치 + 거래량 유입 + 바닥 지지 확인! 소량"
-            " 씨앗 뿌리기 진격."
-        )
+        if not is_afternoon_safe_time:
+          sig = "🟢 [입질 포착] 1단계 진바닥 입질 (★ 14:00 매수 대기)"
+          final_adv = (
+              f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥"
+              " 포착 완료 / 오전 매수 금지]</b> 3중 지표 터치 확인! 단, 오전"
+              " 윗꼬리 덫을 피하기 위해 <b>14:00까지 손가락을 묶고 지지 여부를"
+              " 관찰 후 진입</b>하시게."
+          )
+        else:
+          sig = "🟢 [매입 진격] 1단계 진바닥 입질 매수 (소량)"
+          final_adv = (
+              f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[오후장"
+              " 안착 완료]</b> 14:00 이후 바닥 지지 확인 완료! 소량 씨앗"
+              " 뿌리기 진격 (전저점 방어선 엄수)."
+          )
 
+      # 🟢 [2단계 진바닥 탈출 매수] (진녹색불 유지 + 시간 족쇄)
       elif is_escape_buy_signal:
         final_code = "ESCAPE_BUY"
-        sig = "🟢 [매수] 2단계 진바닥 탈출 추가 매수 (5일선 위 안착)"
         col = "#2E7D32"
-        final_adv = (
-            f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥"
-            f" 탈출 매수]</b> {bw_diag_msg}. 최근 바닥 다진 후 거래량이 실리며"
-            " 5일선 위 안착 성공! 배팅 비중을 늘려 밭을 다짐."
-        )
+        if not is_afternoon_safe_time:
+          sig = "🟢 [탈출 포착] 2단계 진바닥 탈출 (★ 14:00 매수 대기)"
+          final_adv = (
+              f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[5일선"
+              f" 안착 포착 / 오전 추격 금지]</b> {bw_diag_msg}. 기세는 살아있으나"
+              " <b>14:00 이후에도 5일선을 사수하는지 확인 후 비중 확대</b>를"
+              " 집행하시게."
+          )
+        else:
+          sig = "🟢 [추가 진격] 2단계 진바닥 탈출 매수 (5일선 사수)"
+          final_adv = (
+              f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[오후장"
+              f" 안착 사수 완료]</b> {bw_diag_msg}. 14:00 이후 5일선 위 안착"
+              " 완벽 사수! 배팅 비중을 늘려 밭을 다짐."
+          )
 
+      # 🔵 [3단계 눌림목 추가 매수] (파란불 유지 + 시간 족쇄)
       elif is_pullback_buy_signal:
         final_code = "PULLBACK_BUY"
-        sig = "🔵 [매수] 3단계 눌림목 추가 매수 (승수 확대)"
         col = "#1976D2"
-        final_adv = (
-            f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[승수"
-            f" 확대]</b> {bw_diag_msg}. 5일선·20일선 위 안착 완료! 알짜배기"
-            " 추가 매수."
-        )
+        if not is_afternoon_safe_time:
+          sig = "🔵 [승수 포착] 3단계 눌림목 (★ 14:00 매수 대기)"
+          final_adv = (
+              f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[눌림목"
+              f" 지지 포착 / 오전 진입 금지]</b> {bw_diag_msg}. <b>14:00 이후에도"
+              " 5·20일선 위를 굳건히 지킬 때 본진을 투입</b>하시게."
+          )
+        else:
+          sig = "🔵 [본진 진격] 3단계 눌림목 추가 매수 (승수 확대)"
+          final_adv = (
+              f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[승수확대"
+              f" 집행]</b> {bw_diag_msg}. 14:00 이후 5·20일선 위 안착 및 활주로"
+              " 확보 완료! 알짜배기 추가 매수."
+          )
 
       elif (
           is_ma5_safe
@@ -1276,20 +1313,38 @@ if symbol:
             " 금지."
         )
       elif final_code == "BOTTOM_ENTRY":
-        s_adv = (
-            " • <b>[입질 진격]</b> 진바닥 터치 + 거래량 유입 + 바닥 지지 캔들"
-            " 포착! 소량 씨앗 뿌리기 진격 (전저점 방어선 철저 준수)."
-        )
+        if not is_afternoon_safe_time:
+          s_adv = (
+              " • <b>[입질 포착]</b> 진바닥 터치 완료! <b>오전장 휩소를 피하기"
+              " 위해 14:00까지 관찰 후 지지 확인 시 소량 진격</b>하시게."
+          )
+        else:
+          s_adv = (
+              " • <b>[입질 진격]</b> 14:00 이후 바닥 지지 확인 완료! 소량 씨앗"
+              " 뿌리기 진격 (전저점 방어선 철저 준수)."
+          )
       elif final_code == "ESCAPE_BUY":
-        s_adv = (
-            " • <b>[추가 진격]</b> 최근 바닥 다진 후 거래량이 실리며 5일선 위"
-            " 안착 성공! 배팅 비중을 늘려 밭을 다짐."
-        )
+        if not is_afternoon_safe_time:
+          s_adv = (
+              " • <b>[탈출 포착]</b> 5일선 위 안착 기세 확인! <b>장중 되밀림을"
+              " 방어하기 위해 14:00 이후에도 5일선 사수 시 추가 매수</b>하시게."
+          )
+        else:
+          s_adv = (
+              " • <b>[추가 진격]</b> 14:00 이후 5일선 위 안착 완벽 사수! 배팅"
+              " 비중을 늘려 밭을 다짐."
+          )
       elif final_code == "PULLBACK_BUY":
-        s_adv = (
-            " • <b>[승수 확대]</b> 5일선·20일선 위 안착 및 활주로 확보로 알짜배기"
-            " 추가 매수 집행."
-        )
+        if not is_afternoon_safe_time:
+          s_adv = (
+              " • <b>[승수 포착]</b> 5·20일선 위 활주로 확보! <b>14:00 이후"
+              " 지지선 사수 시 알짜배기 승수 확대</b>를 집행하시게."
+          )
+        else:
+          s_adv = (
+              " • <b>[본진 진격]</b> 14:00 이후 지지력 검증 완료! 알짜배기"
+              " 추가 매수 집행."
+          )
       elif final_code in ["WAIT_INDICATOR", "WAIT_MACD"]:
         s_adv = (
             " • <b>[지표 검증 대기]</b> 5일선 위에 있으나 바닥 지표 미충족 또는"
