@@ -852,20 +852,21 @@ if symbol:
       is_on_the_wall = (p >= defense_line) and (p < target_price_100)
 
       # ==============================================================================
-      # ★ [1·2·3단계 매수 판정: 밴드폭 판독 반영]
+      # ★ [1·2·3단계 매수 판정: 1단계에 not is_ma5_safe 엄격 적용으로 2단계 승격 보장]
       # ==============================================================================
       is_bottom_indicator_ok = bottom_score >= 2 or recent_bottom_memory
       is_macd_not_deepening = not is_macd_reverse_deepening
 
-      # 1단계 진바닥 입질 매수
+      # 1단계 진바닥 입질 매수 (★ 5일선 아래에서만 발동)
       is_bottom_entry_signal = (
-          (bottom_score >= 2)
+          (not is_ma5_safe)
+          and (bottom_score >= 2)
           and (vol_strength >= 80)
           and is_macd_not_deepening
           and is_valid_bottom_candle
       )
 
-      # 2단계 진바닥 탈출 매수
+      # 2단계 진바닥 탈출 매수 (★ 5일선 위 안착 시 발동)
       is_escape_buy_signal = (
           is_ma5_safe
           and is_bottom_indicator_ok
@@ -1116,6 +1117,11 @@ if symbol:
           bottom_action_str = (
               "→ <b>[캔들 대기]</b> 지표 충족했으나 음봉 매도세 지속으로 매수"
               " 보류"
+          )
+        elif is_escape_buy_signal:
+          bottom_action_str = (
+              "→ <b>[2단계 진바닥 탈출]</b> 바닥 다진 후 5일선 위 안착 성공! 추가"
+              " 매수 유효."
           )
         else:
           bottom_action_str = (
@@ -1427,10 +1433,11 @@ if symbol:
               " 아래로 이탈했으니 종가 안착 전까진 손가락을 묶으시게."
           )
       else:
-        if final_code == "BOTTOM_ENTRY":
+        if final_code == "ESCAPE_BUY":
           ma5_guide_text = (
               f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에"
-              " 안착하며 1단계 진바닥 기세를 굳히는 중이오. (단, 과열 추격은 금물)"
+              " 안착하며 2단계 진바닥 탈출 성공! 추가 매수 및 비중 확대"
+              " 유효 구역이오."
           )
         else:
           ma5_guide_text = (
@@ -1463,6 +1470,12 @@ if symbol:
           def_status = (
               f"성벽({defense_line:{fmt_p}}{currency}) 아래 극바닥권이나, 1단계"
               " 바닥 지표 동조로 <b>소량 입질 진격 타점</b>을 형성 중이네!"
+          )
+        elif final_code == "ESCAPE_BUY":
+          def_status = (
+              f"성벽({defense_line:{fmt_p}}{currency}) 아래이나, 5일선을"
+              " 딛고 <b>2단계 바닥 탈출 진격</b>을 시작하며 성벽 탈환에 나서는"
+              " 중이네!"
           )
         elif is_ma5_safe:
           def_status = (
