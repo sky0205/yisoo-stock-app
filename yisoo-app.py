@@ -546,7 +546,7 @@ if symbol:
             " 응축 중이오! 상/하방 돌파 방향이 잡힐 때까지 승수 확대를 금지하네."
         )
       elif 12.0 <= bandwidth < 20.0:
-        if p >= ma5_val and p >= mid_line:
+        if p >= ma5_val:
           is_bandwidth_ok = (
               True  # 5·20일선 위에 있으면 대형 우량주 정상 활주로 및 상방 돌파 인정!
           )
