@@ -11,7 +11,7 @@ import html
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
 def check_password():
     """비밀번호를 확인하는 함수 (st.secrets 호환 보안 보수)"""
-    correct_pw = str(st.secrets.get("APP_PASSWORD", "1210"))
+    correct_pw = str(st.secrets.get("APP_PASSWORD", "1111"))
 
     def password_entered():
         if st.session_state["password"] == correct_pw:
