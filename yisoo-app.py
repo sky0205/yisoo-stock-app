@@ -933,11 +933,15 @@ if symbol:
           )
         elif not is_bandwidth_ok:
           bottom_action_str = f"→ <b>[밴드폭 대기]</b> {bw_diag_msg} 관망."
+        elif is_on_the_wall or is_target_reached:
+            bottom_action_str = (
+                "→ <b>[바닥 탈출 완료]</b> 성벽 도달로 2단계 탈출 임무 완수! (추가 매수 금지 / 익절 준비)"
+            )
         elif is_escape_buy_signal:
-          bottom_action_str = (
-              "→ <b>[2단계 진바닥 탈출]</b> 바닥 다진 후 5일선 위 안착 성공! 추가"
-              " 매수 유효."
-          )
+            bottom_action_str = (
+                "→ <b>[2단계 진바닥 탈출]</b> 바닥 다진 후 5일선 위 안착 성공! 추가"
+                " 매수 유효."
+            )
         elif not is_ma5_safe:
           bottom_action_str = (
               "→ <b>[5일선 안착 대기]</b> 바닥은 확인되었으나 5일선 돌파 대기 중"
