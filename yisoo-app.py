@@ -888,7 +888,7 @@ if symbol:
       )
 
       # ==============================================================================
-      # ★ [신호등 분기: 오후 2시(14:00) 족쇄 반영 완벽 동기화] (위치 상향 조정)
+      # ★ [신호등 분기: 오후 2시(14:00) 족쇄 반영 완벽 동기화]
       # ==============================================================================
       if is_kr and not is_manual_mode:
         is_afternoon_safe_time = (now_local.hour > 14) or (
@@ -1411,25 +1411,32 @@ if symbol:
         )
 
       # ==============================================================================
-      # ★ [실전 전략 1, 2번 문구: 신호등 final_code와 100% 동기화 교정]
+      # ★ [실전 전략 1, 2번 문구: 신호등 final_code 및 5일선 위치 완벽 동기화 교정]
       # ==============================================================================
-      # 1. 5일선 사수 문구 동기화
-      if final_code == "BOTTOM_ENTRY":
-        ma5_guide_text = (
-            f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency})"
-            " 아래이나, 1단계 진바닥 지표 충족으로 소량 씨앗 뿌리기(선취매) 허용"
-            " 구역이오."
-        )
-      elif not is_ma5_safe:
-        ma5_guide_text = (
-            f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency})"
-            " 아래로 이탈했으니 종가 안착 전까진 손가락을 묶으시게."
-        )
+      # 1. 5일선 사수 문구 교정 (5일선 위/아래 정확한 분기 반영)
+      if not is_ma5_safe:
+        if final_code == "BOTTOM_ENTRY":
+          ma5_guide_text = (
+              f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency})"
+              " 아래이나, 1단계 진바닥 지표 충족으로 소량 씨앗 뿌리기(선취매) 허용"
+              " 구역이오."
+          )
+        else:
+          ma5_guide_text = (
+              f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency})"
+              " 아래로 이탈했으니 종가 안착 전까진 손가락을 묶으시게."
+          )
       else:
-        ma5_guide_text = (
-            f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency})"
-            " 위에 안착하여 단기 전투선이 살아있네. 본진 진격 가능구역이오."
-        )
+        if final_code == "BOTTOM_ENTRY":
+          ma5_guide_text = (
+              f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에"
+              " 안착하며 1단계 진바닥 기세를 굳히는 중이오. (단, 과열 추격은 금물)"
+          )
+        else:
+          ma5_guide_text = (
+              f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에"
+              " 안착하여 단기 전투선이 살아있네. 본진 진격 가능구역이오."
+          )
 
       # 2. 성벽 사수 및 공방 문구(def_status) 동기화
       if defense_line > up_b:
