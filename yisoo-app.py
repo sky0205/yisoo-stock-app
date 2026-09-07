@@ -1575,15 +1575,15 @@ if symbol:
                 exp_tgt_gain = ((target_price_100 - user_avg_price) / user_avg_price) * 100
 
                 if p >= user_avg_price:
-                if p >= defense_line:
-                    wall_target_str = (
-                        f"성벽(수익보존선:{defense_line:{fmt_p}}{currency} / {exp_def_gain:+.1f}%) 사수와 함께"
-                        f" 수확목표선(기대수익:{exp_tgt_gain:+.1f}%)"
-                    )
-                else:
-                    wall_target_str = (
-                        f"성벽(기대수익:{exp_def_gain:+.1f}%) 및 수확목표선(기대수익:{exp_tgt_gain:+.1f}%)"
-                    )
+                    if p >= defense_line:
+                        wall_target_str = (
+                            f"성벽(수익보존선:{defense_line:{fmt_p}}{currency} / {exp_def_gain:+.1f}%) 사수와 함께"
+                            f" 수확목표선(기대수익:{exp_tgt_gain:+.1f}%)"
+                        )
+                    else:
+                        wall_target_str = (
+                            f"성벽(기대수익:{exp_def_gain:+.1f}%) 및 수확목표선(기대수익:{exp_tgt_gain:+.1f}%)"
+                        )
 
                 holder_guide_msg = (
                     " • <b>[수익권 보유자 (평단가:"
