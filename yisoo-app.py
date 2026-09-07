@@ -1585,25 +1585,25 @@ if symbol:
                             f"성벽(기대수익:{exp_def_gain:+.1f}%) 및 수확목표선(기대수익:{exp_tgt_gain:+.1f}%)"
                         )
 
-                holder_guide_msg = (
-                    " • <b>[수익권 보유자 (평단가:"
-                    f" {user_avg_price:{fmt_p}}{currency} / 수익률:"
-                    f" +{profit_rate:.2f}%)]</b><br> • <b>기세 지속:</b>"
-                    f" 5일선({ma5_val:{fmt_p}}{currency})을 이탈하지 않는 한"
-                    f" {wall_target_str}까지 추세를 즐기시게.<br> • <b>단기"
-                    f" 트레이딩:</b> 5일선 -{dynamic_stop_pct:.1f}% 이탈 시"
-                    " 수익 보존을 위해 일부 분할"
-                    f" 익절({ma5_dynamic_stop:{fmt_p}}{currency})<br> •"
-                    " <b>수익 확정선:</b> 성벽 위 음봉 발생 또는 볼린저"
-                    " 상단 도달 시 분할 매도 집행."
-                )
+                    holder_guide_msg = (
+                        " • <b>[수익권 보유자 (평단가:"
+                        f" {user_avg_price:{fmt_p}}{currency} / 수익률:"
+                        f" +{profit_rate:.2f}%)]</b><br> • <b>기세 지속:</b>"
+                        f" 5일선({ma5_val:{fmt_p}}{currency})을 이탈하지 않는 한"
+                        f" {wall_target_str}까지 추세를 즐기시게.<br> • <b>단기"
+                        f" 트레이딩:</b> 5일선 -{dynamic_stop_pct:.1f}% 이탈 시"
+                        " 수익 보존을 위해 일부 분할"
+                        f" 익절({ma5_dynamic_stop:{fmt_p}}{currency})<br> •"
+                        " <b>수익 확정선:</b> 성벽 위 음봉 발생 또는 볼린저"
+                        " 상단 도달 시 분할 매도 집행."
+                    )
                 else:
                     holder_guide_msg = (
                         " • <b>[손실권 보유자 (평단가:"
                         f" {user_avg_price:{fmt_p}}{currency} / 손실률:"
                         f" {profit_rate:.2f}%)]</b><br> •"
                         f" <b>5일선({ma5_val:{fmt_p}}{currency}) 아래에서는 추측"
-                        " 추가 매수(물타기)를 절대 금지하네.</b><br> • <b>성벽 탈환 시:"
+                        " 추가 매수(물타기)를 절대 금지하네.</b><br> • <b>성벽 탈환 시:</b>"
                         f" 성벽({defense_line:{fmt_p}}{currency}) 도달 시 손익률({exp_def_gain:+.1f}%)을 점검하여 본전/차익 분할 정리.<br> • <b>단기"
                         f" 트레이딩:</b> 5일선 -{dynamic_stop_pct:.1f}% 이탈 시"
                         " 추가 하락 방어를 위해 비중"
