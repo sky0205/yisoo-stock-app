@@ -1575,18 +1575,28 @@ if symbol:
                 exp_tgt_gain = ((target_price_100 - user_avg_price) / user_avg_price) * 100
 
                 if p >= user_avg_price:
-                    holder_guide_msg = (
-                        " • <b>[수익권 보유자 (평단가:"
-                        f" {user_avg_price:{fmt_p}}{currency} / 수익률:"
-                        f" +{profit_rate:.2f}%)]</b><br> • <b>기세 지속:</b>"
-                        f" 5일선({ma5_val:{fmt_p}}{currency})을 이탈하지 않는 한"
-                        f" 성벽(기대수익:{exp_def_gain:+.1f}%) 및 수확목표선(기대수익:{exp_tgt_gain:+.1f}%)까지 추세를 즐기시게.<br> • <b>단기"
-                        f" 트레이딩:</b> 5일선 -{dynamic_stop_pct:.1f}% 이탈 시"
-                        " 수익 보존을 위해 일부 분할"
-                        f" 익절({ma5_dynamic_stop:{fmt_p}}{currency})<br> •"
-                        " <b>수익 확정선:</b> 성벽 위 음봉 발생 또는 볼린저"
-                        " 상단 도달 시 분할 매도 집행."
+                if p >= defense_line:
+                    wall_target_str = (
+                        f"성벽(수익보존선:{defense_line:{fmt_p}}{currency} / {exp_def_gain:+.1f}%) 사수와 함께"
+                        f" 수확목표선(기대수익:{exp_tgt_gain:+.1f}%)"
                     )
+                else:
+                    wall_target_str = (
+                        f"성벽(기대수익:{exp_def_gain:+.1f}%) 및 수확목표선(기대수익:{exp_tgt_gain:+.1f}%)"
+                    )
+
+                holder_guide_msg = (
+                    " • <b>[수익권 보유자 (평단가:"
+                    f" {user_avg_price:{fmt_p}}{currency} / 수익률:"
+                    f" +{profit_rate:.2f}%)]</b><br> • <b>기세 지속:</b>"
+                    f" 5일선({ma5_val:{fmt_p}}{currency})을 이탈하지 않는 한"
+                    f" {wall_target_str}까지 추세를 즐기시게.<br> • <b>단기"
+                    f" 트레이딩:</b> 5일선 -{dynamic_stop_pct:.1f}% 이탈 시"
+                    " 수익 보존을 위해 일부 분할"
+                    f" 익절({ma5_dynamic_stop:{fmt_p}}{currency})<br> •"
+                    " <b>수익 확정선:</b> 성벽 위 음봉 발생 또는 볼린저"
+                    " 상단 도달 시 분할 매도 집행."
+                )
                 else:
                     holder_guide_msg = (
                         " • <b>[손실권 보유자 (평단가:"
