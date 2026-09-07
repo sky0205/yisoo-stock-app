@@ -1598,13 +1598,29 @@ if symbol:
                         " 상단 도달 시 분할 매도 집행."
                     )
                 else:
+                    if is_ma5_safe:
+                        ma5_loss_action = (
+                            f"5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으니"
+                            " 5일선 지지를 확인하며 추가 하락에 대비하시게."
+                        )
+                    else:
+                        ma5_loss_action = (
+                            f"5일선({ma5_val:{fmt_p}}{currency}) 아래에서는 추측"
+                            " 추가 매수(물타기)를 절대 금지하네."
+                        )
+
+                    wall_exit_action = (
+                        "본전/차익 분할 정리"
+                        if exp_def_gain >= 0
+                        else "손실 축소 및 비중 축소 분할 정리"
+                    )
+
                     holder_guide_msg = (
                         " • <b>[손실권 보유자 (평단가:"
                         f" {user_avg_price:{fmt_p}}{currency} / 손실률:"
-                        f" {profit_rate:.2f}%)]</b><br> •"
-                        f" <b>5일선({ma5_val:{fmt_p}}{currency}) 아래에서는 추측"
-                        " 추가 매수(물타기)를 절대 금지하네.</b><br> • <b>성벽 탈환 시:</b>"
-                        f" 성벽({defense_line:{fmt_p}}{currency}) 도달 시 손익률({exp_def_gain:+.1f}%)을 점검하여 본전/차익 분할 정리.<br> • <b>단기"
+                        f" {profit_rate:.2f}%)]</b><br> • <b>단기 생명선:</b>"
+                        f" {ma5_loss_action}<br> • <b>성벽 탈환 시:</b>"
+                        f" 성벽({defense_line:{fmt_p}}{currency}) 도달 시 손익률({exp_def_gain:+.1f}%)을 점검하여 {wall_exit_action}.<br> • <b>단기"
                         f" 트레이딩:</b> 5일선 -{dynamic_stop_pct:.1f}% 이탈 시"
                         " 추가 하락 방어를 위해 비중"
                         f" 조절({ma5_dynamic_stop:{fmt_p}}{currency})<br> •"
