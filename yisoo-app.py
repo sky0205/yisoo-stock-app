@@ -745,11 +745,13 @@ if symbol:
                 )
 
             defense_link_idx = min(21, len(df))
-            defense_line = (
+            raw_defense = (
                 float(df["High"].iloc[-defense_link_idx:-1].max()) * 0.93
                 if len(df) > 1
                 else p * 0.93
             )
+            # 성벽이 볼린저 바닥선이나 20일선 밑으로 처박히지 않도록 안전핀 보정
+            defense_line = max(raw_defense, mid_line)
 
             # 공략대기선 (볼린저 바닥선)
             wait_line = low_b * 1.02
