@@ -1596,7 +1596,16 @@ if symbol:
                         " 관망"
                     )
 
-            if (
+            if final_code == "BREAKOUT_ATTACK" or is_on_the_wall:
+                sub_indicator_str = (
+                    f"    - <b>성벽 돌파 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 돌파 성공! "
+                    f"수확 목표선({target_price_100:{fmt_p}}{currency})까지 기세 추종 (잔여 여력: {tgt_diff:+.1f}%)"
+                )
+            elif is_target_reached:
+                sub_indicator_str = (
+                    f"    - <b>목표 도달 전황:</b> 수확 목표선({target_price_100:{fmt_p}}{currency}) 도달 완료! (분할 매도 구역)"
+                )
+            elif (
                 is_escape_buy_signal
                 or bottom_score >= 2
                 or recent_bottom_memory
