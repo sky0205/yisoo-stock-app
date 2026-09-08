@@ -961,12 +961,20 @@ if symbol:
                         " 바닥 거래량 폭발 또는 본진 진격 중이오.",
                     )
                 else:
-                    v_status, v_adv = (
-                        "역배열투매",
-                        f"🚨 <b>[역배열/하방 투매과열]</b> 시간보정 강도"
-                        f" {vol_strength:.1f}점! 하방 압력 속 투매 물량 폭발"
-                        " 중이니 절대 칼날을 잡지 마시게.",
-                    )
+                    if is_down_trend_structural:
+                        v_status, v_adv = (
+                            "역배열투매",
+                            f"🚨 <b>[역배열/하방 투매과열]</b> 시간보정 강도"
+                            f" {vol_strength:.1f}점! 하방 압력 속 투매 물량 폭발"
+                            " 중이니 절대 칼날을 잡지 마시게.",
+                        )
+                    else:
+                        v_status, v_adv = (
+                            "차익투매주의",
+                            f"⚠️ <b>[고점 차익투매 경계]</b> 시간보정 강도"
+                            f" {vol_strength:.1f}점! 정배열 상승 속 차익 매물 대량"
+                            " 출회 중이니 5일선 지지를 확인하시게.",
+                        )
             elif vol_strength >= 100:
                 if not is_down_trend_v:
                     v_status, v_adv = (
@@ -974,11 +982,17 @@ if symbol:
                         f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점!"
                         " 화력이 차오르네.",
                     )
-                else:
+                elif is_down_trend_structural:
                     v_status, v_adv = (
                         "역배열과열",
                         f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점!"
                         " 하락 추세 속 속임수 음봉 거래량 주의.",
+                    )
+                else:
+                    v_status, v_adv = (
+                        "차익매물출회",
+                        f"⚠️ <b>[차익매물출회]</b> 시간보정 강도 {vol_strength:.1f}점!"
+                        " 우상향 성벽 속 고점 차익 음봉 매물이니 5일선 지지를 확인하시게.",
                     )
             elif vol_strength >= 80:
                 if not is_down_trend_v:
@@ -987,11 +1001,17 @@ if symbol:
                         f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점!"
                         " 기세가 뻣뻣하구먼.",
                     )
-                else:
+                elif is_down_trend_structural:
                     v_status, v_adv = (
                         "역배열과열",
                         f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점!"
                         " 하락 추세 속 속임수 음봉 거래량 주의.",
+                    )
+                else:
+                    v_status, v_adv = (
+                        "숨고르기조정",
+                        f"☕ <b>[숨고르기조정]</b> 시간보정 강도 {vol_strength:.1f}점!"
+                        " 정배열 속 정상적인 눌림목 음봉 조정 중이오.",
                     )
             else:
                 v_status, v_adv = (
