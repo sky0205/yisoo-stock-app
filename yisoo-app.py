@@ -1455,10 +1455,17 @@ if symbol:
                         "→ <b>[2단계 진바닥 탈출]</b> 5일선 위 안착 성공! 추가"
                         " 매수 유효."
                     )
+                elif is_ma5_safe:
+                    bottom_action_str = (
+                        f"→ <b>[관망 대기]</b> 5일선 위 안착 중이나 {bw_diag_msg}로 추가 매수 보류"
+                    )
+                elif is_bottom_entry_signal:
+                    bottom_action_str = (
+                        "→ <b>[1단계 진바닥 입질 매수]</b> 지표 충족 + 수급 유입! 소량 입질 매수 시작."
+                    )
                 else:
                     bottom_action_str = (
-                        "→ <b>[1단계 진바닥 입질 매수]</b> 지표 충족 + 수급"
-                        " 유입! 소량 입질 매수 시작."
+                        "→ <b>[입질 대기]</b> 5일선 아래 바닥 탐색 중 (안착 관망)"
                     )
             elif recent_bottom_memory:
                 bottom_status_str = (
