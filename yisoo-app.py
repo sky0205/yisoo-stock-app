@@ -652,10 +652,10 @@ if symbol:
                     if is_bearish_zone:
                         is_bandwidth_ok = False
                         bw_status_category = "BEARISH_RESISTANCE"
-                        bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 회복 시도 / 역배열 저항 경계"
+                        bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 위 안착 / 역배열 저항 경계"
                         squeeze_info_str = (
                             f"<br>• ⚠️ <b>[밴드폭 응축({bandwidth:.1f}%)]</b>"
-                            " 5일선 회복 시도 중이나, 머리 위 역배열 저항 매물벽을 경계하시오."
+                            " 5일선 위 안착 중이나, 머리 위 역배열 저항 매물벽을 경계하시오."
                         )
                     else:
                         is_bandwidth_ok = True
@@ -1478,7 +1478,7 @@ if symbol:
                     "-> <b>[진바닥 탐색 중]</b> 역배열 하락 진행형 (5일선 미안착"
                     " / 칼날 관망)"
                     if not is_ma5_safe
-                    else "-> <b>[진바닥 안착 시도]</b> 5일선 회복 시도 중이나"
+                    else "-> <b>[진바닥 안착 시도]</b> 5일선 위 안착 중이나"
                     " 역배열 저항 경계"
                 )
             elif not is_bandwidth_ok:
