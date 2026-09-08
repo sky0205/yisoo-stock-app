@@ -1729,7 +1729,19 @@ if symbol:
                         " 준비하시게."
                     )
                 elif is_macd_recovering:
-                    if is_down_trend_structural or p < defense_line:
+                    if is_escape_buy_signal or final_code == "ESCAPE_BUY":
+                        macd_strategy_msg = (
+                            "<b>🌤️ 엔진 역회전 감소 (2단계 바닥 탈출)</b><br>• <b>역할:</b>"
+                            " 바닥 탈출 추진력 가동.<br>• <b>진단:</b> 매도세가 잦아들고 5일선"
+                            " 위로 올라탔으니, 5일선을 생명선 삼아 2단계 탈출 진격을 함께하시게."
+                        )
+                    elif final_code == "BOTTOM_ENTRY":
+                        macd_strategy_msg = (
+                            "<b>🌤️ 엔진 역회전 감소 (1단계 바닥 입질)</b><br>• <b>역할:</b>"
+                            " 극바닥 브레이크 가동.<br>• <b>진단:</b> 하락 압력이 줄어들며 바닥"
+                            " 다지기 중이오! 1단계 소량 씨앗 뿌리기 타점으로 유효하오."
+                        )
+                    elif is_down_trend_structural or p < defense_line:
                         macd_strategy_msg = (
                             "<b>🌤️ 엔진 역회전 감소 (기술적 반등)</b><br>• <b>역할:</b>"
                             " 낙폭 과대 반등 시동.<br>• <b>진단:</b> 매도세는"
@@ -2058,7 +2070,19 @@ if symbol:
                         " 추진력이 꺾였으니, 분할 익절을 준비하시게."
                     )
                 elif is_macd_recovering:
-                    if is_down_trend_structural or p < defense_line:
+                    if is_escape_buy_signal or final_code == "ESCAPE_BUY":
+                        m_diag = (
+                            "<b>🌤️ 역회전 감소 (2단계 바닥 탈출)</b><br>• <b>역할:</b>"
+                            " 바닥 탈출 추진력 가동.<br>• <b>진단:</b> 매도세가 잡히고 5일선"
+                            " 위 안착 성공! 5일선 사수 기준으로 2단계 비중 확대를 집행하시게."
+                        )
+                    elif final_code == "BOTTOM_ENTRY":
+                        m_diag = (
+                            "<b>🌤️ 역회전 감소 (1단계 바닥 입질)</b><br>• <b>역할:</b>"
+                            " 하락 둔화 / 바닥 입질.<br>• <b>진단:</b> 매도세 진정 및 바닥"
+                            " 지표 충족 완료! 전저점 방어선 엄수하며 소량 입질 매수."
+                        )
+                    elif is_down_trend_structural or p < defense_line:
                         m_diag = (
                             "<b>🌤️ 역회전 감소 (기술적 반등)</b><br>• <b>역할:</b>"
                             " 낙폭 과대 반등 시동.<br>• <b>진단:</b> 매도세는"
