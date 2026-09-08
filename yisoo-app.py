@@ -645,8 +645,19 @@ if symbol:
                     f"<br>• ⚡ <b>[밴드폭 극소({bandwidth:.1f}%)]</b> 에너지가"
                     " 바짝 응축 중이오! 돌파 방향 확인 전까지 진입 금지."
                 )
-            elif 12.0 <= bandwidth < 20.0:
-                if p >= ma5_val:
+            if p >= ma5_val:
+                # 대세 역배열(5일선 < 20일선 < 60일선) 지하실 구간 체크
+                is_bearish = ma5_val < ma20_val < ma60_val
+                
+                if is_bearish:
+                    is_bandwidth_ok = False
+                    bw_status_category = "BEARISH_RESISTANCE"
+                    bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 회복 시도 / 역배열 저항 경계"
+                    squeeze_info_str = (
+                        f"<br>• ⚠️ <b>[밴드폭 응축({bandwidth:.1f}%)]</b>"
+                        " 5일선 회복 시도 중이나, 머리 위 역배열 저항 매물벽을 경계하시오."
+                    )
+                else:
                     is_bandwidth_ok = True
                     bw_status_category = "SQUEEZE_BREAKOUT"
                     bw_diag_msg = (
