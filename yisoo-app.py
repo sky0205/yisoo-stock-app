@@ -647,7 +647,9 @@ if symbol:
                 )
             elif 12.0 <= bandwidth < 20.0:
                 if p >= ma5_val:
-                    if is_down_trend_structural:
+                    # 5일선이 볼린저 중심선(20일선) 밑에 있으면 역배열/하락 국면으로 판정
+                    is_bearish_zone = ma5_val < mid_line
+                    if is_bearish_zone:
                         is_bandwidth_ok = False
                         bw_status_category = "BEARISH_RESISTANCE"
                         bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 회복 시도 / 역배열 저항 경계"
