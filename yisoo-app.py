@@ -646,35 +646,35 @@ if symbol:
                     " 바짝 응축 중이오! 돌파 방향 확인 전까지 진입 금지."
                 )
             elif 12.0 <= bandwidth < 20.0:
-        if p >= ma5_val:
-            is_bearish = ma5_val < ma20_val < ma60_val
-            if is_bearish:
-                is_bandwidth_ok = False
-                bw_status_category = "BEARISH_RESISTANCE"
-                bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 회복 시도 / 역배열 저항 경계"
-                squeeze_info_str = (
-                    f"<br>• ⚠️ <b>[밴드폭 응축({bandwidth:.1f}%)]</b>"
-                    " 5일선 회복 시도 중이나, 머리 위 역배열 저항 매물벽을 경계하시오."
-                )
-            else:
-                is_bandwidth_ok = True
-                bw_status_category = "SQUEEZE_BREAKOUT"
-                bw_diag_msg = (
-                    f"밴드폭 응축돌파({bandwidth:.1f}%) 5일선 안착 / 에너지"
-                    " 분출 초입"
-                )
-                squeeze_info_str = (
-                    f"<br>• 🟢 <b>[밴드폭 응축돌파({bandwidth:.1f}%)]</b>"
-                    " 5일선을 뚫고 올라섰네! 상방 분출 초입으로 유효하오."
-                )
-        else:
-            is_bandwidth_ok = False
-            bw_status_category = "SQUEEZE_WAIT"
-            bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 돌파 대기"
-            squeeze_info_str = (
-                f"<br>• ⏳ <b>[밴드폭 응축({bandwidth:.1f}%)]</b>"
-                " 5일선 돌파 전이오. 안착 신호를 기다리시게."
-            )
+                if p >= ma5_val:
+                    is_bearish = ma5_val < ma20_val < ma60_val
+                    if is_bearish:
+                        is_bandwidth_ok = False
+                        bw_status_category = "BEARISH_RESISTANCE"
+                        bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 회복 시도 / 역배열 저항 경계"
+                        squeeze_info_str = (
+                            f"<br>• ⚠️ <b>[밴드폭 응축({bandwidth:.1f}%)]</b>"
+                            " 5일선 회복 시도 중이나, 머리 위 역배열 저항 매물벽을 경계하시오."
+                        )
+                    else:
+                        is_bandwidth_ok = True
+                        bw_status_category = "SQUEEZE_BREAKOUT"
+                        bw_diag_msg = (
+                            f"밴드폭 응축돌파({bandwidth:.1f}%) 5일선 안착 / 에너지"
+                            " 분출 초입"
+                        )
+                        squeeze_info_str = (
+                            f"<br>• 🟢 <b>[밴드폭 응축돌파({bandwidth:.1f}%)]</b>"
+                            " 5일선을 뚫고 올라섰네! 상방 분출 초입으로 유효하오."
+                        )
+                else:
+                    is_bandwidth_ok = False
+                    bw_status_category = "SQUEEZE_WAIT"
+                    bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 돌파 대기"
+                    squeeze_info_str = (
+                        f"<br>• ⏳ <b>[밴드폭 응축({bandwidth:.1f}%)]</b>"
+                        " 5일선 돌파 전이오. 안착 신호를 기다리시게."
+                    )
             else:
                 is_bandwidth_ok = True
                 bw_status_category = "WIDE_OK"
