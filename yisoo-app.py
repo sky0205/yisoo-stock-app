@@ -647,8 +647,7 @@ if symbol:
                 )
             elif 12.0 <= bandwidth < 20.0:
                 if p >= ma5_val:
-                    is_bearish = ma5_val < ma20_val < ma60_val
-                    if is_bearish:
+                    if is_down_trend_structural:
                         is_bandwidth_ok = False
                         bw_status_category = "BEARISH_RESISTANCE"
                         bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 회복 시도 / 역배열 저항 경계"
