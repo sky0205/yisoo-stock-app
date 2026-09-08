@@ -1736,7 +1736,7 @@ if symbol:
                 )
             else:
                 if is_macd_accelerating:
-                    if (rsi_val >= 70) or (wr_val >= -20):
+                    if rsi_val >= 70:
                         macd_strategy_msg = (
                             "<b>🔥 엔진 정회전 가속 (과열 경계)</b><br>• <b>역할:</b>"
                             " 상승 관성 극대화 및 과열권 진입.<br>• <b>진단:</b> 엔진 추진력은"
@@ -2093,7 +2093,7 @@ if symbol:
                         " 목표선 도달 완료로 추가 가속 중단! 잔여 물량 익절에 집중하시게."
                     )
                 elif is_macd_accelerating:
-                    if (rsi_val >= 70) or (wr_val >= -20):
+                    if rsi_val >= 70:
                         m_diag = (
                             "<b>🔥 정회전 가속 (과열 경계)</b><br>• <b>역할:</b> 추진력"
                             " 폭발 속 과열권 도달.<br>• <b>진단:</b> 엔진 화력은"
