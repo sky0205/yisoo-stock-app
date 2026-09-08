@@ -1184,14 +1184,24 @@ if symbol:
                 )
 
             elif is_on_the_wall:
-                final_code = "YELLOW_CAUTION"
-                sig = "🟡 [경계] 성벽 위 공방 / 매도 준비!"
-                col = "#EF6C00"
-                final_adv = (
-                    f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    " <b>[성벽 위 진입 및 공방]</b> 추격 매수는 절대 금하고,"
-                    " 매도 준비 및 경계 태세를 갖추시게!"
-                )
+                if (vol_strength >= 150) and (not is_down_trend_v):
+                    final_code = "BREAKOUT_ATTACK"
+                    sig = "🟢 [돌격] 성벽 강력 돌파 / 수확선 진격!"
+                    col = "#2E7D32"
+                    final_adv = (
+                        f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"<b>[성벽 강력 돌파]</b> 막강한 화력을 뿜으며 성벽({defense_line:{fmt_p}}{currency})을 돌파했소! "
+                        f"조기 매도하지 말고 볼린저 상단 수확선({target_price_100:{fmt_p}}{currency})까지 5일선을 타고 거침없이 추세를 즐기시게."
+                    )
+                else:
+                    final_code = "YELLOW_CAUTION"
+                    sig = "🟡 [경계] 성벽 위 공방 / 매도 준비!"
+                    col = "#EF6C00"
+                    final_adv = (
+                        f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                        " <b>[성벽 위 진입 및 공방]</b> 추격 매수는 절대 금하고,"
+                        " 매도 준비 및 경계 태세를 갖추시게!"
+                    )
 
             elif (
                 is_escape_buy_signal or is_pullback_buy_signal
@@ -1982,6 +1992,12 @@ if symbol:
                     bb_diag = (
                         "🔴 <b>[성벽 위 음봉 익절 구간]</b><br>•"
                         " <b>역할:</b> 선제적 수익 방어.<br>• <b>진단:</b> 성벽 위 음봉 발생으로 분할 익절 실행."
+                    )
+                elif final_code == "BREAKOUT_ATTACK":
+                    bb_diag = (
+                        f"🟢 <b>[성벽 돌파 진격 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                        " <b>역할:</b> 상방 분출 추진력 가속.<br>• <b>진단:</b> 성벽을"
+                        f" 뚫고 목표선({target_price_100:{fmt_p}}{currency})을 향해 진격 중이오. 5일선 사수하며 수익을 극대화하시게."
                     )
                 elif final_code == "YELLOW_CAUTION":
                     bb_diag = (
