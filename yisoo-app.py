@@ -897,23 +897,28 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            # [네이버 API 기준 전일비 및 등락률 강제 산출 최종 장치]
+            # [전일비 및 등락률 최종 확정 연산 장치]
             try:
-                # 네이버 API 데이터나 전역 변수에서 어제 종가와 현재가를 확보합니다.
-                _curr_p = float(p) if 'p' in locals() and p > 0 else float(df["Close"].iloc[-1])
+                _curr_val = float(p) if 'p' in locals() and p > 0 else float(df["Close"].iloc[-1])
                 
-                # 만약 네이버 API 등에서 전일 종가 변수가 있다면 활용하고, 없으면 df의 첫 번째 값이나 전일 종가 추정치 활용
-                _prev_p = float(prev_p) if 'prev_p' in locals() and prev_p > 0 else 0.0
-                if _prev_p == 0 and 'data' in locals() and isinstance(data, dict):
-                    _prev_p = float(str(data.get("previousClosePrice", data.get("closePrice", 0))).replace(",", ""))
-                
-                if _prev_p == 0 and 'df' in locals() and len(df) >= 2:
-                    # 일봉 데이터라면 마지막 전날 종가, 분봉 데이터라면 당일 시작점 등을 고려
-                    _prev_p = float(df["Close"].iloc[0]) 
+                # 1. 야후 파이낸스나 Ticker 객체에서 진짜 전일 종가(previousClose)를 우선적으로 강탈합니다.
+                _prev_val = 0.0
+                if 'ticker' in locals() and hasattr(ticker, 'info'):
+                    _inf = ticker.info
+                    _prev_val = float(_inf.get('regularMarketPreviousClose', _inf.get('previousClose', 0)))
+                    
+                # 2. 만약 객체에서 못 찾았으면 전역 변수나 일봉 데이터의 전일 종가를 활용합니다.
+                if _prev_val == 0 and 'prev_p' in locals() and prev_p > 0:
+                    _prev_val = float(prev_p)
+                    
+                if _prev_val == 0 and 'df' in locals() and len(df) >= 2:
+                    # 데이터프레임이 일봉이라 가정할 때의 전일 종가
+                    _prev_val = float(df["Close"].iloc[-2])
             
-                if _prev_p > 0 and _curr_p > 0:
-                    p_diff = _curr_p - _prev_p
-                    p_chg = (p_diff / _prev_p) * 100
+                # 3. 최종 산출
+                if _prev_val > 0 and _curr_val > 0:
+                    p_diff = _curr_val - _prev_val
+                    p_chg = (p_diff / _prev_val) * 100
                 else:
                     p_diff = 0
                     p_chg = 0.0
@@ -921,7 +926,7 @@ if symbol:
                 p_diff = 0
                 p_chg = 0.0
             
-            display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
+            display_price = f"{_curr_val:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(
                 f"<div style='background-color:#f8f9fa; padding:20px;"
                 " border-radius:10px; border-left:10px solid #1565C0;'><p"
