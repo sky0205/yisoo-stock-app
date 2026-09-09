@@ -1135,7 +1135,7 @@ if symbol:
                 time_rule_pass = "수동 시세 지지 확인 완료! (윗꼬리 기준선 이탈 시 즉시 철수)"
 
             # ==================================================================
-            # ★ [신호등 분기 논리: 입체 수확(50% 확정 + 밴드 라이딩) 분기 탑재]
+            # ★ [신호등 분기 논리: 입체 수확(50% 확정 + 밴드 라이딩) 복원]
             # ==================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -1150,7 +1150,7 @@ if symbol:
             elif is_band_riding:
                 final_code = "BAND_RIDING_HARVEST"
                 sig = "🟣 [1차 수확 / 잔여 밴드 추종] 목표선 상방 확장 중!"
-                col = "#6A1B9A"  # 밴드 라이딩 보라색
+                col = "#6A1B9A"
                 final_adv = (
                     f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
                     f"<b>[볼린저 상단 상방 확장]</b> 현재가({p:{fmt_p}}{currency})가 볼린저 상단을 타고 위로 솟구치는 중이오! "
@@ -1292,7 +1292,6 @@ if symbol:
                         f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
                         f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
                     )
-            # [돌파 확인 분기 추가] 20일선 및 안전마진선 돌파 시
             elif (
                 p >= ma20_safe_threshold
                 and (not is_down_trend_structural)
@@ -1450,9 +1449,8 @@ if symbol:
             )
 
             # ==================================================================
-            # ★ [지표 세부 텍스트 및 모듈 동조화: 순서 정리 및 미정의 방어 가드]
+            # ★ [지표 세부 텍스트 및 모듈 동조화]
             # ==================================================================
-            # 1) 눌림목 텍스트 기본값 선언 (Unbound 오류 원천 방어)
             pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}%)</b>"
             pullback_action_str = "-> <b>[관망]</b> 추세 및 지표 안착 대기"
 
@@ -1537,7 +1535,6 @@ if symbol:
                     f"-> <b>[3단계 눌림목 추가 매수]</b> 5·20일선 안착 확인! {pullback_time_guide}"
                 )
             else:
-                # 20일선 아래에 있어 매수가 보류된 경우 사유를 구체적으로 직관 표기
                 if p < mid_line:
                     pullback_action_str = (
                         f"-> <b>[매수 보류]</b> 5일선은 회복했으나 <b>머리 위 20일선({mid_line:{fmt_p}}{currency}) 저항 아래</b>에 갇혀 있소! "
@@ -1548,7 +1545,6 @@ if symbol:
                         "-> <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
                     )
 
-            # 2) 진바닥 텍스트 판정
             if bottom_score >= 2:
                 bottom_status_str = (
                     f"<b>(당일 진바닥 지표 {bottom_score}개 터치 달성!)</b>"
@@ -1684,7 +1680,7 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
-            # 3) 세부 지표 문자열 조립 (실제 성벽 위치와 일치하도록 엄격히 보정)
+            # 3) 세부 지표 문자열 조립 (성벽 실제 위치와 완전히 연동)
             if final_code == "BREAKOUT_ATTACK" or is_on_the_wall:
                 sub_indicator_str = (
                     f"    - <b>성벽 돌파 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 돌파 성공! "
@@ -1840,7 +1836,7 @@ if symbol:
                         " 마시게.</b>"
                     )
 
-            # ★ [수정]: 4. MACD 엔진 가이드 문구 동조화 (당일 음봉/숨고르기 시 엇박자 완벽 차단)
+            # ★ [수정]: 4. MACD 엔진 가이드 문구 동조화
             if is_band_riding:
                 macd_strategy_msg = (
                     "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b>"
