@@ -892,33 +892,19 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            # [상단 전일비 강제 자급자족 방어 로직]
-            # 1. 현재가(p)와 전일종가(p_prev 또는 이전 데이터)를 강제로 확보합니다.
-            _curr_val = p if ('p' in locals() and p is not None and p > 0) else 0
+            # [상단 전일비 및 등락률 실시간 즉시 계산 안전 코드]
+            # 1. 딕셔너리나 객체(ticker.info 등)에서 전일 종가 값을 안전하게 뽑아냅니다.
+            _prev_close = info_dict.get('regularMarketPreviousClose', info_dict.get('previousPrice', info_dict.get('previous_close', 0))) if 'info_dict' in locals() else 0
+            if not _prev_close or _prev_close == 0:
+                _prev_close = p - p_diff if ('p' in locals() and 'p_diff' in locals() and p_diff != 0) else p
             
-            # 만약 원본 전일종가 변수명(p_prev 등)이 다를 수 있으니 안전하게 추적합니다.
-            _prev_val = 0
-            for _vname in ['p_prev', 'prev_close', 'previous_close', 'base_price']:
-                if _vname in locals() and locals()[_vname] is not None and locals()[_vname] > 0:
-                    _prev_val = locals()[_vname]
-                    break
-            
-            # 만약 전일종가를 도저히 못 찾았는데 p_diff나 기존 데이터가 있다면 그걸 역산용으로 씁니다.
-            if _prev_val == 0 and _curr_val > 0 and 'p_diff' in locals() and p_diff != 0:
-                _prev_val = _curr_val - p_diff
-            
-            # 2. 전일비와 등락률을 0으로 죽지 않게 강제 계산합니다.
-            if _prev_val > 0 and _curr_val > 0:
-                _calc_diff = _curr_val - _prev_val
-                _calc_chg = (_calc_diff / _prev_val) * 100
-            else:
-                _calc_diff = p_diff if ('p_diff' in locals() and p_diff is not None) else 0
-                _calc_chg = p_chg if ('p_chg' in locals() and p_chg is not None) else 0.0
-            
-            _sign_str = "+" if _calc_diff > 0 else ""
+            # 2. 전일비와 등락률을 즉석에서 계산합니다.
+            _real_diff = p - _prev_close if ('p' in locals() and _prev_close > 0) else 0
+            _real_chg = (_real_diff / _prev_close * 100) if (_prev_close > 0) else 0.0
+            _sign_prefix = "+" if _real_diff > 0 else ("" if _real_diff == 0 else "")
             
             # 3. 최종 출력 적용
-            display_price = f"{_curr_val:{fmt_p}}{currency} (전일비: {_sign_str}{_calc_diff:{fmt_p}} / {_calc_chg:+.2f}%)"
+            display_price = f"{p:{fmt_p}}{currency} (전일비: {_sign_prefix}{_real_diff:{fmt_p}} / {_real_chg:+.2f}%)"
             st.markdown(
                 f"<div style='background-color:#f8f9fa; padding:20px;"
                 " border-radius:10px; border-left:10px solid #1565C0;'><p"
