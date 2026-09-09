@@ -1739,7 +1739,7 @@ if symbol:
                 if vol_strength < 80 or is_candle_bearish:
                     current_candlestick_type = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                     sub_indicator_str = (
-                        f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 거래절벽(수급 부진) 및 {current_candlestick_type} 중<br>"
+                        f"    - <b>성벽 공방 전환:</b> 성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 {v_status} 및 {current_candlestick_type} 중<br>"
                         f"    - <b>눌림목 지지 동조:</b> {pullback_rebound_score}/3점 <b>(성벽 위 공방)</b> -> <b>[관망]</b> 지지 확인 대기"
                     )
                 else:
