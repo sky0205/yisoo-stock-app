@@ -372,7 +372,7 @@ if symbol:
                     kr_fetched = True
                     # [국장 거래량 왜곡 방어 가드]
                     if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
-                        _avg_v = float(df["Volume"].tail(5).mean()) if len(df) >= 5 else float(df["Volume"].mean())
+                        _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
                         if _avg_v > 0 and v_curr > _avg_v * 10:
                             v_curr = float(df["Volume"].iloc[-1])
                 except:
@@ -399,7 +399,7 @@ if symbol:
                 us_prev_p = getattr(info, "previous_close", None)
                 # [미장 거래량 왜곡 방어 가드]
                 if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
-                    _us_avg_v = float(df["Volume"].tail(5).mean()) if len(df) >= 5 else float(df["Volume"].mean())
+                    _us_avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
                     if _us_avg_v > 0 and v_curr > _us_avg_v * 10:
                         v_curr = float(df["Volume"].iloc[-1])
             except:
