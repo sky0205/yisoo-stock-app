@@ -510,11 +510,12 @@ if symbol:
 
             vol_strength = 100.0 if is_manual_mode else vol_strength_auto
 
-            # 당일 시가/고가/저가 및 하락 변동성 변수 선행 정의 (NameError 완전 방지)
+            # 당일 시가/고가/저가 및 양봉/음봉 판정 변수 선행 정의 (NameError 완전 방지)
             today_open = float(df["Open"].iloc[-1])
             today_high = float(df["High"].iloc[-1])
             today_low = float(df["Low"].iloc[-1])
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
+            is_candle_bearish = p < today_open  # 진단용 음봉/양봉 판정
 
             # 보조지표 연산 (기준: 20/2, 14/6, 14/9)
             delta = df["Close"].diff()
@@ -660,10 +661,11 @@ if symbol:
                             f"밴드폭 응축돌파({bandwidth:.1f}%) 5일선 안착 / 에너지"
                             " 분출 초입"
                         )
-                        if vol_strength < 80 or (p < today_open or is_down_trend_v):
+                        if vol_strength < 80 or is_candle_bearish:
+                            adjust_type_str = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                             squeeze_info_str = (
-                                f"<br>• ☕ <b>[성벽 위 숨고르기/거래절벽({bandwidth:.1f}%)]</b>"
-                                " 5일선 위 안착 상태이나 수급 부진 및 음봉 조정 중이오."
+                                f"<br>• ☕ <b>[성벽 위 {adjust_type_str}/거래절벽({bandwidth:.1f}%)]</b>"
+                                f" 5일선 위 안착 상태이나 수급 부진 및 {adjust_type_str} 중이오."
                             )
                         else:
                             squeeze_info_str = (
@@ -1687,11 +1689,12 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
-            # 3) 세부 지표 문자열 조립 (거래절벽 및 성벽 위 음봉 숨고르기 상태와 완벽 동조화)
+            # 3) 세부 지표 문자열 조립 (양봉/음봉 및 거래절벽 상태와 완벽 동조화)
             if final_code == "BREAKOUT_ATTACK" or is_on_the_wall:
-                if vol_strength < 80 or (p < today_open or is_down_trend_v):
+                if vol_strength < 80 or is_candle_bearish:
+                    current_candlestick_type = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                     sub_indicator_str = (
-                        f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 거래절벽(수급 부진) 및 음봉 숨고르기 공방 중"
+                        f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 거래절벽(수급 부진) 및 {current_candlestick_type} 중"
                     )
                 else:
                     sub_indicator_str = (
@@ -1747,7 +1750,7 @@ if symbol:
 
             ma5_dynamic_stop = dynamic_stop_price
 
-            # ★ [수정]: 1. 5일선 사수 가이드 문구 동조화 (거래절벽/숨고르기 반영)
+            # ★ [수정]: 1. 5일선 사수 가이드 문구 동조화 (양봉/음봉 및 거래절벽 반영)
             if is_band_riding:
                 ma5_guide_text = (
                     f"현재가({p:{fmt_p}}{currency})가 볼린저 상단을 타고 확장 중이오! "
@@ -1774,10 +1777,11 @@ if symbol:
                         f"현재가({p:{fmt_p}}{currency})가"
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, <b>거래절벽({vol_strength:.1f}점)</b>으로 수급이 마른 상태이오. 섣부른 추격을 금하고 관망하시게."
                     )
-                elif is_down_trend_v:
+                elif is_down_trend_v or is_candle_bearish:
+                    candlestick_name = "음봉 조정" if is_candle_bearish else "하락 변동성"
                     ma5_guide_text = (
                         f"현재가({p:{fmt_p}}{currency})가"
-                        f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, 당일 음봉 조정 중이오. 5일선 지지 사수 확인 후 대응하시게."
+                        f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, 당일 {candlestick_name} 중이오. 5일선 지지 사수 확인 후 대응하시게."
                     )
                 elif final_code == "ESCAPE_BUY":
                     ma5_time_str = "14:00 이후 지지 확인 50% 분할 진입" if is_kr else "07:00 일봉 안착 확인 시 2단계 진입"
@@ -1799,7 +1803,7 @@ if symbol:
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 단기 전투선 유지 중이오. 5일선 사수 여부를 지켜보시게."
                     )
 
-            # ★ [수정]: 2. 성벽 사수 및 공방 가이드 문구 동조화 (거래절벽/숨고르기 반영)
+            # ★ [수정]: 2. 성벽 사수 및 공방 가이드 문구 동조화 (양봉/음봉 및 거래절벽 반영)
             if is_band_riding:
                 def_status = (
                     f"성벽({defense_line:{fmt_p}}{currency})을 가뿐히 넘어 볼린저 상단이 상방으로 찢어지고 있네! "
@@ -1824,13 +1828,14 @@ if symbol:
                         "추격매수를 삼가고 선제적 익절이나 관망을 준비하시게."
                     )
                 else:
+                    candlestick_warn_name = "음봉 발생" if is_candle_bearish else "기세 둔화"
                     def_status = (
                         f"성벽({defense_line:{fmt_p}}{currency}) 위에서 5일선 기세를"
                         " 타고 <b>위로 진격 중</b>이네! 든든한 방어선을 등지고 계속"
                         " 밀어붙이시게."
-                        if p >= prev_p and p >= ma5_val
+                        if not is_candle_bearish and (p >= prev_p and p >= ma5_val)
                         else f"성벽({defense_line:{fmt_p}}{currency}) 위에는 있으나"
-                        " 단기 기세가 <b>숨고르기 중</b>이네! 성벽 위 음봉 발생 시"
+                        f" 단기 기세가 <b>숨고르기 중</b>이네! 성벽 위 {candlestick_warn_name} 시"
                         " 선제적 익절을 준비하시게."
                     )
             else:
@@ -1954,7 +1959,7 @@ if symbol:
                         " 미련 없이 전량 칼손절 후퇴."
                     )
 
-            # ★ [수정]: 4. MACD 엔진 가이드 선언 (macd_strategy_msg 정의 누락 방지 선행 배치)
+            # ★ [수정]: 4. MACD 엔진 가이드 선언 (양봉/음봉 및 거래절벽 상태 동조화)
             if is_band_riding:
                 macd_strategy_msg = (
                     "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b>"
@@ -1976,10 +1981,11 @@ if symbol:
                             " 강력하나 <b>보조지표 초과열권</b>이오! 추격 매수는 엄금하고,"
                             " 분할 익절로 수익을 챙기며 남은 물량으로 추세를 즐기시게."
                         )
-                    elif vol_strength < 80 or (p < today_open or is_down_trend_v):
+                    elif vol_strength < 80 or is_candle_bearish:
+                        macd_type_desc = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                         macd_strategy_msg = (
-                            "<b>⚡ 엔진 가속 중이나 거래절벽/숨고르기 공방</b><br>• <b>역할:</b>"
-                            " 수급 부족 속 휩소 경계.<br>• <b>진단:</b> MACD는 가속 중이나 거래량이 마르고 성벽 위에서 숨고르기 중이오! 섣부른 추격매수를 금지하시게."
+                            f"<b>⚡ 엔진 가속 중이나 거래절벽/{macd_type_desc}</b><br>• <b>역할:</b>"
+                            f" 수급 부족 속 {macd_type_desc} 경계.<br>• <b>진단:</b> MACD는 가속 중이나 수급이 부진하고 성벽 위에서 {macd_type_desc} 중이오! 섣부른 추격매수를 금지하시게."
                         )
                     elif p >= defense_line:
                         macd_strategy_msg = (
@@ -2122,10 +2128,11 @@ if symbol:
                         " 하락 구간이오. 5일선 회복 전까지 관망하시게."
                     )
                 elif final_code == "WAIT_PULLBACK_CANDLE":
+                    candlestick_word = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                     bb_diag = (
                         f"🟡 <b>[5일선 지지 검증 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        " <b>역할:</b> 음봉 휩소 방지.<br>• <b>진단:</b> 5일선 위"
-                        " 안착 상태이나 당일 음봉 조정 중이오. 5일선 지지 사수 확인 후 대응하시게."
+                        f" <b>역할:</b> {candlestick_word} 휩소 방지.<br>• <b>진단:</b> 5일선 위"
+                        f" 안착 상태이나 당일 {candlestick_word} 중이오. 5일선 지지 사수 확인 후 대응하시게."
                     )
                 elif final_code == "PULLBACK_BUY":
                     bb_time_diag = (
@@ -2151,9 +2158,10 @@ if symbol:
                         "물량의 50%를 즉시 수확하고 분할 매도에 임하시게."
                     )
                 elif final_code == "RED_SELL_WARNING":
+                    sell_warn_type = "음봉 발생" if is_candle_bearish else "기세 둔화"
                     bb_diag = (
-                        "🔴 <b>[성벽 위 음봉 익절 구간]</b><br>•"
-                        " <b>역할:</b> 선제적 수익 방어.<br>• <b>진단:</b> 성벽 위 음봉 발생으로 분할 익절 실행."
+                        f"🔴 <b>[성벽 위 {sell_warn_type} 익절 구간]</b><br>•"
+                        f" <b>역할:</b> 선제적 수익 방어.<br>• <b>진단:</b> 성벽 위 {sell_warn_type}으로 분할 익절 실행."
                     )
                 elif final_code == "BREAKOUT_ATTACK":
                     bb_diag = (
@@ -2277,13 +2285,14 @@ if symbol:
                         m_diag = (
                             "<b>🔥 정회전 가속 (과열 경계)</b><br>• <b>역할:</b> 추진력"
                             " 폭발 속 과열권 도달.<br>• <b>진단:</b> 엔진 화력은"
-                            " 최상이나 <b>지표 과열 상태</b>이오! 신규 추격 금지, 분할"
+                            " 최상이나 <b>지표 초과열권</b>이오! 신규 추격 금지, 분할"
                             " 익절로 방어벽을 세우시게."
                         )
-                    elif vol_strength < 80 or (p < today_open or is_down_trend_v):
+                    elif vol_strength < 80 or is_candle_bearish:
+                        mac_desc_word = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                         m_diag = (
-                            "<b>⚡ 엔진 가속 중이나 거래절벽/숨고르기 공방</b><br>• <b>역할:</b>"
-                            " 수급 부족 속 휩소 경계.<br>• <b>진단:</b> MACD는 가속 중이나 거래량이 마르고 성벽 위에서 숨고르기 중이오! 섣부른 추격매수를 금지하시게."
+                            f"<b>⚡ 엔진 가속 중이나 거래절벽/{mac_desc_word}</b><br>• <b>역할:</b>"
+                            f" 수급 부족 속 {mac_desc_word} 경계.<br>• <b>진단:</b> MACD는 가속 중이나 거래량이 마르고 성벽 위에서 {mac_desc_word} 중이오! 섣부른 추격매수를 금지하시게."
                         )
                     elif p >= defense_line:
                         m_diag = (
@@ -2340,7 +2349,7 @@ if symbol:
                             "추매는 절대 금지하며 단순 관망하시게."
                         )
                     else:
-                        m_time_txt = "14:00 이후 추매 준비하시게." if is_kr else "07:00 일봉 안착 확인 시 추매 준비하시게."
+                        m_time_txt = "14:00 이후 추매 준비하시게." if is_kr else "07:00 일봉 안착 확인 후 추매 준비하시게."
                         m_diag = (
                             "<b>🌤 역회전 감소</b><br>• <b>역할:</b> 하락 둔화 /"
                             " 반등 시동.<br>• <b>진단:</b> 매도세 소멸 중! 5일선"
