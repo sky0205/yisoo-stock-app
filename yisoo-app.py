@@ -1836,7 +1836,7 @@ if symbol:
                         " 마시게.</b>"
                     )
 
-            # ★ [수정]: 4. MACD 엔진 가이드 문구 동조화
+            # ★ [수정]: 4. MACD 엔진 가이드 문구 동조화 (역배열/5일선 미안착 시 엉뚱한 익절 문구 충돌 원천 차단)
             if is_band_riding:
                 macd_strategy_msg = (
                     "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b>"
@@ -1872,26 +1872,33 @@ if symbol:
                             " 붙고 있네! 성벽 돌파를 향해 든든하게 진격하시게."
                         )
                 elif is_macd_decelerating:
-                    macd_strategy_msg = (
-                        "<b>⚠️ 엔진 정회전 둔화 (탄력 저하 경보)</b><br>• <b>역할:</b>"
-                        " 상승 탄력 둔화 감지.<br>• <b>진단:</b> 상승세는 유지 중이나"
-                        " 추진력이 꺾였으니, 신규 매수를 자제하고 분할 익절을"
-                        " 준비하시게."
-                    )
+                    if is_down_trend_structural or not is_ma5_safe:
+                        macd_strategy_msg = (
+                            "<b>⚠️ 엔진 정회전 둔화 (반등 탄력 소멸)</b><br>• <b>역할:</b>"
+                            " 낙폭과대 속임수 반등 둔화.<br>• <b>진단:</b> 대세 역배열 속 미약했던 단기 반등"
+                            " 추진력마저 꺾였으니, 매수는 절대 금하고 추가 하락을 경계하시게."
+                        )
+                    else:
+                        macd_strategy_msg = (
+                            "<b>⚠️ 엔진 정회전 둔화 (탄력 저하 경보)</b><br>• <b>역할:</b>"
+                            " 상승 탄력 둔화 감지.<br>• <b>진단:</b> 상승세는 유지 중이나"
+                            " 추진력이 꺾였으니, 신규 매수를 자제하고 분할 익절을"
+                            " 준비하시게."
+                        )
                 elif is_macd_recovering:
                     if is_escape_buy_signal or final_code == "ESCAPE_BUY":
-                        m_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 후 2단계 집행"
+                        macd_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 후 2단계 집행"
                         macd_strategy_msg = (
                             "<b>🌤️ 엔진 역회전 감소 (2단계 바닥 탈출)</b><br>• <b>역할:</b>"
                             " 바닥 탈출 추진력 가동.<br>• <b>진단:</b> 매도세가 잦아들고 5일선"
-                            f" 위로 올라탔으니, {m_time_txt}하시게."
+                            f" 위로 올라탔으니, {macd_time_txt}하시게."
                         )
                     elif final_code == "BOTTOM_ENTRY":
-                        m_time_txt = "14:00 이후 지지 확인 후 50% 소량 입질 매수" if is_kr else "07:00 일봉 지지 확인 후 소량 입질 매수"
+                        macd_time_txt = "14:00 이후 지지 확인 후 50% 소량 입질 매수" if is_kr else "07:00 일봉 지지 확인 후 소량 입질 매수"
                         macd_strategy_msg = (
                             "<b>🌤️ 엔진 역회전 감소 (1단계 바닥 입질)</b><br>• <b>역할:</b>"
                             " 극바닥 브레이크 가동.<br>• <b>진단:</b> 하락 압력이 줄어들며 바닥"
-                            f" 다지기 중이오! {m_time_txt}하시게."
+                            f" 다지기 중이오! {macd_time_txt}하시게."
                         )
                     elif is_down_trend_structural:
                         macd_strategy_msg = (
@@ -1916,8 +1923,8 @@ if symbol:
                 else:
                     macd_strategy_msg = (
                         "<b>⚙️ 엔진 역회전 심화</b><br>• <b>역할:</b> 하락 조정"
-                        " 가속.<br>• <b>진단:</b> 하락 관성 지속. 신규 매수 및"
-                        " 물타기 금지, 관망하시게."
+                        " 가속.<br>• <b>진단:</b> 하락 관성 지속. 섣부른"
+                        " 매수 및 물타기를 절대 금지하고 관망하시게."
                     )
 
             # ★ [수정]: 5. 보유자 전용 가이드 문구 동조화
@@ -2258,11 +2265,18 @@ if symbol:
                             " 지지받으며 거침없이 진격하시게."
                         )
                 elif is_macd_decelerating:
-                    m_diag = (
-                        "<b>⚠️ 엔진 정회전 둔화</b><br>• <b>역할:</b> 상승 탄력"
-                        " 저하 감지.<br>• <b>진단:</b> 상승세는 유지 중이나"
-                        " 추진력이 꺾였으니, 분할 익절을 준비하시게."
-                    )
+                    if is_down_trend_structural or not is_ma5_safe:
+                        m_diag = (
+                            "<b>⚠️ 엔진 정회전 둔화 (반등 탄력 소멸)</b><br>• <b>역할:</b>"
+                            " 낙폭과대 속임수 반등 둔화.<br>• <b>진단:</b> 대세 역배열 속 미약했던 단기 반등"
+                            " 추진력마저 꺾였으니, 매수는 절대 금하고 추가 하락을 경계하시게."
+                        )
+                    else:
+                        m_diag = (
+                            "<b>⚠️ 엔진 정회전 둔화</b><br>• <b>역할:</b> 상승 탄력"
+                            " 저하 감지.<br>• <b>진단:</b> 상승세는 유지 중이나"
+                            " 추진력이 꺾였으니, 분할 익절을 준비하시게."
+                        )
                 elif is_macd_recovering:
                     if is_escape_buy_signal or final_code == "ESCAPE_BUY":
                         m_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 후 2단계 집행"
