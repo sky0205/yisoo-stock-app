@@ -1457,6 +1457,14 @@ if symbol:
                 unsafe_allow_html=True,
             )
 
+            # ★ [수정]: 관망/경계 상태 플래그 선행 정의 (NameError 완전 방지)
+            is_overall_cautious_state = final_code in [
+                "WAIT_GENERAL", "WAIT_INDICATOR", "WAIT_MACD", "WAIT_VOLUME", 
+                "WAIT_DOWNTREND_FALL", "WAIT_PULLBACK_CANDLE", "WAIT_PULLBACK", 
+                "WAIT_MA20_BUFFER", "WAIT_ORDERBOOK", "WAIT_OVER_EXTENDED", 
+                "YELLOW_CAUTION", "RED_SELL_WARNING"
+            ]
+
             # ==================================================================
             # ★ [지표 세부 텍스트 및 모듈 동조화]
             # ==================================================================
@@ -1954,7 +1962,7 @@ if symbol:
                         " 미련 없이 전량 칼손절 후퇴."
                     )
 
-            # ★ [수정 핵심]: MACD 본래의 상태(가속/둔화/역회전 등)를 살리되, 상단 결론이 관망/경계일 때는 경고를 자연스럽게 융합
+            # ★ [수정]: 4. MACD 엔진 가이드 선언 (본래 상태 진단 + 관망 기조 부드러운 동조)
             if is_band_riding:
                 macd_strategy_msg = (
                     "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b>"
@@ -1968,7 +1976,7 @@ if symbol:
                     "추격 매수는 엄금이며, 1~2호가 아래에 매도 주문을 깔아두어 이익을 챙기시게."
                 )
             else:
-                # 1단계: MACD 본래의 상태 진단 문구 생성
+                # 1단계: 본래의 MACD 상태 진단 생성
                 if is_macd_accelerating:
                     if rsi_val >= 70:
                         base_macd_desc = "<b>🔥 정회전 가속 (과열권)</b>: 추진력은 강력하나 보조지표 초과열권이오."
@@ -1992,7 +2000,7 @@ if symbol:
                     elif is_down_trend_structural or p < defense_line:
                         base_macd_desc = "<b>🌤 역회전 감소 (기술적 반등)</b>: 매도세는 잦아들었으나 역배열/공방 구역이라 주의가 필요하오."
                     else:
-                        base_macd_desc = "<b>🌤 역회전 감소 (반등 시도)</b>: 하락 관성이 둔화되며 바닥 다지기 반등을 모색 중이오."
+                        base_macd_desc = "<b>🌤 역회전 감소 (반등 시동)</b>: 하락 관성이 둔화되며 바닥 다지기 반등을 모색 중이오."
                 else:
                     base_macd_desc = "<b>⚙️ 엔진 역회전 심화</b>: 하락 관성이 지속되며 매도 압력이 깊어지는 중이오."
 
