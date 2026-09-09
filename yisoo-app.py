@@ -452,23 +452,20 @@ if symbol:
             df.index = pd.to_datetime(df.index).date
             today_date = now_local.date()
 
-            # [전일 종가(prev_p) 날짜 정렬 무결점 확정 로직]
+            # [전일 종가(prev_p) 무결점 강제 고정 로직]
             if not is_kr and us_prev_p and us_prev_p > 0:
                 prev_p = us_prev_p
             else:
                 try:
-                    # 날짜 순으로 확실하게 정렬한 뒤 최근 2개 거래일을 확보합니다
                     df_sorted = df.sort_index()
-                    if len(df_sorted) >= 2:
-                        # 오늘이 인덱스에 있다면 바로 전날(-2), 없으면 가장 최근 날짜(-1)를 전일로 잡습니다
-                        if today_date in df_sorted.index:
-                            idx_loc = df_sorted.index.get_loc(today_date)
-                            if isinstance(idx_loc, int) and idx_loc >= 1:
-                                prev_p = float(df_sorted["Close"].iloc[idx_loc - 1])
-                            else:
-                                prev_p = float(df_sorted["Close"].iloc[-2])
-                        else:
-                            prev_p = float(df_sorted["Close"].iloc[-1])
+                    # 오늘 날짜를 데이터프레임에서 잠시 빼버리고 안전하게 직전 종가를 구합니다
+                    if today_date in df_sorted.index:
+                        df_clean = df_sorted.drop(today_date)
+                    else:
+                        df_clean = df_sorted
+                        
+                    if len(df_clean) >= 1:
+                        prev_p = float(df_clean["Close"].iloc[-1])
                     else:
                         prev_p = p
                 except Exception:
