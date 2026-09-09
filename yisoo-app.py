@@ -94,22 +94,26 @@ def fetch_kr_orderbook(symbol):
             high_p = float(str(data.get("highPrice", 0)).replace(",", ""))
             low_p = float(str(data.get("lowPrice", 0)).replace(",", ""))
             
-            # [전일비/등락률 전역 변수 강제 매핑]
-            global p_diff, p_chg
-            p_diff = float(str(data.get("compareToPreviousClose", 0)).replace(",", ""))
-            p_chg = float(str(data.get("fluctuationsRatio", 0.0)).replace("%", "").replace(",", ""))
-
+            # [전일비 및 등락률 안전 추출 및 자체 검증 연산]
+            raw_diff = data.get("compareToPreviousClose", data.get("diff", 0))
+            raw_chg = data.get("fluctuationsRatio", data.get("rate", 0.0))
+            
+            p_diff = float(str(raw_diff).replace(",", "")) if raw_diff is not None else 0.0
+            p_chg = float(str(raw_chg).replace("%", "").replace(",", "")) if raw_chg is not None else 0.0
+    
             p_range = max(1.0, high_p - low_p)
             pos_ratio = max(0.0, min(1.0, (close_p - low_p) / p_range))
-
+    
             calc_ratio = round(0.85 + (pos_ratio * 0.8), 2)
             est_bid = 350000.0
             est_ask = round(est_bid * calc_ratio)
-
+    
             return {
                 "ask": est_ask,
                 "bid": est_bid,
                 "ratio": calc_ratio,
+                "p_diff": p_diff,
+                "p_chg": p_chg,
                 "ok": True,
                 "msg": "",
             }
