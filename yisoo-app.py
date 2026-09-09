@@ -510,10 +510,11 @@ if symbol:
 
             vol_strength = 100.0 if is_manual_mode else vol_strength_auto
 
-            # 당일 시가 변수 선언 (오류 방지 선행 배치)
+            # 당일 시가/고가/저가 및 하락 변동성 변수 선행 정의 (NameError 완전 방지)
             today_open = float(df["Open"].iloc[-1])
             today_high = float(df["High"].iloc[-1])
             today_low = float(df["Low"].iloc[-1])
+            is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
             # 보조지표 연산 (기준: 20/2, 14/6, 14/9)
             delta = df["Close"].diff()
@@ -693,7 +694,6 @@ if symbol:
             lower_tail = min(today_open, p) - today_low
             body_len = abs(today_open - p)
 
-            is_down_trend_v = (p < prev_p) and (p_chg < 0)
             is_pure_bullish_candle = p >= today_open
             is_bottom_lower_tail = (
                 (lower_tail >= candle_range * 0.45)
@@ -1904,7 +1904,7 @@ if symbol:
                         )
                 elif is_macd_recovering:
                     if is_escape_buy_signal or final_code == "ESCAPE_BUY":
-                        macd_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 시 2단계 집행"
+                        macd_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 후 2단계 집행"
                         macd_strategy_msg = (
                             "<b>🌤️ 엔진 역회전 감소 (2단계 바닥 탈출)</b><br>• <b>역할:</b>"
                             " 바닥 탈출 추진력 가동.<br>• <b>진단:</b> 매도세가 잦아들고 5일선"
@@ -2329,7 +2329,7 @@ if symbol:
                             "추매는 절대 금지하며 단순 관망하시게."
                         )
                     else:
-                        m_time_txt = "14:00 이후 추매 준비하시게." if is_kr else "07:00 일봉 안착 확인 시 추매 준비하시게."
+                        m_time_txt = "14:00 이후 추매 준비하시게." if is_kr else "07:00 일봉 안착 확인 후 추매 준비하시게."
                         m_diag = (
                             "<b>🌤 역회전 감소</b><br>• <b>역할:</b> 하락 둔화 /"
                             " 반등 시동.<br>• <b>진단:</b> 매도세 소멸 중! 5일선"
