@@ -897,44 +897,15 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            # [전일비 및 등락률 최종 강제 격파 코드]
-            try:
-                _c_list = df["Close"].tolist() if 'df' in locals() and df is not None else []
-                _real_curr = float(_c_list[-1]) if len(_c_list) > 0 else (p if 'p' in locals() else 0.0)
-                
-                # 1. 데이터프레임이나 변수에서 전일 종가를 어떻게든 찾아냅니다.
-                _real_prev = 0.0
-                if len(_c_list) >= 2:
-                    _real_prev = float(_c_list[-2])
-                
-                # 만약 직전 종가와 현재가가 같아서 전일비가 0이 되면, ticker 객체의 info에서 전일 종가를 강제로 가져옵니다.
-                if (_real_prev == 0 or _real_prev == _real_curr) and 'ticker' in locals():
-                    try:
-                        _inf = ticker.info
-                        _real_prev = float(_inf.get('regularMarketPreviousClose', _inf.get('previousClose', 0)))
-                    except Exception:
-                        pass
-                        
-                # 그래도 못 찾았으면 임의로 p_prev나 기존 변수를 뒤져봅니다.
-                if _real_prev == 0 and 'prev_p' in locals():
-                    _real_prev = float(prev_p)
-                    
-                # 최종 계산 수행
-                if _real_prev > 0 and _real_curr > 0:
-                    p_diff = _real_curr - _real_prev
-                    p_chg = (p_diff / _real_prev) * 100
-                else:
-                    p_diff = p_diff if ('p_diff' in locals() and p_diff != 0) else 0
-                    p_chg = p_chg if ('p_chg' in locals() and p_chg != 0.0) else 0.0
-                    
-                _real_prev = _real_prev if _real_prev > 0 else _real_curr
-            except Exception:
-                _real_curr = p if 'p' in locals() else 0.0
+            # [상단 전광판 전일비 및 등락률 즉시 자체 연산 안전 장치]
+            if 'p' in locals() and 'prev_p' in locals() and prev_p > 0:
+                p_diff = p - prev_p
+                p_chg = (p_diff / prev_p) * 100
+            else:
                 p_diff = 0
                 p_chg = 0.0
             
-            _sign_p = "+" if p_diff > 0 else ""
-            display_price = f"{_real_curr:{fmt_p}}{currency} (전일비: {_sign_p}{p_diff:{fmt_p}} / {p_chg:+.2f}%)"
+            display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(
                 f"<div style='background-color:#f8f9fa; padding:20px;"
                 " border-radius:10px; border-left:10px solid #1565C0;'><p"
