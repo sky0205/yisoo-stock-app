@@ -446,21 +446,19 @@ if symbol:
             df.index = pd.to_datetime(df.index).date
             today_date = now_local.date()
 
-            # [핵심 수술] 오늘 날짜 데이터를 덮어쓰기 전에 어제 종가(prev_p)를 철저히 고정합니다!
+            # [전일 종가 무결점 확정 로직]
             if not is_kr and us_prev_p and us_prev_p > 0:
                 prev_p = us_prev_p
             else:
                 if len(df) >= 2:
                     if today_date in df.index:
-                        # 오늘이 이미 들어있다면 그 전날(-2)을 전일 종가로 채택
                         prev_p = float(df["Close"].iloc[-2])
                     else:
-                        # 오늘이 아직 없다면 맨 마지막 날(-1)을 전일 종가로 채택
                         prev_p = float(df["Close"].iloc[-1])
                 else:
                     prev_p = float(df["Close"].iloc[0]) if not df.empty else p
 
-            # 오늘 날짜 시세 반영 (데이터프레임에 현재가 갱신)
+            # 오늘 날짜 시세 반영
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
                 df.loc[today_date, "Volume"] = v_curr
@@ -489,7 +487,7 @@ if symbol:
             )
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # [최종 연산] 이미 확보된 진짜 전일 종가(prev_p)와 현재가(p)를 비교합니다
+            # 전일비 및 등락률 연산
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
@@ -517,11 +515,32 @@ if symbol:
                 vol_strength_auto = v_ratio
 
             vol_strength = 100.0 if is_manual_mode else vol_strength_auto
-            # [추세 및 이동평균선 구조 판독 선행 정의]
+
+            # 이동평균선 선행 산출 (추세/구조 판단에 필수)
+            df["MA5"] = df["Close"].rolling(5).mean()
+            df["MA20"] = df["Close"].rolling(20).mean()
+            df["MA60"] = df["Close"].rolling(60).mean()
+            df["MA120"] = df["Close"].rolling(120).mean()
+            df["Std"] = df["Close"].rolling(20).std()
+
+            mid_line = float(df["MA20"].iloc[-1]) if pd.notna(df["MA20"].iloc[-1]) else p
+            std_val = float(df["Std"].iloc[-1]) if pd.notna(df["Std"].iloc[-1]) else 0.0
+            up_b = mid_line + (std_val * 2)
+            low_b = mid_line - (std_val * 2)
+
+            bandwidth = (
+                ((up_b - low_b) / mid_line) * 100 if mid_line > 0 else 0
+            )
+
+            ma5_val = float(df["MA5"].iloc[-1]) if (len(df) >= 5 and pd.notna(df["MA5"].iloc[-1])) else p
+            ma60_val = float(df["MA60"].iloc[-1]) if (len(df) >= 60 and pd.notna(df["MA60"].iloc[-1])) else mid_line
+            ma120_val = float(df["MA120"].iloc[-1]) if (len(df) >= 120 and pd.notna(df["MA120"].iloc[-1])) else ma60_val
+
             is_bullish = ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val
             is_bearish = ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val
             is_down_trend_structural = is_bearish or (p < mid_line and mid_line <= ma60_val)
             is_ma5_safe = p >= ma5_val
+
             # 보조지표 연산
             delta = df["Close"].diff()
             gain = (delta.where(delta > 0, 0)).rolling(14).mean()
@@ -581,26 +600,6 @@ if symbol:
                     " 하락 조정 가속.<br>• <b>진단:</b> 하락 관성 지속. 섣부른"
                     " 매수 및 물타기를 절대 금지하고 관망하시게."
                 )
-
-            df["MA5"] = df["Close"].rolling(5).mean()
-            df["MA20"] = df["Close"].rolling(20).mean()
-            df["MA60"] = df["Close"].rolling(60).mean()
-            df["MA120"] = df["Close"].rolling(120).mean()
-            df["Std"] = df["Close"].rolling(20).std()
-
-            mid_line = float(df["MA20"].iloc[-1]) if pd.notna(df["MA20"].iloc[-1]) else p
-            std_val = float(df["Std"].iloc[-1]) if pd.notna(df["Std"].iloc[-1]) else 0.0
-            up_b = mid_line + (std_val * 2)
-            low_b = mid_line - (std_val * 2)
-
-            bandwidth = (
-                ((up_b - low_b) / mid_line) * 100 if mid_line > 0 else 0
-            )
-
-            # 신규 상장주 NaN 방어 로직
-            ma5_val = float(df["MA5"].iloc[-1]) if (len(df) >= 5 and pd.notna(df["MA5"].iloc[-1])) else p
-            ma60_val = float(df["MA60"].iloc[-1]) if (len(df) >= 60 and pd.notna(df["MA60"].iloc[-1])) else mid_line
-            ma120_val = float(df["MA120"].iloc[-1]) if (len(df) >= 120 and pd.notna(df["MA120"].iloc[-1])) else ma60_val
 
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
@@ -772,26 +771,6 @@ if symbol:
             )
             wait_line = low_b * 1.02
 
-            is_bullish = (
-                ma5_val > mid_line
-                and mid_line > ma60_val
-                and ma60_val > ma120_val
-            )
-            is_bearish = (
-                ma5_val < mid_line
-                and mid_line < ma60_val
-                and ma60_val < ma120_val
-            )
-            is_down_trend_structural = is_bearish or (
-                p < mid_line and mid_line <= ma60_val
-            )
-            is_ma5_safe = p >= ma5_val
-
-            ma5_str = f"{ma5_val:{fmt_p}}{currency}"
-            ma20_str = f"{mid_line:{fmt_p}}{currency}"
-            ma60_str = f"{ma60_val:{fmt_p}}{currency}"
-            ma120_str = f"{ma120_val:{fmt_p}}{currency}"
-
             if is_bullish:
                 trend_status = "🔥 <b>[대세 정배열]</b> 완벽한 우상향 성벽 구축 완료"
             elif is_bearish:
@@ -811,12 +790,12 @@ if symbol:
 
             ma_price_summary = (
                 "<br>• 📌 <b>[주요 이동평균선 현황]</b><br>&nbsp;&nbsp;<span"
-                f" style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str}"
+                f" style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str if 'ma5_str' in locals() else f'{ma5_val:{fmt_p}}{currency}'}"
                 f" (이격: {bias_ma5:+.1f}%)</span> | <span style='color:#1976D2;"
-                f" font-weight:bold;'>🔵 20일선: {ma20_str}</span> | <span"
+                f" font-weight:bold;'>🔵 20일선: {mid_line:{fmt_p}}{currency}</span> | <span"
                 f" style='color:#388E3C; font-weight:bold;'>🟢 60일선:"
-                f" {ma60_str}</span> | <span style='color:#7B1FA2;"
-                f" font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
+                f" {ma60_val:{fmt_p}}{currency}</span> | <span style='color:#7B1FA2;"
+                f" font-weight:bold;'>🟣 120일선: {ma120_val:{fmt_p}}{currency}</span><br>"
             )
 
             if is_kr:
