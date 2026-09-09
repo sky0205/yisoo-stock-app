@@ -897,19 +897,16 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            # [전일비 및 등락률 최종 강제 산출 및 출력]
+            # [전일비 및 등락률 직전일 기준 정확 산출 코드]
             try:
-                # 1. 현재가는 상단의 현재가 변수(p)를 최우선으로 씁니다.
                 _curr = float(p) if 'p' in locals() and p is not None else 0.0
                 
-                # 2. 전일 종가는 데이터프레임(df)의 첫 번째 행이나 직전 종가를 무조건 강탈합니다.
                 _prev = 0.0
                 if 'df' in locals() and df is not None and len(df) >= 2:
-                    _prev = float(df["Close"].iloc[0]) # 일봉 기준 시작점 혹은 전일 종가 추정
+                    _prev = float(df["Close"].iloc[-2])  # 맨 첫날이 아니라 바로 직전 거래일 종가로 고정합니다.
                 elif 'prev_p' in locals() and prev_p is not None:
                     _prev = float(prev_p)
                 
-                # 3. 만약 전일 종가가 없거나 현재가와 같으면 임의로 차이를 0으로 두지 않고 방어합니다.
                 if _prev > 0 and _curr > 0:
                     p_diff = _curr - _prev
                     p_chg = (p_diff / _prev) * 100
