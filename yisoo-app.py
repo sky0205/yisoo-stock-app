@@ -892,7 +892,13 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
+            # [상단 전일비 데이터 무손실 안전 방어 코드]
+            # 1. 전일비 변수(p_diff)와 등락률(p_chg)이 비어있거나 0일 경우 이전 종가 데이터를 안전하게 방어
+            safe_diff = p_diff if 'p_diff' in locals() and p_diff != 0 else (current_price - previous_close if 'previous_close' in locals() and previous_close > 0 else 0)
+            safe_chg = p_chg if 'p_chg' in locals() and p_chg != 0.0 else (safe_diff / previous_close * 100 if 'previous_close' in locals() and previous_close > 0 else 0.0)
+            
+            # 2. 마감 후에도 최종 확정 값이 멍청하게 0으로 죽지 않도록 포맷 고정
+            display_price = f"{current_price:{fmt_p}}{currency} (전일비: {safe_diff:+{fmt_p}} / {safe_chg:+.2f}%)"
             st.markdown(
                 f"<div style='background-color:#f8f9fa; padding:20px;"
                 " border-radius:10px; border-left:10px solid #1565C0;'><p"
