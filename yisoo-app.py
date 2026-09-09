@@ -1689,16 +1689,18 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
-            # 3) 세부 지표 문자열 조립 (성벽-목표선 역전 및 5일선 이탈 상태 완벽 동조화)
+            # 3) 세부 지표 문자열 조립 (눌림목 점수 및 바닥 지표 동조 현황 상시 표출 보강)
             if defense_line > target_price_100:
                 sub_indicator_str = (
-                    f"    - <b>역배열 침체 전황:</b> 성벽({defense_line:{fmt_p}}{currency})이 목표선({target_price_100:{fmt_p}}{currency})보다 높은 왜곡 구간 (상방 동력 소멸 및 관망)"
+                    f"    - <b>역배열 침체 전황:</b> 성벽({defense_line:{fmt_p}}{currency})이 목표선({target_price_100:{fmt_p}}{currency})보다 높은 왜곡 구간 (상방 동력 소멸 및 관망)<br>"
+                    f"    - <b>눌림목 지지 동조:</b> {pullback_rebound_score}/3점 <b>(역배열 조정 구간)</b> -> <b>[관망]</b> 추세 안착 대기"
                 )
             elif final_code == "BREAKOUT_ATTACK" or is_on_the_wall:
                 if vol_strength < 80 or is_candle_bearish:
                     current_candlestick_type = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                     sub_indicator_str = (
-                        f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 거래절벽(수급 부진) 및 {current_candlestick_type} 중"
+                        f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 거래절벽(수급 부진) 및 {current_candlestick_type} 중<br>"
+                        f"    - <b>눌림목 지지 동조:</b> {pullback_rebound_score}/3점 <b>(성벽 위 공방)</b> -> <b>[관망]</b> 지지 확인 대기"
                     )
                 else:
                     sub_indicator_str = (
@@ -1712,32 +1714,13 @@ if symbol:
             elif p < defense_line:
                 if not is_ma5_safe:
                     sub_indicator_str = (
-                        f"    - <b>성벽 함락 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 아래로 밀린 채 <b>단기 생명선(5일선) 이탈</b> (칼날 관망)"
+                        f"    - <b>성벽 함락 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 아래로 밀린 채 <b>단기 생명선(5일선) 이탈</b> (칼날 관망)<br>"
+                        f"    - <b>눌림목 지지 동조:</b> {pullback_rebound_score}/3점 <b>(하락 험지 구간)</b> -> <b>[관망]</b> 5일선 회복 대기"
                     )
                 else:
                     sub_indicator_str = (
-                        f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 아래 갇힌 채 돌파 공방 중 (안착 대기)"
-                    )
-            elif (
-                is_escape_buy_signal
-                or bottom_score >= 2
-                or recent_bottom_memory
-                or is_down_trend_structural
-            ):
-                if is_down_trend_structural and not (
-                    is_escape_buy_signal
-                    or bottom_score >= 2
-                    or recent_bottom_memory
-                ):
-                    sub_indicator_str = (
-                        "    - <b>진바닥 탐색 현황:</b>"
-                        f" {pullback_status_str} {pullback_action_str}"
-                    )
-                else:
-                    sub_indicator_str = (
-                        "    - <b>진바닥 입질 동조:</b>"
-                        f" {bottom_score}개 터치 {bottom_status_str}"
-                        f" {bottom_action_str}"
+                        f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 아래 갇힌 채 돌파 공방 중 (안착 대기)<br>"
+                        f"    - <b>눌림목 지지 동조:</b> {pullback_rebound_score}/3점 <b>(돌파 대기 구역)</b> -> <b>[관망]</b> 안착 확인 대기"
                     )
             else:
                 if p >= mid_line:
@@ -1810,70 +1793,6 @@ if symbol:
                     ma5_guide_text = (
                         f"현재가({p:{fmt_p}}{currency})가"
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 단기 전투선 유지 중이오. 5일선 사수 여부를 지켜보시게."
-                    )
-
-            # ★ [수정]: 2. 성벽 사수 및 공방 가이드 문구 선언 (def_status 누락 해결)
-            if is_band_riding:
-                def_status = (
-                    f"성벽({defense_line:{fmt_p}}{currency})을 가뿐히 넘어 볼린저 상단이 상방으로 찢어지고 있네! "
-                    "1차 50% 수익 확정 후 든든한 방어선을 뒤에 두고 잔여 추세를 즐기시게."
-                )
-            elif is_target_reached:
-                def_status = (
-                    f"성벽({defense_line:{fmt_p}}{currency}) 위 진격은 이미 완수되었네! "
-                    f"수학 목표선({target_price_100:{fmt_p}}{currency}) 머리를 들이받았으니 진격을 멈추고 방어선을 등진 채 분할 매도로 현금을 챙기시게."
-                )
-            elif defense_line > target_price_100:
-                def_status = (
-                    f"성벽(방어선:{defense_line:{fmt_p}}{currency})이 상단 목표선({target_price_100:{fmt_p}}{currency})보다 위로 왜곡된 <b>[역배열 침체]</b> 구역이오! "
-                    "상방 동력이 완전히 메말랐으니 섣부른 진격을 금하고 철저히 관망하시게."
-                )
-            elif p >= defense_line:
-                if vol_strength < 80:
-                    def_status = (
-                        f"성벽({defense_line:{fmt_p}}{currency}) 위에는 있으나 <b>거래절벽({vol_strength:.1f}점)</b>으로 상방 동력이 없네! "
-                        "추격매수를 삼가고 선제적 익절이나 관망을 준비하시게."
-                    )
-                else:
-                    candlestick_warn_name = "음봉 발생" if is_candle_bearish else "기세 둔화"
-                    def_status = (
-                        f"성벽({defense_line:{fmt_p}}{currency}) 위에서 5일선 기세를"
-                        " 타고 <b>위로 진격 중</b>이네! 든든한 방어선을 등지고 계속"
-                        " 밀어붙이시게."
-                        if not is_candle_bearish and (p >= prev_p and p >= ma5_val)
-                        else f"성벽({defense_line:{fmt_p}}{currency}) 위에는 있으나"
-                        f" 단기 기세가 <b>숨고르기 중</b>이네! 성벽 위 {candlestick_warn_name} 시"
-                        " 선제적 익절을 준비하시게."
-                    )
-            else:
-                if not is_ma5_safe:
-                    def_status = (
-                        f"성벽({defense_line:{fmt_p}}{currency}) 아래로 함락된 채 <b>단기 생명선(5일선)마저 이탈</b>했소! "
-                        "추가 하락 위험이 크니 섣부른 물타기를 금하고 칼같이 관망하시게."
-                    )
-                elif final_code == "BOTTOM_ENTRY":
-                    def_status = (
-                        f"성벽({defense_line:{fmt_p}}{currency}) 아래"
-                        " 극바닥권이나, 1단계 바닥 지표 동조로 <b>소량 입질"
-                        " 진격 타점</b>을 형성 중이네!"
-                    )
-                elif final_code == "ESCAPE_BUY":
-                    def_status = (
-                        f"성벽({defense_line:{fmt_p}}{currency}) 아래이나,"
-                        " 5일선을 딛고 <b>2단계 바닥 탈출 진격</b>을 시작하며"
-                        " 성벽 탈환에 나서는 중이네!"
-                    )
-                elif is_ma5_safe:
-                    def_status = (
-                        f"성벽({defense_line:{fmt_p}}{currency}) 아래에 있으나,"
-                        " 단기 5일선<b>(생명선)을 사수</b>하며 반격의 시동을"
-                        " 거는 중이네!"
-                    )
-                else:
-                    def_status = (
-                        f"성벽({defense_line:{fmt_p}}{currency}) 아래로 함락된"
-                        " 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지"
-                        " 마시게.</b>"
                     )
 
             # 보유자 전용 가이드 문구 조화
