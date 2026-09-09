@@ -1275,7 +1275,22 @@ if symbol:
                         f" {time_rule_pass} 5·20일선 안전마진(+0.2%) 돌파 및 호가"
                         " 잔량비 사수 완료! 알짜배기 승수 확대 집행."
                     )
-
+            # [돌파 확인 분기 추가] 20일선 및 안전마진선 돌파 시
+            elif (
+                p >= ma20_safe_threshold
+                and (not is_down_trend_structural)
+                and is_ma5_safe
+            ):
+                final_code = "BREAK_MA20_CONFIRMED"
+                sig = "🔵 [돌파 확인] 20일선 안착 타진 (종가 사수 확인)"
+                col = "#1E88E5"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                    f" <b>[20일선 돌파 안착 타진]</b>"
+                    f" 현재가({p:{fmt_p}}{currency})가"
+                    f" 20일선 및 안전마진선({ma20_safe_threshold:{fmt_p}}{currency})을 돌파하였소!"
+                    f" 15:20 종가까지 이 자리를 지켜낼 경우 3단계 진격 준비하시게."
+                )
             elif (
                 is_ma20_teetering
                 and (not is_down_trend_structural)
@@ -1558,7 +1573,13 @@ if symbol:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
                 )
-                pullback_action_str = f"-> <b>[매수 보류]</b> {bw_diag_msg}"
+                if p >= mid_line:
+                    pullback_action_str = (
+                        f"-> <b>[돌파 타진]</b> 20일선({mid_line:{fmt_p}}{currency}) 돌파 성공! "
+                        f"15:20 종가 안착 유지 시 3단계 진격 준비하시게."
+                    )
+        else:
+            pullback_action_str = f"-> <b>[매수 보류]</b> {bw_diag_msg}"
             else:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
