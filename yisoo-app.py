@@ -1636,8 +1636,14 @@ if symbol:
                         f" {bottom_action_str}"
                     )
             else:
+                # 20일선(mid_line) 위/아래 여부에 따라 명칭 분리
+                if p >= mid_line:
+                    pullback_tag = "눌림목 지지 동조"
+                else:
+                    pullback_tag = "돌파 준비(에너지 충전)"
+    
                 sub_indicator_str = (
-                    "    - <b>눌림목 동조:</b>"
+                    f"  - <b>{pullback_tag}:</b>"
                     f" {pullback_rebound_score}/3점 {pullback_status_str}"
                     f" {pullback_action_str}"
                 )
@@ -2165,16 +2171,23 @@ if symbol:
                             " 하락 둔화 / 바닥 입질.<br>• <b>진단:</b> 매도세 진정 및 바닥"
                             " 지표 충족 완료! 전저점 방어선 엄수하며 소량 입질 매수."
                         )
-                    elif is_down_trend_structural or p < defense_line:
+                    elif is_down_trend_structural:
                         m_diag = (
-                            "<b>🌤️ 역회전 감소 (기술적 반등)</b><br>• <b>역할:</b>"
+                            "<b>🌤 역회전 감소 (기술적 반등)</b><br>• <b>역할:</b>"
                             " 낙폭 과대 반등 시동.<br>• <b>진단:</b> 매도세는"
                             " 잦아들었으나 <b>대세 역배열 및 성벽 아래 함락 상태</b>이오! "
                             "추매는 절대 금지하며 단순 관망하시게."
                         )
+                    elif p < defense_line:
+                        m_diag = (
+                            "<b>🌤 역회전 감소 (기술적 반등)</b><br>• <b>역할:</b>"
+                            " 낙폭 과대 반등 시동.<br>• <b>진단:</b> 매도세는"
+                            " 잦아들었으나 <b>단기 조정 및 성벽 돌파 공방 상태</b>이오! "
+                            "추매는 절대 금지하며 단순 관망하시게."
+                        )
                     else:
                         m_diag = (
-                            "<b>🌤️ 역회전 감소</b><br>• <b>역할:</b> 하락 둔화 /"
+                            "<b>🌤 역회전 감소</b><br>• <b>역할:</b> 하락 둔화 /"
                             " 반등 시동.<br>• <b>진단:</b> 매도세 소멸 중! 5일선"
                             " 안착 및 거래량 확인 시 추매 준비하시게."
                         )
