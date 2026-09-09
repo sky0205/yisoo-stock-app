@@ -676,7 +676,7 @@ if symbol:
                         if vol_strength < 80 or is_candle_bearish:
                             adjust_type_str = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                             squeeze_info_str = (
-                                f"<br>• ☕ <b>[성벽 위 {adjust_type_str}/거래절벽({bandwidth:.1f}%)]</b>"
+                                f"<br>• ☕ <b>[성벽 위 {adjust_type_str}/수급 공방({bandwidth:.1f}%)]</b>"
                                 f" 5일선 위 안착 상태이나 수급 부진 및 {adjust_type_str} 중이오."
                             )
                         else:
