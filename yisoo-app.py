@@ -1684,7 +1684,7 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
-            # 3) 세부 지표 문자열 조립
+            # 3) 세부 지표 문자열 조립 (실제 성벽 위치와 일치하도록 엄격히 보정)
             if final_code == "BREAKOUT_ATTACK" or is_on_the_wall:
                 sub_indicator_str = (
                     f"    - <b>성벽 돌파 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 돌파 성공! "
@@ -1693,6 +1693,10 @@ if symbol:
             elif is_target_reached:
                 sub_indicator_str = (
                     f"    - <b>목표 도달 전황:</b> 수확 목표선({target_price_100:{fmt_p}}{currency}) 도달 완료! (분할 매도 구역)"
+                )
+            elif p < defense_line:
+                sub_indicator_str = (
+                    f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 아래 갇힌 채 돌파 공방 중 (안착 대기)"
                 )
             elif (
                 is_escape_buy_signal
