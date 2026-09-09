@@ -895,6 +895,22 @@ if symbol:
             # ==================================================================
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
+            # [전광판 직전 최종 강제 전일비 방어 장치]
+            try:
+                _p_now = float(p) if 'p' in locals() and p else 0.0
+                _p_old = float(prev_p) if 'prev_p' in locals() and prev_p and float(prev_p) > 0 else 0.0
+                if _p_old == 0.0 and 'df' in locals() and df is not None and len(df) >= 2:
+                    _p_old = float(df["Close"].iloc[-2])
+                
+                if _p_old > 0 and _p_now > 0:
+                    p_diff = _p_now - _p_old
+                    p_chg = (p_diff / _p_old) * 100
+                else:
+                    p_diff = 0.0
+                    p_chg = 0.0
+            except:
+                p_diff = 0.0
+                p_chg = 0.0
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(
