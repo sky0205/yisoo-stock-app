@@ -1573,58 +1573,52 @@ if symbol:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
                 )
-                if p >= mid_line:
-                    pullback_action_str = (
-                        f"-> <b>[돌파 타진]</b> 20일선({mid_line:{fmt_p}}{currency}) 돌파 성공! "
-                        f"15:20 종가 안착 유지 시 3단계 진격 준비하시게."
-                    )
-                else:
-                    pullback_action_str = f"-> <b>[매수 보류]</b> {bw_diag_msg}"
-                else:
-                    pullback_status_str = (
-                        f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
-                    )
-                if is_ma20_teetering:
-                    pullback_action_str = (
-                        f"-> <b>[턱걸이 공방]</b> 20일선({mid_line:{fmt_p}}{currency})"
-                        " 턱걸이 중! 안전마진(+0.2%) 안착 대기"
-                    )
-                elif not is_orderbook_safe:
-                    pullback_action_str = (
-                        "-> <b>[호가 경계]</b> 매도잔량비 취약"
-                        f"({ob_ratio_val:.2f}배)으로 윗꼬리 경계 관망"
-                    )
-                elif pullback_rebound_score == 0:
-                    pullback_action_str = "-> <b>[관망]</b> 눌림목 지표 조건 미충족"
-                elif pullback_rebound_score < 2:
-                    pullback_action_str = (
-                        "-> <b>[지표 미흡]</b> 눌림목 동조 점수 부족"
-                        f"({pullback_rebound_score}점)으로 돌파/안착 대기"
-                    )
-                elif is_over_extended_5 and (p >= mid_line):
-                    pullback_action_str = (
-                        "-> <b>[추격 매수 금지]</b> 5일선 대비"
-                        f" +{bias_ma5:.1f}% 과다이격으로 지지 대기"
-                    )
-                elif not is_valid_buy_candle:
-                    pullback_action_str = (
-                        "-> <b>[캔들 확인 대기]</b> 지지 캔들 미흡으로 관망"
-                    )
-                elif is_macd_reverse_deepening:
-                    pullback_action_str = (
-                        "-> <b>[엔진 역회전 심화]</b> MACD 하락 가속 중이므로"
-                        " 관망"
-                    )
-                elif is_pullback_buy_signal:
-                    pullback_action_str = (
-                        "-> <b>[3단계 눌림목 추가 매수]</b> 5·20일선 위 안착 +"
-                        " 지표 동조 확인, 승수 확대 진격!"
-                    )
-                else:
-                    pullback_action_str = (
-                        "-> <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중"
-                        " 관망"
-                    )
+                pullback_action_str = (
+                    f"-> <b>[돌파 타진]</b> 20일선({mid_line:{fmt_p}}{currency}) 돌파 성공! 15:20 종가 안착 유지 시 3단계 진격 준비하시게."
+                    if p >= mid_line
+                    else f"-> <b>[매수 보류]</b> {bw_diag_msg}"
+                )
+            elif is_ma20_teetering:
+                pullback_action_str = (
+                    f"-> <b>[턱걸이 공방]</b> 20일선({mid_line:{fmt_p}}{currency})"
+                    " 턱걸이 중! 안전마진(+0.2%) 안착 대기"
+                )
+            elif not is_orderbook_safe:
+                pullback_action_str = (
+                    "-> <b>[호가 경계]</b> 매도잔량비 취약"
+                    f"({ob_ratio_val:.2f}배)으로 윗꼬리 경계 관망"
+                )
+            elif pullback_rebound_score == 0:
+                pullback_action_str = "-> <b>[관망]</b> 눌림목 지표 조건 미충족"
+            elif pullback_rebound_score < 2:
+                pullback_action_str = (
+                    "-> <b>[지표 미흡]</b> 눌림목 동조 점수 부족"
+                    f"({pullback_rebound_score}점)으로 돌파/안착 대기"
+                )
+            elif is_over_extended_5 and (p >= mid_line):
+                pullback_action_str = (
+                    "-> <b>[추격 매수 금지]</b> 5일선 대비"
+                    f" +{bias_ma5:.1f}% 과다이격으로 지지 대기"
+                )
+            elif not is_valid_buy_candle:
+                pullback_action_str = (
+                    "-> <b>[캔들 확인 대기]</b> 지지 캔들 미흡으로 관망"
+                )
+            elif is_macd_reverse_deepening:
+                pullback_action_str = (
+                    "-> <b>[엔진 역회전 심화]</b> MACD 하락 가속 중이므로"
+                    " 관망"
+                )
+            elif is_pullback_buy_signal:
+                pullback_action_str = (
+                    "-> <b>[3단계 눌림목 추가 매수]</b> 5·20일선 위 안착 +"
+                    " 지표 동조 확인, 승수 확대 진격!"
+                )
+            else:
+                pullback_action_str = (
+                    "-> <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중"
+                    " 관망"
+                )
 
             if final_code == "BREAKOUT_ATTACK" or is_on_the_wall:
                 sub_indicator_str = (
