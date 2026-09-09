@@ -1578,12 +1578,12 @@ if symbol:
                         f"-> <b>[돌파 타진]</b> 20일선({mid_line:{fmt_p}}{currency}) 돌파 성공! "
                         f"15:20 종가 안착 유지 시 3단계 진격 준비하시게."
                     )
-        else:
-            pullback_action_str = f"-> <b>[매수 보류]</b> {bw_diag_msg}"
-            else:
-                pullback_status_str = (
-                    f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
-                )
+                else:
+                    pullback_action_str = f"-> <b>[매수 보류]</b> {bw_diag_msg}"
+                else:
+                    pullback_status_str = (
+                        f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
+                    )
                 if is_ma20_teetering:
                     pullback_action_str = (
                         f"-> <b>[턱걸이 공방]</b> 20일선({mid_line:{fmt_p}}{currency})"
