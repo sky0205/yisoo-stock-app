@@ -1366,11 +1366,18 @@ if symbol:
                 final_code = "WAIT_INDICATOR"
                 sig = "🟡 [관망/보류] 5일선 안착했으나 보조지표 미흡 (외바닥 주의)"
                 col = "#F57C00"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    " <b>[지표 미흡]</b> 5일선은 안착했으나 보조지표 동조 점수"
-                    " 부족으로 외바닥 속임수를 경계하고 관망하시게."
-                )
+                if p < mid_line:
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                        f" <b>[20일선 저항 하회]</b> 5일선은 회복했으나 머리 위 20일선({mid_line:{fmt_p}}{currency}) 저항 아래에 갇혀 있소! "
+                        "20일선 돌파 및 안착 확인 전까지 진입을 보류하시게."
+                    )
+                else:
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                        " <b>[지표 미흡]</b> 5일선은 안착했으나 보조지표 동조 점수"
+                        " 부족으로 외바닥 속임수를 경계하고 관망하시게."
+                    )
 
             elif is_ma5_safe and is_macd_reverse_deepening:
                 final_code = "WAIT_MACD"
@@ -1530,10 +1537,16 @@ if symbol:
                     f"-> <b>[3단계 눌림목 추가 매수]</b> 5·20일선 안착 확인! {pullback_time_guide}"
                 )
             else:
-                pullback_action_str = (
-                    "-> <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중"
-                    " 관망"
-                )
+                # 20일선 아래에 있어 매수가 보류된 경우 사유를 구체적으로 직관 표기
+                if p < mid_line:
+                    pullback_action_str = (
+                        f"-> <b>[매수 보류]</b> 5일선은 회복했으나 <b>머리 위 20일선({mid_line:{fmt_p}}{currency}) 저항 아래</b>에 갇혀 있소! "
+                        "20일선 돌파 및 안착 확인 전까지 진입 금지."
+                    )
+                else:
+                    pullback_action_str = (
+                        "-> <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
+                    )
 
             # 2) 진바닥 텍스트 판정
             if bottom_score >= 2:
@@ -1860,9 +1873,10 @@ if symbol:
                         )
                 elif is_macd_decelerating:
                     macd_strategy_msg = (
-                        "<b>⚠️ 엔진 정회전 둔화</b><br>• <b>역할:</b> 상승 탄력"
-                        " 저하 감지.<br>• <b>진단:</b> 상승세는 유지 중이나"
-                        " 추진력이 꺾였으니, 분할 익절을 준비하시게."
+                        "<b>⚠️ 엔진 정회전 둔화 (탄력 저하 경보)</b><br>• <b>역할:</b>"
+                        " 상승 탄력 둔화 감지.<br>• <b>진단:</b> 상승세는 유지 중이나"
+                        " 추진력이 꺾였으니, 신규 매수를 자제하고 분할 익절을"
+                        " 준비하시게."
                     )
                 elif is_macd_recovering:
                     if is_escape_buy_signal or final_code == "ESCAPE_BUY":
@@ -1902,8 +1916,8 @@ if symbol:
                 else:
                     macd_strategy_msg = (
                         "<b>⚙️ 엔진 역회전 심화</b><br>• <b>역할:</b> 하락 조정"
-                        " 가속.<br>• <b>진단:</b> 하락 관성 지속. 섣부른"
-                        " 매수 및 물타기를 절대 금지하고 관망하시게."
+                        " 가속.<br>• <b>진단:</b> 하락 관성 지속. 신규 매수 및"
+                        " 물타기 금지, 관망하시게."
                     )
 
             # ★ [수정]: 5. 보유자 전용 가이드 문구 동조화
