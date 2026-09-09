@@ -446,18 +446,24 @@ if symbol:
             df.index = pd.to_datetime(df.index).date
             today_date = now_local.date()
 
-            # [핵심 수술] 전일 종가(prev_p)를 오늘 값 덮어쓰기 전에 무결하게 확보합니다!
+            # [국장/미장 완벽 분리 무적 전일 종가 확정 로직]
             if not is_kr and us_prev_p and us_prev_p > 0:
                 prev_p = us_prev_p
             else:
-                if len(df) >= 2:
-                    if today_date in df.index:
-                        prev_p = float(df["Close"].iloc[-2])
+                try:
+                    # 국장일 경우 차트 장부에서 오늘 날짜를 제외하고 진짜 지난 영업일 종가를 전일로 확실히 잡습니다
+                    df_sorted = df.sort_index()
+                    if today_date in df_sorted.index:
+                        df_past = df_sorted.drop(today_date, errors="ignore")
                     else:
-                        prev_p = float(df["Close"].iloc[-1])
-                else:
-                    prev_p = float(df["Close"].iloc[0]) if not df.empty else p
-
+                        df_past = df_sorted
+                        
+                    if len(df_past) >= 1:
+                        prev_p = float(df_past["Close"].iloc[-1])
+                    else:
+                        prev_p = p
+                except Exception:
+                    prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
             # 오늘 날짜 시세 반영 (데이터프레임 업데이트)
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
