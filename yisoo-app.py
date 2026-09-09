@@ -347,11 +347,13 @@ if symbol:
                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
                 res = requests.get(api_url, headers=headers, timeout=3)
                 if res.status_code == 200:
-                    data = res.json()
                     auto_p = float(str(data["closePrice"]).replace(",", ""))
                     v_curr = float(
                         str(data["accumulatedTradingVolume"]).replace(",", "")
                     )
+                    # [핵심] 네이버 API에서 전일 대비 금액과 등락률을 직접 강탈합니다!
+                    p_diff = float(str(data.get("compareToPreviousClose", 0)).replace(",", ""))
+                    p_chg = float(str(data.get("fluctuationsRatio", 0.0)).replace("%", "").replace(",", ""))
                     kr_fetched = True
             except:
                 pass
