@@ -660,10 +660,10 @@ if symbol:
                             f"밴드폭 응축돌파({bandwidth:.1f}%) 5일선 안착 / 에너지"
                             " 분출 초입"
                         )
-                        if p < today_open or is_down_trend_v:
+                        if vol_strength < 80 or (p < today_open or is_down_trend_v):
                             squeeze_info_str = (
-                                f"<br>• ☕ <b>[성벽 위 숨고르기({bandwidth:.1f}%)]</b>"
-                                " 5일선 위 안착 상태이나 당일 음봉 조정 중이오."
+                                f"<br>• ☕ <b>[성벽 위 숨고르기/거래절벽({bandwidth:.1f}%)]</b>"
+                                " 5일선 위 안착 상태이나 수급 부진 및 음봉 조정 중이오."
                             )
                         else:
                             squeeze_info_str = (
@@ -1687,11 +1687,11 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
-            # 3) 세부 지표 문자열 조립 (성벽 위 음봉 숨고르기 상태와 완벽 동조화)
+            # 3) 세부 지표 문자열 조립 (거래절벽 및 성벽 위 음봉 숨고르기 상태와 완벽 동조화)
             if final_code == "BREAKOUT_ATTACK" or is_on_the_wall:
-                if p < today_open or is_down_trend_v:
+                if vol_strength < 80 or (p < today_open or is_down_trend_v):
                     sub_indicator_str = (
-                        f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 당일 음봉 숨고르기 공방 중 (5일선 지지 확인)"
+                        f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 거래절벽(수급 부진) 및 음봉 숨고르기 공방 중"
                     )
                 else:
                     sub_indicator_str = (
@@ -1747,7 +1747,7 @@ if symbol:
 
             ma5_dynamic_stop = dynamic_stop_price
 
-            # ★ [수정]: 1. 5일선 사수 가이드 문구 동조화
+            # ★ [수정]: 1. 5일선 사수 가이드 문구 동조화 (거래절벽/숨고르기 반영)
             if is_band_riding:
                 ma5_guide_text = (
                     f"현재가({p:{fmt_p}}{currency})가 볼린저 상단을 타고 확장 중이오! "
@@ -1769,7 +1769,12 @@ if symbol:
                     " 종가 안착 전까진 손가락을 묶으시게."
                 )
             else:
-                if is_down_trend_v:
+                if vol_strength < 80:
+                    ma5_guide_text = (
+                        f"현재가({p:{fmt_p}}{currency})가"
+                        f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, <b>거래절벽({vol_strength:.1f}점)</b>으로 수급이 마른 상태이오. 섣부른 추격을 금하고 관망하시게."
+                    )
+                elif is_down_trend_v:
                     ma5_guide_text = (
                         f"현재가({p:{fmt_p}}{currency})가"
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, 당일 음봉 조정 중이오. 5일선 지지 사수 확인 후 대응하시게."
@@ -1794,7 +1799,7 @@ if symbol:
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 단기 전투선 유지 중이오. 5일선 사수 여부를 지켜보시게."
                     )
 
-            # ★ [수정]: 2. 성벽 사수 및 공방 가이드 문구 동조화
+            # ★ [수정]: 2. 성벽 사수 및 공방 가이드 문구 동조화 (거래절벽/숨고르기 반영)
             if is_band_riding:
                 def_status = (
                     f"성벽({defense_line:{fmt_p}}{currency})을 가뿐히 넘어 볼린저 상단이 상방으로 찢어지고 있네! "
@@ -1813,15 +1818,21 @@ if symbol:
                     " 관망하시게."
                 )
             elif p >= defense_line:
-                def_status = (
-                    f"성벽({defense_line:{fmt_p}}{currency}) 위에서 5일선 기세를"
-                    " 타고 <b>위로 진격 중</b>이네! 든든한 방어선을 등지고 계속"
-                    " 밀어붙이시게."
-                    if p >= prev_p and p >= ma5_val
-                    else f"성벽({defense_line:{fmt_p}}{currency}) 위에는 있으나"
-                    " 단기 기세가 <b>숨고르기 중</b>이네! 성벽 위 음봉 발생 시"
-                    " 선제적 익절을 준비하시게."
-                )
+                if vol_strength < 80:
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 위에는 있으나 <b>거래절벽({vol_strength:.1f}점)</b>으로 상방 동력이 없네! "
+                        "추격매수를 삼가고 선제적 익절이나 관망을 준비하시게."
+                    )
+                else:
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 위에서 5일선 기세를"
+                        " 타고 <b>위로 진격 중</b>이네! 든든한 방어선을 등지고 계속"
+                        " 밀어붙이시게."
+                        if p >= prev_p and p >= ma5_val
+                        else f"성벽({defense_line:{fmt_p}}{currency}) 위에는 있으나"
+                        " 단기 기세가 <b>숨고르기 중</b>이네! 성벽 위 음봉 발생 시"
+                        " 선제적 익절을 준비하시게."
+                    )
             else:
                 if final_code == "BOTTOM_ENTRY":
                     def_status = (
@@ -1848,104 +1859,7 @@ if symbol:
                         " 마시게.</b>"
                     )
 
-            # ★ [수정]: 4. MACD 엔진 가이드 문구 동조화 (거래절벽/숨고르기 시 공격적 멘트 원천 차단)
-            if is_band_riding:
-                macd_strategy_msg = (
-                    "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b>"
-                    " 상방 대시세 추종.<br>• <b>진단:</b> 엔진 가속과 함께 상단 밴드가 열리고 있소! "
-                    "추격 매수는 자제하되, 1차 절반 익절 후 남은 물량은 5일선 이탈 전까지 강하게 끌고 가시게."
-                )
-            elif is_target_reached:
-                macd_strategy_msg = (
-                    "<b>🚨 엔진 과열 경보 (수학 목표선 도달)</b><br>• <b>역할:</b>"
-                    " 상단 오버슈팅 방어.<br>• <b>진단:</b> 엔진 가속도가 붙어 있어도 상단 저항선 코앞일세! "
-                    "추격 매수는 엄금이며, 1~2호가 아래에 매도 주문을 깔아두어 이익을 챙기시게."
-                )
-            else:
-                if is_macd_accelerating:
-                    if rsi_val >= 70:
-                        macd_strategy_msg = (
-                            "<b>🔥 엔진 정회전 가속 (과열 경계)</b><br>• <b>역할:</b>"
-                            " 상승 관성 극대화 및 과열권 진입.<br>• <b>진단:</b> 엔진 추진력은"
-                            " 강력하나 <b>보조지표 초과열권</b>이오! 추격 매수는 엄금하고,"
-                            " 분할 익절로 수익을 챙기며 남은 물량으로 추세를 즐기시게."
-                        )
-                    # ★ [수정]: 거래절벽(80 미만)이거나 성벽 위 음봉 숨고르기 중일 때는 MACD가 가속 중이어도 경계 멘트로 동조
-                    elif vol_strength < 80 or (p < today_open or is_down_trend_v):
-                        macd_strategy_msg = (
-                            "<b>⚡ 엔진 가속 중이나 거래절벽/숨고르기 공방</b><br>• <b>역할:</b>"
-                            " 수급 부족 속 휩소 경계.<br>• <b>진단:</b> MACD는 가속 중이나 거래량이 마르고 성벽 위에서 숨고르기 중이오! 섣부른 추격매수를 금지하시게."
-                        )
-                    elif p >= defense_line:
-                        macd_strategy_msg = (
-                            "<b>🔥 엔진 정회전 가속 (성벽 수성 진격)</b><br>• <b>역할:</b>"
-                            " 성벽 위 상승 관성 풀가동.<br>• <b>진단:</b> 성벽을"
-                            " 든든히 사수한 채 가속도가 붙었으니, 5일선을 이탈하기 전까지"
-                            " 거침없이 추세를 즐기시게."
-                        )
-                    else:
-                        macd_strategy_msg = (
-                            "<b>🔥 엔진 정회전 가속 (성벽 탈환 돌격)</b><br>• <b>역할:</b>"
-                            " 상승 추진력 폭발.<br>• <b>진단:</b> 가속도가 날마다"
-                            " 붙고 있네! 성벽 돌파를 향해 든든하게 진격하시게."
-                        )
-                elif is_macd_decelerating:
-                    if is_down_trend_structural or not is_ma5_safe:
-                        macd_strategy_msg = (
-                            "<b>⚠️ 엔진 정회전 둔화 (반등 탄력 소멸)</b><br>• <b>역할:</b>"
-                            " 낙폭과대 속임수 반등 둔화.<br>• <b>진단:</b> 대세 역배열 속 미약했던 단기 반등"
-                            " 추진력마저 꺾였으니, 매수는 절대 금하고 추가 하락을 경계하시게."
-                        )
-                    else:
-                        macd_strategy_msg = (
-                            "<b>⚠️ 엔진 정회전 둔화 (탄력 저하 경보)</b><br>• <b>역할:</b>"
-                            " 상승 탄력 둔화 감지.<br>• <b>진단:</b> 상승세는 유지 중이나"
-                            " 추진력이 꺾였으니, 신규 매수를 자제하고 분할 익절을"
-                            " 준비하시게."
-                        )
-                elif is_macd_recovering:
-                    if is_escape_buy_signal or final_code == "ESCAPE_BUY":
-                        macd_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 시 2단계 집행"
-                        macd_strategy_msg = (
-                            "<b>🌤️ 엔진 역회전 감소 (2단계 바닥 탈출)</b><br>• <b>역할:</b>"
-                            " 바닥 탈출 추진력 가동.<br>• <b>진단:</b> 매도세가 잦아들고 5일선"
-                            f" 위로 올라탔으니, {macd_time_txt}하시게."
-                        )
-                    elif final_code == "BOTTOM_ENTRY":
-                        macd_time_txt = "14:00 이후 지지 확인 후 50% 소량 입질 매수" if is_kr else "07:00 일봉 지지 확인 후 소량 입질 매수"
-                        macd_strategy_msg = (
-                            "<b>🌤️ 엔진 역회전 감소 (1단계 바닥 입질)</b><br>• <b>역할:</b>"
-                            " 극바닥 브레이크 가동.<br>• <b>진단:</b> 하락 압력이 줄어들며 바닥"
-                            f" 다지기 중이오! {macd_time_txt}하시게."
-                        )
-                    elif is_down_trend_structural:
-                        macd_strategy_msg = (
-                            "<b>🌤 엔진 역회전 감소 (기술적 반등)</b><br>• <b>역할:</b>"
-                            " 낙폭 과대 반등 시동.<br>• <b>진단:</b> 매도세는"
-                            " 잦아들었으나 <b>대세 역배열 및 성벽 아래 함락 상태</b>이오! "
-                            "추매는 절대 금지하며 단순 관망하시게."
-                        )
-                    elif p < defense_line:
-                        macd_strategy_msg = (
-                            "<b>🌤 엔진 역회전 감소 (기술적 반등)</b><br>• <b>역할:</b>"
-                            " 낙폭 과대 반등 시동.<br>• <b>진단:</b> 매도세는"
-                            " 잦아들었으나 <b>단기 조정 및 성벽 돌파 공방 상태</b>이오! "
-                            "추매는 절대 금지하며 단순 관망하시게."
-                        )
-                    else:
-                        macd_strategy_msg = (
-                            "<b>🌤 엔진 역회전 감소 (반등 시동)</b><br>• <b>역할:</b>"
-                            " 하락 둔화 및 바닥 다지기.<br>• <b>진단:</b> 매도세가"
-                            " 잦아들며 반등 채비 중이오. 5일선 안착 여부를 확인하시게."
-                        )
-                else:
-                    macd_strategy_msg = (
-                        "<b>⚙️ 엔진 역회전 심화</b><br>• <b>역할:</b> 하락 조정"
-                        " 가속.<br>• <b>진단:</b> 하락 관성 지속. 섣부른"
-                        " 매수 및 물타기를 절대 금지하고 관망하시게."
-                    )
-
-            # ★ [수정]: 5. 보유자 전용 가이드 문구 동조화
+            # 보유자 전용 가이드 문구 조화
             if is_band_riding:
                 if user_avg_price > 0:
                     profit_rate = ((p - user_avg_price) / user_avg_price) * 100
@@ -2267,10 +2181,9 @@ if symbol:
                         m_diag = (
                             "<b>🔥 정회전 가속 (과열 경계)</b><br>• <b>역할:</b> 추진력"
                             " 폭발 속 과열권 도달.<br>• <b>진단:</b> 엔진 화력은"
-                            " 최상이나 <b>지표 과열 상태</b>이오! 신규 추격 금지, 분할"
+                            " 최상이나 <b>지표 초과열권</b>이오! 신규 추격 금지, 분할"
                             " 익절로 방어벽을 세우시게."
                         )
-                    # ★ [수정]: 하단 MACD 카드(`i4`)에서도 거래절벽(80 미만)이거나 성벽 위 숨고르기일 때는 경계 멘트로 동조
                     elif vol_strength < 80 or (p < today_open or is_down_trend_v):
                         m_diag = (
                             "<b>⚡ 엔진 가속 중이나 거래절벽/숨고르기 공방</b><br>• <b>역할:</b>"
