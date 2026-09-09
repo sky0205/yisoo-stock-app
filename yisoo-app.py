@@ -654,10 +654,17 @@ if symbol:
                             f"밴드폭 응축돌파({bandwidth:.1f}%) 5일선 안착 / 에너지"
                             " 분출 초입"
                         )
-                        squeeze_info_str = (
-                            f"<br>• 🟢 <b>[밴드폭 응축돌파({bandwidth:.1f}%)]</b>"
-                            " 5일선을 뚫고 올라섰네! 상방 분출 초입으로 유효하오."
-                        )
+                        # ★ [수정]: 성벽 위 음봉 조정/숨고르기 중일 때는 '분출 초입' 대신 현 상황에 맞게 멘트 톤 조율
+                        if p < today_open or is_down_trend_v:
+                            squeeze_info_str = (
+                                f"<br>• ☕ <b>[성벽 위 숨고르기({bandwidth:.1f}%)]</b>"
+                                " 5일선 위 안착 상태이나 당일 음봉 조정 중이오."
+                            )
+                        else:
+                            squeeze_info_str = (
+                                f"<br>• 🟢 <b>[밴드폭 응축돌파({bandwidth:.1f}%)]</b>"
+                                " 5일선을 뚫고 올라섰네! 상방 분출 초입으로 유효하오."
+                            )
                 else:
                     is_bandwidth_ok = False
                     bw_status_category = "SQUEEZE_WAIT"
@@ -1135,7 +1142,7 @@ if symbol:
                 time_rule_pass = "수동 시세 지지 확인 완료! (윗꼬리 기준선 이탈 시 즉시 철수)"
 
             # ==================================================================
-            # ★ [신호등 분기 논리: 입체 수확(50% 확정 + 밴드 라이딩) 복원]
+            # ★ [신호등 분기 논리: 오리지널 원본 안전 구조 완벽 복원]
             # ==================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -1680,12 +1687,18 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
-            # 3) 세부 지표 문자열 조립 (성벽 실제 위치와 완전히 연동)
+            # 3) 세부 지표 문자열 조립 (성벽 돌파 여부와 음봉 숨고르기 상태를 완벽 동조화)
             if final_code == "BREAKOUT_ATTACK" or is_on_the_wall:
-                sub_indicator_str = (
-                    f"    - <b>성벽 돌파 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 돌파 성공! "
-                    f"수확 목표선({target_price_100:{fmt_p}}{currency})까지 기세 추종 (잔여 여력: {tgt_diff:+.1f}%)"
-                )
+                # ★ [수정]: 성벽 위에 있으나 음봉 조정/숨고르기 중일 때는 '분출 초입'이 아니라 성벽 위 숨고르기로 정확히 표기
+                if p < today_open or is_down_trend_v:
+                    sub_indicator_str = (
+                        f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 당일 음봉 숨고르기 공방 중 (5일선 지지 확인)"
+                    )
+                else:
+                    sub_indicator_str = (
+                        f"    - <b>성벽 돌파 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 돌파 성공! "
+                        f"수확 목표선({target_price_100:{fmt_p}}{currency})까지 기세 추종 (잔여 여력: {tgt_diff:+.1f}%)"
+                    )
             elif is_target_reached:
                 sub_indicator_str = (
                     f"    - <b>목표 도달 전황:</b> 수확 목표선({target_price_100:{fmt_p}}{currency}) 도달 완료! (분할 매도 구역)"
@@ -2254,7 +2267,7 @@ if symbol:
                         m_diag = (
                             "<b>🔥 정회전 가속 (과열 경계)</b><br>• <b>역할:</b> 추진력"
                             " 폭발 속 과열권 도달.<br>• <b>진단:</b> 엔진 화력은"
-                            " 최상이나 <b>지표 과열 상태</b>이오! 신규 추격 금지, 분할"
+                            " 최상이나 <b>지표 초과열권</b>이오! 신규 추격 금지, 분할"
                             " 익절로 방어벽을 세우시게."
                         )
                     elif p < today_open or is_down_trend_v:
