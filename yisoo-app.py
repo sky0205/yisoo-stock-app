@@ -901,26 +901,25 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            # [전일비 및 등락률 최종 무결점 안전 연산 및 출력]
+            ## [예외 원천 차단 무적 전일비 계산]
             try:
-                _curr = float(p) if 'p' in locals() and p is not None else 0.0
-                
-                # 전역 변수나 기존 계산값이 있으면 우선 사용하되, 0이거나 없으면 안전하게 산출합니다.
-                _diff = float(p_diff) if ('p_diff' in locals() and p_diff != 0) else 0.0
-                _chg = float(p_chg) if ('p_chg' in locals() and p_chg != 0.0) else 0.0
-                
-                # 만약 여전히 0이라면, df의 최근 데이터 2개만 골라 안전하게 방어합니다.
-                if _diff == 0.0 and 'df' in locals() and df is not None and len(df) >= 2:
-                    _recent_closes = df["Close"].tail(2).tolist()
-                    if len(_recent_closes) == 2:
-                        _diff = _recent_closes[-1] - _recent_closes[-2]
-                        _chg = (_diff / _recent_closes[-2]) * 100 if _recent_closes[-2] > 0 else 0.0
-                        
-                # 최종 출력 포맷팅
-                _sign_str = "+" if _diff > 0 else ""
-                display_price = f"{_curr:{fmt_p}}{currency} (전일비: {_sign_str}{_diff:{fmt_p}} / {_chg:+.2f}%)"
+                _curr = float(p)
             except Exception:
-                display_price = f"{p:{fmt_p}}{currency} (전일비: 0 / +0.00%)"
+                _curr = 0.0
+            
+            try:
+                _prev = float(df["Close"].iloc[-2])
+            except Exception:
+                try:
+                    _prev = float(prev_p)
+                except Exception:
+                    _prev = _curr
+            
+            p_diff = _curr - _prev
+            p_chg = (p_diff / _prev * 100) if _prev > 0 else 0.0
+            
+            _sign_str = "+" if p_diff > 0 else ""
+            display_price = f"{_curr:,.0f}{currency} (전일비: {_sign_str}{p_diff:,.0f} / {p_chg:+.2f}%)"
             st.markdown(
                 f"<div style='background-color:#f8f9fa; padding:20px;"
                 " border-radius:10px; border-left:10px solid #1565C0;'><p"
