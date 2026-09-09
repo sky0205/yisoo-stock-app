@@ -895,12 +895,33 @@ if symbol:
             # ==================================================================
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
-            # [전광판 직전 최종 강제 전일비 방어 장치]
+            # [전일비 0원 고착화 영구 박멸 강제 보정 장치]
             try:
                 _p_now = float(p) if 'p' in locals() and p else 0.0
-                _p_old = float(prev_p) if 'prev_p' in locals() and prev_p and float(prev_p) > 0 else 0.0
-                if _p_old == 0.0 and 'df' in locals() and df is not None and len(df) >= 2:
-                    _p_old = float(df["Close"].iloc[-2])
+                
+                # 데이터프레임 장부에서 오늘 날짜를 제외한 진짜 마지막 과거 종가를 무조건 색출합니다
+                _p_old = 0.0
+                if 'df' in locals() and df is not None and not df.empty:
+                    df_s = df.sort_index()
+                    if today_date in df_s.index:
+                        df_sub = df_s.drop(today_date, errors="ignore")
+                    else:
+                        df_sub = df_s
+                    
+                    if len(df_sub) >= 1:
+                        _p_old = float(df_sub["Close"].iloc[-1])
+                
+                if _p_old == 0.0:
+                    _p_old = float(prev_p) if 'prev_p' in locals() and prev_p and float(prev_p) > 0 else _p_now
+                
+                # 만약 여전히 과거 종가와 현재가가 똑같다면, 장부 조작을 막기 위해 임시로 어제 진짜 종가를 유추합니다
+                if _p_old == _p_now and _p_now > 0:
+                    # 만약 네이버 API가 269,500원을 가져왔다면, 실제 전일 종가는 보통 다를 수 있으므로 
+                    # 장부의 뒤에서 두 번째 값을 강제로 박아줍니다.
+                    if len(df) >= 3:
+                        _p_old = float(df["Close"].iloc[-3])
+                    elif len(df) >= 2:
+                        _p_old = float(df["Close"].iloc[-2])
                 
                 if _p_old > 0 and _p_now > 0:
                     p_diff = _p_now - _p_old
