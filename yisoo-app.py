@@ -897,17 +897,25 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            # [전일비 및 등락률 직전일 기준 정확 산출 코드]
+            # [전일비 및 등락률 최후 보루 강제 연산 코드]
             try:
-                _curr = float(p) if 'p' in locals() and p is not None else 0.0
+                _curr = float(p) if 'p' in locals() and p is not None else float(df["Close"].iloc[-1])
                 
                 _prev = 0.0
-                if 'df' in locals() and df is not None and len(df) >= 2:
-                    _prev = float(df["Close"].iloc[-2])  # 맨 첫날이 아니라 바로 직전 거래일 종가로 고정합니다.
-                elif 'prev_p' in locals() and prev_p is not None:
-                    _prev = float(prev_p)
+                # 1. 야후 파이낸스 ticker info에서 전일 종가를 최우선으로 강탈합니다.
+                if 'ticker' in locals() and hasattr(ticker, 'info'):
+                    _inf = ticker.info
+                    _prev = float(_inf.get('regularMarketPreviousClose', _inf.get('previousClose', 0.0)))
                 
-                if _prev > 0 and _curr > 0:
+                # 2. 객체에서 못 찾았으면 차트 데이터(df)의 직전 거래일 종가를 씁니다.
+                if _prev == 0.0 and 'df' in locals() and df is not None and len(df) >= 2:
+                    _prev = float(df["Close"].iloc[-2])
+                    
+                # 3. 그래도 없으면 기존 변수 활용
+                if _prev == 0.0 and 'prev_p' in locals() and prev_p is not None:
+                    _prev = float(prev_p)
+            
+                if _prev > 0.0 and _curr > 0.0:
                     p_diff = _curr - _prev
                     p_chg = (p_diff / _prev) * 100
                 else:
