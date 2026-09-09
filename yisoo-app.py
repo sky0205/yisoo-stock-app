@@ -452,24 +452,17 @@ if symbol:
             df.index = pd.to_datetime(df.index).date
             today_date = now_local.date()
 
-            # [전일 종가(prev_p) 무결점 강제 고정 로직]
+            # [옛날 원본 정석 전일 종가 확정 구간]
             if not is_kr and us_prev_p and us_prev_p > 0:
                 prev_p = us_prev_p
             else:
-                try:
-                    df_sorted = df.sort_index()
-                    # 오늘 날짜를 데이터프레임에서 잠시 빼버리고 안전하게 직전 종가를 구합니다
-                    if today_date in df_sorted.index:
-                        df_clean = df_sorted.drop(today_date)
+                if len(df) >= 2:
+                    if today_date in df.index:
+                        prev_p = float(df["Close"].iloc[-2])
                     else:
-                        df_clean = df_sorted
-                        
-                    if len(df_clean) >= 1:
-                        prev_p = float(df_clean["Close"].iloc[-1])
-                    else:
-                        prev_p = p
-                except Exception:
-                    prev_p = p
+                        prev_p = float(df["Close"].iloc[-1])
+                else:
+                    prev_p = float(df["Close"].iloc[0]) if not df.empty else p
 
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
