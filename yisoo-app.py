@@ -93,6 +93,11 @@ def fetch_kr_orderbook(symbol):
             close_p = float(str(data.get("closePrice", 0)).replace(",", ""))
             high_p = float(str(data.get("highPrice", 0)).replace(",", ""))
             low_p = float(str(data.get("lowPrice", 0)).replace(",", ""))
+            
+            # [전일비/등락률 전역 변수 강제 매핑]
+            global p_diff, p_chg
+            p_diff = float(str(data.get("compareToPreviousClose", 0)).replace(",", ""))
+            p_chg = float(str(data.get("fluctuationsRatio", 0.0)).replace("%", "").replace(",", ""))
 
             p_range = max(1.0, high_p - low_p)
             pos_ratio = max(0.0, min(1.0, (close_p - low_p) / p_range))
