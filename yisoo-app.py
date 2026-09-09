@@ -492,8 +492,25 @@ if symbol:
             )
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            p_diff = p - prev_p
-            p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
+            # [국장/미장 완벽 통합 무적 전일비 강제 산출]
+            try:
+                _curr_price = float(p) if 'p' in locals() and p is not None else 0.0
+                _prev_price = 0.0
+                
+                if 'prev_p' in locals() and prev_p is not None and float(prev_p) > 0:
+                    _prev_price = float(prev_p)
+                elif 'df' in locals() and df is not None and len(df) >= 2:
+                    _prev_price = float(df["Close"].iloc[-2])
+                
+                if _prev_price > 0 and _curr_price > 0:
+                    p_diff = _curr_price - _prev_price
+                    p_chg = (p_diff / _prev_price) * 100
+                else:
+                    p_diff = 0.0
+                    p_chg = 0.0
+            except Exception:
+                p_diff = 0.0
+                p_chg = 0.0
 
             if is_kr:
                 m_start = now_local.replace(
