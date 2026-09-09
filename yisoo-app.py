@@ -93,27 +93,18 @@ def fetch_kr_orderbook(symbol):
             close_p = float(str(data.get("closePrice", 0)).replace(",", ""))
             high_p = float(str(data.get("highPrice", 0)).replace(",", ""))
             low_p = float(str(data.get("lowPrice", 0)).replace(",", ""))
-            
-            # [전일비 및 등락률 안전 추출 및 자체 검증 연산]
-            raw_diff = data.get("compareToPreviousClose", data.get("diff", 0))
-            raw_chg = data.get("fluctuationsRatio", data.get("rate", 0.0))
-            
-            p_diff = float(str(raw_diff).replace(",", "")) if raw_diff is not None else 0.0
-            p_chg = float(str(raw_chg).replace("%", "").replace(",", "")) if raw_chg is not None else 0.0
-    
+
             p_range = max(1.0, high_p - low_p)
             pos_ratio = max(0.0, min(1.0, (close_p - low_p) / p_range))
-    
+
             calc_ratio = round(0.85 + (pos_ratio * 0.8), 2)
             est_bid = 350000.0
             est_ask = round(est_bid * calc_ratio)
-    
+
             return {
                 "ask": est_ask,
                 "bid": est_bid,
                 "ratio": calc_ratio,
-                "p_diff": p_diff,
-                "p_chg": p_chg,
                 "ok": True,
                 "msg": "",
             }
@@ -455,13 +446,17 @@ if symbol:
             df.index = pd.to_datetime(df.index).date
             today_date = now_local.date()
 
+            # [수정] 전일 종가(prev_p) 판정 및 예외 방어 로직 완벽 복원
             if not is_kr and us_prev_p and us_prev_p > 0:
                 prev_p = us_prev_p
             else:
-                if today_date in df.index:
-                    prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
+                if len(df) >= 2:
+                    if today_date in df.index:
+                        prev_p = float(df["Close"].iloc[-2])
+                    else:
+                        prev_p = float(df["Close"].iloc[-1])
                 else:
-                    prev_p = float(df["Close"].iloc[-1]) if len(df) >= 1 else p
+                    prev_p = p
 
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
@@ -901,37 +896,7 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            # [전일비 0 고착화 원흉 박멸 및 정밀 연산]
-            try:
-                _curr = float(p) if ('p' in locals() and p is not None) else float(df["Close"].iloc[-1])
-            except Exception:
-                _curr = 0.0
-            
-            _prev = 0.0
-            # 1. 상단에서 넘어온 전이수/전일 종가 변수가 있다면 최우선으로 잡습니다.
-            if 'prev_p' in locals() and prev_p is not None and float(prev_p) > 0:
-                _prev = float(prev_p)
-            # 2. 데이터프레임에 2줄 이상 있으면 직전 거래일 종가를 잡습니다.
-            elif 'df' in locals() and df is not None and len(df) >= 2:
-                try:
-                    _prev = float(df["Close"].iloc[-2])
-                except Exception:
-                    _prev = 0.0
-            
-            # 3. 그래도 없으면 당일 시가(Open)를 활용해 대조합니다.
-            if _prev == 0.0 and 'today_open' in locals() and today_open is not None:
-                _prev = float(today_open)
-            
-            # 연산 수행 (전일가를 못 구했으면 0으로 두어 이상한 값 방지)
-            if _prev > 0 and _curr > 0 and _prev != _curr:
-                p_diff = _curr - _prev
-                p_chg = (p_diff / _prev) * 100
-            else:
-                p_diff = 0.0
-                p_chg = 0.0
-            
-            _sign_str = "+" if p_diff > 0 else ""
-            display_price = f"{_curr:,.0f}{currency} (전일비: {_sign_str}{p_diff:,.0f} / {p_chg:+.2f}%)"
+            display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(
                 f"<div style='background-color:#f8f9fa; padding:20px;"
                 " border-radius:10px; border-left:10px solid #1565C0;'><p"
@@ -1561,7 +1526,7 @@ if symbol:
                     f"({ob_ratio_val:.2f}배)으로 윗꼬리 경계 관망"
                 )
             elif pullback_rebound_score == 0:
-                pullback_action_str = "-> <b>[관망]</b> 눌림목 지표 조건 미충족"
+                pullback_action_str = "-> <b>[관망]</b> 눌림목 지지 조건 미충족"
             elif pullback_rebound_score < 2:
                 pullback_action_str = (
                     "-> <b>[지표 미흡]</b> 눌림목 동조 점수 부족"
