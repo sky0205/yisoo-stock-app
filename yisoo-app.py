@@ -517,7 +517,11 @@ if symbol:
                 vol_strength_auto = v_ratio
 
             vol_strength = 100.0 if is_manual_mode else vol_strength_auto
-
+            # [추세 및 이동평균선 구조 판독 선행 정의]
+            is_bullish = ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val
+            is_bearish = ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val
+            is_down_trend_structural = is_bearish or (p < mid_line and mid_line <= ma60_val)
+            is_ma5_safe = p >= ma5_val
             # 보조지표 연산
             delta = df["Close"].diff()
             gain = (delta.where(delta > 0, 0)).rolling(14).mean()
