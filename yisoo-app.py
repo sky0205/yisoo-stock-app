@@ -897,11 +897,14 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            # [상단 전광판 전일비 및 등락률 즉시 자체 연산 안전 장치]
-            if 'p' in locals() and 'prev_p' in locals() and prev_p > 0:
-                p_diff = p - prev_p
-                p_chg = (p_diff / prev_p) * 100
-            else:
+            # [전일비 및 등락률 최종 강제 산출 안전 장치]
+            try:
+                _curr_val = float(df["Close"].iloc[-1]) if 'df' in locals() and len(df) > 0 else (p if 'p' in locals() else 0.0)
+                _prev_val = float(df["Close"].iloc[-2]) if 'df' in locals() and len(df) >= 2 else _curr_val
+                
+                p_diff = _curr_val - _prev_val
+                p_chg = (p_diff / _prev_val * 100) if _prev_val > 0 else 0.0
+            except Exception:
                 p_diff = 0
                 p_chg = 0.0
             
