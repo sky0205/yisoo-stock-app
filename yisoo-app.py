@@ -1107,10 +1107,13 @@ if symbol:
                 time_tag_wait = "★ 14:00 매수 대기"
                 time_tag_ok = "14:00 이후 안착 완료"
                 time_rule_desc = (
-                    "오전장 휩소를 피하기 위해 14:00까지 손가락을 묶고 지지"
-                    " 여부를 관찰 후 진입"
+                    "오전장 휩소를 피하기 위해 14:00 이후 지지 확인 시 50% 분할 타진하고,"
+                    " 15:20 종가 사수 시 100% 완성하시게. (단, 윗꼬리 달고 기준선 이탈 시 즉시 철수)"
                 )
-                time_rule_pass = "14:00 이후 바닥 지지 확인 완료!"
+                time_rule_pass = (
+                    "14:00 이후 지지 확인 완료! 50% 분할 타진 집행 (15:20 종가 사수 시 완성 /"
+                    " 윗꼬리 이탈 시 즉시 철수)"
+                )
             elif not is_kr and not is_manual_mode:
                 is_afternoon_safe_time = (kst_now.hour >= 7) and (
                     kst_now.hour < 22
@@ -1229,14 +1232,14 @@ if symbol:
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
                         " <b>[진바닥 포착 완료]</b> 3중 지표 터치 확인! 단,"
-                        f" {time_rule_desc}하시게."
+                        f" {time_rule_desc}"
                     )
                 else:
                     sig = f"🟢 [매입 진격] 1단계 진바닥 입질 매수 ({time_tag_ok})"
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        f" <b>[{time_tag_ok}]</b> {time_rule_pass} 소량 씨앗"
-                        " 뿌리기 진격 (전저점 방어선 엄수)."
+                        f" <b>[{time_tag_ok}]</b> 14:00 이후 볼린저 바닥 지지 확인 시 50% 분할 타진하고,"
+                        " 15:20 저가 사수 시 완성하시게. (단, 윗꼬리 달고 바닥선 이탈 시 즉시 철수)"
                     )
 
             elif is_escape_buy_signal:
@@ -1247,14 +1250,14 @@ if symbol:
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
                         f" <b>[5일선 안착 포착]</b> {bw_diag_msg}. 기세는"
-                        f" 살아있으나 {time_rule_desc} 비중 확대를 집행하시게."
+                        f" 살아있으나 {time_rule_desc}"
                     )
                 else:
                     sig = f"🟢 [추가 진격] 2단계 진바닥 탈출 매수 ({time_tag_ok})"
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. 5일선 위 안착"
-                        " 완벽 사수! 배팅 비중을 늘려 밭을 다짐."
+                        f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. 14:00 이후 5일선 안착 확인 시 50% 분할 진입하고,"
+                        " 15:20 종가 사수 시 2단계 완성하시게. (단, 윗꼬리 달고 5일선 하회 시 즉시 철수)"
                     )
 
             elif is_pullback_buy_signal:
@@ -1265,15 +1268,15 @@ if symbol:
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
                         f" <b>[눌림목 지지 포착]</b> {bw_diag_msg}."
-                        f" <b>{time_rule_desc}</b> 본진을 투입하시게."
+                        f" <b>{time_rule_desc}</b>"
                     )
                 else:
                     sig = f"🔵 [본진 진격] 3단계 눌림목 추가 매수 ({time_tag_ok})"
                     final_adv = (
                         f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
                         f" <b>[{time_tag_ok}]</b> {bw_diag_msg}."
-                        f" {time_rule_pass} 5·20일선 안전마진(+0.2%) 돌파 및 호가"
-                        " 잔량비 사수 완료! 알짜배기 승수 확대 집행."
+                        " 14:00 이후 5·20일선 안전마진(+0.2%) 안착 시 50% 분할 타진,"
+                        " 15:20 종가 사수 시 3단계 완성하시게. (단, 윗꼬리 밀림 시 매수 취소 및 철수)"
                     )
             # [돌파 확인 분기 추가] 20일선 및 안전마진선 돌파 시
             elif (
@@ -1289,7 +1292,8 @@ if symbol:
                     f" <b>[20일선 돌파 안착 타진]</b>"
                     f" 현재가({p:{fmt_p}}{currency})가"
                     f" 20일선 및 안전마진선({ma20_safe_threshold:{fmt_p}}{currency})을 돌파하였소!"
-                    f" 15:20 종가까지 이 자리를 지켜낼 경우 3단계 진격 준비하시게."
+                    " 14:00 이후 지지 확인 시 50% 분할 타진, 15:20 종가 사수 시 3단계 완성하시게."
+                    " (단, 윗꼬리 달고 20일선 이탈 시 즉시 철수)"
                 )
             elif (
                 is_ma20_teetering
@@ -1467,8 +1471,8 @@ if symbol:
                     )
                 elif is_escape_buy_signal:
                     bottom_action_str = (
-                        "→ <b>[2단계 진바닥 탈출]</b> 5일선 위 안착 성공! 추가"
-                        " 매수 유효."
+                        "→ <b>[2단계 진바닥 탈출]</b> 5일선 안착 확인! 14:00 이후 50% 분할 타진,"
+                        " 15:20 종가 사수 시 완성 (윗꼬리 5일선 이탈 시 즉시 철수)"
                     )
                 elif is_ma5_safe:
                     bottom_action_str = (
@@ -1476,7 +1480,8 @@ if symbol:
                     )
                 elif is_bottom_entry_signal:
                     bottom_action_str = (
-                        "→ <b>[1단계 진바닥 입질 매수]</b> 지표 충족 + 수급 유입! 소량 입질 매수 시작."
+                        "→ <b>[1단계 진바닥 입질 매수]</b> 지표 충족! 14:00 이후 볼린저 바닥 지지 시 50% 타진,"
+                        " 15:20 저가 사수 시 완성 (윗꼬리 바닥 이탈 시 즉시 철수)"
                     )
                 else:
                     bottom_action_str = (
@@ -1524,8 +1529,8 @@ if symbol:
                     )
                 elif is_escape_buy_signal:
                     bottom_action_str = (
-                        "→ <b>[2단계 진바닥 탈출]</b> 5일선 위 안착 성공! 추가"
-                        " 매수 유효."
+                        "→ <b>[2단계 진바닥 탈출]</b> 5일선 안착 확인! 14:00 이후 50% 분할 타진,"
+                        " 15:20 종가 사수 시 완성 (윗꼬리 5일선 이탈 시 즉시 철수)"
                     )
                 elif not is_ma5_safe:
                     bottom_action_str = (
@@ -1574,7 +1579,8 @@ if symbol:
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
                 )
                 pullback_action_str = (
-                    f"-> <b>[돌파 타진]</b> 20일선({mid_line:{fmt_p}}{currency}) 돌파 성공! 15:20 종가 안착 유지 시 3단계 진격 준비하시게."
+                    f"-> <b>[돌파 타진]</b> 20일선({mid_line:{fmt_p}}{currency}) 돌파 성공! "
+                    "14:00 이후 지지 시 50% 타진, 15:20 종가 사수 시 3단계 완성 (윗꼬리 밀림 시 즉시 철수)"
                     if p >= mid_line
                     else f"-> <b>[매수 보류]</b> {bw_diag_msg}"
                 )
@@ -1611,8 +1617,8 @@ if symbol:
                 )
             elif is_pullback_buy_signal:
                 pullback_action_str = (
-                    "-> <b>[3단계 눌림목 추가 매수]</b> 5·20일선 위 안착 +"
-                    " 지표 동조 확인, 승수 확대 진격!"
+                    "-> <b>[3단계 눌림목 추가 매수]</b> 5·20일선 안착 확인! "
+                    "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 완성 (윗꼬리 20일선 이탈 시 즉시 철수)"
                 )
             else:
                 pullback_action_str = (
@@ -1702,13 +1708,13 @@ if symbol:
                     ma5_guide_text = (
                         f"현재가({p:{fmt_p}}{currency})가"
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하며 2단계"
-                        " 진바닥 탈출 성공! 추가 매수 유효 구역이오."
+                        " 진바닥 탈출 성공! 14:00 이후 지지 확인 50% 분할 진입 유효 구역이오."
                     )
                 elif final_code == "PULLBACK_BUY":
                     ma5_guide_text = (
                         f"현재가({p:{fmt_p}}{currency})가"
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 단기"
-                        " 전투선이 완벽히 살아있네. 본진 진격 가능구역이오."
+                        " 전투선이 완벽히 살아있네. 14:00 이후 지지 시 3단계 분할 진격 가능구역이오."
                     )
                 else:
                     ma5_guide_text = (
@@ -1988,14 +1994,13 @@ if symbol:
                     bb_diag = (
                         f"🔴 <b>[1단계 진바닥 입질 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
                         " <b>역할:</b> 과매도 바닥권 선취매.<br>• <b>진단:</b> 지표"
-                        " 터치 + 거래량 유입 + 바닥 지지! 소량 입질 매수 시작."
+                        " 터치 + 바닥 지지 확인! 14:00 이후 50% 타진, 15:20 저가 사수 시 완성 (윗꼬리 바닥 이탈 시 철수)"
                     )
                 elif final_code == "ESCAPE_BUY":
                     bb_diag = (
                         f"🟢 <b>[2단계 진바닥 탈출 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
                         " <b>역할:</b> 5일선 안착 후 배팅 확대.<br>• <b>진단:</b>"
-                        f" {bw_diag_msg}. 5일선 위 안착 성공! 추가 매수로 비중"
-                        " 확대."
+                        f" {bw_diag_msg}. 14:00 이후 5일선 안착 시 50% 분할 타진, 15:20 종가 사수 시 2단계 완성 (윗꼬리 5일선 이탈 시 철수)"
                     )
                 elif final_code == "WAIT_VOLUME":
                     bb_diag = (
@@ -2019,8 +2024,7 @@ if symbol:
                     bb_diag = (
                         f"🔵 <b>[3단계 눌림목 추가 매수 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
                         " <b>역할:</b> 승수 확대.<br>• <b>진단:</b>"
-                        f" {bw_diag_msg}. 5·20일선 안전마진 돌파 및 활주로 확보로"
-                        " 알짜배기 추가 매수 집행."
+                        f" {bw_diag_msg}. 14:00 이후 안전마진 안착 시 50% 타진, 15:20 종가 사수 시 3단계 완성 (윗꼬리 20일선 이탈 시 철수)"
                     )
                 elif final_code == "BAND_RIDING_HARVEST":
                     bb_diag = (
@@ -2061,7 +2065,7 @@ if symbol:
                     bb_diag = (
                         f"🟡 <b>[호가/20일선 검증 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
                         " <b>역할:</b> 휩소 및 허매수 방지.<br>•"
-                        f" <b>진단:</b> 상승형 매도잔량비(1.2~2.5배) 사수 및 확실한 안착 전까지 진입 보류."
+                        " <b>진단:</b> 상승형 매도잔량비(1.2~2.5배) 사수 및 확실한 안착 전까지 진입 보류."
                     )
                 else:
                     bb_diag = (
@@ -2092,7 +2096,7 @@ if symbol:
                     r_status = (
                         "<b>🧊 냉골 바닥권</b><br>• <b>역할:</b> 진바닥 수급"
                         " 감지.<br>• <b>진단:</b> 바닥권 지표 터치 및 수급 유입"
-                        " 시 1단계 입질 매수 타이밍."
+                        " 시 14:00 이후 지지 확인하고 1단계 입질 매수 타이밍."
                     )
                 else:
                     r_status = (
@@ -2126,7 +2130,7 @@ if symbol:
                     w_status = (
                         "<b>🏳️ 개미 항복 구역</b><br>• <b>역할:</b> 세력"
                         " 선취매 포착.<br>• <b>진단:</b> 🧊 <b>[바닥 침체]</b>"
-                        " -80 밑 투매 진행 중! 지표 동조 시 입질 대기."
+                        " -80 밑 투매 진행 중! 14:00 이후 지표 동조 시 입질 대기."
                     )
                 else:
                     w_status = (
@@ -2185,13 +2189,13 @@ if symbol:
                         m_diag = (
                             "<b>🌤️ 역회전 감소 (2단계 바닥 탈출)</b><br>• <b>역할:</b>"
                             " 바닥 탈출 추진력 가동.<br>• <b>진단:</b> 매도세가 잡히고 5일선"
-                            " 위 안착 성공! 5일선 사수 기준으로 2단계 비중 확대를 집행하시게."
+                            " 위 안착 성공! 14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행하시게."
                         )
                     elif final_code == "BOTTOM_ENTRY":
                         m_diag = (
                             "<b>🌤️ 역회전 감소 (1단계 바닥 입질)</b><br>• <b>역할:</b>"
                             " 하락 둔화 / 바닥 입질.<br>• <b>진단:</b> 매도세 진정 및 바닥"
-                            " 지표 충족 완료! 전저점 방어선 엄수하며 소량 입질 매수."
+                            " 지표 충족 완료! 14:00 이후 지지 확인 후 50% 소량 입질 매수."
                         )
                     elif is_down_trend_structural:
                         m_diag = (
@@ -2211,7 +2215,7 @@ if symbol:
                         m_diag = (
                             "<b>🌤 역회전 감소</b><br>• <b>역할:</b> 하락 둔화 /"
                             " 반등 시동.<br>• <b>진단:</b> 매도세 소멸 중! 5일선"
-                            " 안착 및 거래량 확인 시 추매 준비하시게."
+                            " 안착 및 거래량 확인 시 14:00 이후 추매 준비하시게."
                         )
                 else:
                     m_diag = (
