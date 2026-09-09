@@ -892,21 +892,24 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            # [전일비 및 등락률 근원적 강제 정의 코드]
-            if 'df' in locals() and len(df) >= 2:
-                _real_curr = float(df["Close"].iloc[-1])
-                _real_prev = float(df["Close"].iloc[-2])
-                p_diff = _real_curr - _real_prev
-                p_chg = (p_diff / _real_prev) * 100
-            else:
-                _real_curr = p if 'p' in locals() else 0
-                _real_prev = prev_p if 'prev_p' in locals() and prev_p > 0 else (_real_curr - p_diff if 'p_diff' in locals() else 0)
-                if _real_prev > 0:
+            # [전일비 및 등락률 완벽 강제 산출 코드]
+            try:
+                _c_list = df["Close"].tolist()
+                if len(_c_list) >= 2:
+                    _real_curr = float(_c_list[-1])
+                    _real_prev = float(_c_list[-2])
                     p_diff = _real_curr - _real_prev
                     p_chg = (p_diff / _real_prev) * 100
                 else:
-                    p_diff = p_diff if 'p_diff' in locals() else 0
-                    p_chg = p_chg if 'p_chg' in locals() else 0.0
+                    _real_curr = float(_c_list[-1]) if _c_list else 0.0
+                    _real_prev = _real_curr
+                    p_diff = 0
+                    p_chg = 0.0
+            except Exception:
+                _real_curr = p if 'p' in locals() else 0.0
+                _real_prev = _real_curr
+                p_diff = 0
+                p_chg = 0.0
             
             _sign_p = "+" if p_diff > 0 else ""
             display_price = f"{_real_curr:{fmt_p}}{currency} (전일비: {_sign_p}{p_diff:{fmt_p}} / {p_chg:+.2f}%)"
