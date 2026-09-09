@@ -510,6 +510,11 @@ if symbol:
 
             vol_strength = 100.0 if is_manual_mode else vol_strength_auto
 
+            # 당일 시가 변수 선언 (오류 방지 선행 배치)
+            today_open = float(df["Open"].iloc[-1])
+            today_high = float(df["High"].iloc[-1])
+            today_low = float(df["Low"].iloc[-1])
+
             # 보조지표 연산 (기준: 20/2, 14/6, 14/9)
             delta = df["Close"].diff()
             gain = (delta.where(delta > 0, 0)).rolling(14).mean()
@@ -654,7 +659,6 @@ if symbol:
                             f"밴드폭 응축돌파({bandwidth:.1f}%) 5일선 안착 / 에너지"
                             " 분출 초입"
                         )
-                        # ★ [수정]: 성벽 위 음봉 조정/숨고르기 중일 때는 '분출 초입' 대신 현 상황에 맞게 멘트 톤 조율
                         if p < today_open or is_down_trend_v:
                             squeeze_info_str = (
                                 f"<br>• ☕ <b>[성벽 위 숨고르기({bandwidth:.1f}%)]</b>"
@@ -684,10 +688,6 @@ if symbol:
                     " 진폭 활주로는 충분히 트였으나, 위 지표 조건 충족 시에만"
                     " 진격하시게."
                 )
-
-            today_open = float(df["Open"].iloc[-1])
-            today_high = float(df["High"].iloc[-1])
-            today_low = float(df["Low"].iloc[-1])
 
             candle_range = max(0.01, today_high - today_low)
             lower_tail = min(today_open, p) - today_low
@@ -1687,9 +1687,8 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
-            # 3) 세부 지표 문자열 조립 (성벽 돌파 여부와 음봉 숨고르기 상태를 완벽 동조화)
+            # 3) 세부 지표 문자열 조립 (성벽 위 음봉 숨고르기 상태와 완벽 동조화)
             if final_code == "BREAKOUT_ATTACK" or is_on_the_wall:
-                # ★ [수정]: 성벽 위에 있으나 음봉 조정/숨고르기 중일 때는 '분출 초입'이 아니라 성벽 위 숨고르기로 정확히 표기
                 if p < today_open or is_down_trend_v:
                     sub_indicator_str = (
                         f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 당일 음봉 숨고르기 공방 중 (5일선 지지 확인)"
@@ -2267,7 +2266,7 @@ if symbol:
                         m_diag = (
                             "<b>🔥 정회전 가속 (과열 경계)</b><br>• <b>역할:</b> 추진력"
                             " 폭발 속 과열권 도달.<br>• <b>진단:</b> 엔진 화력은"
-                            " 최상이나 <b>지표 초과열권</b>이오! 신규 추격 금지, 분할"
+                            " 최상이나 <b>지표 과열 상태</b>이오! 신규 추격 금지, 분할"
                             " 익절로 방어벽을 세우시게."
                         )
                     elif p < today_open or is_down_trend_v:
@@ -2330,7 +2329,7 @@ if symbol:
                             "추매는 절대 금지하며 단순 관망하시게."
                         )
                     else:
-                        m_time_txt = "14:00 이후 추매 준비하시게." if is_kr else "07:00 일봉 안착 확인 후 추매 준비하시게."
+                        m_time_txt = "14:00 이후 추매 준비하시게." if is_kr else "07:00 일봉 안착 확인 시 추매 준비하시게."
                         m_diag = (
                             "<b>🌤 역회전 감소</b><br>• <b>역할:</b> 하락 둔화 /"
                             " 반등 시동.<br>• <b>진단:</b> 매도세 소멸 중! 5일선"
