@@ -1443,8 +1443,99 @@ if symbol:
             )
 
             # ==================================================================
-            # ★ [지표 세부 텍스트 및 모듈 동조화]
+            # ★ [지표 세부 텍스트 및 모듈 동조화: 순서 정리 및 미정의 방어 가드]
             # ==================================================================
+            # 1) 눌림목 텍스트 기본값 선언 (Unbound 오류 원천 방어)
+            pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}%)</b>"
+            pullback_action_str = "-> <b>[관망]</b> 추세 및 지표 안착 대기"
+
+            if is_band_riding:
+                pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 밴드 라이딩)</b>"
+                pullback_action_str = "-> <b>[추세 추종]</b> 상단 밴드 상방 개방! 50% 수확 후 5일선 사수 기준으로 잔여 추종"
+            elif is_target_reached:
+                pullback_status_str = f"<b>(수학 목표선 저항 도달)</b>"
+                pullback_action_str = "-> <b>[50% 수확]</b> 상단 목표 도달 완료로 신규 진입 절대 금지"
+            elif is_escape_buy_signal:
+                pullback_status_str = (
+                    f"<b>(밴드폭 {bandwidth:.1f}% / 진바닥 구간)</b>"
+                )
+                pullback_action_str = (
+                    "-> <b>[진바닥 반등]</b> 바닥 탈출 국면이므로 5일선 사수"
+                    " 기준으로 대응"
+                )
+            elif is_down_trend_structural:
+                pullback_status_str = (
+                    f"<b>(대세 역배열 하락 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
+                )
+                pullback_action_str = (
+                    "-> <b>[진바닥 탐색 중]</b> 역배열 하락 진행형 (5일선 미안착"
+                    " / 칼날 관망)"
+                    if not is_ma5_safe
+                    else "-> <b>[진바닥 안착 시도]</b> 5일선 위 안착 중이나"
+                    " 역배열 저항 경계"
+                )
+            elif not is_bandwidth_ok:
+                pullback_status_str = (
+                    f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
+                )
+                break_action_guide = (
+                    "14:00 이후 지지 시 50% 타진, 15:20 종가 사수 시 3단계 완성 (윗꼬리 밀림 시 즉시 철수)"
+                    if is_kr
+                    else "07:00 마감 일봉상 20일선 안착 확인 시 3단계 완성 (윗꼬리 밀림 시 즉시 철수)"
+                )
+                pullback_action_str = (
+                    f"-> <b>[돌파 타진]</b> 20일선({mid_line:{fmt_p}}{currency}) 돌파 성공! "
+                    f"{break_action_guide}"
+                    if p >= mid_line
+                    else f"-> <b>[매수 보류]</b> {bw_diag_msg}"
+                )
+            elif is_ma20_teetering:
+                pullback_action_str = (
+                    f"-> <b>[턱걸이 공방]</b> 20일선({mid_line:{fmt_p}}{currency})"
+                    " 턱걸이 중! 안전마진(+0.2%) 안착 대기"
+                )
+            elif not is_orderbook_safe:
+                pullback_action_str = (
+                    "-> <b>[호가 경계]</b> 매도잔량비 취약"
+                    f"({ob_ratio_val:.2f}배)으로 윗꼬리 경계 관망"
+                )
+            elif pullback_rebound_score == 0:
+                pullback_action_str = "-> <b>[관망]</b> 눌림목 지표 조건 미충족"
+            elif pullback_rebound_score < 2:
+                pullback_action_str = (
+                    "-> <b>[지표 미흡]</b> 눌림목 동조 점수 부족"
+                    f"({pullback_rebound_score}점)으로 돌파/안착 대기"
+                )
+            elif is_over_extended_5 and (p >= mid_line):
+                pullback_action_str = (
+                    "-> <b>[추격 매수 금지]</b> 5일선 대비"
+                    f" +{bias_ma5:.1f}% 과다이격으로 지지 대기"
+                )
+            elif not is_valid_buy_candle:
+                pullback_action_str = (
+                    "-> <b>[캔들 확인 대기]</b> 지지 캔들 미흡으로 관망"
+                )
+            elif is_macd_reverse_deepening:
+                pullback_action_str = (
+                    "-> <b>[엔진 역회전 심화]</b> MACD 하락 가속 중이므로"
+                    " 관망"
+                )
+            elif is_pullback_buy_signal:
+                pullback_time_guide = (
+                    "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 완성 (윗꼬리 20일선 이탈 시 즉시 철수)"
+                    if is_kr
+                    else "07:00 마감 일봉 안착 확인 시 3단계 완성 (윗꼬리 20일선 이탈 시 즉시 철수)"
+                )
+                pullback_action_str = (
+                    f"-> <b>[3단계 눌림목 추가 매수]</b> 5·20일선 안착 확인! {pullback_time_guide}"
+                )
+            else:
+                pullback_action_str = (
+                    "-> <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중"
+                    " 관망"
+                )
+
+            # 2) 진바닥 텍스트 판정
             if bottom_score >= 2:
                 bottom_status_str = (
                     f"<b>(당일 진바닥 지표 {bottom_score}개 터치 달성!)</b>"
@@ -1580,93 +1671,7 @@ if symbol:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
 
-            # 눌림목 판정 세부 텍스트
-            if is_band_riding:
-                pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 밴드 라이딩)</b>"
-                pullback_action_str = "-> <b>[추세 추종]</b> 상단 밴드 상방 개방! 50% 수확 후 5일선 사수 기준으로 잔여 추종"
-            elif is_target_reached:
-                pullback_status_str = f"<b>(수학 목표선 저항 도달)</b>"
-                pullback_action_str = "-> <b>[50% 수확]</b> 상단 목표 도달 완료로 신규 진입 절대 금지"
-            elif is_escape_buy_signal:
-                pullback_status_str = (
-                    f"<b>(밴드폭 {bandwidth:.1f}% / 진바닥 구간)</b>"
-                )
-                pullback_action_str = (
-                    "-> <b>[진바닥 반등]</b> 바닥 탈출 국면이므로 5일선 사수"
-                    " 기준으로 대응"
-                )
-            elif is_down_trend_structural:
-                pullback_status_str = (
-                    f"<b>(대세 역배열 하락 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
-                )
-                pullback_action_str = (
-                    "-> <b>[진바닥 탐색 중]</b> 역배열 하락 진행형 (5일선 미안착"
-                    " / 칼날 관망)"
-                    if not is_ma5_safe
-                    else "-> <b>[진바닥 안착 시도]</b> 5일선 위 안착 중이나"
-                    " 역배열 저항 경계"
-                )
-            elif not is_bandwidth_ok:
-                pullback_status_str = (
-                    f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
-                )
-                break_action_guide = (
-                    "14:00 이후 지지 시 50% 타진, 15:20 종가 사수 시 3단계 완성 (윗꼬리 밀림 시 즉시 철수)"
-                    if is_kr
-                    else "07:00 마감 일봉상 20일선 안착 확인 시 3단계 완성 (윗꼬리 밀림 시 즉시 철수)"
-                )
-                pullback_action_str = (
-                    f"-> <b>[돌파 타진]</b> 20일선({mid_line:{fmt_p}}{currency}) 돌파 성공! "
-                    f"{break_action_guide}"
-                    if p >= mid_line
-                    else f"-> <b>[매수 보류]</b> {bw_diag_msg}"
-                )
-            elif is_ma20_teetering:
-                pullback_action_str = (
-                    f"-> <b>[턱걸이 공방]</b> 20일선({mid_line:{fmt_p}}{currency})"
-                    " 턱걸이 중! 안전마진(+0.2%) 안착 대기"
-                )
-            elif not is_orderbook_safe:
-                pullback_action_str = (
-                    "-> <b>[호가 경계]</b> 매도잔량비 취약"
-                    f"({ob_ratio_val:.2f}배)으로 윗꼬리 경계 관망"
-                )
-            elif pullback_rebound_score == 0:
-                pullback_action_str = "-> <b>[관망]</b> 눌림목 지표 조건 미충족"
-            elif pullback_rebound_score < 2:
-                pullback_action_str = (
-                    "-> <b>[지표 미흡]</b> 눌림목 동조 점수 부족"
-                    f"({pullback_rebound_score}점)으로 돌파/안착 대기"
-                )
-            elif is_over_extended_5 and (p >= mid_line):
-                pullback_action_str = (
-                    "-> <b>[추격 매수 금지]</b> 5일선 대비"
-                    f" +{bias_ma5:.1f}% 과다이격으로 지지 대기"
-                )
-            elif not is_valid_buy_candle:
-                pullback_action_str = (
-                    "-> <b>[캔들 확인 대기]</b> 지지 캔들 미흡으로 관망"
-                )
-            elif is_macd_reverse_deepening:
-                pullback_action_str = (
-                    "-> <b>[엔진 역회전 심화]</b> MACD 하락 가속 중이므로"
-                    " 관망"
-                )
-            elif is_pullback_buy_signal:
-                pullback_time_guide = (
-                    "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 완성 (윗꼬리 20일선 이탈 시 즉시 철수)"
-                    if is_kr
-                    else "07:00 마감 일봉 안착 확인 시 3단계 완성 (윗꼬리 20일선 이탈 시 즉시 철수)"
-                )
-                pullback_action_str = (
-                    f"-> <b>[3단계 눌림목 추가 매수]</b> 5·20일선 안착 확인! {pullback_time_guide}"
-                )
-            else:
-                pullback_action_str = (
-                    "-> <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중"
-                    " 관망"
-                )
-
+            # 3) 세부 지표 문자열 조립
             if final_code == "BREAKOUT_ATTACK" or is_on_the_wall:
                 sub_indicator_str = (
                     f"    - <b>성벽 돌파 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 돌파 성공! "
@@ -1698,7 +1703,6 @@ if symbol:
                         f" {bottom_action_str}"
                     )
             else:
-                # 20일선(mid_line) 위/아래 여부에 따라 명칭 분리
                 if p >= mid_line:
                     pullback_tag = "눌림목 지지 동조"
                 else:
@@ -1856,25 +1860,24 @@ if symbol:
                         )
                 elif is_macd_decelerating:
                     macd_strategy_msg = (
-                        "<b>⚠️ 엔진 정회전 둔화 (탄력 저하 경보)</b><br>• <b>역할:</b>"
-                        " 상승 탄력 둔화 감지.<br>• <b>진단:</b> 상승세는 유지 중이나"
-                        " 추진력이 꺾였으니, 신규 매수를 자제하고 분할 익절을"
-                        " 준비하시게."
+                        "<b>⚠️ 엔진 정회전 둔화</b><br>• <b>역할:</b> 상승 탄력"
+                        " 저하 감지.<br>• <b>진단:</b> 상승세는 유지 중이나"
+                        " 추진력이 꺾였으니, 분할 익절을 준비하시게."
                     )
                 elif is_macd_recovering:
                     if is_escape_buy_signal or final_code == "ESCAPE_BUY":
-                        macd_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 후 2단계 집행"
+                        m_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 후 2단계 집행"
                         macd_strategy_msg = (
                             "<b>🌤️ 엔진 역회전 감소 (2단계 바닥 탈출)</b><br>• <b>역할:</b>"
                             " 바닥 탈출 추진력 가동.<br>• <b>진단:</b> 매도세가 잦아들고 5일선"
-                            f" 위로 올라탔으니, {macd_time_txt}하시게."
+                            f" 위로 올라탔으니, {m_time_txt}하시게."
                         )
                     elif final_code == "BOTTOM_ENTRY":
-                        macd_time_txt = "14:00 이후 지지 확인 후 50% 소량 입질 매수" if is_kr else "07:00 일봉 지지 확인 후 소량 입질 매수"
+                        m_time_txt = "14:00 이후 지지 확인 후 50% 소량 입질 매수" if is_kr else "07:00 일봉 지지 확인 후 소량 입질 매수"
                         macd_strategy_msg = (
                             "<b>🌤️ 엔진 역회전 감소 (1단계 바닥 입질)</b><br>• <b>역할:</b>"
                             " 극바닥 브레이크 가동.<br>• <b>진단:</b> 하락 압력이 줄어들며 바닥"
-                            f" 다지기 중이오! {macd_time_txt}하시게."
+                            f" 다지기 중이오! {m_time_txt}하시게."
                         )
                     elif is_down_trend_structural:
                         macd_strategy_msg = (
@@ -1898,8 +1901,8 @@ if symbol:
                         )
                 else:
                     macd_strategy_msg = (
-                        "<b>⚙️ 엔진 역회전 심화 (하락 가속)</b><br>• <b>역할:</b>"
-                        " 하락 조정 가속.<br>• <b>진단:</b> 하락 관성 지속. 섣부른"
+                        "<b>⚙️ 엔진 역회전 심화</b><br>• <b>역할:</b> 하락 조정"
+                        " 가속.<br>• <b>진단:</b> 하락 관성 지속. 섣부른"
                         " 매수 및 물타기를 절대 금지하고 관망하시게."
                     )
 
