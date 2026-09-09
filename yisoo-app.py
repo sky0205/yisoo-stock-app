@@ -901,36 +901,26 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            # [전일비 및 등락률 최후 보루 강제 연산 코드]
+            # [전일비 및 등락률 최종 무결점 안전 연산 및 출력]
             try:
-                _curr = float(p) if 'p' in locals() and p is not None else float(df["Close"].iloc[-1])
+                _curr = float(p) if 'p' in locals() and p is not None else 0.0
                 
-                _prev = 0.0
-                # 1. 야후 파이낸스 ticker info에서 전일 종가를 최우선으로 강탈합니다.
-                if 'ticker' in locals() and hasattr(ticker, 'info'):
-                    _inf = ticker.info
-                    _prev = float(_inf.get('regularMarketPreviousClose', _inf.get('previousClose', 0.0)))
+                # 전역 변수나 기존 계산값이 있으면 우선 사용하되, 0이거나 없으면 안전하게 산출합니다.
+                _diff = float(p_diff) if ('p_diff' in locals() and p_diff != 0) else 0.0
+                _chg = float(p_chg) if ('p_chg' in locals() and p_chg != 0.0) else 0.0
                 
-                # 2. 객체에서 못 찾았으면 차트 데이터(df)의 직전 거래일 종가를 씁니다.
-                if _prev == 0.0 and 'df' in locals() and df is not None and len(df) >= 2:
-                    _prev = float(df["Close"].iloc[-2])
-                    
-                # 3. 그래도 없으면 기존 변수 활용
-                if _prev == 0.0 and 'prev_p' in locals() and prev_p is not None:
-                    _prev = float(prev_p)
-            
-                if _prev > 0.0 and _curr > 0.0:
-                    p_diff = _curr - _prev
-                    p_chg = (p_diff / _prev) * 100
-                else:
-                    p_diff = 0
-                    p_chg = 0.0
+                # 만약 여전히 0이라면, df의 최근 데이터 2개만 골라 안전하게 방어합니다.
+                if _diff == 0.0 and 'df' in locals() and df is not None and len(df) >= 2:
+                    _recent_closes = df["Close"].tail(2).tolist()
+                    if len(_recent_closes) == 2:
+                        _diff = _recent_closes[-1] - _recent_closes[-2]
+                        _chg = (_diff / _recent_closes[-2]) * 100 if _recent_closes[-2] > 0 else 0.0
+                        
+                # 최종 출력 포맷팅
+                _sign_str = "+" if _diff > 0 else ""
+                display_price = f"{_curr:{fmt_p}}{currency} (전일비: {_sign_str}{_diff:{fmt_p}} / {_chg:+.2f}%)"
             except Exception:
-                p_diff = 0
-                p_chg = 0.0
-            
-            _sign_str = "+" if p_diff > 0 else ""
-            display_price = f"{_curr:{fmt_p}}{currency} (전일비: {_sign_str}{p_diff:{fmt_p}} / {p_chg:+.2f}%)"
+                display_price = f"{p:{fmt_p}}{currency} (전일비: 0 / +0.00%)"
             st.markdown(
                 f"<div style='background-color:#f8f9fa; padding:20px;"
                 " border-radius:10px; border-left:10px solid #1565C0;'><p"
