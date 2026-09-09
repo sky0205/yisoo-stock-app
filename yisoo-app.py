@@ -897,13 +897,26 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            # [전일비 및 등락률 최종 강제 산출 안전 장치]
+            # [네이버 API 기준 전일비 및 등락률 강제 산출 최종 장치]
             try:
-                _curr_val = float(df["Close"].iloc[-1]) if 'df' in locals() and len(df) > 0 else (p if 'p' in locals() else 0.0)
-                _prev_val = float(df["Close"].iloc[-2]) if 'df' in locals() and len(df) >= 2 else _curr_val
+                # 네이버 API 데이터나 전역 변수에서 어제 종가와 현재가를 확보합니다.
+                _curr_p = float(p) if 'p' in locals() and p > 0 else float(df["Close"].iloc[-1])
                 
-                p_diff = _curr_val - _prev_val
-                p_chg = (p_diff / _prev_val * 100) if _prev_val > 0 else 0.0
+                # 만약 네이버 API 등에서 전일 종가 변수가 있다면 활용하고, 없으면 df의 첫 번째 값이나 전일 종가 추정치 활용
+                _prev_p = float(prev_p) if 'prev_p' in locals() and prev_p > 0 else 0.0
+                if _prev_p == 0 and 'data' in locals() and isinstance(data, dict):
+                    _prev_p = float(str(data.get("previousClosePrice", data.get("closePrice", 0))).replace(",", ""))
+                
+                if _prev_p == 0 and 'df' in locals() and len(df) >= 2:
+                    # 일봉 데이터라면 마지막 전날 종가, 분봉 데이터라면 당일 시작점 등을 고려
+                    _prev_p = float(df["Close"].iloc[0]) 
+            
+                if _prev_p > 0 and _curr_p > 0:
+                    p_diff = _curr_p - _prev_p
+                    p_chg = (p_diff / _prev_p) * 100
+                else:
+                    p_diff = 0
+                    p_chg = 0.0
             except Exception:
                 p_diff = 0
                 p_chg = 0.0
