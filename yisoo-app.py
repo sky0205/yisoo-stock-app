@@ -901,22 +901,34 @@ if symbol:
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
-            ## [예외 원천 차단 무적 전일비 계산]
+            # [전일비 0 고착화 원흉 박멸 및 정밀 연산]
             try:
-                _curr = float(p)
+                _curr = float(p) if ('p' in locals() and p is not None) else float(df["Close"].iloc[-1])
             except Exception:
                 _curr = 0.0
             
-            try:
-                _prev = float(df["Close"].iloc[-2])
-            except Exception:
+            _prev = 0.0
+            # 1. 상단에서 넘어온 전이수/전일 종가 변수가 있다면 최우선으로 잡습니다.
+            if 'prev_p' in locals() and prev_p is not None and float(prev_p) > 0:
+                _prev = float(prev_p)
+            # 2. 데이터프레임에 2줄 이상 있으면 직전 거래일 종가를 잡습니다.
+            elif 'df' in locals() and df is not None and len(df) >= 2:
                 try:
-                    _prev = float(prev_p)
+                    _prev = float(df["Close"].iloc[-2])
                 except Exception:
-                    _prev = _curr
+                    _prev = 0.0
             
-            p_diff = _curr - _prev
-            p_chg = (p_diff / _prev * 100) if _prev > 0 else 0.0
+            # 3. 그래도 없으면 당일 시가(Open)를 활용해 대조합니다.
+            if _prev == 0.0 and 'today_open' in locals() and today_open is not None:
+                _prev = float(today_open)
+            
+            # 연산 수행 (전일가를 못 구했으면 0으로 두어 이상한 값 방지)
+            if _prev > 0 and _curr > 0 and _prev != _curr:
+                p_diff = _curr - _prev
+                p_chg = (p_diff / _prev) * 100
+            else:
+                p_diff = 0.0
+                p_chg = 0.0
             
             _sign_str = "+" if p_diff > 0 else ""
             display_price = f"{_curr:,.0f}{currency} (전일비: {_sign_str}{p_diff:,.0f} / {p_chg:+.2f}%)"
