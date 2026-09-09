@@ -1795,6 +1795,70 @@ if symbol:
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 단기 전투선 유지 중이오. 5일선 사수 여부를 지켜보시게."
                     )
 
+            # ★ [수정]: 2. 성벽 사수 및 공방 가이드 문구 선언 (def_status 누락 해결)
+            if is_band_riding:
+                def_status = (
+                    f"성벽({defense_line:{fmt_p}}{currency})을 가뿐히 넘어 볼린저 상단이 상방으로 찢어지고 있네! "
+                    "1차 50% 수익 확정 후 든든한 방어선을 뒤에 두고 잔여 추세를 즐기시게."
+                )
+            elif is_target_reached:
+                def_status = (
+                    f"성벽({defense_line:{fmt_p}}{currency}) 위 진격은 이미 완수되었네! "
+                    f"수학 목표선({target_price_100:{fmt_p}}{currency}) 머리를 들이받았으니 진격을 멈추고 방어선을 등진 채 분할 매도로 현금을 챙기시게."
+                )
+            elif defense_line > target_price_100:
+                def_status = (
+                    f"성벽(방어선:{defense_line:{fmt_p}}{currency})이 상단 목표선({target_price_100:{fmt_p}}{currency})보다 위로 왜곡된 <b>[역배열 침체]</b> 구역이오! "
+                    "상방 동력이 완전히 메말랐으니 섣부른 진격을 금하고 철저히 관망하시게."
+                )
+            elif p >= defense_line:
+                if vol_strength < 80:
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 위에는 있으나 <b>거래절벽({vol_strength:.1f}점)</b>으로 상방 동력이 없네! "
+                        "추격매수를 삼가고 선제적 익절이나 관망을 준비하시게."
+                    )
+                else:
+                    candlestick_warn_name = "음봉 발생" if is_candle_bearish else "기세 둔화"
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 위에서 5일선 기세를"
+                        " 타고 <b>위로 진격 중</b>이네! 든든한 방어선을 등지고 계속"
+                        " 밀어붙이시게."
+                        if not is_candle_bearish and (p >= prev_p and p >= ma5_val)
+                        else f"성벽({defense_line:{fmt_p}}{currency}) 위에는 있으나"
+                        f" 단기 기세가 <b>숨고르기 중</b>이네! 성벽 위 {candlestick_warn_name} 시"
+                        " 선제적 익절을 준비하시게."
+                    )
+            else:
+                if not is_ma5_safe:
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 아래로 함락된 채 <b>단기 생명선(5일선)마저 이탈</b>했소! "
+                        "추가 하락 위험이 크니 섣부른 물타기를 금하고 칼같이 관망하시게."
+                    )
+                elif final_code == "BOTTOM_ENTRY":
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 아래"
+                        " 극바닥권이나, 1단계 바닥 지표 동조로 <b>소량 입질"
+                        " 진격 타점</b>을 형성 중이네!"
+                    )
+                elif final_code == "ESCAPE_BUY":
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 아래이나,"
+                        " 5일선을 딛고 <b>2단계 바닥 탈출 진격</b>을 시작하며"
+                        " 성벽 탈환에 나서는 중이네!"
+                    )
+                elif is_ma5_safe:
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 아래에 있으나,"
+                        " 단기 5일선<b>(생명선)을 사수</b>하며 반격의 시동을"
+                        " 거는 중이네!"
+                    )
+                else:
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 아래로 함락된"
+                        " 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지"
+                        " 마시게.</b>"
+                    )
+
             # 보유자 전용 가이드 문구 조화
             if is_band_riding:
                 if user_avg_price > 0:
@@ -2253,8 +2317,8 @@ if symbol:
                         m_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 시 2단계 집행"
                         m_diag = (
                             "<b>🌤️ 역회전 감소 (2단계 바닥 탈출)</b><br>• <b>역할:</b>"
-                            " 바닥 탈출 추진력 가동.<br>• <b>진단:</b> 매도세가 잡히고 5일선"
-                            f" 위 안착 성공! {m_time_txt}하시게."
+                            " 바닥 탈출 추진력 가동.<br>• <b>진단:</b> 매도세가 잦아들고 5일선"
+                            f" 위로 올라탔으니, {m_time_txt}하시게."
                         )
                     elif final_code == "BOTTOM_ENTRY":
                         m_time_txt = "14:00 이후 지지 확인 후 50% 소량 입질 매수" if is_kr else "07:00 일봉 지지 확인 후 소량 입질 매수"
@@ -2287,8 +2351,8 @@ if symbol:
                 else:
                     m_diag = (
                         "<b>⚙️ 엔진 역회전 심화</b><br>• <b>역할:</b> 하락 조정"
-                        " 가속.<br>• <b>진단:</b> 하락 관성 지속. 신규 매수 및"
-                        " 물타기 금지, 관망하시게."
+                        " 가속.<br>• <b>진단:</b> 하락 관성 지속. 섣부른"
+                        " 매수 및 물타기를 절대 금지하고 관망하시게."
                     )
 
                 st.markdown(
