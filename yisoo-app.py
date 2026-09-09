@@ -1836,7 +1836,7 @@ if symbol:
                         " 마시게.</b>"
                     )
 
-            # ★ [수정]: 4. MACD 엔진 가이드 문구 동조화 (역배열/5일선 미안착 시 엉뚱한 익절 문구 충돌 원천 차단)
+            # ★ [수정]: 4. MACD 엔진 가이드 문구 동조화 (당일 음봉/숨고르기 시 엇박자 완벽 차단)
             if is_band_riding:
                 macd_strategy_msg = (
                     "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b>"
@@ -1857,6 +1857,11 @@ if symbol:
                             " 상승 관성 극대화 및 과열권 진입.<br>• <b>진단:</b> 엔진 추진력은"
                             " 강력하나 <b>보조지표 초과열권</b>이오! 추격 매수는 엄금하고,"
                             " 분할 익절로 수익을 챙기며 남은 물량으로 추세를 즐기시게."
+                        )
+                    elif p < today_open or is_down_trend_v:
+                        macd_strategy_msg = (
+                            "<b>⚡ 엔진 가속 중이나 숨고르기 공방</b><br>• <b>역할:</b>"
+                            " 당일 음봉 조정 속 휩소 경계.<br>• <b>진단:</b> MACD 엔진은 가속 중이나 현재 주가가 성벽 위에서 음봉 조정 및 숨고르기 중이오! 5일선 지지를 확인하며 신중히 대응하시게."
                         )
                     elif p >= defense_line:
                         macd_strategy_msg = (
@@ -1887,7 +1892,7 @@ if symbol:
                         )
                 elif is_macd_recovering:
                     if is_escape_buy_signal or final_code == "ESCAPE_BUY":
-                        macd_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 후 2단계 집행"
+                        macd_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 시 2단계 집행"
                         macd_strategy_msg = (
                             "<b>🌤️ 엔진 역회전 감소 (2단계 바닥 탈출)</b><br>• <b>역할:</b>"
                             " 바닥 탈출 추진력 가동.<br>• <b>진단:</b> 매도세가 잦아들고 5일선"
@@ -2252,6 +2257,11 @@ if symbol:
                             " 최상이나 <b>지표 과열 상태</b>이오! 신규 추격 금지, 분할"
                             " 익절로 방어벽을 세우시게."
                         )
+                    elif p < today_open or is_down_trend_v:
+                        m_diag = (
+                            "<b>⚡ 엔진 가속 중이나 숨고르기 공방</b><br>• <b>역할:</b>"
+                            " 당일 음봉 조정 속 휩소 경계.<br>• <b>진단:</b> MACD 엔진은 가속 중이나 현재 주가가 성벽 위에서 음봉 조정 중이오! 5일선 지지를 확인하시게."
+                        )
                     elif p >= defense_line:
                         m_diag = (
                             "<b>🔥 정회전 가속 (성벽 수성)</b><br>• <b>역할:</b> 성벽 위"
@@ -2279,7 +2289,7 @@ if symbol:
                         )
                 elif is_macd_recovering:
                     if is_escape_buy_signal or final_code == "ESCAPE_BUY":
-                        m_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 후 2단계 집행"
+                        m_time_txt = "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 2단계 집행" if is_kr else "07:00 일봉 안착 확인 시 2단계 집행"
                         m_diag = (
                             "<b>🌤️ 역회전 감소 (2단계 바닥 탈출)</b><br>• <b>역할:</b>"
                             " 바닥 탈출 추진력 가동.<br>• <b>진단:</b> 매도세가 잡히고 5일선"
