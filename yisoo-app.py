@@ -1449,18 +1449,18 @@ if symbol:
                     " 않은 속임수 구간이니 거래량 유입을 확인 후 진입하시게."
                 )
             elif is_down_trend_structural and not is_ma5_safe:
-                # 1차 진입 여부 및 양봉 윗꼬리(숨고르기) 여부 판정 로직
-                is_yangbong = p >= (prev_close if 'prev_close' in locals() else p)
-                has_entered_first = 'first_entry_done' in locals() and first_entry_done
+                # 전일 대비 등락률을 기준으로 아래에서 올라온 경우와 위에서 내리꽂힌 경우를 엄격히 분기
+                # (chg_pct 변수가 마이너스면 위에서 밀려 내려온 하방 압박 상태)
+                is_truly_rebounding = (chg_pct > 0) if 'chg_pct' in locals() else (p > prev_close if 'prev_close' in locals() else False)
                 
-                if is_yangbong or has_entered_first:
-                    final_code = "WAIT_PULLBACK_STEP"
-                    sig = "🟡 [1차 진입 후 눌림목] 양봉 윗꼬리 숨 고르기 / 호가 관망"
+                if is_truly_rebounding:
+                    final_code = "WAIT_REBOUND_STEP"
+                    sig = "🟡 [1차 진입 후 반등] 바닥 다지며 고개 듦 / 호가 관망"
                     col = "#F57C00"
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        " <b>[양봉 눌림목]</b> 1차 정찰병 투입 후 양봉 상태에서 윗꼬리를 달며 숨 고르는 구간이니, "
-                        "떨어지는 칼날로 오인하지 말고 호가 지지력을 차분히 관망하시게."
+                        " <b>[하방 반등]</b> 아래에서 바닥을 다지고 고개를 치켜든 형국이나, "
+                        "아직 본진 타점이 아니니 추격 매수를 멈추고 호가 지지력을 차분히 관망하시게."
                     )
                 else:
                     final_code = "WAIT_DOWNTREND_FALL"
