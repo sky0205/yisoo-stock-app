@@ -1555,12 +1555,17 @@ if symbol:
                     " 기준으로 대응"
                 )
             elif is_down_trend_structural:
-                # [정밀 판정] 이평선 배열 상태와 5일선 위치, 장기선 기준 위치를 엄밀히 분류
-                is_true_reversal = (ma_5 < ma_20) and (ma_20 < ma_60) and (ma_60 < ma_120)
-                is_true_alignment = (ma_5 > ma_20) and (ma_20 > ma_60) and (ma_60 > ma_120)
+                # [방어 조치] 장부 내에 정의된 이평선 변수 이름을 안전하게 가져오기 (없으면 기본값 처리)
+                _ma5  = ma_5 if 'ma_5' in locals() else (ma5 if 'ma5' in locals() else 0)
+                _ma20 = ma_20 if 'ma_20' in locals() else (ma20 if 'ma20' in locals() else 0)
+                _ma60 = ma_60 if 'ma_60' in locals() else (ma60 if 'ma60' in locals() else 0)
+                _ma120 = ma_120 if 'ma_120' in locals() else (ma120 if 'ma120' in locals() else 0)
+        
+                is_true_reversal = (_ma5 < _ma20) and (_ma20 < _ma60) and (_ma60 < _ma120)
+                is_true_alignment = (_ma5 > _ma20) and (_ma20 > _ma60) and (_ma60 > _ma120)
                 
                 if is_true_reversal:
-                    # 1. 진짜 대세 역배열 (5 < 20 < 60 < 120)
+                    # 1. 진짜 대세 역배열
                     pullback_status_str = f"<b>(대세 역배열 하락 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
                     pullback_action_str = (
                         "-> <b>[진바닥 탐색 중]</b> 역배열 하락 진행형 (5일선 미안착 / 칼날 관망)"
@@ -1568,7 +1573,7 @@ if symbol:
                         else "-> <b>[진바닥 안착 시도]</b> 5일선 회복 시도 중이나 역배열 저항 경계"
                     )
                 elif is_true_alignment:
-                    # 2. 진짜 대세 정배열 (5 > 20 > 60 > 120) 속의 눌림 또는 조정
+                    # 2. 진짜 대세 정배열 속의 눌림
                     pullback_status_str = f"<b>(대세 정배열 상승 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
                     pullback_action_str = (
                         "-> <b>[정배열 눌림목]</b> 상승 추세 중 이격 조율 구간 (5일선 사수 관망)"
@@ -1576,8 +1581,8 @@ if symbol:
                         else "-> <b>[정배열 순환 시도]</b> 5일선 위 안착하며 추가 상승 타진"
                     )
                 else:
-                    # 3. 혼조·수렴 구간 (장기선과의 관계 및 5일선 위치에 따른 세분화)
-                    above_long_term = (p > ma_60) and (p > ma_120)
+                    # 3. 혼조·수렴 구간 (장기선과의 관계 및 5일선 위치 세분화)
+                    above_long_term = (p > _ma60) and (p > _ma120) if 'p' in locals() else False
                     if above_long_term:
                         pullback_status_str = f"<b>(장기선 위 혼조·수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
                         pullback_action_str = (
