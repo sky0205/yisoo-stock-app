@@ -481,6 +481,7 @@ if symbol:
                         prev_p = p
                 except Exception:
                     prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
+                    prev_low = float(df["Low"].iloc[-2]) if len(df) >= 2 else p
             # 오늘 날짜 시세 반영 (데이터프레임 업데이트)
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
