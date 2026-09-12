@@ -1449,10 +1449,11 @@ if symbol:
                     " 않은 속임수 구간이니 거래량 유입을 확인 후 진입하시게."
                 )
             elif is_down_trend_structural and not is_ma5_safe:
-                # 아래에서 올라온 경우 vs 위에서 밀려 내려온 경우 판별
-                is_rising_from_bottom = p >= mid_line * 0.99
+                # 전일 대비 등락률을 기준으로 아래에서 올라온 경우와 위에서 내리꽂힌 경우를 엄격히 분기
+                # (chg_pct 변수가 마이너스면 위에서 밀려 내려온 하방 압박 상태)
+                is_truly_rebounding = (chg_pct > 0) if 'chg_pct' in locals() else (p > prev_close if 'prev_close' in locals() else False)
                 
-                if is_rising_from_bottom:
+                if is_truly_rebounding:
                     final_code = "WAIT_REBOUND_STEP"
                     sig = "🟡 [1차 진입 후 반등] 바닥 다지며 고개 듦 / 호가 관망"
                     col = "#F57C00"
@@ -1463,12 +1464,12 @@ if symbol:
                     )
                 else:
                     final_code = "WAIT_DOWNTREND_FALL"
-                    sig = "🟡 [진바닥 탐색 중] 위에서 밀려 내려오는 중 / 칼날 관망"
+                    sig = "🟡 [진바닥 탐색 중] 역배열 하락 진행 / 칼날 관망"
                     col = "#F57C00"
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        " <b>[하방 압박]</b> 위쪽에서 시퍼런 칼날을 맞고 미끄러져 내려오는 구간이니, "
-                        "섣부르게 손을 뻗지 말고 2차 대기선 도달까지 철저히 관망하시게."
+                        " <b>[칼날 경고]</b> 대세 역배열 하락 추세 속에서 위에서 밀려 내려오는 칼날이 "
+                        "떨어지는 중이니 절대 섣부르게 칼을 잡지 마시게."
                     )
             elif (
                 (p >= mid_line * 0.98 and p <= mid_line * 1.03)
