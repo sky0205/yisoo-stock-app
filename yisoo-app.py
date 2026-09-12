@@ -1502,21 +1502,19 @@ if symbol:
                     " <b>[칼날 경고]</b> 대세 역배열 하락 추세 속에서 위에서 밀려 내려오는 음봉 칼날이 "
                     "떨어지는 중이니 절대 섣부르게 칼을 잡지 마시게요."
                 )
-            # 이평선 정배열 / 역배열 구조 및 위치 강제 판정
-            # 안전하게 실시간 주가와 120일선을 숫자로 변환하여 비교
+            # 최상단에서 실시간 주가와 120일선을 직접 비교하여 텍스트를 강제 고정
             try:
-                _cur_val = float(str(p).replace(',', '')) if 'p' in locals() else float(str(current_price).replace(',', ''))
+                _cur_check = float(str(p).replace(',', '')) if 'p' in locals() else float(str(current_price).replace(',', ''))
             except:
-                _cur_val = 0.0
+                _cur_check = 0.0
         
             try:
-                _m120_val = float(str(ma_120).replace(',', '')) if 'ma_120' in locals() else 0.0
+                _ma120_check = float(str(ma_120).replace(',', '')) if 'ma_120' in locals() else 0.0
             except:
-                _m120_val = 0.0
+                _ma120_check = 0.0
         
-            if _cur_val < _m120_val:
-                # 장기 매물대 아래에서 횡보/수렴 중일 때
-                final_code = "WAIT_LONGTERM_CONSOLIDATION"
+            # 주가가 120일선 아래에 있으면 상위 조건과 상관없이 무조건 '아래 횡보 수렴'으로 강제 치환
+            if _cur_check > 0 and _ma120_check > 0 and _cur_check < _ma120_check:
                 sig = "🟡 [박스권 횡보 수렴] 장기 매물대 아래 횡보 수렴 / 5일선 회복 대기"
                 col = "#F57C00"
                 final_adv = (
