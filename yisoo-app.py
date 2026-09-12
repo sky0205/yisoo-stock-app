@@ -1458,30 +1458,7 @@ if symbol:
                     " <b>[엔진 역회전 심화]</b> 5일선 위 안착 시도 중이나 MACD"
                     " 하락 압력이 가속되므로 관망하시게."
                 )
-            elif (bottom_score >= 2 or recent_bottom_memory) and vol_strength < 80:
-                # 1차 진입 상태이거나 당일 양봉 윗꼬리(숨고르기) 형태인 경우 거래량 미달 경고를 완화
-                is_healthy_volume_dry = (
-                    ('has_entered_first' in locals() and has_entered_first) or 
-                    (chg_pct >= 0 if 'chg_pct' in locals() else (p >= prev_close if 'prev_close' in locals() else False))
-                )
-                
-                if is_healthy_volume_dry:
-                    final_code = "WAIT_VOLUME_DRY"
-                    sig = "🟡 [거래 숨고르기] 1차 진입 후 거래량 자연 감소 / 지지력 관망"
-                    col = "#F57C00"
-                    final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        " <b>[거래 숨고르기]</b> 정찰병 투입 후 고점에서 양봉 윗꼬리를 달며 얌전히 숨 고르는 중이므로, "
-                        "거래량 감소는 위험한 수급 이탈이 아닌 자연스러운 눌림목이오니 호가 지지력을 차분히 살피시게."
-                    )
-                else:
-                    final_code = "WAIT_VOLUME"
-                    sig = "🟡 [입질 대기] 지표 충족 / 거래량 수반 대기"
-                    col = "#E65100"
-                    final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        " <b>[수급 부진]</b> 바닥 지표는 확인했으나 거래량이 실리지 않은 속임수 구간이니 거래량 유입을 확인 후 진입하시게."
-                    )
+            
             elif is_down_trend_structural and not is_ma5_safe:
                 # 실전 정밀 판정: 양봉 윗꼬리 숨고르기(로켓랩 유형) vs 진짜 낙하 칼날(삼성전자 유형) 분기
                 is_yangbong_pullback = (chg_pct >= 0) if 'chg_pct' in locals() else (p >= prev_close if 'prev_close' in locals() else False)
