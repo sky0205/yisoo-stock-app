@@ -1585,7 +1585,10 @@ if symbol:
                             else "-> <b>[정배열 순환 시도]</b> 5일선 위 안착하며 추가 상승 타진"
                         )
                     else:
-                        # 120일선 아래에 있되, 이격이 5% 이내로 바짝 붙어 수렴하는 진짜 박스권일 때만 발동
+                        # 변수 안전 정의 및 이격 거리 5% 이내 수렴 조건 방어선
+                        _chk_p = p if 'p' in locals() else 0.0
+                        _chk_m120 = ma120_val if 'ma120_val' in locals() else 0.0
+                    
                         if _chk_p > 0 and _chk_m120 > 0 and _chk_p < _chk_m120:
                             _disperse_rate = ((_chk_m120 - _chk_p) / _chk_m120) * 100
                             if _disperse_rate <= 5.0:
