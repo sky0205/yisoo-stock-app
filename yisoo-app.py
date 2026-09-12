@@ -1588,37 +1588,9 @@ if symbol:
                             else "-> <b>[정배열 순환 시도]</b> 5일선 위 안착하며 추가 상승 타진"
                         )
                     else:
-                        # 120일선 아래 5% 이내 수렴할 때만 노란색 박스권 수렴으로 판정
-                        __final_p = float(str(p).replace(',', '').strip()) if 'p' in locals() and p is not None else 0.0
-                        __final_m120 = float(str(ma120_val).replace(',', '').strip()) if 'ma120_val' in locals() and ma120_val is not None else 0.0
-                    
-                        if __final_p > 0 and __final_m120 > 0 and __final_p < __final_m120:
-                            _disperse_rate = ((__final_m120 - __final_p) / __final_m120) * 100
-                            if _disperse_rate <= 5.0:
-                                final_code = "WAIT_LONGTERM_CONSOLIDATION"
-                                sig = "🟡 [박스권 횡보 수렴] 장기 매물대 아래 횡보 수렴 / 5일선 회복 대기"
-                                col = "#F57C00"
-                                final_adv = (
-                                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
-                                    " <b>[횡보 수렴 관망]</b> 장기 매물대 아래에서 에너지가 갇혀 지루한 박스권 횡보 중이니, "
-                                    "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
-                                )
-                    
-                        # [최종 완성 안전장치] 위·아래 어디에도 신호가 없을 때만 작동하는 지능형 기본값
-                        if 'col' not in locals():
-                            __p_check = __final_p if '__final_p' in locals() else (float(str(p).replace(',', '').strip()) if 'p' in locals() and p is not None else 0.0)
-                            __m_check = __final_m120 if '__final_m120' in locals() else (float(str(ma120_val).replace(',', '').strip()) if 'ma120_val' in locals() and ma120_val is not None else 0.0)
-                            
-                            if __p_check > 0 and __m_check > 0 and __p_check >= __m_check:
-                                col = "#2E7D32"
-                                sig = "🟢 [추세 유지] 장기 매물대 위 안정권 / 흐름 주시"
-                                final_code = "UPWARD_STABLE"
-                                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. 장기 매물대 위에서 안정을 찾는 중이므로 호흡을 가다듬고 추세를 지켜보시게."
-                            else:
-                                col = "#78909C"
-                                sig = "🟡 [관망/보류] 추세 판정 대기 중"
-                                final_code = "WAIT_GENERAL"
-                                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. 추세를 차분히 관망하시게."
+                        col = "#2E7D32"
+                        sig = "🟢 [추세 유지] 분석 완료"
+                        final_code = "SAFE_RUN"
             if not is_bandwidth_ok:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
