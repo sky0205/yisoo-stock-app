@@ -1579,7 +1579,8 @@ if symbol:
                     )
                 else:
                     # 3. 혼조·수렴 구간 (장기선과의 관계 및 5일선 위치 세분화)
-                    above_long_term = (p > _ma60) and (p > _ma120) if 'p' in locals() else False
+                    _p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
+                    above_long_term = (_p >= _ma120) and (_p >= _ma60) and (_ma60 >= _ma120)
                     if above_long_term:
                         pullback_status_str = f"<b>(장기선 위 혼조·수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
                         pullback_action_str = (
