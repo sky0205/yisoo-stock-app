@@ -1501,17 +1501,17 @@ if symbol:
                     "떨어지는 중이니 절대 섣부르게 칼을 잡지 마시게요."
                 )
             elif above_long_term:
-                # 2. 진짜로 120일선과 60일선 위에 올라탄 우량한 기간조정 구간일 때만 작동
+                # 2. 진짜로 120일선과 60일선 위에 올라탄 우수한 기간조정 구간일 때만 작동
                 final_code = "WAIT_LONGTERM_CONSOLIDATION"
-    
-                # 이미 위에서 판정된 is_below_long_term 변수를 그대로 활용하여 아래/위 여부를 확실히 판정
-                _is_below = is_below_long_term if 'is_below_long_term' in locals() else false
-                
+        
+                # 이미 위에서 판정된 is_below_long_term 변수를 그대로 활용하여 아래/위 여부를 확실히 판정 (False는 대문자로!)
+                _is_below = is_below_long_term if 'is_below_long_term' in locals() else False
+        
                 sig = "🟡 [박스권 횡보 수렴] 장기 매물대 " + ("아래 횡보 수렴" if _is_below else "위 숨 고르기") + " / 5일선 회복 대기"
                 col = "#F57C00"
-                
+        
                 pos_text = "아래에서 에너지가 갇혀 지루한 박스권 횡보 중" if _is_below else "위에서 에너지를 응축하는 건강한 늘림목 구간"
-                
+        
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
                     f" <b>[횡보 수렴 관망]</b> 장기 매물대 {pos_text}이니, "
