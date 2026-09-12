@@ -1253,7 +1253,7 @@ if symbol:
             except:
                 current_chg = -1.0
         
-            if (current_chg < 0.0):
+            if (current_chg < 0.0) and (p < ma5):
                 final_code = "BEARISH_GUARD"
                 sig = f"🟡 [하락/조정] 음봉 압력 속 추세 이탈 경계 "
                 col = "#F57C00"
