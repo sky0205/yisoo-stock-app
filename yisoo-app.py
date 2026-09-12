@@ -1449,14 +1449,27 @@ if symbol:
                     " 않은 속임수 구간이니 거래량 유입을 확인 후 진입하시게."
                 )
             elif is_down_trend_structural and not is_ma5_safe:
-                final_code = "WAIT_REBOUND_STEP"
-                sig = "🟡 [1차 진입 후 반등] 정찰병 투입 후 고개 듦 / 호가 관망"
-                col = "#F57C00"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    " <b>[정찰병 반등]</b> 1차 진입 후 주가가 고개를 들었으나 "
-                    "아직 본진 타점이 아니니 추격 매수를 멈추고 호가 지지력을 관망하시게."
-                )
+                # 아래에서 올라온 경우 vs 위에서 밀려 내려온 경우 판별
+                is_rising_from_bottom = p >= mid_line * 0.99
+                
+                if is_rising_from_bottom:
+                    final_code = "WAIT_REBOUND_STEP"
+                    sig = "🟡 [1차 진입 후 반등] 바닥 다지며 고개 듦 / 호가 관망"
+                    col = "#F57C00"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                        " <b>[하방 반등]</b> 아래에서 바닥을 다지고 고개를 치켜든 형국이나, "
+                        "아직 본진 타점이 아니니 추격 매수를 멈추고 호가 지지력을 차분히 관망하시게."
+                    )
+                else:
+                    final_code = "WAIT_DOWNTREND_FALL"
+                    sig = "🟡 [진바닥 탐색 중] 위에서 밀려 내려오는 중 / 칼날 관망"
+                    col = "#F57C00"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                        " <b>[하방 압박]</b> 위쪽에서 시퍼런 칼날을 맞고 미끄러져 내려오는 구간이니, "
+                        "섣부르게 손을 뻗지 말고 2차 대기선 도달까지 철저히 관망하시게."
+                    )
             elif (
                 (p >= mid_line * 0.98 and p <= mid_line * 1.03)
                 and (pullback_rebound_score >= 1)
