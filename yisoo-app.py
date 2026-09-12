@@ -1581,7 +1581,8 @@ if symbol:
                     # 3. 혼조·수렴 구간 (장기선과의 관계 및 5일선 위치 세분화)
                     _p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
                     # 1583번 줄을 아래 내용으로 통째로 바꿔치기 하시지요:
-                    above_long_term = (not is_true_reversal) and (_p >= _ma60) and (_p >= _ma120)
+                    # 1583번 줄을 아래 내용으로 통째로 교체하시지요:
+                    above_long_term = (_p >= _ma120) and (_p >= _ma60) and (not is_true_reversal)
                     # 1585번 줄을 아래 내용으로 딱 고쳐주시지요:
                     if above_long_term and (not is_true_reversal):
                         pullback_status_str = f"<b>(장기선 위 혼조·수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
