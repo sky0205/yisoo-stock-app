@@ -1476,13 +1476,19 @@ if symbol:
             _ma120 = ma_120 if 'ma_120' in locals() else (ma120 if 'ma120' in locals() else 0)
             _p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
         
-            # 이평선 정배열 / 역배열 구조 판정
-            is_true_reversal = (_ma5 < _ma20) and (_ma20 < _ma60) and (_ma60 < _ma120)
-            is_true_alignment = (_ma5 > _ma20) and (_ma20 > _ma60) and (_ma60 > _ma120)
+            # 이평선 정배열 / 역배열 구조 판정 (변수 안전 장치 포함)
+            curr_p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
+            m5 = ma_5 if 'ma_5' in locals() else 0
+            m20 = ma_20 if 'ma_20' in locals() else 0
+            m60 = ma_60 if 'ma_60' in locals() else 0
+            m120 = ma_120 if 'ma_120' in locals() else 0
         
-            # 핵심 보완: 주가나 단기 이평선이 120일선 아래에 있으면 '장기선 위'로 절대 인정하지 않고 역배열/하락추세로 간주
-            is_below_long_term = (_p < _ma120) or (_ma20 < _ma120) or (_ma5 < _ma20 and _ma20 < _ma60)
-            above_long_term = False if is_below_long_term else ((_p >= _ma60) and (_p >= _ma120))
+            is_true_reversal = (m5 < m20) and (m20 < m60) and (m60 < m120)
+            is_true_alignment = (m5 > m20) and (m20 > m60) and (m60 > m120)
+        
+            # 핵심 보안: 주가가 120일선 아래이거나 대세 역배열이면 무조건 기간조정 코스 차단
+            is_below_long_term = (curr_p < m120) or (m20 < m120) or is_true_reversal
+            above_long_term = False if is_below_long_term else ((curr_p >= m60) and (curr_p >= m120))
         
             if is_true_reversal or is_below_long_term:
                 # 1. 120일선 아래에 처박힌 진짜 역배열 및 하락 추세 -> 무조건 엄중한 칼날 경고 발동
