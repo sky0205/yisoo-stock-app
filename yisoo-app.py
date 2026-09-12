@@ -1596,7 +1596,7 @@ if symbol:
                     else:
                         # 실시간 주가와 120일선을 직접 비교하여 아래/위 세부 문구를 확실히 분기
                         _p_val = _cur_p if '_cur_p' in locals() else 0
-                        _m120_target = _ma120 if '_ma120' in locals() else 0
+                        _m120_target = ma120_val if 'ma120_val' in locals() else 0.0
                         
                         _is_really_below_sub = (_p_val < _m120_target)
 
