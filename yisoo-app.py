@@ -1262,7 +1262,7 @@ if symbol:
                     f"현재 하락 음봉 국면이오니, 양봉 숨고르기라는 헛된 기대를 버리고 "
                     f"성벽 및 5일선 이탈에 따른 칼질 관망을 유지하시게."
                 )
-            elif 'v_status' in locals() and v_status == "거래 숨고르기" and not is_stop_loss_triggered:
+            elif 'v_status' in locals() and v_status == "거래 숨고르기" and bias_ma5 >= 0.0 and not is_stop_loss_triggered:
                 final_code = "WAIT_PULLBACK_STEP"
                 sig = "🟡 [거래 숨고르기] 1차 진입 후 양봉 윗꼬리 숨 고르기 / 호가 관망"
                 col = "#F57C00"
