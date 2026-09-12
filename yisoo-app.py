@@ -1502,13 +1502,11 @@ if symbol:
                     " <b>[칼날 경고]</b> 대세 역배열 하락 추세 속에서 위에서 밀려 내려오는 음봉 칼날이 "
                     "떨어지는 중이니 절대 섣부르게 칼을 잡지 마시게요."
                 )
-            # 함수 내부에 이미 정의된 진짜 실시간 변수(_p, _ma120)를 직접 활용
-            __p = _p if '_p' in locals() else 0.0
-            __m120 = _ma120 if '_ma120' in locals() else 0.0
+            # [최종 강제 방어] 화면에 뿌려지기 직전, 주가가 120일선 아래면 무조건 아래 횡보 수렴으로 강제 덮어쓰기
+            __final_p = float(str(_p).replace(',', '').strip()) if '_p' in locals() and _p is not None else 0.0
+            __final_m120 = float(str(_ma120).replace(',', '').strip()) if '_ma120' in locals() and _ma120 is not None else 0.0
         
-            if __p > 0 and __m120 > 0 and __p < __m120:
-                # 1. 주가가 120일선 아래에 있을 때 확실하게 아래 횡보 수렴으로 고정
-                final_code = "WAIT_LONGTERM_CONSOLIDATION"
+            if __final_p > 0 and __final_m120 > 0 and __final_p < __final_m120:
                 sig = "🟡 [박스권 횡보 수렴] 장기 매물대 아래 횡보 수렴 / 5일선 회복 대기"
                 col = "#F57C00"
                 final_adv = (
