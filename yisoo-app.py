@@ -1595,8 +1595,11 @@ if symbol:
                         )
                     else:
                         # 실시간 주가와 120일선을 직접 비교하여 아래/위 세부 문구를 확실히 분기
-                        _is_really_below_sub = (_p_val < _ma120_val) if '_ma120_val' in locals() else (_p_val < _ma120)
-                
+                        _p_val = _cur_p if '_cur_p' in locals() else 0
+                        _m120_target = _ma120 if '_ma120' in locals() else 0
+                        
+                        _is_really_below_sub = (_p_val < _m120_target)
+
                         if _is_really_below_sub:
                             pullback_status_str = f"<b>(장기 매물대 아래 횡보 수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
                             pullback_action_str = (
