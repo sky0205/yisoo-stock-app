@@ -1594,21 +1594,22 @@ if symbol:
                             else "-> <b>[정배열 순환 시도]</b> 5일선 위 안착하며 추가 상승 타진"
                         )
                     else:
-                        _p_val = _cur_p if '_cur_p' in locals() else 0
-                        above_long_term = (_p_val >= _ma120) and (_p_val >= _ma60) and (not is_true_reversal)
-                        if above_long_term:
-                            pullback_status_str = f"<b>(장기선 위 혼조·수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
+                        # 실시간 주가와 120일선을 직접 비교하여 아래/위 세부 문구를 확실히 분기
+                        _is_really_below_sub = (_p_val < _ma120_val) if '_ma120_val' in locals() else (_p_val < _ma120)
+                
+                        if _is_really_below_sub:
+                            pullback_status_str = f"<b>(장기 매물대 아래 횡보 수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
+                            pullback_action_str = (
+                                "-> <b>[횡보 수렴 관망]</b> 장기 매물대 아래에서 에너지가 갇혀 지루한 박스권 횡보 중 (5일선 회복 대기)"
+                                if not is_ma5_safe
+                                else "-> <b>[바닥권 반등 시도]</b> 수렴 틈새를 뚫고 5일선 위 고개 치켜듦"
+                            )
+                        else:
+                            pullback_status_str = f"<b>(장기 매물대 위 숨 고르기 / 밴드폭 {bandwidth:.1f}%)</b>"
                             pullback_action_str = (
                                 "-> <b>[정배열권 기간조정]</b> 장기 매물대 위에서 에너지 응축 중 (5일선 회복 대기)"
                                 if not is_ma5_safe
                                 else "-> <b>[기간조정 마무리]</b> 장기선 위 5일선 안착 후 탄력 탐색"
-                            )
-                        else:
-                            pullback_status_str = f"<b>(바닥권 혼조·수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
-                            pullback_action_str = (
-                                "-> <b>[바닥 얽힘 관망]</b> 장기선 아래 지저분한 수렴 구간 (5일선 미안착 시 손가락 묶기)"
-                                if not is_ma5_safe
-                                else "-> <b>[바닥권 반등 시도]</b> 수렴 틈새를 뚫고 5일선 위 고개 치켜듦"
                             )
             if not is_bandwidth_ok:
                 pullback_status_str = (
