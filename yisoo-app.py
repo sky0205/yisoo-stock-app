@@ -1010,7 +1010,7 @@ if symbol:
 
             st.write("")
             # 거래량 전환 판정 (강제 완충 장치)
-            is_positive_day = (p >= prev_close) if ('p' in locals() and 'prev_close' in locals() else (chg_pct >= 0 if 'chg_pct' in locals() else True))
+            is_positive_day = chg_pct >= 0 if 'chg_pct' in locals() else True
         
             if is_manual_mode:
                 v_status, v_adv = (
