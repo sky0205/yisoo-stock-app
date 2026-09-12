@@ -9,6 +9,10 @@ import streamlit as st
 import yfinance as yf
 
 
+st.set_page_config(
+    page_title="이수할아버지의 냉정 진단기 v36075", layout="wide"
+)
+
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
 def check_password():
     """비밀번호를 확인하는 함수 (st.secrets 호환 보안 보수)"""
@@ -53,7 +57,8 @@ if not check_password():
 def load_krx_listing():
     try:
         return fdr.StockListing("KRX")
-    except:
+    except Exception:
+
         return pd.DataFrame()
 
 
@@ -80,38 +85,18 @@ def fetch_global_market():
 
 # --- [호가창 실시간 매도/매수 잔량 수집 및 수급 압력 산출 함수] ---
 def fetch_kr_orderbook(symbol):
-    """국내 주식 실시간 수급 체결 강도 기반 매도/매수 잔량비 산출"""
-    clean_symbol = str(symbol).strip().zfill(6)
+    """국내 주식 호가 데이터.
 
-    try:
-        url_basic = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
-        res_b = requests.get(
-            url_basic, headers={"User-Agent": "Mozilla/5.0"}, timeout=2.0
-        )
-        if res_b.status_code == 200:
-            data = res_b.json()
-            close_p = float(str(data.get("closePrice", 0)).replace(",", ""))
-            high_p = float(str(data.get("highPrice", 0)).replace(",", ""))
-            low_p = float(str(data.get("lowPrice", 0)).replace(",", ""))
-
-            p_range = max(1.0, high_p - low_p)
-            pos_ratio = max(0.0, min(1.0, (close_p - low_p) / p_range))
-
-            calc_ratio = round(0.85 + (pos_ratio * 0.8), 2)
-            est_bid = 350000.0
-            est_ask = round(est_bid * calc_ratio)
-
-            return {
-                "ask": est_ask,
-                "bid": est_bid,
-                "ratio": calc_ratio,
-                "ok": True,
-                "msg": "",
-            }
-    except Exception:
-        pass
-
-    return {"ask": 420000.0, "bid": 350000.0, "ratio": 1.20, "ok": True, "msg": ""}
+    현재 사용 중인 Naver basic API는 실제 매도/매수 잔량을 제공하지 않으므로
+    임의의 잔량을 생성하지 않고 '미제공' 상태로 반환한다.
+    """
+    return {
+        "ask": 0.0,
+        "bid": 0.0,
+        "ratio": None,
+        "ok": False,
+        "msg": "실시간 호가 API 미연결",
+    }
 
 
 # 1. 스타일 및 화면 구성
@@ -246,7 +231,8 @@ def display_global_risk():
         st.info(
             f"🧐 **이수 할배의 글로벌 판독:** {market_mood}!\n\n- {macro_text}\n- 💡 **[대응 전략]** {strategy}"
         )
-    except:
+    except Exception:
+
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
@@ -307,6 +293,14 @@ with col_btn:
     if st.button("🔄 정밀 분석"):
         st.rerun()
 
+# 1차 진입 여부는 자동으로 추측하지 않고 사용자가 명시적으로 표시한다.
+first_entry_done = st.checkbox(
+    "☑ 1차 진입 완료",
+    value=st.session_state.get("first_entry_done", False),
+    key="first_entry_done",
+    help="1차 진입 후 숨고르기 판정을 활성화하려면 체크하십시오.",
+)
+
 if symbol:
     try:
         try:
@@ -330,7 +324,8 @@ if symbol:
             clean_symbol = symbol.zfill(6)
             try:
                 df = fdr.DataReader(clean_symbol, start=start_date.strftime("%Y-%m-%d"))
-            except:
+            except Exception:
+
                 pass
 
             if df.empty:
@@ -338,7 +333,8 @@ if symbol:
                     df = yf.Ticker(f"{clean_symbol}.KS").history(start=start_date)
                     if df.empty:
                         df = yf.Ticker(f"{clean_symbol}.KQ").history(start=start_date)
-                except:
+                except Exception:
+
                     pass
 
             kr_fetched = False
@@ -353,7 +349,8 @@ if symbol:
                         str(data["accumulatedTradingVolume"]).replace(",", "")
                     )
                     kr_fetched = True
-            except:
+            except Exception:
+
                 pass
 
             if not kr_fetched:
@@ -375,7 +372,8 @@ if symbol:
                         _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
                         if _avg_v > 0 and v_curr > _avg_v * 10:
                             v_curr = float(df["Volume"].iloc[-1])
-                except:
+                except Exception:
+
                     if not df.empty:
                         auto_p = float(df["Close"].iloc[-1])
                         v_curr = float(df["Volume"].iloc[-1])
@@ -402,7 +400,8 @@ if symbol:
                     _us_avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
                     if _us_avg_v > 0 and v_curr > _us_avg_v * 10:
                         v_curr = float(df["Volume"].iloc[-1])
-            except:
+            except Exception:
+
                 pass
 
             if auto_p == 0.0 and not df.empty:
@@ -651,7 +650,7 @@ if symbol:
                     )
                     is_orderbook_safe = False
             else:
-                ob_status_msg = "💡 <b>상단 HTS 총매도·매수잔량을 입력하시면 정밀 호가 분석이 가동됩니다</b> (미입력 시 기술적 차트 우선 연산)"
+                ob_status_msg = "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 가동합니다.</b> 자동 호가 데이터는 현재 연결되어 있지 않습니다."
                 is_orderbook_safe = True
 
             # 밴드폭 판정
@@ -859,13 +858,15 @@ if symbol:
                         final_display_name = soup.select_one(
                             ".wrap_company h2 a"
                         ).text.strip()
-                    except:
+                    except Exception:
+
                         try:
                             df_krx_backup = load_krx_listing()
                             final_display_name = df_krx_backup[
                                 df_krx_backup["Code"] == symbol.zfill(6)
                             ]["Name"].values[0]
-                        except:
+                        except Exception:
+
                             pass
             else:
                 us_vault = {
@@ -893,7 +894,8 @@ if symbol:
                         kor_name = info_dict.get(
                             "longName", info_dict.get("shortName", tk)
                         )
-                    except:
+                    except Exception:
+
                         kor_name = tk
                 final_display_name = f"{kor_name} ({tk})"
 
@@ -941,7 +943,8 @@ if symbol:
                 else:
                     p_diff = 0.0
                     p_chg = 0.0
-            except:
+            except Exception:
+
                 p_diff = 0.0
                 p_chg = 0.0
             st.markdown("### 📊 현재주가현황")
@@ -1009,8 +1012,8 @@ if symbol:
                 )
 
             st.write("")
-           # [정밀 보완] 실시간 주가가 전일 종가 이상일 때만 숨고르기 허용. 음봉이거나 변수 누락 시 얄짤없이 False 반환!
-            is_positive_day = (p >= prev_close) if ('p' in locals() and 'prev_close' in locals()) else False
+           # 전일 종가 변수는 위에서 확정한 prev_p를 사용한다.
+            is_positive_day = p >= prev_p if prev_p > 0 else False
         
             if is_manual_mode:
                 v_status, v_adv = (
@@ -1088,7 +1091,7 @@ if symbol:
                 # 1차 진입 상태이거나 당일 양봉 윗꼬리(숨고르기) 형태인 경우 파란색 거래절벽 경고를 완화
                 is_healthy_volume_dry = (
                     ('has_entered_first' in locals() and has_entered_first) or 
-                    (chg_pct >= 0 if 'chg_pct' in locals() else (p >= prev_close if 'prev_close' in locals() else False))
+                    (p_chg >= 0)
                 )
                 
                 if is_healthy_volume_dry:
@@ -1471,8 +1474,8 @@ if symbol:
             
             elif is_down_trend_structural and not is_ma5_safe:
                 # 실전 정밀 판정: 양봉 윗꼬리 숨고르기(로켓랩 유형) vs 진짜 낙하 칼날(삼성전자 유형) 분기
-                is_yangbong_pullback = (chg_pct >= 0) if 'chg_pct' in locals() else (p >= prev_close if 'prev_close' in locals() else False)
-                has_entered_first = 'first_entry_done' in locals() and first_entry_done
+                is_yangbong_pullback = p_chg >= 0
+                has_entered_first = st.session_state.get("first_entry_done", False)
                 
                 # 1차 진입 상태이거나 당일 양봉 윗꼬리(숨고르기) 형태인 경우 완충 지대로 인정
                 if is_yangbong_pullback or has_entered_first:
