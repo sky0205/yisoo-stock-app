@@ -1547,7 +1547,6 @@ if symbol:
                 pullback_status_str = f"<b>(역배열 하락 수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
                 pullback_action_str = "-> <b>[역배열 칼날 관망]</b> 120일선 아래 지하실 하락 진행형 (5일선 미안착 시 손가락 묶기)"
             elif is_band_riding:
-    
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 밴드 라이딩)</b>"
                 pullback_action_str = "-> <b>[추세 추종]</b> 상단 밴드 상방 개방! 50% 수확 후 5일선 사수 기준으로 잔여 추종"
             elif is_target_reached:
