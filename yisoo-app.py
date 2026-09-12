@@ -1503,7 +1503,7 @@ if symbol:
             elif above_long_term:
                 # 2. 진짜로 120일선과 60일선 위에 올라탄 우량한 기간조정 구간일 때만 작동
                 final_code = "WAIT_LONGTERM_CONSOLIDATION"
-                sig = "🟡 [정배열권 기간조정] 장기 매물대 위 숨 고르기 / 5일선 회복 대기"
+                sig = "🟡 [박스권 횡보 수렴] 장기 매물대 위 숨 고르기 / 5일선 회복 대기"
                 col = "#F57C00"
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
