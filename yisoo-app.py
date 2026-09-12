@@ -1641,10 +1641,19 @@ if symbol:
                         "→ <b>[음봉 조정 관망]</b> 5일선 위 음봉 조정이므로 지지 사수 확인 후 대응"
                     )
                 elif vol_strength < 80:
-                    bottom_action_str = (
-                        "→ <b>[입질 대기]</b> 거래량 부족"
-                        f"({vol_strength:.1f}점)으로 매수 보류"
-                    )
+                    # 1차 진입 후 양봉 윗꼬리(숨고르기) 상태라면 거래량 부족 경고를 완화하여 지지력 관망으로 유도
+                    is_healthy_volume_dry = ('has_entered_first' in locals() and has_entered_first) or ('is_yangbong_pullback' in locals() and is_yangbong_pullback)
+                    
+                    if is_healthy_volume_dry:
+                        bottom_action_str = (
+                            "-> <b>[거래 숨고르기]</b> 1차 진입 후 거래량 자연 감소 상태이므로 "
+                            f"({vol_strength:.1f}점) 섣부른 매수 대신 호가 지지력을 차분히 관망"
+                        )
+                    else:
+                        bottom_action_str = (
+                            "-> <b>[입질 대기]</b> 거래량 부족 "
+                            f"({vol_strength:.1f}점)으로 매수 보류"
+                        )
                 elif is_macd_reverse_deepening:
                     bottom_action_str = (
                         "→ <b>[매수 보류]</b> MACD 엔진 역회전 심화 중이므로"
