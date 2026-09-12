@@ -1488,8 +1488,9 @@ if symbol:
             is_true_alignment = (_m5 > _m20) and (_m20 > _m60) and (_m60 > _m120)
         
             # 핵심 방어벽: 주가가 120일선 아래거나 역배열이면 위쪽 우량주 코스는 절대 진입 불가
-            is_below_long_term = (_curr_p < _m120) or (_m20 < _m120) or is_true_reversal
-            above_long_term = False if is_below_long_term else ((_curr_p >= _m60) and (_curr_p >= _m120))
+            # 1484~1486번 줄 부근의 판정식을 아래와 같이 완벽한 철벽 방어식으로 교체하시지요:
+            is_below_long_term = (_p < _ma120) or (_ma20 < _ma120) or (_p < _ma60)
+            above_long_term = False if is_below_long_term else (_p >= _ma120)
         
             if is_true_reversal or is_below_long_term:
                 # 1. 120일선 아래에 처박힌 진짜 역배열 및 하락 추세 -> 무조건 엄중한 칼날 경고 발동
