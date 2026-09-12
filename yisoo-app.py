@@ -1353,6 +1353,14 @@ if symbol:
                     " 5% 이상 벌어져 단기 차익 매물 위험이 크니, 5일선"
                     " 부근으로 숨고르기할 때까지 추격 매수를 엄금하시게."
                 )
+            # 🎯 [이수할아버지 원칙] 지표 기반 1차/2차 진입 판정 스위치 정의
+            is_bottom_score_met = (bottom_score >= 2)
+            is_ma5_seated = (bias_ma5 >= 0.0) and (current_chg >= 0.0)
+        
+            is_bottom_entry_signal = is_bottom_score_met and not is_stop_loss_triggered
+            is_escape_buy_signal = is_bottom_score_met and is_ma5_seated and (vol_strength >= 80.0) and not is_stop_loss_triggered
+        
+            # 1단계 진바닥 입질 매수 판정 구간 (미장 아침 7시 마감 지침 포함)
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= 0.0):
                 final_code = "BOTTOM_ENTRY"
                 col = "#388E3C"
@@ -1360,7 +1368,7 @@ if symbol:
                     sig = f"🟢 [입질 포착] 1단계 진바닥 입질 ({time_tag_wait})"
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                        f"<b>[진바닥 포착 완료]</b> 3중 지표 터치 확인! 단, "
+                        f"<b>[진바닥 포착 완료]</b> 바닥 지표 2개 이상 터치 확인! 단, "
                         f"{time_rule_desc}"
                     )
                 else:
@@ -1369,16 +1377,19 @@ if symbol:
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
                         f"<b>[지지 안착]</b> 양봉 흐름 속 지지력을 확인한 후 진입하시게."
                     )
-                    action_guide = (
-                        "14:00 이후 볼린저 바닥 지지 확인 시 50% 분할 타진하고,"
-                        " 15:20 저가 사수 시 완성하시게. (단, 윗꼬리 달고 바닥선 이탈 시 즉시 철수)"
-                        if is_kr
-                        else "07:00 마감 일봉상 볼린저 바닥선 사수를 확인 후 진입하시게. (단, 윗꼬리 달고 바닥선 이탈 시 즉시 철수)"
-                    )
-                    final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        f" <b>[{time_tag_ok}]</b> {action_guide}"
-                    )
+                
+                # 한국장/미장 마감 시간에 따른 행동 지침 분기 반영
+                action_time_guide = (
+                    "14:00 이후 볼린저 바닥 지지 확인 시 50% 분할 타진하고, "
+                    "15:20 저가 사수 시 완성하시게. (단, 윗꼬리 달고 바닥선 이탈 시 즉시 철수)"
+                    if is_kr else
+                    "07:00 마감 일봉상 볼린저 바닥선 사수를 확인 후 진입하시게. (단, 윗꼬리 달고 바닥선 이탈 시 즉시 철수)"
+                )
+                
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[{time_tag_ok}]</b> {action_time_guide}"
+                )
             elif is_escape_buy_signal:
                 final_code = "ESCAPE_BUY"
                 col = "#2E7D32"
