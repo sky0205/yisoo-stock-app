@@ -100,9 +100,6 @@ def fetch_kr_orderbook(symbol):
 
 
 # 1. 스타일 및 화면 구성
-st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36075", layout="wide"
-)
 st.markdown(
     """
     <style>
@@ -411,7 +408,9 @@ if symbol:
         # 호가창 실시간 기본값
         ob_data = fetch_kr_orderbook(symbol) if is_kr else {"ok": False, "ratio": 0.0}
 
-        # ★ [호가 무조건 x1,000 주수 표기 원칙 및 3배 초과 필터 강화]
+        # ★ [호가 수동입력]
+        # 입력값은 '천 주 단위'로 받고 화면에는 실제 주수로 표시한다.
+        # 매도/매수 잔량비는 매도 ÷ 매수로 계산한다.
         if manual_ask > 0 and manual_bid > 0:
             calc_ratio = round(manual_ask / manual_bid, 2)
             display_ask = manual_ask * 1000.0
@@ -422,6 +421,14 @@ if symbol:
                 "ratio": calc_ratio,
                 "ok": True,
                 "msg": "HTS 직접입력",
+            }
+        elif manual_ask > 0 or manual_bid > 0:
+            ob_data = {
+                "ask": manual_ask * 1000.0,
+                "bid": manual_bid * 1000.0,
+                "ratio": None,
+                "ok": False,
+                "msg": "HTS 매도·매수잔량을 모두 입력해야 분석 가능",
             }
 
         # 수동 입력 시세 우선 채택
@@ -615,42 +622,58 @@ if symbol:
                 p < ma20_safe_threshold
             )
 
-            # 호가창 판정 강화 (1.2~2.5배 안전, 2.8배 초과 저항 및 1.2배 미만 설거지는 차단)
-            ob_ratio_val = ob_data["ratio"]
+            # 호가창 판정
+            # ratio = 매도잔량 ÷ 매수잔량.
+            # 값이 클수록 매도벽이 두껍고, 작을수록 매수잔량이 상대적으로 두껍다.
+            ob_ratio_val = ob_data.get("ratio")
+            ob_ratio_available = (
+                ob_ratio_val is not None and float(ob_ratio_val) >= 0
+            )
 
-            if manual_ask > 0 and manual_bid > 0:
-                ask_formatted = f"{ob_data['ask']:,.0f}"
-                bid_formatted = f"{ob_data['bid']:,.0f}"
+            if ob_ratio_available:
+                ob_ratio_val = float(ob_ratio_val)
+                ask_formatted = f"{ob_data.get('ask', 0.0):,.0f}"
+                bid_formatted = f"{ob_data.get('bid', 0.0):,.0f}"
+
                 if ob_ratio_val > 2.8:
                     ob_status_msg = (
-                        f"🚨 <b>[매도벽 과다 저항]</b> 매도잔량비"
-                        f" <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 /"
-                        f" 매수:{bid_formatted}주) - 콘크리트 매물벽 저항 경계 (진격 차단)"
+                        f"🚨 <b>[매도벽 과다 저항]</b> 매도/매수 잔량비 "
+                        f"<b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 / "
+                        f"매수:{bid_formatted}주) - 매도잔량이 크게 우세하여 진격 경계"
                     )
                     is_orderbook_safe = False
                 elif ob_ratio_val >= 1.5:
                     ob_status_msg = (
-                        f"🟢 <b>[상승형 호가 (강세)]</b> 매도잔량비"
-                        f" <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 /"
-                        f" 매수:{bid_formatted}주) - 매물 소화형 돌파 구역"
+                        f"🟡 <b>[매도 우위 공방]</b> 매도/매수 잔량비 "
+                        f"<b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 / "
+                        f"매수:{bid_formatted}주) - 매도잔량 우세로 추가 확인 필요"
                     )
-                    is_orderbook_safe = True
-                elif ob_ratio_val >= 1.2:
+                    is_orderbook_safe = False
+                elif ob_ratio_val >= 1.0:
                     ob_status_msg = (
-                        f"⚖️ <b>[정상 공방 호가]</b> 매도잔량비"
-                        f" <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 /"
-                        f" 매수:{bid_formatted}주) - 안정적 힘겨루기"
+                        f"⚖️ <b>[정상 공방 호가]</b> 매도/매수 잔량비 "
+                        f"<b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 / "
+                        f"매수:{bid_formatted}주) - 균형권 공방"
                     )
                     is_orderbook_safe = True
                 else:
                     ob_status_msg = (
-                        f"🚨 <b>[매도벽 부족 / 허매수 경계]</b> 매도잔량비"
-                        f" <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 /"
-                        f" 매수:{bid_formatted}주) - 허매수 설거지 주의 (진격 차단)"
+                        f"🟢 <b>[매수 우위 호가]</b> 매도/매수 잔량비 "
+                        f"<b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 / "
+                        f"매수:{bid_formatted}주) - 매수잔량이 상대적으로 우세"
                     )
-                    is_orderbook_safe = False
+                    is_orderbook_safe = True
+            elif manual_ask > 0 or manual_bid > 0:
+                ob_status_msg = (
+                    "⚠️ <b>[호가 입력 불완전]</b> HTS 총매도잔량과 총매수잔량을 "
+                    "둘 다 입력해야 잔량비를 계산할 수 있습니다."
+                )
+                is_orderbook_safe = False
             else:
-                ob_status_msg = "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 가동합니다.</b> 자동 호가 데이터는 현재 연결되어 있지 않습니다."
+                ob_status_msg = (
+                    "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 "
+                    "가동합니다.</b> 자동 호가 데이터는 현재 연결되어 있지 않습니다."
+                )
                 is_orderbook_safe = True
 
             # 밴드폭 판정
@@ -1268,14 +1291,22 @@ if symbol:
                     " 발생했으니, 5일선 사수 여부를 살피며 기세 둔화 시 분할"
                     " 익절할 준비를 하시게."
                 )
-            elif not is_orderbook_safe:
+            elif not is_orderbook_safe and (manual_ask > 0 or manual_bid > 0) and not ob_ratio_available:
                 final_code = "WAIT_ORDERBOOK"
-                sig = "🟡 [관망/보류] 호가 불균형 경계 (허매수 받침 또는 거대 매도벽)"
+                sig = "🟡 [관망/보류] HTS 호가 입력 미완성"
+                col = "#F57C00"
+                final_adv = (
+                    "• <b>[최종 결론]</b> HTS 총매도잔량과 총매수잔량을 모두 입력해야 "
+                    "호가 불균형을 계산할 수 있으므로 현재는 관망하시게."
+                )
+            elif not is_orderbook_safe and ob_ratio_available:
+                final_code = "WAIT_ORDERBOOK"
+                sig = "🟡 [관망/보류] 호가 불균형 경계 (매도벽 우세)"
                 col = "#F57C00"
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    f" <b>[호가창 불균형]</b> 매도잔량비가 {ob_ratio_val:.2f}배로 위험 구간이오! "
-                    "위로 칠 주체가 없는 허매수 받침이거나 상단 매도벽이 너무 두터우니 손가락을 묶고 관망하시게."
+                    f" <b>[호가창 불균형]</b> 매도/매수 잔량비가 {ob_ratio_val:.2f}배로 "
+                    "매도잔량 우세 구간이오! 호가 지지력을 확인한 뒤 대응하시게."
                 )
             elif is_on_the_wall:
                 if (vol_strength >= 150) and (not is_down_trend_v):
@@ -1590,7 +1621,7 @@ if symbol:
                 )
             elif not is_orderbook_safe:
                 pullback_action_str = (
-                    "-> <b>[호가 경계]</b> 매도잔량비 취약"
+                    "-> <b>[호가 경계]</b> 매도/매수 잔량비 취약"
                     f"({ob_ratio_val:.2f}배)으로 윗꼬리 경계 관망"
                 )
             elif pullback_rebound_score == 0:
@@ -1741,7 +1772,7 @@ if symbol:
                     )
                 elif not is_orderbook_safe:
                     bottom_action_str = (
-                        f"→ <b>[호가 경계]</b> 호가잔량비 취약({ob_ratio_val:.2f}배)으로"
+                        f"→ <b>[호가 경계]</b> 매도/매수 잔량비 취약({ob_ratio_val:.2f}배)으로"
                         " 윗꼬리 경계 관망"
                     )
                 elif not is_valid_buy_candle:
@@ -2211,7 +2242,7 @@ if symbol:
                     bb_diag = (
                         f"🟡 <b>[호가/20일선 검증 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
                         " <b>역할:</b> 휩소 및 허매수 방지.<br>•"
-                        " <b>진단:</b> 상승형 매도잔량비(1.2~2.5배) 사수 및 확실한 안착 전까지 진입 보류."
+                        " <b>진단:</b> 매도/매수 잔량비가 1.5배 이상이면 매도벽 우세로 보고 진입을 보류."
                     )
                 else:
                     bb_diag = (
