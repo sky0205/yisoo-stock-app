@@ -1469,59 +1469,51 @@ if symbol:
                     " 하락 압력이 가속되므로 관망하시게."
                 )
             
-            elif is_down_trend_structural and not is_ma5_safe:
-                # [방어 조치] 이평선 변수 안전 확보
-                _ma5  = ma_5 if 'ma_5' in locals() else (ma5 if 'ma5' in locals() else 0)
-                _ma20 = ma_20 if 'ma_20' in locals() else (ma20 if 'ma20' in locals() else 0)
-                _ma60 = ma_60 if 'ma_60' in locals() else (ma60 if 'ma60' in locals() else 0)
-                _ma120 = ma_120 if 'ma_120' in locals() else (ma120 if 'ma120' in locals() else 0)
-            
-                is_true_reversal = (_ma5 < _ma20) and (_ma20 < _ma60) and (_ma60 < _ma120)
-                above_long_term = (p > _ma60) and (p > _ma120) if 'p' in locals() else False
-            
-                # 실전 정밀 판정: 양봉 윗꼬리 숨고르기 vs 진짜 역배열 vs 장기선 위 기간조정 분기
-                is_yangbong_pullback = (chg_pct >= 0) if 'chg_pct' in locals() else (p >= prev_close if 'prev_close' in locals() else False)
-                has_entered_first = 'first_entry_done' in locals() and first_entry_done
-            
-                if is_yangbong_pullback or has_entered_first:
-                    final_code = "WAIT_PULLBACK_STEP"
-                    sig = "🟡 [1차 진입 후 눌림목] 양봉 윗꼬리 숨 고르기 / 호가 관망"
-                    col = "#F57C00"
-                    final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        " <b>[양봉 눌림목]</b> 1차 정찰병 투입 후 양봉 상태에서 윗꼬리를 달며 숨 고르는 건강한 구간이니, "
-                        "떨어지는 칼날로 오인하지 말고 호가 지지력을 차분히 관망하시게."
-                    )
-                elif is_true_reversal:
-                    # 1. 진짜 대세 역배열일 때만 칼날 경고 발동
-                    final_code = "WAIT_DOWNTREND_FALL"
-                    sig = "🟡 [진바닥 탐색 중] 역배열 하락 진행형 / 칼날 관망"
-                    col = "#F57C00"
-                    final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        " <b>[칼날 경고]</b> 대세 역배열 하락 추세 속에서 위에서 밀려 내려오는 음봉 칼날이 "
-                        "떨어지는 중이니 절대 섣부르게 칼을 잡지 마시게요."
-                    )
-                elif above_long_term:
-                    # 2. 장기선 위 혼조·수렴(기간조정)일 때는 우량주 눌림목 결론으로 방어
-                    final_code = "WAIT_LONGTERM_CONSOLIDATION"
-                    sig = "🟡 [정배열권 기간조정] 장기 매물대 위 숨 고르기 / 5일선 회복 대기"
-                    col = "#F57C00"
-                    final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        " <b>[기간조정 안착]</b> 장기 매물대 위에서 에너지를 응축하는 건강한 늘림목 구간이니, "
-                        "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
-                    )
-                else:
-                    # 3. 일반 바닥권 혼조세
-                    final_code = "WAIT_BOTTOM_MIXED"
-                    sig = "🟡 [바닥권 얽힘 관망] 지저분한 수렴 구간 / 5일선 미안착 대기"
-                    col = "#F57C00"
-                    final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        " <b>[바닥 수렴 관망]</b> 방향성 없는 얽힘 구간이므로 5일선을 종가로 회복할 때까지 "
-                        "손가락을 묶고 안전하게 관망하시게."
-                    )
+            # [정밀 보완] 120일선과의 위치 관계를 엄격히 반영하여 진짜 역배열과 장기선 위 기간조정 분리
+            _ma5  = ma_5 if 'ma_5' in locals() else (ma5 if 'ma5' in locals() else 0)
+            _ma20 = ma_20 if 'ma_20' in locals() else (ma20 if 'ma20' in locals() else 0)
+            _ma60 = ma_60 if 'ma_60' in locals() else (ma60 if 'ma60' in locals() else 0)
+            _ma120 = ma_120 if 'ma_120' in locals() else (ma120 if 'ma120' in locals() else 0)
+            _p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
+        
+            # 이평선 정배열 / 역배열 구조 판정
+            is_true_reversal = (_ma5 < _ma20) and (_ma20 < _ma60) and (_ma60 < _ma120)
+            is_true_alignment = (_ma5 > _ma20) and (_ma20 > _ma60) and (_ma60 > _ma120)
+        
+            # 핵심 보완: 주가나 단기 이평선이 120일선 아래에 있으면 '장기선 위'로 절대 인정하지 않고 역배열/하락추세로 간주
+            is_below_long_term = (_p < _ma120) or (_ma20 < _ma120)
+            above_long_term = (not is_below_long_term) and (_p >= _ma60) and (_p >= _ma120)
+        
+            if is_true_reversal or is_below_long_term:
+                # 1. 120일선 아래에 처박힌 진짜 역배열 및 하락 추세 -> 무조건 엄중한 칼날 경고 발동
+                final_code = "WAIT_DOWNTREND_FALL"
+                sig = "🟡 [진바닥 탐색 중] 역배열 하락 진행형 / 칼날 관망"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                    " <b>[칼날 경고]</b> 대세 역배열 하락 추세 속에서 위에서 밀려 내려오는 음봉 칼날이 "
+                    "떨어지는 중이니 절대 섣부르게 칼을 잡지 마시게요."
+                )
+            elif above_long_term:
+                # 2. 진짜로 120일선과 60일선 위에 올라탄 우량한 기간조정 구간일 때만 작동
+                final_code = "WAIT_LONGTERM_CONSOLIDATION"
+                sig = "🟡 [정배열권 기간조정] 장기 매물대 위 숨 고르기 / 5일선 회복 대기"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                    " <b>[기간조정 안착]</b> 장기 매물대 위에서 에너지를 응축하는 건강한 늘림목 구간이니, "
+                    "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
+                )
+            else:
+                # 3. 일반 바닥권 혼조세
+                final_code = "WAIT_BOTTOM_MIXED"
+                sig = "🟡 [바닥권 얽힘 관망] 지저분한 수렴 구간 / 5일선 미안착 대기"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                    " <b>[바닥 수렴 관망]</b> 방향성 없는 얽힘 구간이므로 5일선을 종가로 회복할 때까지 "
+                    "손가락을 묶고 안전하게 관망하시게."
+                )
             elif (
                 (p >= mid_line * 0.98 and p <= mid_line * 1.03)
                 and (pullback_rebound_score >= 1)
