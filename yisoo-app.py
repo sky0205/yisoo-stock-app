@@ -1582,7 +1582,8 @@ if symbol:
                     _p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
                     # 1583번 줄을 아래 내용으로 통째로 바꿔치기 하시지요:
                     above_long_term = (not is_true_reversal) and (_p >= _ma60) and (_p >= _ma120)
-                    if above_long_term:
+                    # 1585번 줄을 아래 내용으로 딱 고쳐주시지요:
+                    if above_long_term and (not is_true_reversal):
                         pullback_status_str = f"<b>(장기선 위 혼조·수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
                         pullback_action_str = (
                             "-> <b>[정배열권 기간조정]</b> 장기 매물대 위에서 에너지 응축 중 (5일선 회복 대기)"
@@ -1590,11 +1591,11 @@ if symbol:
                             else "-> <b>[기간조정 마무리]</b> 장기선 위 5일선 안착 후 탄력 탐색"
                         )
                     else:
-                        pullback_status_str = f"<b>(바닥권 혼조·수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
+                        pullback_status_str = f"<b>(역배열 하락 수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
                         pullback_action_str = (
-                            "-> <b>[바닥 얽힘 관망]</b> 장기선 아래 지저분한 수렴 구간 (5일선 미안착 시 손가락 묶기)"
+                            "-> <b>[역배열 칼날 관망]</b> 120일선 아래 지하실 하락 진행형 (5일선 미안착 시 손가락 묶기)"
                             if not is_ma5_safe
-                            else "-> <b>[바닥권 반등 시도]</b> 수렴 틈새를 뚫고 5일선 위 고개 치켜듦"
+                            else "-> <b>[역배열 반등 시도]</b> 벼랑 끝 반등 시도이나 역배열 저항 경계"
                         )
             elif not is_bandwidth_ok:
                 pullback_status_str = (
