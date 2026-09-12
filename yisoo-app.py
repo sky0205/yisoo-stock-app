@@ -1588,9 +1588,11 @@ if symbol:
                             else "-> <b>[정배열 순환 시도]</b> 5일선 위 안착하며 추가 상승 타진"
                         )
                     else:
-                        col = "#2E7D32"
-                        sig = "🟢 [추세 유지] 분석 완료"
-                        final_code = "SAFE_RUN"
+                        # 함수 시작점 강제 방어선 (변수 실종 원천 차단)
+                        global col, sig, final_code
+                        if 'col' not in globals() or col is None: col = "#2E7D32"
+                        if 'sig' not in globals() or sig is None: sig = "🟢 [추세 유지] 분석 완료"
+                        if 'final_code' not in globals() or final_code is None: final_code = "SAFE_RUN"
             if not is_bandwidth_ok:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
