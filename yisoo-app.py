@@ -1503,11 +1503,18 @@ if symbol:
             elif above_long_term:
                 # 2. 진짜로 120일선과 60일선 위에 올라탄 우량한 기간조정 구간일 때만 작동
                 final_code = "WAIT_LONGTERM_CONSOLIDATION"
-                sig = "🟡 [박스권 횡보 수렴] 장기 매물대 위 숨 고르기 / 5일선 회복 대기"
+    
+                # 주가가 120일선(장기선)보다 위에 있으면 '위에서', 아래에 있으면 '아래에서'로 자동 전환
+                _is_above_120 = _p >= _ma120 if '_p' in locals() and '_ma120' in locals() else True
+                
+                sig = "🟡 [박스권 횡보 수렴] 장기 매물대 " + ("위 숨 고르기" if _is_above_120 else "아래 횡보 수렴") + " / 5일선 회복 대기"
                 col = "#F57C00"
+                
+                pos_text = "위에서 에너지를 응축하는 건강한 늘림목 구간" if _is_above_120 else "아래에서 에너지가 갇혀 지루한 박스권 횡보 중"
+                
                 final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    " <b>[횡보 수렴 관망]</b> 장기 매물대 위에서 에너지를 응축하는 건강한 늘림목 구간이니, "
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
+                    f" <b>[횡보 수렴 관망]</b> 장기 매물대 {pos_text}이니, "
                     "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
                 )
             else:
