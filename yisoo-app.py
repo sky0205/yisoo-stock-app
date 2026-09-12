@@ -1585,19 +1585,18 @@ if symbol:
                             else "-> <b>[정배열 순환 시도]</b> 5일선 위 안착하며 추가 상승 타진"
                         )
                     else:
-                        # 오직 주가가 120일선 아래에 명확히 있을 때만 박스권 횡보 수렴(아래)으로 단독 교체
-                        _chk_p = p if 'p' in locals() else 0.0
-                        _chk_m120 = ma120_val if 'ma120_val' in locals() else 0.0
-                    
+                        # 120일선 아래에 있되, 이격이 5% 이내로 바짝 붙어 수렴하는 진짜 박스권일 때만 발동
                         if _chk_p > 0 and _chk_m120 > 0 and _chk_p < _chk_m120:
-                            final_code = "WAIT_LONGTERM_CONSOLIDATION"
-                            sig = "🟡 [박스권 횡보 수렴] 장기 매물대 아래 횡보 수렴 / 5일선 회복 대기"
-                            col = "#F57C00"
-                            final_adv = (
-                                f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
-                                " <b>[횡보 수렴 관망]</b> 장기 매물대 아래에서 에너지가 갇혀 지루한 박스권 횡보 중이니, "
-                                "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
-                            )
+                            _disperse_rate = ((_chk_m120 - _chk_p) / _chk_m120) * 100
+                            if _disperse_rate <= 5.0:
+                                final_code = "WAIT_LONGTERM_CONSOLIDATION"
+                                sig = "🟡 [박스권 횡보 수렴] 장기 매물대 아래 횡보 수렴 / 5일선 회복 대기"
+                                col = "#F57C00"
+                                final_adv = (
+                                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
+                                    " <b>[횡보 수렴 관망]</b> 장기 매물대 아래에서 에너지가 갇혀 지루한 박스권 횡보 중이니, "
+                                    "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
+                                )
             if not is_bandwidth_ok:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
