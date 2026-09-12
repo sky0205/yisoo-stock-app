@@ -1593,7 +1593,7 @@ if symbol:
                         if 'col' not in locals(): col = "#2E7D32"
                         if 'sig' not in locals(): sig = "🟢 [추세 유지] 분석 완료"
                         if 'final_code' not in locals(): final_code = "SAFE_RUN"
-                                if not is_bandwidth_ok:
+            if not is_bandwidth_ok:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
                 )
