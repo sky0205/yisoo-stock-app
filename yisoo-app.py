@@ -1503,10 +1503,8 @@ if symbol:
                 )
             # 이평선 정배열 / 역배열 구조 및 위치 강제 판정
             elif above_long_term:
-                # [강제 방어] 장기선 아래 종목이 이쪽으로 흘러 들어오면 무조건 아래 횡보 수렴으로 강제 전환
-                _cur_p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
-                _l120_val = ma_120 if 'ma_120' in locals() else 0
-                _force_below = _cur_p < _l120_val
+                # 밑줄 붙은 진짜 변수(_p, _ma120)를 직접 비교하여 아래/위 여부를 확실히 판정
+                _force_below = _p < _ma120
         
                 final_code = "WAIT_LONGTERM_CONSOLIDATION"
                 sig = "🟡 [박스권 횡보 수렴] 장기 매물대 " + ("아래 횡보 수렴" if _force_below else "위 숨 고르기") + " / 5일선 회복 대기"
