@@ -1481,8 +1481,8 @@ if symbol:
             is_true_alignment = (_ma5 > _ma20) and (_ma20 > _ma60) and (_ma60 > _ma120)
         
             # 핵심 보완: 주가나 단기 이평선이 120일선 아래에 있으면 '장기선 위'로 절대 인정하지 않고 역배열/하락추세로 간주
-            is_below_long_term = (_p < _ma120) or (_ma20 < _ma120) or is_true_reversal
-            above_long_term = (not is_below_long_term) and (_p >= _ma60) and (_p >= _ma120) and (not is_true_reversal)
+            is_below_long_term = (_p < _ma120) or (_ma20 < _ma120) or (_ma5 < _ma20 and _ma20 < _ma60)
+            above_long_term = False if is_below_long_term else ((_p >= _ma60) and (_p >= _ma120))
         
             if is_true_reversal or is_below_long_term:
                 # 1. 120일선 아래에 처박힌 진짜 역배열 및 하락 추세 -> 무조건 엄중한 칼날 경고 발동
