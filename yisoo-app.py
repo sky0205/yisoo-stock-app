@@ -1360,7 +1360,16 @@ if symbol:
             is_bottom_entry_signal = is_bottom_score_met and not is_stop_loss_triggered
             is_escape_buy_signal = is_bottom_score_met and is_ma5_seated and (vol_strength >= 80.0) and not is_stop_loss_triggered
         
-            # 기존의 1356번 줄 elif를 그대로 살리되, 위에서 정의한 스위치와 완벽 연동
+            # 이 판정 블록의 첫 번째 조건을 열어주는 올바른 if 문장 구성
+            if is_stop_loss_triggered:
+                final_code = "STOP_LOSS_TRIGGERED"
+                sig = "🚨 [비상 손절 경보] 바닥권 전저점 붕괴 / 전량 즉시 손절"
+                col = "#D32F2F"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"바닥권 전저점 붕괴 또는 손절 마지노선 이탈 상태이오니, "
+                    f"미련 없이 전량 즉시 손절 후퇴하시게."
+                )
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= 0.0):
                 final_code = "BOTTOM_ENTRY"
                 col = "#388E3C"
@@ -1378,7 +1387,6 @@ if symbol:
                         f"<b>[지지 안착]</b> 양봉 흐름 속 지지력을 확인한 후 진입하시게."
                     )
                 
-                # 한국장/미장 마감 시간에 따른 행동 지침 분기 반영
                 action_time_guide = (
                     "14:00 이후 볼린저 바닥 지지 확인 시 50% 분할 타진하고, "
                     "15:20 저가 사수 시 완성하시게. (단, 윗꼬리 달고 바닥선 이탈 시 즉시 철수)"
