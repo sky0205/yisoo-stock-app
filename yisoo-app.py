@@ -1151,7 +1151,8 @@ if symbol:
 
             bottom_score = bottom_score_series.iloc[-1]
             recent_bottom_memory = bottom_score_series.iloc[-3:].max() >= 2
-
+            pullback_rebound_score = bottom_score
+            
             p_will = 1 if will_val <= -50 else 0
             p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.02) else 0
             p_rsi = 1 if (40 <= rsi_val <= 55) else 0
