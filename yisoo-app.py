@@ -1246,8 +1246,23 @@ if symbol:
             # ==================================================================
             # ★ [신호등 분기 논리]
             # ==================================================================
-            # [최우선 결론 방어선] 상단 거래량 판정이 '거래 숨고르기'로 완화된 상태라면, 역배열 칼날이나 다른 경고에 먹히지 않고 최우선으로 숨고르기 결론 도출
-            if 'v_status' in locals() and v_status == "거래 숨고르기" and not is_stop_loss_triggered:
+            # 💡 변수명 오류나 타입 에러를 원천 차단하는 확실한 하락 장세 방어선
+                
+            try:
+                current_chg = float(p_chg)
+            except:
+                current_chg = -1.0
+        
+            if (current_chg < 0.0):
+                final_code = "BEARISH_GUARD"
+                sig = f"🟡 [하락/조정] 음봉 압력 속 추세 이탈 경계 ({time_tag_ok})"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"현재 하락 음봉 국면이오니, 양봉 숨고르기라는 헛된 기대를 버리고 "
+                    f"성벽 및 5일선 이탈에 따른 칼질 관망을 유지하시게."
+                )
+            elif 'v_status' in locals() and v_status == "거래 숨고르기" and not is_stop_loss_triggered:
                 final_code = "WAIT_PULLBACK_STEP"
                 sig = "🟡 [거래 숨고르기] 1차 진입 후 양봉 윗꼬리 숨 고르기 / 호가 관망"
                 col = "#F57C00"
