@@ -1610,6 +1610,12 @@ if symbol:
                                 if 'sig' not in locals(): sig = "🟢 [추세 유지] 장기 매물대 위 안정권 / 흐름 주시"
                                 if 'final_code' not in locals(): final_code = "UPWARD_STABLE"
                                 if 'final_adv' not in locals(): final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. 장기 매물대 위에서 안정을 찾는 중이니 호흡을 가다듬고 추세를 지켜보시게."
+                    
+                        # 최후의 비상구 (어느 곳에도 걸리지 않은 빈 변수 방어)
+                        if 'col' not in locals(): col = "#78909C"
+                        if 'sig' not in locals(): sig = "🟡 [관망/보류] 추세 판정 대기 중"
+                        if 'final_code' not in locals(): final_code = "WAIT_GENERAL"
+                        if 'final_adv' not in locals(): final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. 추세를 차분히 관망하시게."
             if not is_bandwidth_ok:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
