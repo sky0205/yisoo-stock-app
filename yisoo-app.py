@@ -1477,18 +1477,19 @@ if symbol:
             _p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
         
             # 이평선 정배열 / 역배열 구조 판정 (변수 안전 장치 포함)
-            curr_p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
-            m5 = ma_5 if 'ma_5' in locals() else 0
-            m20 = ma_20 if 'ma_20' in locals() else 0
-            m60 = ma_60 if 'ma_60' in locals() else 0
-            m120 = ma_120 if 'ma_120' in locals() else 0
+            # 이평선 정배열 / 역배열 구조 및 위치 강제 판정
+            _curr_p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
+            _m5 = ma_5 if 'ma_5' in locals() else 0
+            _m20 = ma_20 if 'ma_20' in locals() else 0
+            _m60 = ma_60 if 'ma_60' in locals() else 0
+            _m120 = ma_120 if 'ma_120' in locals() else 0
         
-            is_true_reversal = (m5 < m20) and (m20 < m60) and (m60 < m120)
-            is_true_alignment = (m5 > m20) and (m20 > m60) and (m60 > m120)
+            is_true_reversal = (_m5 < _m20) and (_m20 < _m60) and (_m60 < _m120)
+            is_true_alignment = (_m5 > _m20) and (_m20 > _m60) and (_m60 > _m120)
         
-            # 핵심 보안: 주가가 120일선 아래이거나 대세 역배열이면 무조건 기간조정 코스 차단
-            is_below_long_term = (curr_p < m120) or (m20 < m120) or is_true_reversal
-            above_long_term = False if is_below_long_term else ((curr_p >= m60) and (curr_p >= m120))
+            # 핵심 방어벽: 주가가 120일선 아래거나 역배열이면 위쪽 우량주 코스는 절대 진입 불가
+            is_below_long_term = (_curr_p < _m120) or (_m20 < _m120) or is_true_reversal
+            above_long_term = False if is_below_long_term else ((_curr_p >= _m60) and (_curr_p >= _m120))
         
             if is_true_reversal or is_below_long_term:
                 # 1. 120일선 아래에 처박힌 진짜 역배열 및 하락 추세 -> 무조건 엄중한 칼날 경고 발동
