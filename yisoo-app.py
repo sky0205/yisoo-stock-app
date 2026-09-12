@@ -1344,22 +1344,22 @@ if symbol:
                     " 5% 이상 벌어져 단기 차익 매물 위험이 크니, 5일선"
                     " 부근으로 숨고르기할 때까지 추격 매수를 엄금하시게."
                 )
-            elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= 0.0):
-                final_code = "BOTTOM_ENTRY"
-                col = "#388E3C"
-                if not is_afternoon_safe_time:
-                    sig = f"🟢 [입질 포착] 1단계 진바닥 입질 ({time_tag_wait})"
-                    final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        f" <b>[진바닥 포착 완료]</b> 3중 지표 터치 확인! 단,"
-                        f" {time_rule_desc}"
-                    )
-                else:
-                    sig = f"🟢 [진바닥 안착] 매수 진격 유효 구역 ({time_tag_ok})"
-                    final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        f" <b>[지지 안착]</b> 양봉 흐름 속 지지력을 확인한 후 진입하시게."
-                    )
+                elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= 0.0):
+                    final_code = "BOTTOM_ENTRY"
+                    col = "#388E3C"
+                    if not is_afternoon_safe_time:
+                        sig = f"🟢 [입질 포착] 1단계 진바닥 입질 ({time_tag_wait})"
+                        final_adv = (
+                            f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                            f" <b>[진바닥 포착 완료]</b> 3중 지표 터치 확인! 단,"
+                            f" {time_rule_desc}"
+                        )
+                    else:
+                        sig = f"🟢 [진바닥 안착] 매수 진격 유효 구역 ({time_tag_ok})"
+                        final_adv = (
+                            f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                            f" <b>[지지 안착]</b> 양봉 흐름 속 지지력을 확인한 후 진입하시게."
+                        )
                 else:
                     sig = f"🟢 [매입 진격] 1단계 진바닥 입질 매수 ({time_tag_ok})"
                     action_guide = (
