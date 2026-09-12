@@ -1501,17 +1501,18 @@ if symbol:
                     " <b>[칼날 경고]</b> 대세 역배열 하락 추세 속에서 위에서 밀려 내려오는 음봉 칼날이 "
                     "떨어지는 중이니 절대 섣부르게 칼을 잡지 마시게요."
                 )
+            # 이평선 정배열 / 역배열 구조 및 위치 강제 판정
             elif above_long_term:
-                # 주가와 120일선을 직접 비교하여 아래/위 여부를 강제로 판정
-                _cur = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
-                _l120 = ma_120 if 'ma_120' in locals() else 0
-                _is_really_below = _cur < _l120
+                # [강제 방어] 장기선 아래 종목이 이쪽으로 흘러 들어오면 무조건 아래 횡보 수렴으로 강제 전환
+                _cur_p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
+                _l120_val = ma_120 if 'ma_120' in locals() else 0
+                _force_below = _cur_p < _l120_val
         
                 final_code = "WAIT_LONGTERM_CONSOLIDATION"
-                sig = "🟡 [박스권 횡보 수렴] 장기 매물대 " + ("아래 횡보 수렴" if _is_really_below else "위 숨 고르기") + " / 5일선 회복 대기"
+                sig = "🟡 [박스권 횡보 수렴] 장기 매물대 " + ("아래 횡보 수렴" if _force_below else "위 숨 고르기") + " / 5일선 회복 대기"
                 col = "#F57C00"
                 
-                pos_text = "아래에서 에너지가 갇혀 지루한 박스권 횡보 중" if _is_really_below else "위에서 에너지를 응축하는 건강한 늘림목 구간"
+                pos_text = "아래에서 에너지가 갇혀 지루한 박스권 횡보 중" if _force_below else "위에서 에너지를 응축하는 건강한 늘림목 구간"
                 
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
