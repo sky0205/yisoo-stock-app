@@ -290,13 +290,7 @@ with col_btn:
     if st.button("🔄 정밀 분석"):
         st.rerun()
 
-# 1차 진입 여부는 자동으로 추측하지 않고 사용자가 명시적으로 표시한다.
-first_entry_done = st.checkbox(
-    "☑ 1차 진입 완료",
-    value=st.session_state.get("first_entry_done", False),
-    key="first_entry_done",
-    help="1차 진입 후 숨고르기 판정을 활성화하려면 체크하십시오.",
-)
+
 
 if symbol:
     try:
