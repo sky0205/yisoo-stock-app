@@ -1009,8 +1009,8 @@ if symbol:
                 )
 
             st.write("")
-           # [정밀 보완] 실시간 주가가 전일 종가 이상일 때만 숨고르기 허용. 음봉이거나 변수 누락 시 얄짤없이 False 반환!
-            is_positive_day = (p >= prev_close) if ('p' in locals() and 'prev_close' in locals()) else False
+           # [엄격한 보완] 완벽한 플러스 상승세일 때만 숨고르기 허용. 보합이나 마이너스는 철저히 차단!
+            is_positive_day = chg_pct > 0 if 'chg_pct' in locals() else (p > prev_close if ('p' in locals() and 'prev_close' in locals()) else False)
         
             if is_manual_mode:
                 v_status, v_adv = (
