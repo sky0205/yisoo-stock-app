@@ -1255,7 +1255,7 @@ if symbol:
         
             if (current_chg < 0.0):
                 final_code = "BEARISH_GUARD"
-                sig = f"🟡 [하락/조정] 음봉 압력 속 추세 이탈 경계 ({time_tag_ok})"
+                sig = f"🟡 [하락/조정] 음봉 압력 속 추세 이탈 경계 "
                 col = "#F57C00"
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
