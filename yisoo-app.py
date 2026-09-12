@@ -1502,26 +1502,17 @@ if symbol:
                     " <b>[칼날 경고]</b> 대세 역배열 하락 추세 속에서 위에서 밀려 내려오는 음봉 칼날이 "
                     "떨어지는 중이니 절대 섣부르게 칼을 잡지 마시게요."
                 )
-            # [최종 강제 방어] 화면에 뿌려지기 직전, 주가가 120일선 아래면 무조건 아래 횡보 수렴으로 강제 덮어쓰기
-            __final_p = float(str(_p).replace(',', '').strip()) if '_p' in locals() and _p is not None else 0.0
-            __final_m120 = float(str(_ma120).replace(',', '').strip()) if '_ma120' in locals() and _ma120 is not None else 0.0
+            # [최종 강제 방어] 주가가 120일선 아래일 때만 아래 횡보 수렴 문구로 강제 덮어쓰기 (그 외에는 위쪽 원본 신호 유지)
+            __final_p = float(str(p).replace(',', '').strip()) if 'p' in locals() and p is not None else 0.0
+            __final_m120 = float(str(ma120_val).replace(',', '').strip()) if 'ma120_val' in locals() and ma120_val is not None else 0.0
         
             if __final_p > 0 and __final_m120 > 0 and __final_p < __final_m120:
+                final_code = "WAIT_LONGTERM_CONSOLIDATION"
                 sig = "🟡 [박스권 횡보 수렴] 장기 매물대 아래 횡보 수렴 / 5일선 회복 대기"
                 col = "#F57C00"
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
                     " <b>[횡보 수렴 관망]</b> 장기 매물대 아래에서 에너지가 갇혀 지루한 박스권 횡보 중이니, "
-                    "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
-                )
-            else:
-                # 2. 주가가 120일선 위에 있거나 정상 구간일 때
-                final_code = "WAIT_LONGTERM_CONSOLIDATION"
-                sig = "🟡 [박스권 횡보 수렴] 장기 매물대 위 숨 고르기 / 5일선 회복 대기"
-                col = "#F57C00"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
-                    " <b>[횡보 수렴 관망]</b> 장기 매물대 위에서 에너지를 응축하는 건강한 늘림목 구간이니, "
                     "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
                 )
             
