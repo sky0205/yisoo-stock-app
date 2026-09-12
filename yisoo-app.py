@@ -1536,7 +1536,18 @@ if symbol:
             # 지표 세부 텍스트 조립
             pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}%)</b>"
             pullback_action_str = "-> <b>[관망]</b> 추세 및 지표 안착 대기"
-
+            # [방어 조치] 최상단에서 대세 역배열/하락 추세 종목을 강제로 차단하여 우량주 코스프레 원천 봉쇄
+            _ma5_val = ma_5 if 'ma_5' in locals() else 0
+            _ma20_val = ma_20 if 'ma_20' in locals() else 0
+            _ma60_val = ma_60 if 'ma_60' in locals() else 0
+            _ma120_val = ma_120 if 'ma_120' in locals() else 0
+            _cur_p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
+        
+            if (_cur_p < _ma120_val) or (_ma5_val < _ma20_val and _ma20_val < _ma60_val and _ma60_val < _ma120_val):
+                pullback_status_str = f"<b>(역배열 하락 수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
+                pullback_action_str = "-> <b>[역배열 칼날 관망]</b> 120일선 아래 지하실 하락 진행형 (5일선 미안착 시 손가락 묶기)"
+            elif is_band_riding:
+                # (이 아래부터는 기존의 if is_band_riding: 코드가 이어지도록 맞물려 주시면 되옵니다)
             if is_band_riding:
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 밴드 라이딩)</b>"
                 pullback_action_str = "-> <b>[추세 추종]</b> 상단 밴드 상방 개방! 50% 수확 후 5일선 사수 기준으로 잔여 추종"
