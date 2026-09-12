@@ -1503,9 +1503,10 @@ if symbol:
                     " <b>[칼날 경고]</b> 대세 역배열 하락 추세 속에서 위에서 밀려 내려오는 음봉 칼날이 "
                     "떨어지는 중이니 절대 섣부르게 칼을 잡지 마시게요."
                 )
-            # [최종 강제 방어] 변수 실종 방지 기본값 및 120일선 아래 횡보 수렴 판정
+            # [최종 강제 방어] 변수 실종 방지 기본값 세팅
             if 'col' not in locals(): col = "#78909C"
             if 'sig' not in locals(): sig = "🟡 [관망/보류] 추세 판정 대기 중"
+            if 'final_code' not in locals(): final_code = "WAIT_GENERAL"
             if 'final_adv' not in locals(): final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. 추세를 차분히 관망하시게."
         
             __final_p = float(str(p).replace(',', '').strip()) if 'p' in locals() and p is not None else 0.0
