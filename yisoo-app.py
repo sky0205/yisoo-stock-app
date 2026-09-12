@@ -1010,12 +1010,23 @@ if symbol:
 
             st.write("")
 
-            # 거래량 전황 판정
+            # 거래량 전환 판정
+            # [최우선 완충 장치] 1차 진입 상태이거나 당일 양봉 윗꼬리(숨고르기) 형태인 경우 거래량 점수와 무관하게 보호
+            is_healthy_volume_dry = (
+                ('has_entered_first' in locals() and has_entered_first) or 
+                (chg_pct >= 0 if 'chg_pct' in locals() else (p >= prev_close if 'prev_close' in locals() else False))
+            )
+        
             if is_manual_mode:
                 v_status, v_adv = (
                     "수동검증",
-                    "⚡ <b>[프리장/수동 연산]</b> 수동 입력 시세를 기준으로 정밀"
-                    " 검증 중이외다.",
+                    "⚡ <b>[프리장/수동 연산]</b> 수동 입력 시세를 기준으로 정밀 검증 중이외다.",
+                )
+            elif not is_manual_mode and is_healthy_volume_dry:
+                v_status, v_adv = (
+                    "거래 숨고르기",
+                    f"🔵 <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! "
+                    "1차 진입 후 양봉 윗꼬리를 달며 자연스럽게 숨 고르는 중이오니 지지력을 관망하시게.",
                 )
             elif vol_strength >= 150:
                 if not is_down_trend_v:
