@@ -1515,14 +1515,7 @@ if symbol:
                     "손가락을 묶고 안전하게 관망하시게."
                 )
            
-            else:
-                final_code = "WAIT_GENERAL"
-                sig = "🟡 [관망] 조건 미충족 / 뇌동매매 금지"
-                col = "#FBC02D"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    " 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
-                )
+            
 
             # 신호등 박스 표출
             st.markdown(
