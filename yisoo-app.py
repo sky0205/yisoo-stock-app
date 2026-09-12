@@ -1360,7 +1360,9 @@ if symbol:
             is_bottom_entry_signal = is_bottom_score_met and not is_stop_loss_triggered
             is_escape_buy_signal = is_bottom_score_met and is_ma5_seated and (vol_strength >= 80.0) and not is_stop_loss_triggered
         
-            # 1단계 진바닥 입질 매수 판정 구간 (미장 아침 7시 마감 지침 포함)
+            # 판정의 시작을 알리는 선행 if문 추가 (이전 블록과 자연스럽게 연결되도록 처리)
+            if False:
+                pass
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= 0.0):
                 final_code = "BOTTOM_ENTRY"
                 col = "#388E3C"
