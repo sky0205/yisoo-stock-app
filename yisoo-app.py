@@ -1546,67 +1546,62 @@ if symbol:
             if (_cur_p < _ma120_val) or (_ma5_val < _ma20_val and _ma20_val < _ma60_val and _ma60_val < _ma120_val):
                 pullback_status_str = f"<b>(역배열 하락 수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
                 pullback_action_str = "-> <b>[역배열 칼날 관망]</b> 120일선 아래 지하실 하락 진행형 (5일선 미안착 시 손가락 묶기)"
-            elif is_band_riding:
-                pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 밴드 라이딩)</b>"
-                pullback_action_str = "-> <b>[추세 추종]</b> 상단 밴드 상방 개방! 50% 수확 후 5일선 사수 기준으로 잔여 추종"
-            elif is_target_reached:
-                pullback_status_str = f"<b>(수학 목표선 저항 도달)</b>"
-                pullback_action_str = "-> <b>[50% 수확]</b> 상단 목표 도달 완료로 신규 진입 절대 금지"
-            elif is_escape_buy_signal:
-                pullback_status_str = (
-                    f"<b>(밴드폭 {bandwidth:.1f}% / 진바닥 구간)</b>"
-                )
-                pullback_action_str = (
-                    "-> <b>[진바닥 반등]</b> 바닥 탈출 국면이므로 5일선 사수"
-                    " 기준으로 대응"
-                )
-            elif is_down_trend_structural:
-                # [방어 조치] 장부 내에 정의된 이평선 변수 이름을 안전하게 가져오기 (없으면 기본값 처리)
-                _ma5  = ma_5 if 'ma_5' in locals() else (ma5 if 'ma5' in locals() else 0)
-                _ma20 = ma_20 if 'ma_20' in locals() else (ma20 if 'ma20' in locals() else 0)
-                _ma60 = ma_60 if 'ma_60' in locals() else (ma60 if 'ma60' in locals() else 0)
-                _ma120 = ma_120 if 'ma_120' in locals() else (ma120 if 'ma120' in locals() else 0)
+            else:
+                if is_band_riding:
+                    pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 밴드 라이딩)</b>"
+                    pullback_action_str = "-> <b>[추세 추종]</b> 상단 밴드 상방 개방! 50% 수확 후 5일선 사수 기준으로 잔여 추종"
+                elif is_target_reached:
+                    pullback_status_str = f"<b>(수학 목표선 저항 도달)</b>"
+                    pullback_action_str = "-> <b>[50% 수확]</b> 상단 목표 도달 완료로 신규 진입 절대 금지"
+                elif is_escape_buy_signal:
+                    pullback_status_str = (
+                        f"<b>(밴드폭 {bandwidth:.1f}% / 진바닥 구간)</b>"
+                    )
+                    pullback_action_str = (
+                        "-> <b>[진바닥 반등]</b> 바닥 탈출 국면이므로 5일선 사수 "
+                        "기준으로 대응"
+                    )
+                elif is_down_trend_structural:
+                    # [방어 조치] 장부 내부에 정의된 이평선 변수 이름을 안전하게 가져오기 (없으면 기본값 처리)
+                    _ma5 = ma_5 if 'ma_5' in locals() else (ma_5 if 'ma_5' in locals() else 0)
+                    _ma20 = ma_20 if 'ma_20' in locals() else (ma_20 if 'ma_20' in locals() else 0)
+                    _ma60 = ma_60 if 'ma_60' in locals() else (ma_60 if 'ma_60' in locals() else 0)
+                    _ma120 = ma_120 if 'ma_120' in locals() else (ma_120 if 'ma_120' in locals() else 0)
         
-                is_true_reversal = (_ma5 < _ma20) and (_ma20 < _ma60) and (_ma60 < _ma120)
-                is_true_alignment = (_ma5 > _ma20) and (_ma20 > _ma60) and (_ma60 > _ma120)
-                
-                if is_true_reversal:
-                    # 1. 진짜 대세 역배열
-                    pullback_status_str = f"<b>(대세 역배열 하락 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
-                    pullback_action_str = (
-                        "-> <b>[진바닥 탐색 중]</b> 역배열 하락 진행형 (5일선 미안착 / 칼날 관망)"
-                        if not is_ma5_safe
-                        else "-> <b>[진바닥 안착 시도]</b> 5일선 회복 시도 중이나 역배열 저항 경계"
-                    )
-                elif is_true_alignment:
-                    # 2. 진짜 대세 정배열 속의 눌림
-                    pullback_status_str = f"<b>(대세 정배열 상승 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
-                    pullback_action_str = (
-                        "-> <b>[정배열 눌림목]</b> 상승 추세 중 이격 조율 구간 (5일선 사수 관망)"
-                        if not is_ma5_safe
-                        else "-> <b>[정배열 순환 시도]</b> 5일선 위 안착하며 추가 상승 타진"
-                    )
-                else:
-                    # 3. 혼조·수렴 구간 (장기선과의 관계 및 5일선 위치 세분화)
-                    _p = p if 'p' in locals() else (current_price if 'current_price' in locals() else 0)
-                    # 1583번 줄을 아래 내용으로 통째로 바꿔치기 하시지요:
-                    # 1583번 줄을 아래 내용으로 통째로 교체하시지요:
-                    above_long_term = (_p >= _ma120) and (_p >= _ma60) and (not is_true_reversal)
-                    # 1585번 줄을 아래 내용으로 딱 고쳐주시지요:
-                    if above_long_term and (not is_true_reversal):
-                        pullback_status_str = f"<b>(장기선 위 혼조·수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
+                    is_true_reversal = (_ma5 < _ma20) and (_ma20 < _ma60) and (_ma60 < _ma120)
+                    is_true_alignment = (_ma5 > _ma20) and (_ma20 > _ma60) and (_ma60 > _ma120)
+        
+                    if is_true_reversal:
+                        pullback_status_str = f"<b>(대세 역배열 하락 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
                         pullback_action_str = (
-                            "-> <b>[정배열권 기간조정]</b> 장기 매물대 위에서 에너지 응축 중 (5일선 회복 대기)"
+                            "-> <b>[진바닥 탐색 중]</b> 역배열 하락 진행형 (5일선 미안착 / 칼날 관망)"
                             if not is_ma5_safe
-                            else "-> <b>[기간조정 마무리]</b> 장기선 위 5일선 안착 후 탄력 탐색"
+                            else "-> <b>[진바닥 안착 시도]</b> 5일선 회복 시도 중이나 역배열 저항 경계"
+                        )
+                    elif is_true_alignment:
+                        pullback_status_str = f"<b>(대세 정배열 상승 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
+                        pullback_action_str = (
+                            "-> <b>[정배열 눌림목]</b> 상승 추세 중 이격 조율 구간 (5일선 사수 관망)"
+                            if not is_ma5_safe
+                            else "-> <b>[정배열 순환 시도]</b> 5일선 위 안착하며 추가 상승 타진"
                         )
                     else:
-                        pullback_status_str = f"<b>(역배열 하락 수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
-                        pullback_action_str = (
-                            "-> <b>[역배열 칼날 관망]</b> 120일선 아래 지하실 하락 진행형 (5일선 미안착 시 손가락 묶기)"
-                            if not is_ma5_safe
-                            else "-> <b>[역배열 반등 시도]</b> 벼랑 끝 반등 시도이나 역배열 저항 경계"
-                        )
+                        _p_val = _cur_p if '_cur_p' in locals() else 0
+                        above_long_term = (_p_val >= _ma120) and (_p_val >= _ma60) and (not is_true_reversal)
+                        if above_long_term:
+                            pullback_status_str = f"<b>(장기선 위 혼조·수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
+                            pullback_action_str = (
+                                "-> <b>[정배열권 기간조정]</b> 장기 매물대 위에서 에너지 응축 중 (5일선 회복 대기)"
+                                if not is_ma5_safe
+                                else "-> <b>[기간조정 마무리]</b> 장기선 위 5일선 안착 후 탄력 탐색"
+                            )
+                        else:
+                            pullback_status_str = f"<b>(바닥권 혼조·수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
+                            pullback_action_str = (
+                                "-> <b>[바닥 얽힘 관망]</b> 장기선 아래 지저분한 수렴 구간 (5일선 미안착 시 손가락 묶기)"
+                                if not is_ma5_safe
+                                else "-> <b>[바닥권 반등 시도]</b> 수렴 틈새를 뚫고 5일선 위 고개 치켜듦"
+                            )
             elif not is_bandwidth_ok:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
