@@ -1504,18 +1504,22 @@ if symbol:
                 )
             # 이평선 정배열 / 역배열 구조 및 위치 강제 판정
             elif above_long_term:
-                # 밑줄 붙은 진짜 변수(_p, _ma120)를 직접 비교하여 아래/위 여부를 확실히 판정
-                _force_below = _p < _ma120
-        
+                # 2. 진짜로 120일선과 60일선 위에 올라탄 우수한 기간조정 구간일 때만 작동
                 final_code = "WAIT_LONGTERM_CONSOLIDATION"
-                sig = "🟡 [박스권 횡보 수렴] 장기 매물대 " + ("아래 횡보 수렴" if _force_below else "위 숨 고르기") + " / 5일선 회복 대기"
+        
+                # 주가와 120일선을 직접 비교하여 아래/위 여부를 확실히 판정 (_p와 _ma120 사용)
+                _is_really_below = _p < _ma120
+        
+                # 타이틀과 세부 문구에 아래/위가 완벽하게 교차되도록 조립
+                _loc_title = "아래 횡보 수렴" if _is_really_below else "위 숨 고르기"
+                _loc_desc = "아래에서 에너지가 갇혀 지루한 박스권 횡보 중" if _is_really_below else "위에서 에너지를 응축하는 건강한 늘림목 구간"
+        
+                sig = f"🟡 [박스권 횡보 수렴] 장기 매물대 {_loc_title} / 5일선 회복 대기"
                 col = "#F57C00"
-                
-                pos_text = "아래에서 에너지가 갇혀 지루한 박스권 횡보 중" if _force_below else "위에서 에너지를 응축하는 건강한 늘림목 구간"
                 
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
-                    f" <b>[횡보 수렴 관망]</b> 장기 매물대 {pos_text}이니, "
+                    f" <b>[횡보 수렴 관망]</b> 장기 매물대 {_loc_desc}이니, "
                     "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
                 )
             else:
