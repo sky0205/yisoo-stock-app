@@ -1594,25 +1594,29 @@ if symbol:
                             else "-> <b>[정배열 순환 시도]</b> 5일선 위 안착하며 추가 상승 타진"
                         )
                     else:
-                        # 실시간 주가와 120일선을 직접 비교하여 아래/위 세부 문구를 확실히 분기
-                        _p_val = _cur_p if '_cur_p' in locals() else (p if 'p' in locals() else 0.0)
-                        _m120_target = ma120_val if 'ma120_val' in locals() else 0.0
-                        
-                        _is_really_below_sub = (_p_val < _m120_target)
-
-                        if _is_really_below_sub:
-                            pullback_status_str = f"<b>(장기 매물대 아래 횡보 수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
-                            pullback_action_str = (
-                                "-> <b>[횡보 수렴 관망]</b> 장기 매물대 아래에서 에너지가 갇혀 지루한 박스권 횡보 중 (5일선 회복 대기)"
-                                if not is_ma5_safe
-                                else "-> <b>[바닥권 반등 시도]</b> 수렴 틈새를 뚫고 5일선 위 고개 치켜듦"
+                        # 장부 속 진짜 변수인 p와 ma120_val을 직접 대조하여 아래/위 완벽 분기
+                        _real_p = p if 'p' in locals() else 0.0
+                        _real_m120 = ma120_val if 'ma120_val' in locals() else 0.0
+                    
+                        if _real_p > 0 and _real_m120 > 0 and _real_p < _real_m120:
+                            # 1. 120일선 아래에 있을 때 (박스권 횡보 수렴 - 아래)
+                            final_code = "WAIT_LONGTERM_CONSOLIDATION"
+                            sig = "🟡 [박스권 횡보 수렴] 장기 매물대 아래 횡보 수렴 / 5일선 회복 대기"
+                            col = "#F57C00"
+                            final_adv = (
+                                f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
+                                " <b>[횡보 수렴 관망]</b> 장기 매물대 아래에서 에너지가 갇혀 지루한 박스권 횡보 중이니, "
+                                "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
                             )
                         else:
-                            pullback_status_str = f"<b>(장기 매물대 위 숨 고르기 / 밴드폭 {bandwidth:.1f}%)</b>"
-                            pullback_action_str = (
-                                "-> <b>[정배열권 기간조정]</b> 장기 매물대 위에서 에너지 응축 중 (5일선 회복 대기)"
-                                if not is_ma5_safe
-                                else "-> <b>[기간조정 마무리]</b> 장기선 위 5일선 안착 후 탄력 탐색"
+                            # 2. 120일선 위에 있을 때 (박스권 횡보 수렴 - 위)
+                            final_code = "WAIT_LONGTERM_CONSOLIDATION"
+                            sig = "🟡 [박스권 횡보 수렴] 장기 매물대 위 숨 고르기 / 5일선 회복 대기"
+                            col = "#F57C00"
+                            final_adv = (
+                                f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
+                                " <b>[횡보 수렴 관망]</b> 장기 매물대 위에서 에너지를 응축하는 건강한 늘림목 구간이니, "
+                                "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
                             )
             if not is_bandwidth_ok:
                 pullback_status_str = (
