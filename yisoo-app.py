@@ -1009,8 +1009,8 @@ if symbol:
                 )
 
             st.write("")
-            # 거래량 전환 판정 (강제 완충 장치)
-            is_positive_day = chg_pct >= 0 if 'chg_pct' in locals() else True
+           # [정밀 보완] 마이너스 음봉 하락일 때는 숨고르기 완충을 적용하지 않고 본래의 경고장으로 유도
+            is_positive_day = chg_pct > 0 if 'chg_pct' in locals() else (p >= prev_close if 'prev_close' in locals() else True)
         
             if is_manual_mode:
                 v_status, v_adv = (
