@@ -1264,12 +1264,12 @@ if symbol:
                 )
             elif 'v_status' in locals() and v_status == "거래 숨고르기" and bias_ma5 >= 0.0 and not is_stop_loss_triggered:
                 final_code = "WAIT_PULLBACK_STEP"
-                sig = "🟡 [거래 숨고르기] 1차 진입 후 양봉 윗꼬리 숨 고르기 / 호가 관망"
+                sig = "🟡 [거래 숨고르기] 5일선 위 눌림목 / 호가 관망"
                 col = "#F57C00"
                 final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    " <b>[양봉 숨고르기]</b> 1차 정찰병 투입 후 양봉 상태에서 윗꼬리를 달며 숨 고르는 건강한 구간이니, "
-                    "섣부른 추가 매수보다는 호가창의 지지력을 차분히 관망하며 다음 맥점을 기다리시게."
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[눌림목 숨고르기]</b> 5일선 위에서 지지력을 테스트하며 숨 고르는 건강한 구간이오니, "
+                    f"무리한 추격보다는 호가창의 지지력을 차분히 관망하며 다음 맥점을 기다리시게."
                 )
             elif is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
