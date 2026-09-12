@@ -1514,24 +1514,7 @@ if symbol:
                     " <b>[바닥 수렴 관망]</b> 방향성 없는 얽힘 구간이므로 5일선을 종가로 회복할 때까지 "
                     "손가락을 묶고 안전하게 관망하시게."
                 )
-            elif (
-                (p >= mid_line * 0.98 and p <= mid_line * 1.03)
-                and (pullback_rebound_score >= 1)
-                and (not is_down_trend_structural)
-            ):
-                final_code = "WAIT_PULLBACK"
-                sig = (
-                    "🟡 [관망/보류] 눌림목 영역이나 밴드폭 기준 미달 (돌파 확인"
-                    " 대기)"
-                    if not is_bandwidth_ok
-                    else "🟡 [관망/보류] 눌림목 영역 도달했으나 지표 동조 미흡"
-                )
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    f" <b>[{bw_diag_msg}]</b> 확실한 지표 동조 및 안착 전까지"
-                    " 승수 확대 금지."
-                )
-                col = "#F57C00"
+           
             else:
                 final_code = "WAIT_GENERAL"
                 sig = "🟡 [관망] 조건 미충족 / 뇌동매매 금지"
