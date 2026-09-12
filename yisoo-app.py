@@ -1591,28 +1591,28 @@ if symbol:
                             else "-> <b>[정배열 순환 시도]</b> 5일선 위 안착하며 추가 상승 타진"
                         )
                     else:
-                        # 변수 안전 정의 및 이격 거리 5% 이내 수렴 조건 방어선
-                        # 120일선 기준 위/아래 판정 및 변수 누락 방지 최종 방어선
-                        # 120일선 기준 방어선 및 변수 실종 원천 방지 안전 장치
-                        _chk_p = p if 'p' in locals() else 0.0
-                        _chk_m120 = ma120_val if 'ma120_val' in locals() else 0.0
+                        # 120일선 기준 위/아래 판정 최종 방어선
+                        __final_p = float(str(p).replace(',', '').strip()) if 'p' in locals() and p is not None else 0.0
+                        __final_m120 = float(str(ma120_val).replace(',', '').strip()) if 'ma120_val' in locals() and ma120_val is not None else 0.0
                     
-                        # 혹시 모를 상단 변수 누락 대비 기본값 확보
-                        if 'col' not in locals(): col = "#78909C"
-                        if 'sig' not in locals(): sig = "🟡 [관망/보류] 추세 판정 대기 중"
-                        if 'final_adv' not in locals(): final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. 추세를 차분히 관망하시게."
-                    
-                        if _chk_p > 0 and _chk_m120 > 0 and _chk_p < _chk_m120:
-                            _disperse_rate = ((_chk_m120 - _chk_p) / _chk_m120) * 100
-                            if _disperse_rate <= 5.0:
-                                final_code = "WAIT_LONGTERM_CONSOLIDATION"
-                                sig = "🟡 [박스권 횡보 수렴] 장기 매물대 아래 횡보 수렴 / 5일선 회복 대기"
-                                col = "#F57C00"
-                                final_adv = (
-                                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
-                                    " <b>[횡보 수렴 관망]</b> 장기 매물대 아래에서 에너지가 갇혀 지루한 박스권 횡보 중이니, "
-                                    "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
-                                )
+                        if __final_p > 0 and __final_m120 > 0:
+                            if __final_p < __final_m120:
+                                _disperse_rate = ((__final_m120 - __final_p) / __final_m120) * 100
+                                if _disperse_rate <= 5.0:
+                                    final_code = "WAIT_LONGTERM_CONSOLIDATION"
+                                    sig = "🟡 [박스권 횡보 수렴] 장기 매물대 아래 횡보 수렴 / 5일선 회복 대기"
+                                    col = "#F57C00"
+                                    final_adv = (
+                                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점."
+                                        " <b>[횡보 수렴 관망]</b> 장기 매물대 아래에서 에너지가 갇혀 지루한 박스권 횡보 중이니, "
+                                        "무리한 추격매수를 금하고 5일선 안착 여부를 차분히 대기하시게."
+                                    )
+                            else:
+                                # 주가가 120일선 위에 있을 때는 위쪽 원본 신호가 없을 때만 잡는 기본 상승/관망 세팅
+                                if 'col' not in locals(): col = "#2E7D32"
+                                if 'sig' not in locals(): sig = "🟢 [추세 유지] 장기 매물대 위 안정권 / 흐름 주시"
+                                if 'final_code' not in locals(): final_code = "UPWARD_STABLE"
+                                if 'final_adv' not in locals(): final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. 장기 매물대 위에서 안정을 찾는 중이니 호흡을 가다듬고 추세를 지켜보시게."
             if not is_bandwidth_ok:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
