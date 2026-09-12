@@ -1360,9 +1360,7 @@ if symbol:
             is_bottom_entry_signal = is_bottom_score_met and not is_stop_loss_triggered
             is_escape_buy_signal = is_bottom_score_met and is_ma5_seated and (vol_strength >= 80.0) and not is_stop_loss_triggered
         
-            # 판정의 시작을 알리는 선행 if문 추가 (이전 블록과 자연스럽게 연결되도록 처리)
-            if False:
-                pass
+            # 기존의 1356번 줄 elif를 그대로 살리되, 위에서 정의한 스위치와 완벽 연동
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= 0.0):
                 final_code = "BOTTOM_ENTRY"
                 col = "#388E3C"
