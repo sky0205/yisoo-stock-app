@@ -1098,13 +1098,12 @@ if symbol:
                     )
 
             st.markdown(
-                f"<div class='vol-box'><div style='font-size:32px;"
-                " font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량"
-                f" 전황: {v_status} ({'수동 연산 모드' if is_manual_mode else f'실시간 {v_ratio:.1f}% / 5일평균대비'})</div><div"
-                f" class='vol-sub-text'>{v_adv}</div><div style='margin-top:"
-                " 10px; font-size: 18px; color: #37474F; background: #FFFFFF;"
-                " padding: 10px; border-radius: 8px; border-left: 6px solid"
-                f" #FF9800;'>🎯 <b>[호가창 잔량 공방]</b> {ob_status_msg}</div></div>",
+                f"<div class='vol-box'><div style='font-size:32px; "
+                f"font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전환: {v_status} ({'수동 연산 모드' if is_manual_mode else f'실시간 {v_ratio:.1f}% / 5일평균대비'})</div>"
+                f"<div style='font-size:18px; color:#37474F; background:#FFFFFF; "
+                f"padding:10px; border-radius:8px; border-left:6px solid #1976D2; margin-bottom:10px;'>{v_adv}</div>"
+                f"<div style='font-size: 18px; color: #37474F; background: #FFFFFF; "
+                f"padding: 10px; border-radius: 8px; border-left: 6px solid #FF9800;'>🎯 <b>[호가창 잔량 공방]</b> {ob_status_msg}</div></div>",
                 unsafe_allow_html=True,
             )
 
