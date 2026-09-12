@@ -1449,13 +1449,13 @@ if symbol:
                     " 않은 속임수 구간이니 거래량 유입을 확인 후 진입하시게."
                 )
             elif is_down_trend_structural and not is_ma5_safe:
-                final_code = "WAIT_DOWNTREND_FALL"
-                sig = "🟡 [진바닥 탐색 중] 역배열 하락 진행 / 칼날 관망"
+                final_code = "WAIT_REBOUND_STEP"
+                sig = "🟡 [1차 진입 후 반등] 정찰병 투입 후 고개 듦 / 호가 관망"
                 col = "#F57C00"
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    " <b>[진바닥 탐색 중]</b> 대세 역배열 하락 추세 속에서 5일선 아래 칼날이"
-                    " 떨어지는 중이니 절대 칼을 잡지 마시게."
+                    " <b>[정찰병 반등]</b> 1차 진입 후 주가가 고개를 들었으나 "
+                    "아직 본진 타점이 아니니 추격 매수를 멈추고 호가 지지력을 관망하시게."
                 )
             elif (
                 (p >= mid_line * 0.98 and p <= mid_line * 1.03)
