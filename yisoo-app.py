@@ -1555,16 +1555,43 @@ if symbol:
                     " 기준으로 대응"
                 )
             elif is_down_trend_structural:
-                pullback_status_str = (
-                    f"<b>(대세 역배열 하락 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
-                )
-                pullback_action_str = (
-                    "-> <b>[진바닥 탐색 중]</b> 역배열 하락 진행형 (5일선 미안착"
-                    " / 칼날 관망)"
-                    if not is_ma5_safe
-                    else "-> <b>[진바닥 안착 시도]</b> 5일선 회복 시도 중이나"
-                    " 역배열 저항 경계"
-                )
+                # [정밀 판정] 이평선 배열 상태와 5일선 위치, 장기선 기준 위치를 엄밀히 분류
+                is_true_reversal = (ma_5 < ma_20) and (ma_20 < ma_60) and (ma_60 < ma_120)
+                is_true_alignment = (ma_5 > ma_20) and (ma_20 > ma_60) and (ma_60 > ma_120)
+                
+                if is_true_reversal:
+                    # 1. 진짜 대세 역배열 (5 < 20 < 60 < 120)
+                    pullback_status_str = f"<b>(대세 역배열 하락 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
+                    pullback_action_str = (
+                        "-> <b>[진바닥 탐색 중]</b> 역배열 하락 진행형 (5일선 미안착 / 칼날 관망)"
+                        if not is_ma5_safe
+                        else "-> <b>[진바닥 안착 시도]</b> 5일선 회복 시도 중이나 역배열 저항 경계"
+                    )
+                elif is_true_alignment:
+                    # 2. 진짜 대세 정배열 (5 > 20 > 60 > 120) 속의 눌림 또는 조정
+                    pullback_status_str = f"<b>(대세 정배열 상승 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
+                    pullback_action_str = (
+                        "-> <b>[정배열 눌림목]</b> 상승 추세 중 이격 조율 구간 (5일선 사수 관망)"
+                        if not is_ma5_safe
+                        else "-> <b>[정배열 순환 시도]</b> 5일선 위 안착하며 추가 상승 타진"
+                    )
+                else:
+                    # 3. 혼조·수렴 구간 (장기선과의 관계 및 5일선 위치에 따른 세분화)
+                    above_long_term = (p > ma_60) and (p > ma_120)
+                    if above_long_term:
+                        pullback_status_str = f"<b>(장기선 위 혼조·수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
+                        pullback_action_str = (
+                            "-> <b>[정배열권 기간조정]</b> 장기 매물대 위에서 에너지 응축 중 (5일선 회복 대기)"
+                            if not is_ma5_safe
+                            else "-> <b>[기간조정 마무리]</b> 장기선 위 5일선 안착 후 탄력 탐색"
+                        )
+                    else:
+                        pullback_status_str = f"<b>(바닥권 혼조·수렴 / 밴드폭 {bandwidth:.1f}%)</b>"
+                        pullback_action_str = (
+                            "-> <b>[바닥 얽힘 관망]</b> 장기선 아래 지저분한 수렴 구간 (5일선 미안착 시 손가락 묶기)"
+                            if not is_ma5_safe
+                            else "-> <b>[바닥권 반등 시도]</b> 수렴 틈새를 뚫고 5일선 위 고개 치켜듦"
+                        )
             elif not is_bandwidth_ok:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
