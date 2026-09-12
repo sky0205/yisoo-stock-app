@@ -1602,7 +1602,7 @@ if symbol:
                                 if not is_ma5_safe
                                 else "-> <b>[바닥권 반등 시도]</b> 수렴 틈새를 뚫고 5일선 위 고개 치켜듦"
                             )
-            elif not is_bandwidth_ok:
+            if not is_bandwidth_ok:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
                 )
