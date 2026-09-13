@@ -1231,10 +1231,15 @@ if symbol:
             )
             is_macd_not_deepening = not is_macd_reverse_deepening
 
+            is_volume_ok_for_bottom = (
+                (vol_strength >= 75.0)
+                if (p_chg >= 0.0 and p >= today_open)
+                else (vol_strength >= 80.0)
+            )
             is_bottom_entry_signal = (
                 (not is_ma5_safe)
                 and (bottom_score >= 2)
-                and (vol_strength >= 80)
+                and is_volume_ok_for_bottom
                 and (not is_down_trend_v)
                 and is_macd_not_deepening
                 and is_valid_bottom_candle
