@@ -676,30 +676,6 @@ if symbol:
                     "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 가동합니다.</b> 자동 호가 데이터는 현재 연결되어 있지 않습니다."
                 )
                 is_orderbook_safe = True
-            elif manual_ask > 0 or manual_bid > 0:
-              ob_status_msg = (
-                  "⚠️ <b>[호가 입력 불완전]</b> HTS 총매도잔량과 총매수잔량을 "
-                  "둘 다 입력해야 잔량비를 계산할 수 있습니다."
-              )
-              is_orderbook_safe = False
-            else:
-              ob_status_msg = (
-                  "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 "
-                  "가동합니다.</b> 자동 호가 데이터는 현재 연결되어 있지 않습니다."
-              )
-              is_orderbook_safe = True
-            elif manual_ask > 0 or manual_bid > 0:
-                ob_status_msg = (
-                    "⚠️ <b>[호가 입력 불완전]</b> HTS 총매도잔량과 총매수잔량을 "
-                    "둘 다 입력해야 잔량비를 계산할 수 있습니다."
-                )
-                is_orderbook_safe = False
-            else:
-                ob_status_msg = (
-                    "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 "
-                    "가동합니다.</b> 자동 호가 데이터는 현재 연결되어 있지 않습니다."
-                )
-                is_orderbook_safe = True
 
             # 밴드폭 판정
             if bandwidth < 12.0:
