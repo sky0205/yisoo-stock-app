@@ -1426,11 +1426,21 @@ if symbol:
                     " 부근으로 숨고르기할 때까지 추격 매수를 엄금하시게."
                 )
             # 🎯 [이수할아버지 원칙] 지표 기반 1차/2차 진입 판정 스위치 정의
-            is_bottom_score_met = (bottom_score >= 2)
+            is_bottom_score_met = bottom_score >= 2
             is_ma5_seated = (bias_ma5 >= 0.0) and (current_chg >= 0.0)
-        
-            is_bottom_entry_signal = is_bottom_score_met and not is_stop_loss_triggered
-            is_escape_buy_signal = is_bottom_score_met and is_ma5_seated and (vol_strength >= 80.0) and not is_stop_loss_triggered
+    
+            # 앞에서 정의한 75점 수급 방어벽을 여기서 확실하게 재장착합니다
+            is_bottom_entry_signal = (
+                is_bottom_score_met
+                and is_volume_ok_for_bottom
+                and not is_stop_loss_triggered
+            )
+            is_escape_buy_signal = (
+                is_bottom_score_met
+                and is_ma5_seated
+                and (vol_strength >= 80.0)
+                and not is_stop_loss_triggered
+            )
         
             # 이 판정 블록의 첫 번째 조건을 열어주는 올바른 if 문장 구성
             if is_stop_loss_triggered:
