@@ -633,56 +633,61 @@ if symbol:
             )
     
             if not is_kr and not has_manual_ob:
-              ob_status_msg = (
-                  "💡 <b>미장 자동 호가 미제공</b> (수동 입력 시에만 HTS 잔량비 연산"
-                  " 가동 / 현재 호가 검증은 안전 패스)"
-              )
-              is_orderbook_safe = True
-            elif ob_ratio_available:
-              ob_ratio_val = float(ob_ratio_val)
-              ask_formatted = f"{ob_data.get('ask', 0.0):,.0f}"
-              bid_formatted = f"{ob_data.get('bid', 0.0):,.0f}"
-    
-              if ob_ratio_val > 2.8:
                 ob_status_msg = (
-                    f"🚨 <b>[매도벽 과다 저항]</b> 매도/매수 잔량비 "
-                    f"<b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 / "
-                    f"매수:{bid_formatted}주) - 매도잔량이 크게 우세하여 진격 경계"
-                )
-                is_orderbook_safe = False
-              elif ob_ratio_val >= 1.5:
-                ob_status_msg = (
-                    f"🟡 <b>[매도 우위 공방]</b> 매도/매수 잔량비 "
-                    f"<b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 / "
-                    f"매수:{bid_formatted}주) - 매도잔량 우세로 추가 확인 필요"
-                )
-                is_orderbook_safe = False
-              elif ob_ratio_val >= 1.0:
-                ob_status_msg = (
-                    f"⚖️ <b>[정상 공방 호가]</b> 매도/매수 잔량비 "
-                    f"<b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 / "
-                    f"매수:{bid_formatted}주) - 균형권 공방"
+                    "💡 <b>미장 자동 호가 미제공</b> (수동 입력 시에만 HTS 잔량비 연산 가동 / 현재 호가 검증은 안전 패스)"
                 )
                 is_orderbook_safe = True
-          else:
-            ob_status_msg = (
-                f"🟢 <b>[매수 우위 호가]</b> 매도/매수 잔량비 "
-                f"<b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 / "
-                f"매수:{bid_formatted}주) - 매수잔량이 상대적으로 우세"
-            )
-            is_orderbook_safe = True
-        elif manual_ask > 0 or manual_bid > 0:
-          ob_status_msg = (
-              "⚠️ <b>[호가 입력 불완전]</b> HTS 총매도잔량과 총매수잔량을 "
-              "둘 다 입력해야 잔량비를 계산할 수 있습니다."
-          )
-          is_orderbook_safe = False
-        else:
-          ob_status_msg = (
-              "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 "
-              "가동합니다.</b> 자동 호가 데이터는 현재 연결되어 있지 않습니다."
-          )
-          is_orderbook_safe = True
+            elif ob_ratio_available:
+                ob_ratio_val = float(ob_ratio_val)
+                ask_formatted = f"{ob_data.get('ask', 0.0):,.0f}"
+                bid_formatted = f"{ob_data.get('bid', 0.0):,.0f}"
+    
+                if ob_ratio_val > 2.8:
+                    ob_status_msg = (
+                        f"🚨 <b>[매도벽 과다 저항]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> "
+                        f"(매도:{ask_formatted}주 / 매수:{bid_formatted}주) - 매도잔량이 크게 우세하여 진격 경계"
+                    )
+                    is_orderbook_safe = False
+                elif ob_ratio_val >= 1.5:
+                    ob_status_msg = (
+                        f"🟡 <b>[매도 우위 공방]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> "
+                        f"(매도:{ask_formatted}주 / 매수:{bid_formatted}주) - 매도잔량 우세로 추가 확인 필요"
+                    )
+                    is_orderbook_safe = False
+                elif ob_ratio_val >= 1.0:
+                    ob_status_msg = (
+                        f"⚖️ <b>[정상 공방 호가]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> "
+                        f"(매도:{ask_formatted}주 / 매수:{bid_formatted}주) - 균형권 공방"
+                    )
+                    is_orderbook_safe = True
+                else:
+                    ob_status_msg = (
+                        f"🟢 <b>[매수 우위 호가]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> "
+                        f"(매도:{ask_formatted}주 / 매수:{bid_formatted}주) - 매수잔량이 상대적으로 우세"
+                    )
+                    is_orderbook_safe = True
+            elif manual_ask > 0 or manual_bid > 0:
+                ob_status_msg = (
+                    "⚠️ <b>[호가 입력 불완전]</b> HTS 총매도잔량과 총매수잔량을 둘 다 입력해야 잔량비를 계산할 수 있습니다."
+                )
+                is_orderbook_safe = False
+            else:
+                ob_status_msg = (
+                    "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 가동합니다.</b> 자동 호가 데이터는 현재 연결되어 있지 않습니다."
+                )
+                is_orderbook_safe = True
+            elif manual_ask > 0 or manual_bid > 0:
+              ob_status_msg = (
+                  "⚠️ <b>[호가 입력 불완전]</b> HTS 총매도잔량과 총매수잔량을 "
+                  "둘 다 입력해야 잔량비를 계산할 수 있습니다."
+              )
+              is_orderbook_safe = False
+            else:
+              ob_status_msg = (
+                  "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 "
+                  "가동합니다.</b> 자동 호가 데이터는 현재 연결되어 있지 않습니다."
+              )
+              is_orderbook_safe = True
             elif manual_ask > 0 or manual_bid > 0:
                 ob_status_msg = (
                     "⚠️ <b>[호가 입력 불완전]</b> HTS 총매도잔량과 총매수잔량을 "
