@@ -845,15 +845,46 @@ if symbol:
             else:
                 trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
 
+            def generate_ma_hierarchy(ma_5, ma_20, ma_60, ma_120, current_price):
+              ma_dict = {
+                  "120일": ma_120,
+                  "60일": ma_60,
+                  "20일": ma_20,
+                  "5일": ma_5,
+                  "현재가": current_price,
+              }
+              sorted_items = sorted(ma_dict.items(), key=lambda x: x[1], reverse=True)
+              hierarchy_parts = []
+              for name, price in sorted_items:
+                if name == "현재가":
+                  hierarchy_parts.append(
+                      f'<span style="color:#ff6600; font-weight:bold;">현재가({current_price:,}원)</span>'
+                  )
+                else:
+                  hierarchy_parts.append(f"{name}")
+              hierarchy_str = " > ".join(hierarchy_parts)
+            
+              if ma_5 < ma_20 < ma_60 < ma_120:
+                comment = "*(대세 역배열 저항 압박)*"
+              elif ma_5 > ma_20 > ma_60 > ma_120:
+                comment = "*(완벽한 정배열 상승 랠리)*"
+              else:
+                comment = "*(이평선 혼조세 횡보 구간)*"
+            
+              return f"<br>&nbsp;&nbsp;• <b>[이평선 층위 서열]</b> {hierarchy_str} {comment}"
+            
+            
             ma_price_summary = (
-                "<br>• 📌 <b>[주요 이동평균선 현황]</b><br>&nbsp;&nbsp;<span"
-                f" style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str}"
-                f" (이격: {bias_ma5:+.1f}%)</span> | <span style='color:#1976D2;"
+                "<br>• 📌 <b>[주요 이동평균선 현황]</b><br>&nbsp;&nbsp;&nbsp;<span"
+                f" style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str} (이격:"
+                f" {bias_ma5:+.1f}%)</span> | <span style='color:#1976D2;'"
                 f" font-weight:bold;'>🔵 20일선: {ma20_str}</span> | <span"
-                f" style='color:#388E3C; font-weight:bold;'>🟢 60일선:"
-                f" {ma60_str}</span> | <span style='color:#7B1FA2;"
-                f" font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
+                f" style='color:#388E3C; font-weight:bold;'>🟢 60일선: {ma60_str}</span> |"
+                f" <span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선:"
+                f" {ma120_str}</span><br>"
             )
+            
+            ma_price_summary += generate_ma_hierarchy(ma5, ma20, ma60, ma120, p)
 
             if is_kr:
                 core_vault = {
