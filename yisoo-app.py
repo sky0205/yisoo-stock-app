@@ -1811,12 +1811,12 @@ if symbol:
                         "→ <b>[음봉 조정 관망]</b> 5일선 위 음봉 조정이므로 지지 사수 확인 후 대응"
                     )
                 elif vol_strength < 80:
-                    # 기존 코드의 에러 방어를 위해 변수 정의를 살려줍니다
                     is_healthy_volume_dry = ('has_entered_first' in locals() and has_entered_first) or (p_chg >= 0.0)
                     
                     is_yangbong_support = (p_chg >= 0.0 and p >= today_open and vol_strength >= 75.0)
                     if is_yangbong_support or is_healthy_volume_dry:
                         time_bottom_action = "14:00 이후 볼린저 바닥 지지 시 50% 타진, 15:20 저가 사수 시 완성" if is_kr else "07:00 일봉 바닥 지지 확인 시 완성"
+                        # 텍스트도 신호등과 똑같이 1단계 입질 매수 방향으로 통일합니다
                         bottom_action_str = f"→ <b>[1단계 진바닥 입질 매수]</b> 양봉 숨고르기 지지 확인({vol_strength:.1f}점)! {time_bottom_action}"
                     else:
                         bottom_action_str = f"-> <b>[입질 대기]</b> 거래량 부족 ({vol_strength:.1f}점)으로 매수 보류"
