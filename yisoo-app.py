@@ -1811,8 +1811,12 @@ if symbol:
                         "→ <b>[음봉 조정 관망]</b> 5일선 위 음봉 조정이므로 지지 사수 확인 후 대응"
                     )
                 elif vol_strength < 80:
-                    # 1차 진입 후 양봉 윗꼬리(숨고르기) 상태라면 거래량 부족 경고를 완화하여 지지력 관망으로 유도
-                    is_healthy_volume_dry = ('has_entered_first' in locals() and has_entered_first) or ('is_yangbong_pullback' in locals() and is_yangbong_pullback)
+                    is_yangbong_support = (p_chg >= 0.0 and p >= today_open and vol_strength >= 75.0)
+                    if is_yangbong_support:
+                        time_bottom_action = "14:00 이후 볼린저 바닥 지지 시 50% 타진, 15:20 저가 사수 시 완성" if is_kr else "07:00 일봉 바닥 지지 확인 시 완성"
+                        bottom_action_str = f"→ <b>[1단계 진바닥 입질 매수]</b> 양봉 숨고르기 지지 확인({vol_strength:.1f}점)! {time_bottom_action}"
+                    else:
+                        bottom_action_str = f"-> <b>[입질 대기]</b> 거래량 부족 ({vol_strength:.1f}점)으로 매수 보류"
                     
                     if is_healthy_volume_dry:
                         bottom_action_str = (
