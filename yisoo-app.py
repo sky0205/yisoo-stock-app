@@ -1102,11 +1102,14 @@ if symbol:
                     "⚡ <b>[프리장/수동 연산]</b> 수동 입력 시세를 기준으로 정밀 검증 중이외다.",
                 )
             elif is_positive_day and vol_strength < 100:
-                v_status, v_adv = (
-                    "거래 숨고르기",
-                    f"🔵 <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! "
-                    "1차 진입 또는 플러스권 양봉 윗꼬리 숨 고르기 구간이오니 지지력을 관망하시게.",
-                )
+              v_status, v_adv = (
+                  "거래 숨고르기",
+                  (
+                      f"• <b>[거래 숨고르기]</b> 시간보정 강도"
+                      f" {vol_strength:.1f}점! 1단계 진바닥 입질 및 양봉"
+                      " 지지력 확인 구역이오니 차분히 타진하시게."
+                  ),
+              )
             elif vol_strength >= 150:
             
                 if not is_down_trend_v:
@@ -1816,8 +1819,7 @@ if symbol:
                     is_yangbong_support = (p_chg >= 0.0 and p >= today_open and vol_strength >= 75.0)
                     if is_yangbong_support or is_healthy_volume_dry:
                         time_bottom_action = "14:00 이후 볼린저 바닥 지지 시 50% 타진, 15:20 저가 사수 시 완성" if is_kr else "07:00 일봉 바닥 지지 확인 시 완성"
-                        # 텍스트도 신호등과 똑같이 1단계 입질 매수 방향으로 통일합니다
-                        bottom_action_str = f"→ <b>[1단계 진바닥 입질 매수]</b> 양봉 숨고르기 지지 확인({vol_strength:.1f}점)! {time_bottom_action}"
+                        bottom_action_str = f"→ <b>[1단계 진바닥 입질 매수]</b> 양봉 숨고르기 지지 확인({vol_strength:.1f}점)! 섣부른 관망 대신 {time_bottom_action}"
                     else:
                         bottom_action_str = f"-> <b>[입질 대기]</b> 거래량 부족 ({vol_strength:.1f}점)으로 매수 보류"
                     
