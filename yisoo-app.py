@@ -845,7 +845,36 @@ if symbol:
             else:
                 trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
 
-            def generate_ma_hierarchy(ma_5, ma_20, ma_60, ma_120, current_price):
+            def generate_ma_hierarchy(df, current_price):
+              # 데이터프레임에서 최신 이평선 값을 안전하게 추출 (컬럼명 대소문자나 스타일에 맞춰 조정 가능)
+              try:
+                ma_5 = (
+                    df["MA5"].iloc[-1]
+                    if "MA5" in df.columns
+                    else df[df.columns[df.columns.str.contains("5")][0]].iloc[-1]
+                )
+                ma_20 = (
+                    df["MA20"].iloc[-1]
+                    if "MA20" in df.columns
+                    else df[df.columns[df.columns.str.contains("20")][0]].iloc[-1]
+                )
+                ma_60 = (
+                    df["MA60"].iloc[-1]
+                    if "MA60" in df.columns
+                    else df[df.columns[df.columns.str.contains("60")][0]].iloc[-1]
+                )
+                ma_120 = (
+                    df["MA120"].iloc[-1]
+                    if "MA120" in df.columns
+                    else df[df.columns[df.columns.str.contains("120")][0]].iloc[-1]
+                )
+              except Exception:
+                # 혹시라도 컬럼명이 다르면 기존에 쓰시던 변수명을 직접 매핑할 수 있도록 예외 처리
+                ma_5 = float(ma5_str.replace(",", ""))
+                ma_20 = float(ma20_str.replace(",", ""))
+                ma_60 = float(ma60_str.replace(",", ""))
+                ma_120 = float(ma120_str.replace(",", ""))
+            
               ma_dict = {
                   "120일": ma_120,
                   "60일": ma_60,
@@ -884,8 +913,7 @@ if symbol:
                 f" {ma120_str}</span><br>"
             )
             
-            ma_price_summary += generate_ma_hierarchy(ma5, ma20, ma60, ma120, p)
-
+            ma_price_summary += generate_ma_hierarchy(df, p)
             if is_kr:
                 core_vault = {
                     "005930": "삼성전자",
