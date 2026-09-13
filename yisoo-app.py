@@ -846,7 +846,6 @@ if symbol:
                 trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
 
             def generate_ma_hierarchy(df, current_price):
-              # 데이터프레임에서 최신 이평선 값을 안전하게 추출 (컬럼명 대소문자나 스타일에 맞춰 조정 가능)
               try:
                 ma_5 = (
                     df["MA5"].iloc[-1]
@@ -869,7 +868,6 @@ if symbol:
                     else df[df.columns[df.columns.str.contains("120")][0]].iloc[-1]
                 )
               except Exception:
-                # 혹시라도 컬럼명이 다르면 기존에 쓰시던 변수명을 직접 매핑할 수 있도록 예외 처리
                 ma_5 = float(ma5_str.replace(",", ""))
                 ma_20 = float(ma20_str.replace(",", ""))
                 ma_60 = float(ma60_str.replace(",", ""))
@@ -900,7 +898,8 @@ if symbol:
               else:
                 comment = "*(이평선 혼조세 횡보 구간)*"
             
-              return f"<br>&nbsp;&nbsp;• <b>[이평선 층위 서열]</b> {hierarchy_str} {comment}"
+              # 불릿과 빈공간을 없애고 이평선 라인 바로 아래에 바짝 붙도록 수정
+              return f"&nbsp;&nbsp;&nbsp;&nbsp;<b>[이평선 층위]</b> {hierarchy_str} {comment}"
             
             
             ma_price_summary = (
