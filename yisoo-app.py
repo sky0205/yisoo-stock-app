@@ -1825,8 +1825,8 @@ if symbol:
                     
                     if is_healthy_volume_dry:
                         bottom_action_str = (
-                            "-> <b>[거래 숨고르기]</b> 1차 진입 후 거래량 자연 감소 상태이므로 "
-                            f"({vol_strength:.1f}점) 섣부른 매수 대신 호가 지지력을 차분히 관망"
+                            f"-> <b>[1단계 진바닥 입질 매수]</b> 양봉 숨고르기 지지 확인({vol_strength:.1f}점)! "
+                            "1단계 정찰병 타진 구역"
                         )
                     else:
                         bottom_action_str = (
