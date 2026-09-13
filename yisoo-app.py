@@ -610,6 +610,11 @@ if symbol:
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
             is_over_extended_5 = bias_ma5 >= 5.0
 
+            # ★ [이평선 꼬임(혼조세) 감지 로직]
+            is_ma_tangled = False
+            if not (ma5_val > mid_line > ma60_val > ma120_val or ma5_val < mid_line < ma60_val < ma120_val):
+                is_ma_tangled = True
+
             # 20일선 버퍼 판정
             ma20_safe_threshold = mid_line * 1.002
             is_ma20_buffer_safe = p >= ma20_safe_threshold
@@ -1116,13 +1121,13 @@ if symbol:
                     v_status, v_adv = (
                         "거래 숨고르기",
                         f"🧊 <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! "
-                        "1차 진입 후 양봉 윗꼬리를 달며 자연스럽게 숨 고르는 중이오니 지지력을 관망하시게."
+                        "1차 진입 후 양봉 윗꼬리를 달며 자연스럽게 숨 고르는 중이오니 지지력을 관망하시게.",
                     )
                 else:
                     v_status, v_adv = (
                         "거래절벽",
                         f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! "
-                        "수급이 마르고 동력이 없으니 속지 마시게."
+                        "수급이 마르고 동력이 없으니 속지 마시게.",
                     )
 
             st.markdown(
@@ -1588,6 +1593,19 @@ if symbol:
                     " 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
                 )
 
+            # ★ [이평선 꼬임 발생 시 최종 결론 및 점수 패널티 연계 적용]
+            if is_ma_tangled:
+                pullback_rebound_score = 0
+                bottom_score = min(bottom_score, 0)
+                final_code = "MA_TANGLED_WARNING"
+                sig = "🟡 [이평선 꼬임 혼조세] 방향성 상실로 인한 관망"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    "<b>[이평선 꼬임 혼조세]</b> 이동평균선들이 서로 뒤죽박죽 엉켜 방향성을 상실했으니, "
+                    "지표 점수에 현혹되지 말고 확실한 정배열/역배열 분출이 나올 때까지 무조건 관망하시게."
+                )
+
             # 신호등 박스 표출
             st.markdown(
                 f"<div class='signal-box' style='background-color: {col};'>"
@@ -1601,7 +1619,7 @@ if symbol:
                 "WAIT_GENERAL", "WAIT_INDICATOR", "WAIT_MACD", "WAIT_VOLUME", 
                 "WAIT_DOWNTREND_FALL", "WAIT_PULLBACK_CANDLE", "WAIT_PULLBACK", 
                 "WAIT_MA20_BUFFER", "WAIT_ORDERBOOK", "WAIT_OVER_EXTENDED", 
-                "YELLOW_CAUTION", "RED_SELL_WARNING"
+                "YELLOW_CAUTION", "RED_SELL_WARNING", "MA_TANGLED_WARNING"
             ]
 
             # 지표 세부 텍스트 조립
@@ -1683,7 +1701,7 @@ if symbol:
                 pullback_time_guide = (
                     "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 완성 (윗꼬리 20일선 이탈 시 즉시 철수)"
                     if is_kr
-                    else "07:00 마감 일봉 안착 확인 시 3단계 완성 (윗꼬리 20일선 이탈 시 즉시 철수)"
+                    else "07:00 일봉 안착 확인 시 3단계 완성 (윗꼬리 20일선 이탈 시 즉시 철수)"
                 )
                 pullback_action_str = (
                     f"-> <b>[3단계 눌림목 추가 매수]</b> 5·20일선 안착 확인! {pullback_time_guide}"
@@ -1796,8 +1814,7 @@ if symbol:
                     )
                 elif is_on_the_wall:
                     bottom_action_str = (
-                        "→ <b>[바닥 탈출 완료]</b> 성벽 도달로 탈출 완수! (익절"
-                        " 준비)"
+                        "→ <b>[바닥 탈출 완료]</b> 성벽 도달로 탈출 완수! (익절 준비)"
                     )
                 elif is_over_extended_5:
                     bottom_action_str = (
@@ -1916,6 +1933,11 @@ if symbol:
                 f"• <b>[눌림목 점수]:</b> <b>{pullback_rebound_score}점</b> (기준 2점)<br>"
                 f"{sub_indicator_str}{squeeze_info_str}"
             )
+
+            # 이평선 꼬임 발생 시 검증 텍스트에 꼬임 경고 메시지 추가 연계
+            if is_ma_tangled:
+                indicator_verify_text += "<br>⚠️ <span style='color:red;'><b>[이평선 꼬임 혼조세] 방향성 상실로 인한 진입 금지 및 관망</b></span>"
+
             ma5_dynamic_stop = dynamic_stop_price
 
             # ★ [보강]: 보유자 가이드에 성벽/목표선 예상 수익률 자동 연동 및 디테일 보존
