@@ -885,8 +885,8 @@ if symbol:
               for name, price in sorted_items:
                   if name == "현재가":
                       hierarchy_parts.append(
-                          f'<span style="color:#ff6600; font-weight:bold;">현재가({int(current_price):,}원)</span>'
-                      )
+                          f'<span style="color:#ff6600; font-weight:bold;">현재가({current_price:{fmt_p}}{currency})</span>'
+                     )
                   else:
                       hierarchy_parts.append(f"{name}")
               hierarchy_str = " > ".join(hierarchy_parts)
