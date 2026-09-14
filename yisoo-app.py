@@ -1337,8 +1337,8 @@ if symbol:
                     f"<b>[눌림목 숨고르기]</b> 5일선 위에서 지지력을 테스트하며 숨 고르는 건강한 구간이오니, "
                     f"무리한 추격보다는 호가창의 지지력을 차분히 관망하며 다음 맥점을 기다리시게."
                 )
-            # 🚦 최상단 신호등 및 핵심 결론 통합 판정 (상충 해소 및 문법 교정 버전)
-            if is_stop_loss_triggered:  # ← 맨 처음은 당연히 if로 시작해야 마땅합니다!
+            # 🚦 최상단 신호등 및 핵심 결론 통합 판정 (문법 구조 완벽 교정 버전)
+            if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
                 col = "#D32F2F"
@@ -1347,7 +1347,7 @@ if symbol:
                     f"<b>[바닥권 전저점 방어선 붕괴]</b> 미련을 버리고 즉시 "
                     f"전량 칼손절 후퇴하시게."
                 )
-            elif is_bottom_entry_signal and (p >= today_open) and (p_gh >= 0.0):
+            elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= 0.0):
                 final_code = "BOTTOM_ENTRY"
                 sig = "🟢 [혼조세 속 입절 포착] 1단계 분할 매수 유효 구역"
                 col = "#388E3C"
