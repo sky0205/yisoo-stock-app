@@ -1360,7 +1360,7 @@ if symbol:
                     f"<b>[바닥권 전저점 방어선 붕괴]</b> 미련을 버리고 즉시 "
                     f"전량 칼손절 후퇴하시게."
                 )
-            elif is_bottom_entry_signal or ((bias_ma5 >= 0.0) and (p >= today_open) and (p_chg >= 0.0)):
+            elif is_bottom_entry_signal or ((bias_ma5 >= 0.0) and (p_chg >= 0.0) and not is_stop_loss_triggered):
                 final_code = "BOTTOM_ENTRY"
                 sig = "🟢 [혼조세 속 입절 포착] 1단계 분할 매수 유효 구역"
                 col = "#388E3C"
