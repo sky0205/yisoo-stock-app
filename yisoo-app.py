@@ -505,10 +505,11 @@ if symbol:
                 m_start = now_local.replace(
                     hour=9, minute=0, second=0, microsecond=0
                 )
+                # 💡 애프터마켓 마감인 저녁 8시(20:00)까지 확장 조율 완료
                 m_end = now_local.replace(
-                    hour=15, minute=30, second=0, microsecond=0
+                    hour=20, minute=0, second=0, microsecond=0
                 )
-                total_minutes = 390
+                total_minutes = 660  # 09:00 ~ 20:00 총 660분 반영
             else:
                 m_start = now_local.replace(
                     hour=9, minute=30, second=0, microsecond=0
@@ -873,7 +874,7 @@ if symbol:
                 ma_20 = float(ma20_str.replace(",", ""))
                 ma_60 = float(ma60_str.replace(",", ""))
                 ma_120 = float(ma120_str.replace(",", ""))
-            
+              
               ma_dict = {
                   "120일": ma_120,
                   "60일": ma_60,
@@ -891,17 +892,17 @@ if symbol:
                   else:
                       hierarchy_parts.append(f"{name}")
               hierarchy_str = " > ".join(hierarchy_parts)
-            
+              
               if ma_5 < ma_20 < ma_60 < ma_120:
                 comment = "*(대세 역배열 저항 압박)*"
               elif ma_5 > ma_20 > ma_60 > ma_120:
                 comment = "*(완벽한 정배열 상승 랠리)*"
               else:
                 comment = "*(이평선 혼조세 횡보 구간)*"
-            
+              
               return f"&nbsp;&nbsp;&nbsp;&nbsp;<b>[이평선 층위]</b> {hierarchy_str} {comment}"
-            
-            
+              
+              
             ma_price_summary = (
                 "<br>• 📌 <b>[주요 이동평균선 현황]</b><br>&nbsp;&nbsp;&nbsp;<span"
                 f" style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str} (이격:"
@@ -911,7 +912,7 @@ if symbol:
                 f" <span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선:"
                 f" {ma120_str}</span><br>"
             )
-            
+              
             ma_price_summary += generate_ma_hierarchy(df, p)
             if is_kr:
                 core_vault = {
@@ -1109,7 +1110,7 @@ if symbol:
                   ),
               )
             elif vol_strength >= 150:
-            
+              
                 if not is_down_trend_v:
                     v_status, v_adv = (
                         "과열폭발",
