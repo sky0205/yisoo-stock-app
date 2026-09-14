@@ -1328,7 +1328,7 @@ if symbol:
                     f"• 현재 하락 음봉 국면이오니, 양봉 숨고르라는 헛된 기대를 버리고 "
                     f"성벽 및 5일선 이탈에 따른 칼질 관망을 유지하시게."
                 )
-            elif (p_chg >= 0.0) and not is_stop_loss_triggered:
+            elif (bias_ma5 >= 0.0) and (p_chg >= 0.0) and not is_stop_loss_triggered:
                 final_code = "BOTTOM_ENTRY"
                 sig = "🟢 [혼조세 속 입절 포착] 1단계 분할 매수 유효 구역"
                 col = "#388E3C"
@@ -1716,11 +1716,16 @@ if symbol:
             )
 
             is_overall_cautious_state = final_code in [
-                "WAIT_GENERAL", "WAIT_INDICATOR", "WAIT_MACD", "WAIT_VOLUME", 
-                "WAIT_DOWNTREND_FALL", "WAIT_PULLBACK_CANDLE", "WAIT_PULLBACK", 
-                "WAIT_MA20_BUFFER", "WAIT_ORDERBOOK", "WAIT_OVER_EXTENDED", 
+                "WAIT_GENERAL", "WAIT_INDICATOR", "WAIT_MACD", "WAIT_VOLUME",
+                "WAIT_DOWNTREND_FALL", "WAIT_PULLBACK_CANDLE", "WAIT_PULLBACK",
+                "WAIT_MA20_BUFFER", "WAIT_ORDERBOOK", "WAIT_OVER_EXTENDED",
                 "YELLOW_CAUTION", "RED_SELL_WARNING", "MA_TANGLED_WARNING"
             ]
+
+            # 🟢 5일선 방어 입절 포착(BOTTOM_ENTRY) 상태일 때는 강제 관망 변환을 원천 차단
+            if final_code == "BOTTOM_ENTRY":
+                is_overall_cautious_state = False
+                col = "#388E3C"
 
             # 지표 세부 텍스트 조립
             pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}%)</b>"
