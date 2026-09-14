@@ -1456,30 +1456,24 @@ if symbol:
                 final_code = "BOTTOM_ENTRY"
                 col = "#388E3C"
                 if not is_afternoon_safe_time:
-                    sig = f"🟢 [입질 포착] 1단계 진바닥 입질 ({time_tag_wait})"
+                    sig = f"🟢 [입절 포착] 1단계 진바닥 입절 ({time_tag_wait})"
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                        f"<b>[진바닥 포착 완료]</b> 바닥 지표 2개 이상 터치 확인! 단, "
-                        f"{time_rule_desc}"
+                        f"• <b>[진바닥 포착 완료]</b> 이평선 혼조세 구간이나 5일선 안착 및 바닥 지표 충족! "
+                        f"전면 매수가 아닌 <b>비중 30~50% 수준의 1단계 분할 입절(매수)</b>로 가볍게 접근하시게. {time_rule_desc}"
                     )
                 else:
-                    sig = f"🟢 [진바닥 안착] 매수 진격 유효 구역 ({time_tag_ok})"
+                    sig = f"🟢 [진바닥 안착] 1단계 분할 입절 유효 구역 ({time_tag_ok})"
+                    action_time_guide = (
+                        "14:00 이후 5일선 및 볼린저 바닥 지지 확인 시 30~50% 분할 타진하고, "
+                        "15:20 저가 사수 시 완성하시게. (단, 윗꼬리 달고 5일선 이탈 시 즉시 철수)"
+                        if is_kr else
+                        "07:00 마감 일봉상 5일선 및 바닥선 사수를 확인 후 30~50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
+                    )
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                        f"<b>[지지 안착]</b> 양봉 흐름 속 지지력을 확인한 후 진입하시게."
+                        f"• <b>[혼조세 속 입절]</b> {action_time_guide}"
                     )
-                
-                action_time_guide = (
-                    "14:00 이후 볼린저 바닥 지지 확인 시 50% 분할 타진하고, "
-                    "15:20 저가 사수 시 완성하시게. (단, 윗꼬리 달고 바닥선 이탈 시 즉시 철수)"
-                    if is_kr else
-                    "07:00 마감 일봉상 볼린저 바닥선 사수를 확인 후 진입하시게. (단, 윗꼬리 달고 바닥선 이탈 시 즉시 철수)"
-                )
-                
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[{time_tag_ok}]</b> {action_time_guide}"
-                )
             elif is_escape_buy_signal:
                 final_code = "ESCAPE_BUY"
                 col = "#2E7D32"
