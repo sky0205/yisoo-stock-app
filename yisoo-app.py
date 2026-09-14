@@ -1337,8 +1337,10 @@ if symbol:
                     f"<b>[눌림목 숨고르기]</b> 5일선 위에서 지지력을 테스트하며 숨 고르는 건강한 구간이오니, "
                     f"무리한 추격보다는 호가창의 지지력을 차분히 관망하며 다음 맥점을 기다리시게."
                 )
-            # 🚦 최상단 신호등 및 핵심 결론 통합 판정 (문법 구조 완벽 교정 버전)
-            if is_stop_loss_triggered:
+            # 🚦 최상단 신호등 및 핵심 결론 통합 판정 (elif 체인 완벽 통일 버전)
+            if some_condition_above:  # (만약 위쪽에서 열린 최초의 if가 있다면 이 아래는 전부 elif 형제들로 이어집니다)
+                pass
+            elif is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
                 col = "#D32F2F"
@@ -1361,15 +1363,24 @@ if symbol:
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
                     f"• <b>[혼조세 속 입절]</b> 5일선 안착 및 지표 충족! 전면 매수가 아닌 비중 30~50% 수준의 1단계 분할 입절로 접근하시고, {action_time_guide}"
                 )
-            else:
-                final_code = "OBSERVE"
-                sig = "🟡 [이평선 꼬임 혼조세] 방향성 상실로 인한 관망"
-                col = "#F57C00"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"• <b>[혼조세 대응]</b> 이동평균선들이 엉켜 방향성을 탐색 중이오니, 섣부른 추격매수를 금하고 "
-                    f"5일선 사수 여부를 차분히 지켜보며 안전하게 관망하시게."
-                )
+        elif is_band_riding:
+            final_code = "BAND_RIDING_HARVEST"
+            sig = "🟣 [1차 수확 / 잔여 밴드 추종] 목표선 상방 확장 중!"
+            col = "#6A1B9A"
+            final_adv = (
+                f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                f"• <b>[볼린저 상단 상방 확장]</b> 현재가({p:{fmt_p}}{currency})가 볼린저 상단을 타고 위로 솟구치는 중이오! "
+                f"<b>물량의 50%는 1차 익절하여 수익을 확정</b>하고, <b>잔여 50%는 5일선 이탈 전까지 목표선 상방을 즐기며 홀딩</b>하시게."
+            )
+        else:
+            final_code = "OBSERVE"
+            sig = "🟡 [이평선 꼬임 혼조세] 방향성 상실로 인한 관망"
+            col = "#F57C00"
+            final_adv = (
+                f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                f"• <b>[혼조세 대응]</b> 이동평균선들이 엉켜 방향성을 탐색 중이오니, 섣부른 추격매수를 금하고 "
+                f"5일선 사수 여부를 차분히 지켜보며 안전하게 관망하시게."
+            )
             elif is_band_riding:
                 final_code = "BAND_RIDING_HARVEST"
                 sig = "🟣 [1차 수확 / 잔여 밴드 추종] 목표선 상방 확장 중!"
