@@ -1694,7 +1694,7 @@ if symbol:
                 )
 
             # ★ [이평선 꼬임 발생 시 최종 결론 및 점수 패널티 연계 적용]
-            if is_ma_tangled:
+            if is_ma_tangled and final_code != "BOTTOM_ENTRY":
                 pullback_rebound_score = 0
                 bottom_score = min(bottom_score, 0)
                 final_code = "MA_TANGLED_WARNING"
