@@ -7,14 +7,7 @@ import pandas as pd
 import requests
 import streamlit as st
 import yfinance as yfimport html
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
-from bs4 import BeautifulSoup
-import FinanceDataReader as fdr
-import pandas as pd
-import requests
-import streamlit as st
-import yfinance as yf
+
 
 
 st.set_page_config(
