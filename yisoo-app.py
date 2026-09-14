@@ -1694,15 +1694,11 @@ if symbol:
                 )
 
             # ★ [이평선 꼬임 발생 시 최종 결론 및 점수 패널티 연계 적용]
-            if is_ma_tangled:
+            # 🟢 주가가 상승세(+ 전일비 양수)이거나 5일선을 사수 중일 때는 이평선 꼬임 패널티로 덮어쓰지 않음
+            if is_ma_tangled and (p_chg < 0.0 or final_code == "MA_TANGLED_WARNING"):
                 if final_code == "BOTTOM_ENTRY":
-                    sig = "🟢 [이평선 꼬임 속 5일선 방어] 1단계 분할 입절 유효"
-                    col = "#388E3C"
-                    final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                        "<b>[이평선 꼬임 속 방어]</b> 이동평균선들은 서로 엉켜 있으나 단기 5일선 방어력이 살아 있으므로, "
-                        "맹목적 관망보다는 비중 30~50%의 1단계 분할 입절로 냉정하게 대응하시게."
-                    )
+                    # 초록불 상태 유지
+                    pass
                 else:
                     pullback_rebound_score = 0
                     bottom_score = min(bottom_score, 0)
