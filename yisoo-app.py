@@ -1347,7 +1347,7 @@ if symbol:
                     )
                 else:
                     final_code = "BREAKOUT_ATTACK"
-                    sig = f"🟢 [성벽 위 진격] 상방 랠리 추종 구역 ({time_tag_ok})"
+                    sig = f"🟢 [성벽 위 진격] 상방 랠리 추종 구역"
                     col = "#2E7D32"
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
