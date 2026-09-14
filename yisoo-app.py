@@ -608,13 +608,13 @@ if symbol:
             if not (ma5_val > mid_line > ma60_val > ma120_val or ma5_val < mid_line < ma60_val < ma120_val):
                 is_ma_tangled = True
 
-            # ★ [지능형 꼬임 예외 가드]: 5일선 위 안착 및 RSI 냉골(35 이하) 또는 바닥 지지 충족 시 혼조세 꼬임 경고 해제
+            # ★ [지능형 꼬임 예외 가드]: 5일선 위 안착 + 거래량 화력(75점 이상) + 밴드폭(12% 이상) 정상 범위일 때만 혼조세 경고 해제
             bb_bot_check = p <= (low_b * 1.02)
             rsi_cold_check = rsi_val <= 35
             will_cold_check = will_val <= -80
             temp_bottom_score = int(bb_bot_check) + int(rsi_cold_check) + int(will_cold_check)
 
-            if is_ma_tangled and is_ma5_safe and (rsi_val <= 35 or temp_bottom_score >= 2 or (p_chg >= 0.0 and p >= mid_line)):
+            if is_ma_tangled and is_ma5_safe and vol_strength >= 75.0 and bandwidth >= 12.0 and (rsi_val <= 35 or temp_bottom_score >= 2 or (p_chg >= 0.0 and p >= mid_line)):
                 is_ma_tangled = False
 
             # 20일선 버퍼 판정
@@ -1308,7 +1308,7 @@ if symbol:
                 time_rule_pass = "수동 시세 지지 확인 완료! (윗꼬리 기준선 이탈 시 즉시 철수)"
 
             # ==================================================================
-            # ★ [신호등 분기 논리 - 지능형 이평선 꼬임 예외 가드 적용 완성본]
+            # ★ [신호등 분기 논리 - 거래절벽 및 밴드응축 가드 장착 완성본]
             # ==================================================================
             try:
                 current_chg = float(p_chg)
@@ -1404,14 +1404,14 @@ if symbol:
                     f" {action_guide}"
                 )
             elif is_ma_tangled:
-                # 혼조세이나 5일선 위 안착 및 RSI 냉골(35 이하) 또는 진바닥 점수 2점 이상이면 꼬임 경고를 풀고 입절 허용
-                if is_ma5_safe and (rsi_val <= 35 or bottom_score >= 2 or recent_bottom_memory):
+                # ★ 거래절벽(75점 미만)이거나 밴드폭 응축(12% 미만)이면 냉골/바닥 지표가 있어도 휩소로 보고 초록불 차단 및 관망 처리
+                if is_ma5_safe and vol_strength >= 75.0 and bandwidth >= 12.0 and (rsi_val <= 35 or bottom_score >= 2 or recent_bottom_memory):
                     final_code = "BOTTOM_ENTRY"
                     col = "#388E3C"
                     sig = f"🟢 [혼조세 속 진바닥 입절] 1단계 분할 매수 유효 구역 ({time_tag_ok})"
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                        "<b>[이평선 꼬임 속 진바닥 포착]</b> 이평선은 엉켜 있으나 5일선 안착 및 냉골 바닥 지표가 충족되었으므로, "
+                        "<b>[이평선 꼬임 속 진바닥 포착]</b> 수급과 밴드폭이 뒷받침된 상태에서 5일선 안착 및 냉골 바닥 지표가 충족되었으므로, "
                         "비중 30~50%의 1단계 분할 입절로 냉정하게 대응하시게."
                     )
                 else:
@@ -1422,8 +1422,8 @@ if symbol:
                     col = "#F57C00"
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                        "<b>[이평선 꼬임 혼조세]</b> 이동평균선들이 서로 뒤죽박죽 엉켜 방향성을 상실했으니, "
-                        "확실한 정배열/역배열 분출이 확인될 때까지 무리한 추격을 금하고 냉정하게 관망하시게."
+                        "<b>[이평선 꼬임 혼조세]</b> 거래량 부족 또는 밴드 응축 상태에서 이동평균선들이 엉켜 방향성을 상실했으니, "
+                        "무관한 추격을 금하고 냉정하게 관망하시게."
                     )
             elif (current_chg < 0.0) and (bias_ma5 < 0.0):
                 final_code = "BEARISH_GUARD"
