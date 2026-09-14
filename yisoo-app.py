@@ -1337,14 +1337,45 @@ if symbol:
                     f"<b>[눌림목 숨고르기]</b> 5일선 위에서 지지력을 테스트하며 숨 고르는 건강한 구간이오니, "
                     f"무리한 추격보다는 호가창의 지지력을 차분히 관망하며 다음 맥점을 기다리시게."
                 )
-            elif is_stop_loss_triggered:
+            # 🚦 최상단 신호등 및 핵심 결론 통합 판정 (상충 해소 및 문법 교정 버전)
+            if is_stop_loss_triggered:  # ← 맨 처음은 당연히 if로 시작해야 마땅합니다!
                 final_code = "STOP_LOSS_ALERT"
                 sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
                 col = "#D32F2F"
                 final_adv = (
-                    f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    " <b>[바닥권 전저점 방어선 붕괴]</b> 미련을 버리고 즉시"
-                    " 전량 칼손절 후퇴하시게."
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[바닥권 전저점 방어선 붕괴]</b> 미련을 버리고 즉시 "
+                    f"전량 칼손절 후퇴하시게."
+                )
+            elif is_bottom_entry_signal and (p >= today_open) and (p_gh >= 0.0):
+                final_code = "BOTTOM_ENTRY"
+                sig = "🟢 [혼조세 속 입절 포착] 1단계 분할 매수 유효 구역"
+                col = "#388E3C"
+                if not is_afternoon_safe_time:
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"• <b>[진바닥 포착 완료]</b> 이평선 혼조세 구간이나 5일선 안착 및 바닥 지표 충족! "
+                        f"전면 매수가 아닌 <b>비중 30~50% 수준의 1단계 분할 입절(매수)</b>로 가볍게 접근하시게. {time_rule_desc}"
+                    )
+                else:
+                    action_time_guide = (
+                        "14:00 이후 5일선 및 볼린저 바닥 지지 확인 시 30~50% 분할 타진하고, "
+                        "15:20 저가 사수 시 완성하시게. (단, 윗꼬리 달고 5일선 이탈 시 즉시 철수)"
+                        if is_kr else
+                        "07:00 마감 일봉상 5일선 및 바닥선 사수를 확인 후 30~50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
+                    )
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"• <b>[혼조세 속 입절]</b> {action_time_guide}"
+                    )
+            else:
+                final_code = "OBSERVE"
+                sig = "🟡 [이평선 꼬임 혼조세] 방향성 상실로 인한 관망"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"• <b>[혼조세 대응]</b> 이동평균선들이 엉켜 방향성을 탐색 중이오니, 섣부른 추격매수를 금하고 "
+                    f"5일선 사수 여부를 차분히 지켜보며 안전하게 관망하시게."
                 )
             elif is_band_riding:
                 final_code = "BAND_RIDING_HARVEST"
