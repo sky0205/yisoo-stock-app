@@ -1328,7 +1328,7 @@ if symbol:
                     f"• 현재 하락 음봉 국면이오니, 양봉 숨고르라는 헛된 기대를 버리고 "
                     f"성벽 및 5일선 이탈에 따른 칼질 관망을 유지하시게."
                 )
-            elif (bias_ma5 >= 0.0) and (p >= today_open) and (p_chg >= 0.0) and not is_stop_loss_triggered:
+            elif (bias_ma5 >= 0.0) and (p_chg >= 0.0) and not is_stop_loss_triggered:
                 final_code = "BOTTOM_ENTRY"
                 sig = "🟢 [혼조세 속 입절 포착] 1단계 분할 매수 유효 구역"
                 col = "#388E3C"
