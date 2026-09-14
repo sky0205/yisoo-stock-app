@@ -1325,16 +1325,30 @@ if symbol:
                 col = "#F57C00"
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"현재 하락 음봉 국면이오니, 양봉 숨고르기라는 헛된 기대를 버리고 "
+                    f"• 현재 하락 음봉 국면이오니, 양봉 숨고르라는 헛된 기대를 버리고 "
                     f"성벽 및 5일선 이탈에 따른 칼질 관망을 유지하시게."
+                )
+            elif (bias_ma5 >= 0.0) and (p >= today_open) and (p_chg >= 0.0) and not is_stop_loss_triggered:
+                final_code = "BOTTOM_ENTRY"
+                sig = "🟢 [혼조세 속 입절 포착] 1단계 분할 매수 유효 구역"
+                col = "#388E3C"
+                action_time_guide = (
+                    "14:00 이후 5일선 및 볼린저 바닥 지지 확인 시 30~50% 분할 타진하고, "
+                    "15:20 저가 사수 시 완성하시게. (단, 윗꼬리 달고 5일선 이탈 시 즉시 철수)"
+                    if is_kr else
+                    "07:00 마감 일봉상 5일선 및 바닥선 사수를 확인 후 30~50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
+                )
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"• <b>[혼조세 속 입절]</b> 5일선 안착 확인! 전면 매수가 아닌 비중 30~50% 수준의 1단계 분할 입절로 접근하시고, {action_time_guide}"
                 )
             elif 'v_status' in locals() and v_status == "거래 숨고르기" and bias_ma5 >= 0.0 and not is_stop_loss_triggered:
                 final_code = "WAIT_PULLBACK_STEP"
-                sig = "🟡 [거래 숨고르기] 5일선 위 눌림목 / 호가 관망"
+                sig = f"🟡 [거래 숨고르기] 5일선 위 눌림목 / 호가 관망"
                 col = "#F57C00"
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[눌림목 숨고르기]</b> 5일선 위에서 지지력을 테스트하며 숨 고르는 건강한 구간이오니, "
+                    f"• <b>[눌림목 숨고르기]</b> 5일선 위에서 지지력을 테스트하며 숨 고르는 건강한 구간이오니, "
                     f"무리한 추격보다는 호가창의 지지력을 차분히 관망하며 다음 맥점을 기다리시게."
                 )
             elif is_stop_loss_triggered:
