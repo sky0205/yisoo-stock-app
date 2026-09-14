@@ -505,7 +505,6 @@ if symbol:
                 m_start = now_local.replace(
                     hour=9, minute=0, second=0, microsecond=0
                 )
-                # 💡 애프터마켓 마감인 저녁 8시(20:00)까지 확장 조율 완료
                 m_end = now_local.replace(
                     hour=20, minute=0, second=0, microsecond=0
                 )
@@ -533,6 +532,11 @@ if symbol:
             today_low = float(df["Low"].iloc[-1])
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
             is_candle_bearish = p < today_open  # 진단용 음봉/양봉 판정
+
+            # ★ [이수할아버지 특별 가드]: 긴 위꼬리(고가 대비 현재가/종가 밀림 비율 35% 이상) 판정 변수
+            day_candle_range = max(0.01, today_high - today_low)
+            upper_tail_len = today_high - p
+            is_long_upper_tail = (upper_tail_len >= day_candle_range * 0.35) and (today_high > today_open)
 
             # 보조지표 연산 (기준: 20/2, 14/6, 14/9)
             delta = df["Close"].diff()
@@ -991,11 +995,8 @@ if symbol:
             # ==================================================================
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
-            # [전일비 0원 고착화 영구 박멸 강제 보정 장치]
             try:
                 _p_now = float(p) if 'p' in locals() and p else 0.0
-                
-                # 데이터프레임 장부에서 오늘 날짜를 제외한 진짜 마지막 과거 종가를 무조건 색출합니다
                 _p_old = 0.0
                 if 'df' in locals() and df is not None and not df.empty:
                     df_s = df.sort_index()
@@ -1003,20 +1004,15 @@ if symbol:
                         df_sub = df_s.drop(today_date, errors="ignore")
                     else:
                         df_sub = df_s
-                    
                     if len(df_sub) >= 1:
                         _p_old = float(df_sub["Close"].iloc[-1])
-                
                 if _p_old == 0.0:
                     _p_old = float(prev_p) if 'prev_p' in locals() and prev_p and float(prev_p) > 0 else _p_now
-                
-                # 만약 여전히 과거 종가와 현재가가 똑같다면, 장부 조작을 막기 위해 임시로 어제 진짜 종가를 유추합니다
                 if _p_old == _p_now and _p_now > 0:
                     if len(df) >= 3:
                         _p_old = float(df["Close"].iloc[-3])
                     elif len(df) >= 2:
                         _p_old = float(df["Close"].iloc[-2])
-                
                 if _p_old > 0 and _p_now > 0:
                     p_diff = _p_now - _p_old
                     p_chg = (p_diff / _p_old) * 100
@@ -1024,9 +1020,9 @@ if symbol:
                     p_diff = 0.0
                     p_chg = 0.0
             except Exception:
-
                 p_diff = 0.0
                 p_chg = 0.0
+
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(
@@ -1092,7 +1088,6 @@ if symbol:
                 )
 
             st.write("")
-           # 전일 종가 변수는 위에서 확정한 prev_p를 사용한다.
             is_positive_day = p >= prev_p if prev_p > 0 else False
         
             if is_manual_mode:
@@ -1110,7 +1105,6 @@ if symbol:
                   ),
               )
             elif vol_strength >= 150:
-              
                 if not is_down_trend_v:
                     v_status, v_adv = (
                         "과열폭발",
@@ -1175,7 +1169,6 @@ if symbol:
                     ('has_entered_first' in locals() and has_entered_first) or 
                     (p_chg >= 0)
                 )
-                
                 if is_healthy_volume_dry:
                     v_status, v_adv = (
                         "거래 숨고르기",
@@ -1278,36 +1271,19 @@ if symbol:
                 )
                 time_tag_wait = "★ 14:00 매수 대기"
                 time_tag_ok = "14:00 이후 / 애프터장 안착 완료"
-                time_rule_desc = (
-                    "오전장 휩소를 피하기 위해 14:00 이후 지지 확인 시 50% 분할 타진하고,"
-                    " 저녁 8시 애프터마켓 마감 사수 시 완성하시게. (단, 윗꼬리 달고 기준선 이탈 시 즉시 철수)"
-                )
-                time_rule_pass = (
-                    "14:00 이후 지지 확인 완료! 50% 분할 타진 집행 (저녁 8시 애프터마켓 마감 사수 시 완성 /"
-                    " 윗꼬리 이탈 시 즉시 철수)"
-                )
             elif not is_kr and not is_manual_mode:
                 is_afternoon_safe_time = (kst_now.hour >= 7) and (
                     kst_now.hour < 22
                 )
                 time_tag_wait = "★ 07:00 마감 일봉 대기"
                 time_tag_ok = "07:00 일봉 안착 확인"
-                time_rule_desc = (
-                    "정규장 중에는 매도만 유효! 밤새 휩소를 피하고 07:00 마감"
-                    " 일봉을 확인 후 진입하시게. (단, 윗꼬리 달고 기준선 이탈 시 즉시 철수)"
-                )
-                time_rule_pass = (
-                    "정규장 캔들 마감! 07:00 일봉 안착 확인 완료! (윗꼬리 기준선 이탈 시 즉시 철수)"
-                )
             else:
                 is_afternoon_safe_time = True
                 time_tag_wait = "★ 수동 검증"
                 time_tag_ok = "수동 시세 확인"
-                time_rule_desc = "수동 입력 시세 지지 확인 후 진입하시게. (윗꼬리 기준선 이탈 시 즉시 철수)"
-                time_rule_pass = "수동 시세 지지 확인 완료! (윗꼬리 기준선 이탈 시 즉시 철수)"
 
             # ==================================================================
-            # ★ [신호등 분기 논리 - 하단 지표 점수 완벽 동조 무결점 완성본]
+            # ★ [신호등 분기 논리 - 긴 위꼬리 저항 관망 가드 적용 완성본]
             # ==================================================================
             try:
                 current_chg = float(p_chg)
@@ -1322,6 +1298,16 @@ if symbol:
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
                     "<b>[바닥권 전저점 방어선 붕괴]</b> 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
+                )
+            # ★ [이수할아버지 반영 가드]: 긴 위꼬리 저항 발생 시 지표 돌파 신호보다 '위꼬리 저항 관망' 우선 발동
+            elif is_long_upper_tail and (p >= defense_line or p >= mid_line):
+                final_code = "LONG_TAIL_WARNING"
+                sig = "🟡 [위꼬리 저항 경계] 고점 매물 출회 / 추격 매수 금지"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[긴 위꼬리 저항 포착]</b> 장중 고점 대비 위꼬리가 길게 밀려 내려왔소! "
+                    "지표상 안착처럼 보여도 위쪽 매물벽 저항이 맵사오니 섣부른 추격매수를 금하고 냉정하게 관망하시게."
                 )
             # 2순위: 수학 목표선 98% 도달 / 오버슈팅 수확 구역
             elif p >= (target_price_100 * 0.98) or is_target_reached:
@@ -1407,7 +1393,7 @@ if symbol:
                     f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
                     f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
                 )
-            # 8순위: ★ [철저한 지표 동조 가드 적용]: 하단 눌림목 점수(2점 이상) 또는 20일선 완벽 안착일 때만 돌파 매수 허용
+            # 8순위: 20일선 돌파 안착 타진
             elif (
                 p >= ma20_safe_threshold
                 and (not is_down_trend_structural)
@@ -1496,17 +1482,19 @@ if symbol:
                 "WAIT_GENERAL", "WAIT_INDICATOR", "WAIT_MACD", "WAIT_VOLUME",
                 "WAIT_DOWNTREND_FALL", "WAIT_PULLBACK_CANDLE", "WAIT_PULLBACK",
                 "WAIT_MA20_BUFFER", "WAIT_ORDERBOOK", "WAIT_OVER_EXTENDED",
-                "YELLOW_CAUTION", "RED_SELL_WARNING", "MA_TANGLED_WARNING"
+                "YELLOW_CAUTION", "RED_SELL_WARNING", "MA_TANGLED_WARNING", "LONG_TAIL_WARNING"
             ]
 
             if final_code in ["BOTTOM_ENTRY", "BREAK_MA20_CONFIRMED"]:
                 is_overall_cautious_state = False
                 col = "#1E88E5" if final_code == "BREAK_MA20_CONFIRMED" else "#388E3C"
 
-            # 지표 세부 텍스트 조립 (상단 결론과 완벽 동조)
+            # 지표 세부 텍스트 조립
             pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}%)</b>"
             
-            if final_code == "BREAK_MA20_CONFIRMED":
+            if is_long_upper_tail:
+                pullback_action_str = "-> <b>[위꼬리 저항]</b> 고점 매물 출회로 추격 매수 자제 및 관망"
+            elif final_code == "BREAK_MA20_CONFIRMED":
                 pullback_action_str = f"-> <b>[20일선 안착 성공]</b> 현재가({p:{fmt_p}}{currency})가 20일선 위 안착 완료! 분할 타진 유효"
             elif is_band_riding:
                 pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}% / 밴드 라이딩)</b>"
@@ -1552,7 +1540,7 @@ if symbol:
 
             ma5_dynamic_stop = dynamic_stop_price
 
-            # ★ [보강]: 보유자 가이드에 성벽/목표선 예상 수익률 자동 연동 및 디테일 보존
+            # 보유자 가이드
             if is_band_riding:
                 if user_avg_price > 0:
                     profit_rate = ((p - user_avg_price) / user_avg_price) * 100
@@ -1819,7 +1807,12 @@ if symbol:
             # 하단 4대 핵심 지표 박스
             i1, i2, i3, i4 = st.columns(4)
             with i1:
-                if final_code == "BOTTOM_ENTRY":
+                if is_long_upper_tail:
+                    bb_diag = (
+                        "🟡 <b>[위꼬리 저항 관망 구역]</b><br>•"
+                        " <b>역할:</b> 고점 매물 소화 대기.<br>• <b>진단:</b> 긴 위꼬리가 밀려 내려왔으니 섣부른 추격을 금하고 관망."
+                    )
+                elif final_code == "BOTTOM_ENTRY":
                     bb_time_diag = (
                         "14:00 이후 50% 타진, 저녁 8시 애프터마켓 마감 사수 시 완성"
                         if is_kr
