@@ -983,7 +983,7 @@ if symbol:
             safe_display_name = html.escape(final_display_name)
 
             target_price_100 = up_b
-            is_target_reached = p >= (target_price_100 * 0.98)  # ★ [기준 확장]: 98% 이상 도달 시 목표 도달 판정
+            is_target_reached = p >= (target_price_100 * 0.98)
             is_on_the_wall = (p >= defense_line) and (p < target_price_100)
             is_band_riding = is_target_reached and is_band_expanding and is_ma5_safe and (not is_bearish_candle)
 
@@ -1170,7 +1170,6 @@ if symbol:
                         " 정배열 속 정상적인 눌림목 음봉 조정 중이오.",
                     )
             else:
-                # 1차 진입 상태이거나 당일 양봉 윗꼬리(숨고르기) 형태인 경우 파란색 거래절벽 경고를 완화
                 is_healthy_volume_dry = (
                     ('has_entered_first' in locals() and has_entered_first) or 
                     (p_chg >= 0)
@@ -1307,15 +1306,24 @@ if symbol:
                 time_rule_pass = "수동 시세 지지 확인 완료! (윗꼬리 기준선 이탈 시 즉시 철수)"
 
             # ==================================================================
-            # ★ [신호등 분기 논리 - 목표선 98% 도달 시 최우선 매도(수확) 가드 장착]
+            # ★ [신호등 분기 논리 - 성벽 아래 1·2단계 바닥 매수 부활 완성본]
             # ==================================================================
             try:
                 current_chg = float(p_chg)
             except:
                 current_chg = -1.0
 
-            # ★ [최우선 매도 가드]: 목표선의 98% 이상에 도달한 경우 무조건 매도(수확) 신호 발동
-            if p >= (target_price_100 * 0.98) or is_target_reached:
+            # 1순위: 비상 손절
+            if is_stop_loss_triggered:
+                final_code = "STOP_LOSS_ALERT"
+                sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
+                col = "#D32F2F"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    "<b>[바닥권 전저점 방어선 붕괴]</b> 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
+                )
+            # 2순위: 수학 목표선 98% 도달 / 오버슈팅 수확 구역
+            elif p >= (target_price_100 * 0.98) or is_target_reached:
                 final_code = "RED_SELL_TARGET"
                 sig = "🔴 [목표 도달] 수학 목표선 저항! 1차 50% 수확 및 분할 매도!"
                 col = "#D32F2F"
@@ -1324,14 +1332,7 @@ if symbol:
                     f"<b>[수학 목표선 도달 완료]</b> 볼린저 상단({target_price_100:{fmt_p}}{currency}) 코앞에 도달했거나 저항을 받고 있소! "
                     "신규 매수를 절대 금지하고, <b>우선 50% 물량을 기계적으로 수확(익절)</b>한 뒤 잔여 물량은 매도 주문을 걸어두시게."
                 )
-            elif is_stop_loss_triggered:
-                final_code = "STOP_LOSS_ALERT"
-                sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
-                col = "#D32F2F"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    "<b>[바닥권 전저점 방어선 붕괴]</b> 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
-                )
+            # 3순위: 밴드 라이딩 대시세 구역
             elif is_band_riding:
                 final_code = "BAND_RIDING_HARVEST"
                 sig = "🟣 [1차 수확 / 잔여 밴드 추종] 목표선 상방 확장 중!"
@@ -1341,6 +1342,28 @@ if symbol:
                     f"<b>[볼린저 상단 상방 확장]</b> 현재가({p:{fmt_p}}{currency})가 볼린저 상단을 타고 위로 솟구치는 중이오! "
                     "<b>물량의 50%는 1차 익절하여 수익을 확정</b>하고, <b>잔여 50%는 5일선 이탈 전까지 목표선 상향을 즐기며 홀딩</b>하시게."
                 )
+            # 4순위: 성벽 위 전용 전황 판정
+            elif p >= defense_line:
+                if is_candle_bearish or (is_positive_day and vol_strength < 80):
+                    candlestick_type_str = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
+                    final_code = "RED_SELL_WARNING"
+                    sig = f"🔴 [성벽 위 {candlestick_type_str}] 선제적 익절 및 수성 구간"
+                    col = "#D32F2F"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"<b>[성벽 위 {candlestick_type_str}]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에는 있으나 당일 {candlestick_type_str} 중이오! "
+                        "추격 매수를 엄금하고 선제적 분할 익절(수확)을 준비하시게."
+                    )
+                else:
+                    final_code = "BREAKOUT_ATTACK"
+                    sig = f"🟢 [성벽 위 진격] 상방 랠리 추종 구역 ({time_tag_ok})"
+                    col = "#2E7D32"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"<b>[성벽 위 안착 진격]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 기세를 타고 양봉으로 진격 중이오! "
+                        "5일선을 사수하며 상방 목표선까지 추세를 즐기시게."
+                    )
+            # 5순위: 성벽 아래이더라도 지표 충족 시 1단계 진바닥 입질(정찰병) 및 2단계 탈출 매수 허용
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= 0.0):
                 final_code = "BOTTOM_ENTRY"
                 col = "#388E3C"
@@ -1381,28 +1404,6 @@ if symbol:
                     f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
                     f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
                 )
-            elif (
-                p >= ma20_safe_threshold
-                and (not is_down_trend_structural)
-                and is_ma5_safe
-            ):
-                final_code = "BREAK_MA20_CONFIRMED"
-                sig = "🔵 [돌파 확인] 20일선 안착 타진 (종가 사수 확인)"
-                col = "#1E88E5"
-                action_guide = (
-                    "14:00 이후 지지 확인 시 50% 분할 타진, 15:20 종가 사수 시 3단계 완성하시게."
-                    " (단, 윗꼬리 달고 20일선 이탈 시 즉시 철수)"
-                    if is_kr
-                    else "07:00 마감 일봉상 20일선 안착 사수를 확인 후 3단계 완성하시게."
-                    " (단, 윗꼬리 달고 20일선 이탈 시 즉시 철수)"
-                )
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    f" <b>[20일선 돌파 안착 타진]</b>"
-                    f" 현재가({p:{fmt_p}}{currency})가"
-                    f" 20일선 및 안전마진선({ma20_safe_threshold:{fmt_p}}{currency})을 돌파하였소!"
-                    f" {action_guide}"
-                )
             elif is_ma_tangled:
                 if is_ma5_safe and vol_strength >= 75.0 and bandwidth >= 12.0 and (rsi_val <= 35 or temp_bottom_score >= 2 or (p_chg >= 0.0 and p >= mid_line)):
                     final_code = "BOTTOM_ENTRY"
@@ -1423,35 +1424,6 @@ if symbol:
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
                         "<b>[이평선 꼬임 혼조세]</b> 거래량 부족 또는 밴드 응축 상태에서 이동평균선들이 엉켜 방향성을 상실했으니, "
                         "무관한 추격을 금하고 냉정하게 관망하시게."
-                    )
-            elif (current_chg < 0.0) and (bias_ma5 < 0.0):
-                final_code = "BEARISH_GUARD"
-                sig = f"🟡 [하락/조정] 음봉 압력 속 추세 이탈 경계 "
-                col = "#F57C00"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"현재 하락 음봉 국면이오니, 양봉 숨고르라는 헛된 기대를 버리고 "
-                    f"성벽 및 5일선 이탈에 따른 칼질 관망을 유지하시게."
-                )
-            elif (
-                is_ma5_safe
-                and not is_bottom_indicator_ok
-                and not is_down_trend_structural
-            ):
-                final_code = "WAIT_INDICATOR"
-                sig = "🟡 [관망/보류] 5일선 안착했으나 보조지표 미흡 (외바닥 주의)"
-                col = "#F57C00"
-                if p < mid_line:
-                    final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        f" <b>[20일선 저항 하회]</b> 5일선은 회복했으나 머리 위 20일선({mid_line:{fmt_p}}{currency}) 저항 아래에 갇혀 있소! "
-                        "20일선 돌파 및 안착 확인 전까지 진입을 보류하시게."
-                    )
-                else:
-                    final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                        " <b>[지표 미흡]</b> 5일선은 안착했으나 보조지표 동조 점수"
-                        " 부족으로 외바닥 속임수를 경계하고 관망하시게."
                     )
             else:
                 final_code = "WAIT_GENERAL"
@@ -1492,6 +1464,13 @@ if symbol:
             elif is_target_reached or p >= (target_price_100 * 0.98):
                 pullback_status_str = f"<b>(수학 목표선 저항 도달)</b>"
                 pullback_action_str = "-> <b>[50% 수확]</b> 상단 목표 도달 완료로 신규 진입 절대 금지"
+            elif p >= defense_line:
+                if is_candle_bearish or (is_positive_day and vol_strength < 80):
+                    pullback_status_str = f"<b>(성벽 위 음봉 조정 / 밴드폭 {bandwidth:.1f}%)</b>"
+                    pullback_action_str = "-> <b>[선제 익절 준비]</b> 성벽 위 차익 매물 출회 중이므로 분할 수확 검토"
+                else:
+                    pullback_status_str = f"<b>(성벽 위 진격 랠리 / 밴드폭 {bandwidth:.1f}%)</b>"
+                    pullback_action_str = "-> <b>[기세 추종]</b> 성벽 위 안착 상태이므로 5일선 사수하며 추세 홀딩"
             elif is_escape_buy_signal:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / 진바닥 구간)</b>"
@@ -1500,82 +1479,15 @@ if symbol:
                     "-> <b>[진바닥 반등]</b> 바닥 탈출 국면이므로 5일선 사수"
                     " 기준으로 대응"
                 )
-            elif is_down_trend_structural:
-                pullback_status_str = (
-                    f"<b>(대세 역배열 하락 추세 / 밴드폭 {bandwidth:.1f}%)</b>"
-                )
-                pullback_action_str = (
-                    "-> <b>[진바닥 탐색 중]</b> 역배열 하락 진행형 (5일선 미안착"
-                    " / 칼날 관망)"
-                    if not is_ma5_safe
-                    else "-> <b>[진바닥 안착 시도]</b> 5일선 회복 시도 중이나"
-                    " 역배열 저항 경계"
-                )
             elif not is_bandwidth_ok:
                 pullback_status_str = (
                     f"<b>(밴드폭 {bandwidth:.1f}% / {bw_status_category})</b>"
                 )
-                break_action_guide = (
-                    "14:00 이후 지지 시 50% 타진, 15:20 종가 사수 시 3단계 완성 (윗꼬리 밀림 시 즉시 철수)"
-                    if is_kr
-                    else "07:00 마감 일봉상 20일선 안착 확인 시 3단계 완성 (윗꼬리 밀림 시 즉시 철수)"
-                )
-                pullback_action_str = (
-                    f"-> <b>[돌파 타진]</b> 20일선({mid_line:{fmt_p}}{currency}) 돌파 성공! "
-                    f"{break_action_guide}"
-                    if p >= mid_line
-                    else f"-> <b>[매수 보류]</b> {bw_diag_msg}"
-                )
-            elif is_ma20_teetering:
-                pullback_action_str = (
-                    f"-> <b>[턱걸이 공방]</b> 20일선({mid_line:{fmt_p}}{currency})"
-                    " 턱걸이 중! 안전마진(+0.2%) 안착 대기"
-                )
-            elif not is_orderbook_safe:
-                pullback_action_str = (
-                    "-> <b>[호가 경계]</b> 매도/매수 잔량비 취약"
-                    f"({ob_ratio_val:.2f}배)으로 윗꼬리 경계 관망"
-                )
-            elif pullback_rebound_score == 0:
-                pullback_action_str = "-> <b>[관망]</b> 눌림목 지지 조건 미충족"
-            elif pullback_rebound_score < 2:
-                pullback_action_str = (
-                    "-> <b>[지표 미흡]</b> 눌림목 동조 점수 부족"
-                    f"({pullback_rebound_score}점)으로 돌파/안착 대기"
-                )
-            elif is_over_extended_5 and (p >= mid_line):
-                pullback_action_str = (
-                    "-> <b>[추격 매수 금지]</b> 5일선 대비"
-                    f" +{bias_ma5:.1f}% 과다이격으로 지지 대기"
-                )
-            elif not is_valid_buy_candle:
-                pullback_action_str = (
-                    "-> <b>[캔들 확인 대기]</b> 지지 캔들 미흡으로 관망"
-                )
-            elif is_macd_reverse_deepening:
-                pullback_action_str = (
-                    "-> <b>[엔진 역회전 심화]</b> MACD 하락 가속 중이므로"
-                    " 관망"
-                )
-            elif is_pullback_buy_signal:
-                pullback_time_guide = (
-                    "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 완성 (윗꼬리 20일선 이탈 시 즉시 철수)"
-                    if is_kr
-                    else "07:00 일봉 안착 확인 시 3단계 완성 (윗꼬리 20일선 이탈 시 즉시 철수)"
-                )
-                pullback_action_str = (
-                    f"-> <b>[3단계 눌림목 추가 매수]</b> 5·20일선 안착 확인! {pullback_time_guide}"
-                )
+                pullback_action_str = f"-> <b>[매수 보류]</b> {bw_diag_msg}"
             else:
-                if p < mid_line:
-                    pullback_action_str = (
-                        f"-> <b>[매수 보류]</b> 5일선은 회복했으나 <b>머리 위 20일선({mid_line:{fmt_p}}{currency}) 저항 아래</b>에 갇혀 있소! "
-                        "20일선 돌파 및 안착 확인 전까지 진입 금지."
-                    )
-                else:
-                    pullback_action_str = (
-                        "-> <b>[돌파/안착 대기]</b> 상방 공방 및 이격 조율 중 관망"
-                    )
+                pullback_action_str = (
+                    "-> <b>[관망]</b> 추세 안착 대기 중"
+                )
 
             if bottom_score >= 2:
                 bottom_status_str = (
@@ -1593,135 +1505,15 @@ if symbol:
                     bottom_action_str = (
                         "→ <b>[수확선 도달]</b> 상단 목표선 도달로 진바닥 임무 완수! (50% 기계적 수확)"
                     )
-                elif is_on_the_wall:
-                    bottom_action_str = (
-                        "→ <b>[바닥 탈출 완료]</b> 성벽 도달로 진바닥 임무"
-                        " 완수! (익절 준비)"
-                    )
-                elif is_down_trend_v and not is_ma5_safe:
-                    bottom_action_str = (
-                        "→ <b>[투매 칼날 경계]</b> 5일선 하회 투매 진행으로 매수"
-                        " 금지 및 관망"
-                    )
-                elif is_down_trend_v and is_ma5_safe:
-                    bottom_action_str = (
-                        "→ <b>[음봉 조정 관망]</b> 5일선 위 음봉 조정이므로 지지 사수 확인 후 대응"
-                    )
-                elif vol_strength < 80:
-                    is_healthy_volume_dry = ('has_entered_first' in locals() and has_entered_first) or (p_chg >= 0.0)
-                    
-                    is_yangbong_support = (p_chg >= 0.0 and p >= today_open and vol_strength >= 75.0)
-                    if is_yangbong_support or is_healthy_volume_dry:
-                        time_bottom_action = "14:00 이후 볼린저 바닥 지지 시 50% 타진, 15:20 저가 사수 시 완성" if is_kr else "07:00 일봉 바닥 지지 확인 시 완성"
-                        bottom_action_str = f"→ <b>[1단계 진바닥 입질 매수]</b> 양봉 숨고르기 지지 확인({vol_strength:.1f}점)! 섣부른 관망 대신 {time_bottom_action}"
-                    else:
-                        bottom_action_str = f"-> <b>[입질 대기]</b> 거래량 부족 ({vol_strength:.1f}점)으로 매수 보류"
-                    
-                    if is_healthy_volume_dry:
-                        bottom_action_str = (
-                            f"-> <b>[1단계 진바닥 입질 매수]</b> 양봉 숨고르기 지지 확인({vol_strength:.1f}점)! "
-                            "1단계 정찰병 타진 구역"
-                        )
-                    else:
-                        bottom_action_str = (
-                            "-> <b>[입질 대기]</b> 거래량 부족 "
-                            f"({vol_strength:.1f}점)으로 매수 보류"
-                        )
-                elif is_macd_reverse_deepening:
-                    bottom_action_str = (
-                        "→ <b>[매수 보류]</b> MACD 엔진 역회전 심화 중이므로"
-                        " 진입 금지"
-                    )
-                elif not is_valid_bottom_candle:
-                    bottom_action_str = (
-                        "→ <b>[캔들 대기]</b> 음봉 매도세 지속으로 매수 보류"
-                    )
-                elif is_escape_buy_signal:
-                    time_escape_action = (
-                        "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 완성"
-                        if is_kr
-                        else "07:00 일봉 5일선 안착 확인 시 완성"
-                    )
-                    bottom_action_str = (
-                        f"→ <b>[2단계 진바닥 탈출]</b> 5일선 안착 확인! {time_escape_action} (윗꼬리 5일선 이탈 시 즉시 철수)"
-                    )
-                elif is_ma5_safe:
-                    bottom_action_str = (
-                        f"→ <b>[관망 대기]</b> 5일선 위 안착 중이나 {bw_diag_msg}로 추가 매수 보류"
-                    )
-                elif is_bottom_entry_signal:
-                    time_bottom_action = (
-                        "14:00 이후 볼린저 바닥 지지 시 50% 타진, 15:20 저가 사수 시 완성"
-                        if is_kr
-                        else "07:00 일봉 바닥 지지 확인 시 완성"
-                    )
-                    bottom_action_str = (
-                        f"→ <b>[1단계 진바닥 입질 매수]</b> 지표 충족! {time_bottom_action} (윗꼬리 바닥 이탈 시 철수)"
-                    )
                 else:
                     bottom_action_str = (
-                        "→ <b>[입질 대기]</b> 5일선 아래 바닥 탐색 중 (안착 관망)"
+                        "→ <b>[1단계 진바닥 입질 매수]</b> 지표 충족! 1단계 정찰병 타진 구역"
                     )
             elif recent_bottom_memory:
                 bottom_status_str = (
                     "<b>(최근 2~3일 내 진바닥 확인 완료!)</b>"
                 )
-                if is_stop_loss_triggered:
-                    bottom_action_str = (
-                        "→ <b>[비상 후퇴]</b> 바닥권 전저점 이탈로 매수 금지"
-                    )
-                elif is_band_riding:
-                    bottom_action_str = (
-                        "→ <b>[밴드 라이딩]</b> 상단 밴드 확장 중! 50% 수확 후 잔여 홀딩"
-                    )
-                elif is_target_reached or p >= (target_price_100 * 0.98):
-                    bottom_action_str = (
-                        "→ <b>[수확선 도달]</b> 상단 목표선 도달로 탈출 완수! (50% 기계적 수확)"
-                    )
-                elif is_on_the_wall:
-                    bottom_action_str = (
-                        "→ <b>[바닥 탈출 완료]</b> 성벽 도달로 탈출 완수! (익절 준비)"
-                    )
-                elif is_over_extended_5:
-                    bottom_action_str = (
-                        "→ <b>[추격 매수 금지]</b> 5일선 대비"
-                        f" +{bias_ma5:.1f}% 과다이격 발생으로 관망 대기."
-                    )
-                elif not is_orderbook_safe:
-                    bottom_action_str = (
-                        f"→ <b>[호가 경계]</b> 매도/매수 잔량비 취약({ob_ratio_val:.2f}배)으로"
-                        " 윗꼬리 경계 관망"
-                    )
-                elif not is_valid_buy_candle:
-                    bottom_action_str = (
-                        "-> <b>[캔들 대기]</b> 5일선 안착했으나 지지캔들"
-                        " 미충족으로 관망."
-                    )
-                elif not is_bandwidth_ok:
-                    bottom_action_str = (
-                        f"→ <b>[밴드폭 대기]</b> {bw_diag_msg} 관망."
-                    )
-                elif is_escape_buy_signal:
-                    time_escape_action = (
-                        "14:00 이후 50% 분할 타진, 15:20 종가 사수 시 완성"
-                        if is_kr
-                        else "07:00 일봉 5일선 안착 확인 시 완성"
-                    )
-                    bottom_action_str = (
-                        f"→ <b>[2단계 진바닥 탈출]</b> 5일선 안착 확인! {time_escape_action} (윗꼬리 5일선 이탈 시 즉시 철수)"
-                    )
-                elif not is_ma5_safe:
-                    bottom_action_str = (
-                        "→ <b>[5일선 안착 대기]</b> 바닥은 확인되었으나 5일선"
-                        " 돌파 대기 중 관망."
-                    )
-                elif vol_strength < 80:
-                    bottom_action_str = (
-                        "→ <b>[거래량 대기]</b> 거래량 부족"
-                        f"({vol_strength:.1f}점)으로 관망."
-                    )
-                else:
-                    bottom_action_str = "→ <b>[관망]</b> 추세 안착 대기 중."
+                bottom_action_str = "→ <b>[관망]</b> 추세 안착 대기 중."
             else:
                 bottom_status_str = "<b>(조건 미흡)</b>"
                 bottom_action_str = "➔ <b>[관망]</b> 진바닥 지표 조건 미충족"
@@ -1747,50 +1539,10 @@ if symbol:
                 sub_indicator_str = (
                     f"    - <b>목표 도달 전황:</b> 수확 목표선({target_price_100:{fmt_p}}{currency}) 도달 완료! (분할 매도 구역)"
                 )
-            elif p < defense_line:
-                if not is_ma5_safe:
-                    sub_indicator_str = (
-                        f"    - <b>성벽 함락 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 아래로 밀린 채 <b>단기 생명선(5일선) 이탈</b> (칼날 관망)<br>"
-                        f"    - <b>눌림목 지지 동조:</b> {pullback_rebound_score}/3점 <b>(하락 험지 구간)</b> -> <b>[관망]</b> 5일선 회복 대기"
-                    )
-                else:
-                    sub_indicator_str = (
-                        f"    - <b>성벽 공방 전황:</b> 성벽({defense_line:{fmt_p}}{currency}) 아래 갇힌 채 돌파 공방 중 (안착 대기)<br>"
-                        f"    - <b>눌림목 지지 동조:</b> {pullback_rebound_score}/3점 <b>(돌파 대기 구역)</b> -> <b>[관망]</b> 안착 확인 대기"
-                    )
             else:
-                if p >= mid_line:
-                    pullback_tag = "눌림목 지지 동조"
-                else:
-                    pullback_tag = "돌파 준비(에너지 충전)"
-
                 sub_indicator_str = (
-                    f"  - <b>{pullback_tag}:</b>"
-                    f" {pullback_rebound_score}/3점 {pullback_status_str}"
-                    f" {pullback_action_str}"
+                    f"  - <b>전황 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
                 )
-
-            if (
-                is_escape_buy_signal
-                or bottom_score >= 2
-                or recent_bottom_memory
-                or is_down_trend_structural
-            ):
-                if is_down_trend_structural and not (
-                    is_escape_buy_signal
-                    or bottom_score >= 2
-                    or recent_bottom_memory
-                ):
-                    sub_indicator_str = (
-                        "    - <b>진바닥 탐색 현황:</b>"
-                        f" {pullback_status_str} {pullback_action_str}"
-                    )
-                else:
-                    sub_indicator_str = (
-                        "    - <b>진바닥 입질 동조:</b>"
-                        f" {bottom_score}개 터치 {bottom_status_str}"
-                        f" {bottom_action_str}"
-                    )
 
             indicator_verify_text = (
                 f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b>"
@@ -1800,7 +1552,6 @@ if symbol:
                 f"{sub_indicator_str}{squeeze_info_str}"
             )
 
-            # 이평선 꼬임 발생 시 검증 텍스트에 꼬임 경고 메시지 추가 연계
             if is_ma_tangled:
                 indicator_verify_text += "<br>⚠️ <span style='color:red;'><b>[이평선 꼬임 혼조세] 방향성 상실로 인한 진입 금지 및 관망</b></span>"
 
@@ -1911,42 +1662,26 @@ if symbol:
                     f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있으나, "
                     f"수학 목표선에 도달했으므로 5일선 -{dynamic_stop_pct:.1f}% 이탈({ma5_dynamic_stop:{fmt_p}}{currency})을 잔여 물량의 '수익 보존 전량 정리선'으로 엄수하시게."
                 )
+            elif p >= defense_line:
+                if is_candle_bearish or (is_positive_day and vol_strength < 80):
+                    ma5_guide_text = (
+                        f"현재가({p:{fmt_p}}{currency})가 성벽 위에서 안착 중이나 당일 음봉 조정/차익 매물 출회 중이오. "
+                        "추격 매수를 삼가고 5일선 지지 사수 여부와 선제적 익절을 준비하시게."
+                    )
+                else:
+                    ma5_guide_text = (
+                        f"현재가({p:{fmt_p}}{currency})가 성벽 위에서 양봉으로 진격하며 단기 5일선({ma5_val:{fmt_p}}{currency})을 든든히 지키고 있네. "
+                        "상방 랠리를 계속 추종하시게."
+                    )
             elif not is_ma5_safe:
                 ma5_guide_text = (
                     f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래로 이탈했으니, "
                     "돌파 안착 신호가 확인될 때까지 손가락을 묶고 관망하시게."
                 )
             else:
-                if vol_strength < 80:
-                    ma5_guide_text = (
-                        f"현재가({p:{fmt_p}}{currency})가"
-                        f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, <b>거래절벽({vol_strength:.1f}점)</b>으로 수급이 마른 상태이오. 섣부른 추격을 금하고 관망하시게."
-                    )
-                elif is_down_trend_v or is_candle_bearish:
-                    candlestick_name = "음봉 조정" if is_candle_bearish else "하락 변동성"
-                    ma5_guide_text = (
-                        f"현재가({p:{fmt_p}}{currency})가"
-                        f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, 당일 {candlestick_name} 중이오. 5일선 지지 사수 확인 후 대응하시게."
-                    )
-                elif final_code == "ESCAPE_BUY":
-                    ma5_time_str = "14:00 이후 지지 확인 50% 분할 진입" if is_kr else "07:00 일봉 안착 확인 시 2단계 진입"
-                    ma5_guide_text = (
-                        f"현재가({p:{fmt_p}}{currency})가"
-                        f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하며 2단계"
-                        f" 진바닥 탈출 성공! {ma5_time_str} 유효 구역이오."
-                    )
-                elif final_code == "PULLBACK_BUY":
-                    ma5_time_str = "14:00 이후 지지 시 3단계 분할 진격" if is_kr else "07:00 일봉 안착 확인 시 3단계 진격"
-                    ma5_guide_text = (
-                        f"현재가({p:{fmt_p}}{currency})가"
-                        f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 단기"
-                        f" 전투선이 완벽히 살아있네. {ma5_time_str} 가능구역이오."
-                    )
-                else:
-                    ma5_guide_text = (
-                        f"현재가({p:{fmt_p}}{currency})가"
-                        f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 단기 전투선 유지 중이오. 5일선 사수 여부를 지켜보시게."
-                    )
+                ma5_guide_text = (
+                    f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 단기 전투선 유지 중이오. 5일선 사수 여부를 지켜보시게."
+                )
 
             if is_band_riding:
                 def_status = (
@@ -1958,28 +1693,22 @@ if symbol:
                     f"성벽({defense_line:{fmt_p}}{currency}) 위 진격은 이미 완수되었네! "
                     f"수학 목표선({target_price_100:{fmt_p}}{currency}) 코앞에 도달했으니 진격을 멈추고 방어선을 등진 채 분할 매도로 현금을 챙기시게."
                 )
+            elif p >= defense_line:
+                if is_candle_bearish or (is_positive_day and vol_strength < 80):
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 당일 차익 매물 출회 및 숨고르기 공방 중이오! "
+                        "무리한 추격을 삼가고 익절 및 지지력을 주시하시게."
+                    )
+                else:
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 타고 <b>상방 랠리 진격 중</b>이네! "
+                        "든든한 성벽 방어선을 등지고 추세를 마음껏 즐기시게."
+                    )
             elif defense_line > target_price_100:
                 def_status = (
                     f"성벽(방어선:{defense_line:{fmt_p}}{currency})이 상단 목표선({target_price_100:{fmt_p}}{currency})보다 위로 왜곡된 <b>[역배열 침체]</b> 구역이오! "
                     "상방 동력이 완전히 메말랐으니 섣부른 진격을 금하고 철저히 관망하시게."
                 )
-            elif p >= defense_line:
-                if vol_strength < 80:
-                    def_status = (
-                        f"성벽({defense_line:{fmt_p}}{currency}) 위에는 있으나 <b>거래절벽({vol_strength:.1f}점)</b>으로 상방 동력이 없네! "
-                        "추격매수를 삼가고 선제적 익절이나 관망을 준비하시게."
-                    )
-                else:
-                    candlestick_warn_name = "음봉 발생" if is_candle_bearish else "기세 둔화"
-                    def_status = (
-                        f"성벽({defense_line:{fmt_p}}{currency}) 위에서 5일선 기세를"
-                        " 타고 <b>위로 진격 중</b>이네! 든든한 방어선을 등지고 계속"
-                        " 밀어붙이시게."
-                        if not is_candle_bearish and (p >= prev_p and p >= ma5_val)
-                        else f"성벽({defense_line:{fmt_p}}{currency}) 위에는 있으나"
-                        f" 단기 기세가 <b>숨고르기 중</b>이네! 성벽 위 {candlestick_warn_name} 시"
-                        " 선제적 익절을 준비하시게."
-                    )
             else:
                 if not is_ma5_safe:
                     def_status = (
@@ -2013,16 +1742,21 @@ if symbol:
 
             if is_band_riding:
                 macd_strategy_msg = (
-                    "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b>"
-                    " 상방 대시세 추종.<br>• <b>진단:</b> 엔진 가속과 함께 상단 밴드가 열리고 있소! "
-                    "추격 매수는 자제하되, 1차 절반 익절 후 남은 물량은 5일선 이탈 전까지 강하게 끌고 가시게."
+                    "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b> 상방 대시세 추종.<br>• <b>진단:</b> 밴드 확장과 함께 엔진이 힘을 내고 있소! 추격 매수는 자제하되 5일선 사수 기준으로 추종하시게."
                 )
             elif is_target_reached or p >= (target_price_100 * 0.99):
                 macd_strategy_msg = (
-                    "<b>🚨 엔진 과열 경보 (수학 목표선 도달)</b><br>• <b>역할:</b>"
-                    " 상단 오버슈팅 방어.<br>• <b>진단:</b> 엔진 가속도가 붙어 있어도 상단 저항선 코앞일세! "
-                    "추격 매수는 엄금이며, 1~2호가 아래에 매도 주문을 깔아두어 이익을 챙기시게."
+                    "<b>🚨 엔진 과열 경보 (수학 목표선 도달)</b><br>• <b>역할:</b> 상단 오버슈팅 방어.<br>• <b>진단:</b> 목표선 저항 코앞이므로 매도 주문을 깔아두어 이익을 챙기시게."
                 )
+            elif p >= defense_line:
+                if is_candle_bearish or (is_positive_day and vol_strength < 80):
+                    macd_strategy_msg = (
+                        "<b>⚠️ 성벽 위 숨고르기 (차익 매물 출회)</b><br>• <b>역할:</b> 고점 매물 소화 관측.<br>• <b>진단:</b> 성벽 위에 안착했으나 음봉 조정 또는 수급 둔화 중이므로 추격 매수를 자제하고 익절 타이밍을 조율하시게."
+                    )
+                else:
+                    macd_strategy_msg = (
+                        "<b>🔥 성벽 위 상방 랠리 가동</b><br>• <b>역할:</b> 추세 가속 유지.<br>• <b>진단:</b> 성벽 위 양봉 진격으로 MACD 추진력이 유효하오! 5일선 사수와 함께 상방 랠리를 추종하시게."
+                    )
             else:
                 if is_macd_accelerating:
                     if rsi_val >= 70:
@@ -2091,35 +1825,15 @@ if symbol:
                         " <b>역할:</b> 5일선 안착 후 배팅 확대.<br>• <b>진단:</b>"
                         f" {bw_diag_msg}. {bb_time_diag} (윗꼬리 5일선 이탈 시 철수)"
                     )
-                elif final_code == "WAIT_VOLUME":
+                elif final_code == "BREAKOUT_ATTACK":
                     bb_diag = (
-                        f"🟡 <b>[수급 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        " <b>역할:</b> 속임수 반등 차단.<br>• <b>진단:</b> 바닥"
-                        " 기술 지표는 달성했으나 거래량이 부족하니 진입 보류."
+                        f"🟢 <b>[성벽 위 진격 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                        " <b>역할:</b> 상방 랠리 추종.<br>• <b>진단:</b> 성벽 위에서 양봉으로 진격 중이오. 5일선 사수하며 수익을 극대화하시게."
                     )
-                elif final_code == "WAIT_DOWNTREND_FALL":
+                elif final_code == "RED_SELL_WARNING":
                     bb_diag = (
-                        f"🟡 <b>[진바닥 탐색/칼날 관망 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        " <b>역할:</b> 칼날 회피.<br>• <b>진단:</b> 5일선 아래"
-                        " 하락 구간이오. 5일선 회복 전까지 관망하시게."
-                    )
-                elif final_code == "WAIT_PULLBACK_CANDLE":
-                    candlestick_word = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
-                    bb_diag = (
-                        f"🟡 <b>[5일선 지지 검증 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        f" <b>역할:</b> {candlestick_word} 휩소 방지.<br>• <b>진단:</b> 5일선 위"
-                        f" 안착 상태이나 당일 {candlestick_word} 중이오. 5일선 지지 사수 확인 후 대응하시게."
-                    )
-                elif final_code == "PULLBACK_BUY":
-                    bb_time_diag = (
-                        "14:00 이후 안전마진 안착 시 50% 타진, 15:20 종가 사수 시 3단계 완성"
-                        if is_kr
-                        else "07:00 일봉 안착 확인 시 3단계 완성"
-                    )
-                    bb_diag = (
-                        f"🔵 <b>[3단계 눌림목 추가 매수 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        " <b>역할:</b> 승수 확대.<br>• <b>진단:</b>"
-                        f" {bw_diag_msg}. {bb_time_diag} (윗꼬리 20일선 이탈 시 철수)"
+                        f"🔴 <b>[성벽 위 음봉 조정/공방 구간]</b><br>•"
+                        " <b>역할:</b> 선제적 수익 방어.<br>• <b>진단:</b> 성벽 위에 있으나 당일 음봉 조정/차익 매물 출회 중이므로 선제적 익절을 준비하시게."
                     )
                 elif final_code == "BAND_RIDING_HARVEST":
                     bb_diag = (
@@ -2132,36 +1846,6 @@ if symbol:
                         f"🔴 <b>[수학 목표선 저항 도달 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
                         " <b>역할:</b> 고점 분할 수익 확정.<br>• <b>진단:</b> 볼린저 상단 저항에 닿았으니 "
                         "물량의 50%를 즉시 수확하고 분할 매도에 임하시게."
-                    )
-                elif final_code == "RED_SELL_WARNING":
-                    sell_warn_type = "음봉 발생" if is_candle_bearish else "기세 둔화"
-                    bb_diag = (
-                        f"🔴 <b>[성벽 위 {sell_warn_type} 익절 구간]</b><br>•"
-                        f" <b>역할:</b> 선제적 수익 방어.<br>• <b>진단:</b> 성벽 위 {sell_warn_type}으로 분할 익절 실행."
-                    )
-                elif final_code == "BREAKOUT_ATTACK":
-                    bb_diag = (
-                        f"🟢 <b>[성벽 돌파 진격 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        " <b>역할:</b> 상방 분출 추진력 가속.<br>• <b>진단:</b> 성벽을"
-                        f" 뚫고 목표선({target_price_100:{fmt_p}}{currency})을 향해 진격 중이오. 5일선 사수하며 수익을 극대화하시게."
-                    )
-                elif final_code == "YELLOW_CAUTION":
-                    bb_diag = (
-                        "🟡 <b>[성벽 위 경계 및 추격 차단 구역]</b><br>•"
-                        " <b>역할:</b> 추격 매수 원천 차단.<br>• <b>진단:</b> 성벽"
-                        " 위 공방 중이므로 신규 매수를 금지하고 익절 타이밍을 노림."
-                    )
-                elif final_code == "WAIT_OVER_EXTENDED":
-                    bb_diag = (
-                        f"🟡 <b>[과다이격 추격 금지 구역] (5일선 이격: +{bias_ma5:.1f}%)</b><br>•"
-                        " <b>역할:</b> 고점 물림 방지.<br>• <b>진단:</b> 5일선"
-                        " 대비 5% 이상 벌어졌으니 숨고르기까지 매수 보류."
-                    )
-                elif final_code in ["WAIT_MA20_BUFFER", "WAIT_ORDERBOOK"]:
-                    bb_diag = (
-                        f"🟡 <b>[호가/20일선 검증 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        " <b>역할:</b> 휩소 및 허매수 방지.<br>•"
-                        " <b>진단:</b> 매도/매수 잔량비가 1.5배 이상이면 매도벽 우세로 보고 진입을 보류."
                     )
                 else:
                     bb_diag = (
@@ -2223,7 +1907,7 @@ if symbol:
                         " 추격 매수 엄금 및 선제적 분할 매도 집행."
                     )
                 elif will_val <= -80:
-                    w_time_txt = "14:00 이후 지표 동조 시 입질 대기." if is_kr else "07:00 일봉 지표 동조 시 입질 대기."
+                    w_time_txt = "14:00 이후 지지 동조 시 입질 대기." if is_kr else "07:00 일봉 지표 동조 시 입질 대기."
                     w_status = (
                         "<b>🏳️ 개미 항복 구역</b><br>• <b>역할:</b> 세력"
                         " 선취매 포착.<br>• <b>진단:</b> 🧊 <b>[바닥 침체]</b>"
