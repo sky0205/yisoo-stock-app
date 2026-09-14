@@ -1165,22 +1165,26 @@ if symbol:
                         " 정배열 속 정상적인 눌림목 음봉 조정 중이오.",
                     )
             else:
-                is_healthy_volume_dry = (
-                    ('has_entered_first' in locals() and has_entered_first) or 
-                    (p_chg >= 0)
-                )
-                if is_healthy_volume_dry:
+                if p < ma5_val:
                     v_status, v_adv = (
-                        "거래 숨고르기",
-                        f"🧊 <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! "
-                        "1차 진입 후 양봉 윗꼬리를 달며 자연스럽게 숨 고르는 중이오니 지지력을 관망하시게.",
+                        "거래량 미달",
+                        f"🟡 <b>[거래량 미달 / 관망]</b> 실시간 {vol_strength:.1f}점! 5일선 아래이므로 섣부른 진입을 엄금하네.",
                     )
                 else:
-                    v_status, v_adv = (
-                        "거래절벽",
-                        f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! "
-                        "수급이 마르고 동력이 없으니 속지 마시게.",
+                    is_healthy_volume_dry = (
+                        ('has_entered_first' in locals() and has_entered_first) or 
+                        (p_chg >= 0)
                     )
+                    if is_healthy_volume_dry:
+                        v_status, v_adv = (
+                            "거래 숨고르기",
+                            f"🧊 <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! 정배열 성벽 위 눌림목 숨 고르는 중이오니 지지력을 관망하시게.",
+                        )
+                    else:
+                        v_status, v_adv = (
+                            "거래절벽",
+                            f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! 수급이 마르고 동력이 없으니 속지 마시게.",
+                        )
 
             st.markdown(
                 f"<div class='vol-box'><div style='font-size:32px; "
