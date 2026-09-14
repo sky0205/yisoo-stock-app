@@ -393,10 +393,7 @@ if symbol:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
 
-        # 호가창 실시간 기본값
-        ob_data = fetch_kr_orderbook(symbol) if is_kr else {"ok": False, "ratio": 0.0}
-
-        # ★ [호가 수동입력] 국장/미장 단위 분리 교정
+        # 호가창 실시간 기본값 설정 및 수동 입력 연동 교정
         multiplier = 1000.0 if is_kr else 1.0
 
         if manual_ask > 0 and manual_bid > 0:
@@ -418,6 +415,8 @@ if symbol:
                 "ok": False,
                 "msg": "HTS 매도·매수잔량을 모두 입력해야 분석 가능",
             }
+        else:
+            ob_data = {"ask": 0.0, "bid": 0.0, "ratio": None, "ok": False, "msg": "실시간 호가 API 미연결"}
 
         # 수동 입력 시세 우선 채택
         is_manual_mode = False
@@ -624,7 +623,7 @@ if symbol:
                 p < ma20_safe_threshold
             )
 
-            # 호가창 판정 (미장 무입력 시 허위 판정 원천 차단 및 안전 패스 적용)
+            # 호가창 판정 및 잔량비 비교 연동
             ob_ratio_val = ob_data.get("ratio")
             has_manual_ob = manual_ask > 0 and manual_bid > 0
             ob_ratio_available = (
@@ -635,7 +634,7 @@ if symbol:
     
             if not is_kr and not has_manual_ob:
                 ob_status_msg = (
-                    "💡 <b>미장 자동 호가 미제공</b> (수동 입력 시에만 HTS 잔량비 연산 가동 / 현재 호가 검증은 안전 패스)"
+                    "💡 <b>미장 자동 호가 미제공</b> (수동 입력 시에만 HTS 잔량비 연산 가동)"
                 )
                 is_orderbook_safe = True
             elif ob_ratio_available:
