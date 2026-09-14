@@ -1694,17 +1694,26 @@ if symbol:
                 )
 
             # ★ [이평선 꼬임 발생 시 최종 결론 및 점수 패널티 연계 적용]
-            if is_ma_tangled and final_code != "BOTTOM_ENTRY":
-                pullback_rebound_score = 0
-                bottom_score = min(bottom_score, 0)
-                final_code = "MA_TANGLED_WARNING"
-                sig = "🟡 [이평선 꼬임 혼조세] 방향성 상실로 인한 관망"
-                col = "#F57C00"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    "<b>[이평선 꼬임 혼조세]</b> 이동평균선들이 서로 뒤죽박죽 엉켜 방향성을 상실했으니, "
-                    "지표 점수에 현혹되지 말고 확실한 정배열/역배열 분출이 나올 때까지 무조건 관망하시게."
-                )
+            if is_ma_tangled:
+                if final_code == "BOTTOM_ENTRY":
+                    sig = "🟢 [이평선 꼬임 속 5일선 방어] 1단계 분할 입절 유효"
+                    col = "#388E3C"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        "<b>[이평선 꼬임 속 방어]</b> 이동평균선들은 서로 엉켜 있으나 단기 5일선 방어력이 살아 있으므로, "
+                        "맹목적 관망보다는 비중 30~50%의 1단계 분할 입절로 냉정하게 대응하시게."
+                    )
+                else:
+                    pullback_rebound_score = 0
+                    bottom_score = min(bottom_score, 0)
+                    final_code = "MA_TANGLED_WARNING"
+                    sig = "🟡 [이평선 꼬임 혼조세] 방향성 상실로 인한 관망"
+                    col = "#F57C00"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        "<b>[이평선 꼬임 혼조세]</b> 이동평균선들이 서로 뒤죽박죽 엉켜 방향성을 상실했으니, "
+                        "지표 점수에 현혹되지 말고 확실한 정배열/역배열 분출이 나올 때까지 무조건 관망하시게."
+                    )
 
             # 신호등 박스 표출
             st.markdown(
