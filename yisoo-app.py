@@ -1558,8 +1558,8 @@ if symbol:
             if final_code == "BREAK_MA20_CONFIRMED":
                 sub_indicator_str = f"  - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 분할 타진 진행"
             else:
-                # 위쪽 점수판과 완전히 똑같은 실시간 강제 점수를 '전환 동조'에도 그대로 연동
-                _sync_score = _forced_bottom_score if '_forced_bottom_score' in locals() else bottom_score
+                # 무조건 현재 실시간 3대 지표 상태를 직관적으로 따져서 점수 확정
+                _sync_score = int((1 if df["Close"].iloc[-1] <= (low_b.iloc[-1] * 1.02) else 0) + (1 if rsi_series.iloc[-1] <= 40 else 0) + (1 if will_series.iloc[-1] <= -75 else 0))
                 sub_indicator_str = f" - <b>전환 동조:</b> {_sync_score}/3점 {pullback_status_str} {pullback_action_str}"
 
             # 강제로 현재 1점 상태를 즉각 반영하여 점수판 렌더링 고정 박제
