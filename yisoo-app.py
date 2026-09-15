@@ -1197,33 +1197,28 @@ if symbol:
                 unsafe_allow_html=True,
             )
 
-            # 지표 정밀 연산 (이수할아버지 원칙 준수: 볼린저, 윌리엄, RSI 3대 지표 3점 만점 체계)
-            bb_bot_series = (df["Close"] <= (low_b * 1.02)).astype(int)
-            rsi_bot_series = (rsi_series <= 40).astype(int)   # RSI 14/6 기준
-            will_bot_series = (will_series <= -75).astype(int) # 윌리엄 14/9 기준
-            
-            # 3대 지표 개별 최신 값을 직관적으로 합산하여 점수 누락 원천 차단
+            # 지표 정밀 연산 (이수할아버지 원칙 준수: 진바닥/눌림목 지수 기준 독립 산정)
+
+            # 1. 진바닥 점수 산정 (3점 만점: 볼린저 하단, RSI 30 이하, 윌리엄 -80 이하)
             low_b_val = low_b.iloc[-1] if hasattr(low_b, "iloc") else low_b
-            b_val = 1 if df["Close"].iloc[-1] <= (low_b_val * 1.02) else 0
-            r_val = 1 if rsi_series.iloc[-1] <= 40 else 0
-            w_val = 1 if will_series.iloc[-1] <= -75 else 0
+            b_val = 1 if df["Close"].iloc[-1] <= (low_b_val * 1.02) else 0  # 볼린저 하단선 접변
+            r_val = 1 if rsi_series.iloc[-1] <= 30 else 0                   # RSI 14/6 기준 30 이하
+            w_val = 1 if will_series.iloc[-1] <= -80 else 0                 # 윌리엄 14/9 기준 -80 이하
             
-            # 0~3점 합산 점수를 강제로 확정 (진바닥 전용)
             bottom_score = int(b_val + r_val + w_val)
             if bottom_score > 3:
                 bottom_score = 3
             
-            # [수정] 눌림목 점수는 바닥 침체 지표(bottom_score)와 분리하여 
-            # 정규장 실시간 현재가가 5일선 위에 안착해 있는지를 판독하여 독립 산출 (2점 만점 체계)
-            # (코드 내에서 이미 계산되어 내려오는 진짜 5일선 변수를 안전하게 참조)
-            real_ma5 = ma5_val
+            # 2. 눌림목 점수 산정 (3점 만점: RSI 40~60, 윌리엄 -60~-40, 볼린저 중심선 ±2% 이내)
+            rsi_pullback_val = 1 if (40.0 <= rsi_series.iloc[-1] <= 60.0) else 0
+            will_pullback_val = 1 if (-60.0 <= will_series.iloc[-1] <= -40.0) else 0
+            bb_center_val = 1 if (mid_line * 0.98 <= p <= mid_line * 1.02) else 0
             
-            ma5_support_val = 1 if df["Close"].iloc[-1] >= real_ma5 else 0
-            trend_support_val = 1 if p >= real_ma5 else 0  # 실시간 현가 기준 상방 지지 확인
-            
-            pullback_rebound_score = int(ma5_support_val + trend_support_val)
-            if pullback_rebound_score > 2:
-                pullback_rebound_score = 2
+            pullback_rebound_score = int(rsi_pullback_val + will_pullback_val + bb_center_val)
+            if pullback_rebound_score > 3:
+                pullback_rebound_score = 3
+
+         
             
             # 시리즈 연산 역시 위에서 확정된 개별 값과 완벽히 동기화
             bottom_score_series = bb_bot_series + rsi_bot_series + will_bot_series
