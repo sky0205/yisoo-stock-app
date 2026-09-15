@@ -1560,8 +1560,7 @@ if symbol:
             else:
                 # low_b가 float이든 시리즈든 안전하게 받아치도록 방어막 장착 후 실시간 점수 확정
                 _low_b_val = low_b.iloc[-1] if hasattr(low_b, "iloc") else low_b
-                _sync_score = _forced_bottom_score
-                
+                _sync_score = int((1 if will_series.iloc[-1] <= -75 or rsi_series.iloc[-1] <= 40 or df["Close"].iloc[-1] <= (_low_b_val * 1.02) else 0))
                 # 점수에 맞는 행동 지침 문구를 이 자리에서 직접 완벽하게 조립
                 if _sync_score >= 2:
                     _p_action = "-> <b>[1단계 진바닥 입질 매수]</b> 지표 2개 이상 충족!"
