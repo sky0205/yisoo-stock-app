@@ -20,7 +20,7 @@
     }
     .score-board {
       width: 100%;
-      max-width: 500px;
+      max-width: 480px;
       text-align: right;
       font-size: 20px;
       font-weight: bold;
@@ -108,26 +108,41 @@
   <div class="button-grid" id="btnArea"></div>
 
   <script>
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
 
     function playTone(freq, duration, delay = 0) {
+      initAudio();
       setTimeout(() => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-        osc.start();
-        osc.stop(audioCtx.currentTime + duration);
+        try {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = 'triangle'; // 더 맑고 부드러운 음색
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        } catch (e) {
+          console.log(e);
+        }
       }, delay);
     }
 
     function playCorrectSound() {
-      playTone(523.25, 0.15, 0);    // 도
-      playTone(659.25, 0.15, 120);  // 미
-      playTone(783.99, 0.28, 240);  // 솔
+      playTone(523.25, 0.15, 0);    // 도 (C5)
+      playTone(659.25, 0.15, 120);  // 미 (E5)
+      playTone(783.99, 0.35, 240);  // 솔 (G5)
     }
 
     function playWrongSound() {
@@ -167,8 +182,8 @@
     }
 
     function checkAnswer(val) {
+      initAudio();
       if (!canClick) return;
-      if (audioCtx.state === 'suspended') audioCtx.resume();
 
       if (val === count) {
         canClick = false;
@@ -184,6 +199,9 @@
         playWrongSound();
       }
     }
+
+    window.addEventListener('touchstart', initAudio, { once: true });
+    window.addEventListener('click', initAudio, { once: true });
 
     startRound();
   </script>
