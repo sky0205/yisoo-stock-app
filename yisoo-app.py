@@ -1237,16 +1237,17 @@ if symbol:
                 if (p_chg >= 0.0 and p >= today_open)
                 else (vol_strength >= 80.0)
             )
+            # 진바닥 진입 시그널 판정 (기준 완화: 점수 1점 이상 또는 윌리엄 침체 시 반영)
             is_bottom_entry_signal = (
                 (not is_ma5_safe)
-                and (bottom_score >= 2)
+                and (bottom_score >= 1 or will_val <= -80)
                 and is_volume_ok_for_bottom
                 and (not is_down_trend_v)
                 and is_macd_not_deepening
                 and is_valid_bottom_candle
                 and (not is_target_reached)
             )
-
+        
             is_escape_buy_signal = (
                 is_ma5_safe
                 and is_bottom_indicator_ok
@@ -1257,13 +1258,14 @@ if symbol:
                 and is_orderbook_safe
                 and (not is_target_reached)
             )
-
+        
+            # 눌림목 반전 시그널 판정 (기준 완화: 반전 점수 1점 이상 적용)
             is_pullback_buy_signal = (
                 (not is_down_trend_structural)
                 and is_ma20_buffer_safe
                 and is_ma5_safe
                 and is_orderbook_safe
-                and (pullback_rebound_score >= 2)
+                and (pullback_rebound_score >= 1)
                 and (vol_strength >= 80)
                 and is_bandwidth_ok
                 and is_macd_not_deepening
