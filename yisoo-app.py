@@ -1232,9 +1232,6 @@ if symbol:
             p_will = 1 if will_val <= -60 else 0
             p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.02) else 0
             p_rsi = 1 if (40 <= rsi_val <= 60) else 0
-            
-            # [수정] 최종 진바닥 점수와 눌림목 점수를 각각의 목적에 맞게 독립 유지
-            # (더 이상 bottom_score를 일방적으로 복사하지 않고, 위에서 정의한 개별 점수를 반영)
 
             # 손절 조건 검증
             is_stop_loss_triggered = False
@@ -1577,7 +1574,7 @@ if symbol:
         
                 sub_indicator_str = f" - <b>전환 동조:</b> {pullback_rebound_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
 
-            # ★ [수정 완료]: 하단 지표 검증 텍스트에 진짜 연산된 `bottom_score`와 `pullback_rebound_score`를 정확히 반영
+            # ★ [완벽 수정]: 낡은 강제 오버라이드( _forced_bottom_score 등 )를 완전히 도려내고 진짜 연산된 점수를 온전히 반영
             indicator_verify_text = (
                 f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b><br>"
                 f" {trend_status}<br>• <b>[지표 검증 연산]</b><br><br>"
