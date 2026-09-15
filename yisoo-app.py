@@ -1201,12 +1201,12 @@ if symbol:
             rsi_bot_series = (rsi_series <= 40).astype(int)   # RSI 14/6 기준
             will_bot_series = (will_series <= -75).astype(int) # 윌리엄 14/9 기준
             
-            # 3대 지표 충족 개수를 정확히 합산 (최대 3점 한도)
-            bottom_score_series = (
-                bb_bot_series + rsi_bot_series + will_bot_series
-            )
+            # 3대 지표 개별 최신 값을 직관적으로 합산하여 0점 고착화 원천 차단
+            b_val = 1 if df["Close"].iloc[-1] <= (low_b.iloc[-1] * 1.02) else 0
+            r_val = 1 if rsi_series.iloc[-1] <= 40 else 0
+            w_val = 1 if will_series.iloc[-1] <= -75 else 0
             
-            bottom_score = int(bottom_score_series.iloc[-1])
+            bottom_score = int(b_val + r_val + w_val)
             if bottom_score > 3:
                 bottom_score = 3
                 
