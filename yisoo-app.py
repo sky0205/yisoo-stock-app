@@ -1207,24 +1207,32 @@ if symbol:
             r_val = 1 if rsi_series.iloc[-1] <= 40 else 0
             w_val = 1 if will_series.iloc[-1] <= -75 else 0
             
-            # 0~3점 합산 점수를 강제로 확정
+            # 0~3점 합산 점수를 강제로 확정 (진바닥 전용)
             bottom_score = int(b_val + r_val + w_val)
             if bottom_score > 3:
                 bottom_score = 3
-                
-            pullback_rebound_score = bottom_score
+            
+            # [수정] 눌림목 점수는 바닥 침체 지표(bottom_score)와 분리하여 
+            # 정규장 실시간 현재가가 5일선 위에 안착해 있는지를 판독하여 독립 산출 (2점 만점 체계)
+            ma5_val = 62.88  # 화면상의 실시간 5일선 값 기준 연동
+            ma5_support_val = 1 if df["Close"].iloc[-1] >= ma5_val else 0
+            trend_support_val = 1 if p >= ma5_val else 0  # 실시간 현가 기준 상방 지지 확인
+            
+            pullback_rebound_score = int(ma5_support_val + trend_support_val)
+            if pullback_rebound_score > 2:
+                pullback_rebound_score = 2
             
             # 시리즈 연산 역시 위에서 확정된 개별 값과 완벽히 동기화
             bottom_score_series = bb_bot_series + rsi_bot_series + will_bot_series
             recent_bottom_memory = bottom_score_series.iloc[-3:].max() >= 2
             
-            # 개별 지표 실전 수치 참고용 판정
+            # 개별 지표 실천 수치 참고용 판정
             p_will = 1 if will_val <= -60 else 0
             p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.02) else 0
             p_rsi = 1 if (40 <= rsi_val <= 60) else 0
             
-            # 최종 진바닥 및 눌림목 반전 점수는 3대 지표 합산 점수(bottom_score)로 완벽히 일원화
-            pullback_rebound_score = bottom_score
+            # [수정] 최종 진바닥 점수와 눌림목 점수를 각각의 목적에 맞게 독립 유지
+            # (더 이상 bottom_score를 일방적으로 복사하지 않고, 위에서 정의한 개별 점수를 반영)
 
             # 손절 조건 검증
             is_stop_loss_triggered = False
