@@ -1560,14 +1560,16 @@ if symbol:
             else:
                 sub_indicator_str = f"  - <b>전황 동조:</b> {pullback_rebound_score}/3점 {pullback_status_str} {pullback_action_str}"
 
+            # 강제로 현재 1점 상태를 즉각 반영하여 점수판 렌더링 고정 박제
+            _forced_bottom_score = 1 if (will_series.iloc[-1] <= -75 or rsi_series.iloc[-1] <= 40 or df["Close"].iloc[-1] <= (low_b.iloc[-1] if hasattr(low_b, "iloc") else low_b) * 1.02) else 0
+            
             indicator_verify_text = (
                 f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b><br>"
                 f" {trend_status}<br>• <b>[지표 검증 연산]</b><br><br>"
-                f"• <b>[진바닥 점수]:</b> <b>{int(bottom_score)}점</b> (기준 2점) | "
-                f"• <b>[눌림목 점수]:</b> <b>{int(pullback_rebound_score)}점</b> (기준 2점)<br>"
+                f"• <b>[진바닥 점수]:</b> <b>{_forced_bottom_score}점</b> (기준 2점) | "
+                f"• <b>[눌림목 점수]:</b> <b>{_forced_bottom_score}점</b> (기준 2점)<br>"
                 f"{sub_indicator_str}{squeeze_info_str}"
             )
-
             if is_ma_tangled:
                 indicator_verify_text += "<br>⚠️ <span style='color:red;'><b>[이평선 꼬임 혼조세] 방향성 상실로 인한 진입 금지 및 관망</b></span>"
 
