@@ -1201,19 +1201,21 @@ if symbol:
             rsi_bot_series = (rsi_series <= 40).astype(int)   # RSI 14/6 기준
             will_bot_series = (will_series <= -75).astype(int) # 윌리엄 14/9 기준
             
-            # 3대 지표 개별 최신 값을 직관적으로 합산 (변수 타입 오류 원천 차단)
+            # 3대 지표 개별 최신 값을 직관적으로 합산하여 점수 누락 원천 차단
             low_b_val = low_b.iloc[-1] if hasattr(low_b, "iloc") else low_b
             b_val = 1 if df["Close"].iloc[-1] <= (low_b_val * 1.02) else 0
-            
             r_val = 1 if rsi_series.iloc[-1] <= 40 else 0
             w_val = 1 if will_series.iloc[-1] <= -75 else 0
             
+            # 0~3점 합산 점수를 강제로 확정
             bottom_score = int(b_val + r_val + w_val)
             if bottom_score > 3:
                 bottom_score = 3
                 
-            # 만약 bottom_score_series가 필요하다면 안전하게 구성
-            bottom_score_series = (df["Close"] <= (low_b * 1.02)).astype(int) + (rsi_series <= 40).astype(int) + (will_series <= -75).astype(int)
+            pullback_rebound_score = bottom_score
+            
+            # 시리즈 연산 역시 위에서 확정된 개별 값과 완벽히 동기화
+            bottom_score_series = bb_bot_series + rsi_bot_series + will_bot_series
             recent_bottom_memory = bottom_score_series.iloc[-3:].max() >= 2
             
             # 개별 지표 실전 수치 참고용 판정
