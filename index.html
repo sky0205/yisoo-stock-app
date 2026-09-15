@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>이수할아버지의 숫자 세기 놀이</title>
+  <style>
+    * { box-sizing: border-box; touch-action: manipulation; }
+    body {
+      margin: 0;
+      padding: 20px 10px;
+      background-color: #f6f8fc;
+      font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      user-select: none;
+    }
+    .score-board {
+      width: 100%;
+      max-width: 500px;
+      text-align: right;
+      font-size: 20px;
+      font-weight: bold;
+      color: #555;
+      padding-right: 15px;
+    }
+    .question {
+      font-size: 26px;
+      font-weight: bold;
+      color: #2b2b2b;
+      margin: 15px 0 25px 0;
+      min-height: 38px;
+    }
+    .apple-field {
+      width: 100%;
+      max-width: 480px;
+      min-height: 180px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .apple {
+      position: relative;
+      width: 52px;
+      height: 50px;
+      background-color: #eb4141;
+      border-radius: 50% 50% 45% 45%;
+      box-shadow: inset -3px -3px 0 rgba(0,0,0,0.1);
+      animation: pop 0.3s ease-out;
+    }
+    .apple::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      right: 20px;
+      width: 12px;
+      height: 8px;
+      background-color: #2e9e44;
+      border-radius: 80% 0 80% 0;
+      transform: rotate(-20deg);
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 480px;
+    }
+    .num-btn {
+      background-color: #ffd754;
+      border: 3px solid #e0a324;
+      border-radius: 14px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #222;
+      padding: 15px 0;
+      cursor: pointer;
+      box-shadow: 0 4px #c28815;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .num-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px #c28815;
+    }
+    @keyframes pop {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="score-board" id="scoreBoard">점수: 0점</div>
+  <div class="question" id="msg">사과가 모두 몇 개 있을까요?</div>
+  
+  <div class="apple-field" id="appleArea"></div>
+
+  <div class="button-grid" id="btnArea"></div>
+
+  <script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTone(freq, duration, delay = 0) {
+      setTimeout(() => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      }, delay);
+    }
+
+    function playCorrectSound() {
+      playTone(523.25, 0.15, 0);    // 도
+      playTone(659.25, 0.15, 120);  // 미
+      playTone(783.99, 0.28, 240);  // 솔
+    }
+
+    function playWrongSound() {
+      playTone(220.00, 0.25, 0);    // 낮은 라
+    }
+
+    let count = 0;
+    let score = 0;
+    let canClick = true;
+
+    const appleArea = document.getElementById('appleArea');
+    const btnArea = document.getElementById('btnArea');
+    const msg = document.getElementById('msg');
+    const scoreBoard = document.getElementById('scoreBoard');
+
+    // 1~10 숫자 버튼 생성
+    for (let i = 1; i <= 10; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'num-btn';
+      btn.textContent = i;
+      btn.onclick = () => checkAnswer(i);
+      btnArea.appendChild(btn);
+    }
+
+    function startRound() {
+      count = Math.floor(Math.random() * 10) + 1;
+      appleArea.innerHTML = '';
+      msg.textContent = "사과가 모두 몇 개 있을까요?";
+      msg.style.color = "#2b2b2b";
+
+      for (let i = 0; i < count; i++) {
+        const apple = document.createElement('div');
+        apple.className = 'apple';
+        appleArea.appendChild(apple);
+      }
+      canClick = true;
+    }
+
+    function checkAnswer(val) {
+      if (!canClick) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      if (val === count) {
+        canClick = false;
+        score += 10;
+        scoreBoard.textContent = `점수: ${score}점`;
+        msg.textContent = "딩동댕! 정답이에요! 아주 잘했어요!";
+        msg.style.color = "#1f8a43";
+        playCorrectSound();
+        setTimeout(startRound, 1400);
+      } else {
+        msg.textContent = "다시 한번 차근차근 세어볼까요?";
+        msg.style.color = "#c93d3d";
+        playWrongSound();
+      }
+    }
+
+    startRound();
+  </script>
+</body>
+</html>
