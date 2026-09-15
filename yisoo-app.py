@@ -1221,7 +1221,7 @@ if symbol:
             p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.02) else 0
             p_rsi = 1 if (40 <= rsi_val <= 60) else 0
             
-            # 최종 진바닥 및 눌림목 반전 점수는 동일한 3대 지표 점수(최대 3점)로 일원화
+            # 최종 진바닥 및 눌림목 반전 점수는 3대 지표 합산 점수(bottom_score)로 완벽히 일원화
             pullback_rebound_score = bottom_score
 
             # 손절 조건 검증
