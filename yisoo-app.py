@@ -1214,9 +1214,11 @@ if symbol:
             
             # [수정] 눌림목 점수는 바닥 침체 지표(bottom_score)와 분리하여 
             # 정규장 실시간 현재가가 5일선 위에 안착해 있는지를 판독하여 독립 산출 (2점 만점 체계)
-            ma5_val = 62.88  # 화면상의 실시간 5일선 값 기준 연동
-            ma5_support_val = 1 if df["Close"].iloc[-1] >= ma5_val else 0
-            trend_support_val = 1 if p >= ma5_val else 0  # 실시간 현가 기준 상방 지지 확인
+            # (코드 내에서 이미 계산되어 내려오는 진짜 5일선 변수를 안전하게 참조)
+            real_ma5 = ma5.iloc[-1] if hasattr(ma5, "iloc") else ma5
+            
+            ma5_support_val = 1 if df["Close"].iloc[-1] >= real_ma5 else 0
+            trend_support_val = 1 if p >= real_ma5 else 0  # 실시간 현가 기준 상방 지지 확인
             
             pullback_rebound_score = int(ma5_support_val + trend_support_val)
             if pullback_rebound_score > 2:
