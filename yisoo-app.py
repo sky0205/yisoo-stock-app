@@ -1341,18 +1341,28 @@ if symbol:
                     sig = f"🔴 [성벽 위 {candlestick_type_str}] 선제적 익절 및 수성 구간"
                     col = "#D32F2F"
                     final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                        f"<b>[성벽 위 {candlestick_type_str}]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에는 있으나 당일 {candlestick_type_str} 중이오! "
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. "
+                        f"<b>[성벽 위 {candlestick_type_str}]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 "
                         "추격 매수를 엄금하고 선제적 분할 익절(수확)을 준비하시게."
+                    )
+                # [여기서부터 추가] 목표선 근처(또는 터치 후) 위꼬리 밀림 국면 판정
+                elif upper_band and p >= (upper_band * 0.98):
+                    final_code = "RED_SELL_WARNING"
+                    sig = "🔴 [성벽 위 저항 익절] 목표선 터치 후 위꼬리 이탈!"
+                    col = "#D32F2F"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. "
+                        f"<b>[성벽 위 저항 익절]</b> 현재가({p:{fmt_p}}{currency})가 수확 목표선 터치 후 위꼬리를 길게 달고 밀려 내려왔소! "
+                        "잔여 물량까지 서둘러 매도(수확)를 집행하시게."
                     )
                 else:
                     final_code = "BREAKOUT_ATTACK"
-                    sig = f"🟢 [성벽 위 진격] 상방 랠리 추종 구역"
+                    sig = "🟢 [성벽 위 진격] 상방 랠리 추종 구역"
                     col = "#2E7D32"
                     final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                        f"<b>[성벽 위 안착 진격]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 기세를 타고 양봉으로 진격 중이오! "
-                        "5일선을 사수하며 상방 목표선까지 추세를 즐기시게."
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. "
+                        f"<b>[성벽 위 안착 진격]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 기세를 타고 양봉으"
+                        "로 진격 중이오! 5일선을 사수하며 상방 목표선까지 추세를 즐기시게."
                     )
             # 5순위: 1단계 진바닥 입질
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= 0.0):
