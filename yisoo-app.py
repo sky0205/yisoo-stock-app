@@ -1196,22 +1196,25 @@ if symbol:
                 unsafe_allow_html=True,
             )
 
-            # 지표 정밀 연산
+            # 지표 정밀 연산 (이수할아버지 기준 적용: 볼린저 20/2, RSI 14/6, 윌리엄 14/9 반영)
             bb_bot_series = (df["Close"] <= (low_b * 1.02)).astype(int)
-            rsi_bot_series = (rsi_series <= 35).astype(int)
-            will_bot_series = (will_series <= -80).astype(int)
+            rsi_bot_series = (rsi_series <= 40).astype(int)   # RSI 14/6 기준 완화 및 현실화
+            will_bot_series = (will_series <= -75).astype(int) # 윌리엄 14/9 기준 맞춤형 조정
+            
             bottom_score_series = (
                 bb_bot_series + rsi_bot_series + will_bot_series
             )
-
+            
             bottom_score = bottom_score_series.iloc[-1]
             recent_bottom_memory = bottom_score_series.iloc[-3:].max() >= 2
-            pullback_rebound_score = bottom_score
             
-            p_will = 1 if will_val <= -50 else 0
+            # 개별 지표 실전 수치 판정 (현재가 기준)
+            p_will = 1 if will_val <= -60 else 0
             p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.02) else 0
-            p_rsi = 1 if (40 <= rsi_val <= 55) else 0
-            pullback_rebound_score = p_will + p_bb + p_rsi
+            p_rsi = 1 if (40 <= rsi_val <= 60) else 0
+            
+            # 최종 진바닥 및 눌림목 반전 점수 연동
+            pullback_rebound_score = bottom_score + p_will + p_bb + p_rsi
 
             # 손절 조건 검증
             is_stop_loss_triggered = False
