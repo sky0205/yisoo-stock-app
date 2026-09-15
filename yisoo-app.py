@@ -1220,7 +1220,11 @@ if symbol:
 
          
             
-            # 시리즈 연산 역시 위에서 확정된 개별 값과 완벽히 동기화
+            # 기존 레거시 호환용 시리즈 연산 정의 (에러 원천 차단)
+            bb_bot_series = (df["Close"] <= (low_b_val * 1.02)).astype(int)
+            rsi_bot_series = (rsi_series <= 30).astype(int)
+            will_bot_series = (will_series <= -80).astype(int)
+            
             bottom_score_series = bb_bot_series + rsi_bot_series + will_bot_series
             recent_bottom_memory = bottom_score_series.iloc[-3:].max() >= 2
             
