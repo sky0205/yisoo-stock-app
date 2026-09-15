@@ -1453,7 +1453,7 @@ if symbol:
                     f" 20일선 및 안전마진선({ma20_safe_threshold:{fmt_p}}{currency})을 돌파하였소!"
                     f" {action_guide}"
                 )
-            # 9순위: 혼조세 속 진바닥 입질 예외 가드
+            # 9순위: 혼조세 속 진바닥 입질 예외 가드 (★ 수정: 혼조세일 때 점수를 강제로 0점으로 박살 내던 예외 가드를 해제하여 실제 연산 점수 사수)
             elif is_ma_tangled:
                 if is_ma5_safe and vol_strength >= 75.0 and bandwidth >= 12.0 and (rsi_val <= 35 or temp_bottom_score >= 2 or (p_chg >= 0.0 and p >= mid_line)):
                     final_code = "BOTTOM_ENTRY"
@@ -1465,8 +1465,6 @@ if symbol:
                         "비중 30~50%의 1단계 분할 입절로 냉정하게 대응하시게."
                     )
                 else:
-                    pullback_rebound_score = 0
-                    bottom_score = min(bottom_score, 0)
                     final_code = "MA_TANGLED_WARNING"
                     sig = "🟡 [이평선 꼬임 혼조세] 방향성 상실로 인한 관망"
                     col = "#F57C00"
@@ -1574,10 +1572,7 @@ if symbol:
         
                 sub_indicator_str = f" - <b>전환 동조:</b> {pullback_rebound_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
 
-            # 🔍 [할배의 긴급 진단용 실시간 연산 확인 디버그]
-            st.write(f"🔍 [실시간 연산 확인] bottom_score={bottom_score}점 | pullback_rebound_score={pullback_rebound_score}점 | RSI={rsi_val:.2f} | 윌리엄={will_val:.2f}")
-
-            # 진짜로 연산된 bottom_score와 pullback_rebound_score 값이 오차 없이 화면에 꽂히도록 확정
+            # ★ [최종 수정]: 연산된 bottom_score와 pullback_rebound_score 점수가 훼손 없이 온전히 출력되도록 확정
             indicator_verify_text = (
                 f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b><br>"
                 f" {trend_status}<br>• <b>[지표 검증 연산]</b><br><br>"
