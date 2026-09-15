@@ -531,7 +531,8 @@ if symbol:
             today_high = float(df["High"].iloc[-1])
             today_low = float(df["Low"].iloc[-1])
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
-            is_candle_bearish = p < today_open  # 진단용 음봉/양봉 판정
+            # [수정] 실시간 등락률(p_chg)을 기준으로 정확하게 양봉/음봉 판정
+            is_candle_bearish = p_chg < 0  # 등락률이 마이너스일 때만 진정한 음봉으로 판정
 
             # ★ [이수할아버지 특별 가드]: 긴 위꼬리(고가 대비 현재가/종가 밀림 비율 35% 이상) 판정 변수
             day_candle_range = max(0.01, today_high - today_low)
