@@ -1406,7 +1406,7 @@ if symbol:
                     f"• <b>[진바닥 포착 완료]</b> 지표 충족 및 5일선 안착! 전면 매수가 아닌 <b>비중 30~50% 수준의 1단계 분할 입절(매수)</b>로 가볍게 접근하시게. {action_time_guide}"
                 )
             # 6순위: 2단계 진바닥 탈출 매수
-            elif is_escape_buy_signal:
+            elif is_escape_buy_signal and (bottom_score >= 2 or pullback_rebound_score >= 2):
                 final_code = "ESCAPE_BUY"
                 col = "#2E7D32"
                 sig = f"🟢 [추가 진격] 2단계 진바닥 탈출 매수 ({time_tag_ok})"
