@@ -1538,14 +1538,16 @@ if symbol:
             else:
                 pullback_action_str = f"-> <b>[관망]</b> 지표 동조 미충족({pullback_rebound_score}/3점)으로 안착 확인 대기"
 
-            # ★ 윌리엄 %R 침체 시 점수 강제 보정 및 텍스트 조립 완화
-            # 3대 지표 기준(2점 이상)에 따른 진바닥 상태 조립
-            if bottom_score >= 2:  
+            # 3대 지표 충족 개수를 0~3점 그대로 정직하게 노출하되, 2점 이상일 때만 매수 정찰병 자격 부여
+            if bottom_score >= 1:  
                 bottom_status_str = f"<b>(당일 진바닥 지표 {bottom_score}개 터치 달성!)</b>"
-                bottom_action_str = "-> <b>[1단계 진바닥 입질 매수]</b> 지표 충족! 1단계 정찰병 타진 구역"
+                if bottom_score >= 2:
+                    bottom_action_str = "-> <b>[1단계 진바닥 입질 매수]</b> 지표 2개 이상 충족! 1단계 정찰병 타진 구역"
+                else:
+                    bottom_action_str = "-> <b>[관망/대기]</b> 지표 1개 포착, 추가 지표 충족 대기 중"
             else:
                 bottom_status_str = "<b>(조건 미충족)</b>"
-                bottom_action_str = "-> <b>[관망]</b> 진바닥 지표 조건 미충족"
+                bottom_action_str = "-> <b>[관망]</b> 진바닥 지표 조건 미충족 (0점)"
 
             if final_code == "BREAK_MA20_CONFIRMED":
                 sub_indicator_str = f"  - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 분할 타진 진행"
