@@ -1205,7 +1205,12 @@ if symbol:
                 bb_bot_series + rsi_bot_series + will_bot_series
             )
             
-            bottom_score = bottom_score_series.iloc[-1]
+            bottom_score = int(bottom_score_series.iloc[-1])
+            
+            # ★ 윌리엄 %R 침체(-80 이하) 시 0점 고착화 방지 보정
+            if will_val <= -80 and bottom_score == 0:
+                bottom_score = 1
+                
             recent_bottom_memory = bottom_score_series.iloc[-3:].max() >= 2
             
             # 개별 지표 실전 수치 판정 (현재가 기준)
@@ -1215,6 +1220,10 @@ if symbol:
             
             # 최종 진바닥 및 눌림목 반전 점수 연동
             pullback_rebound_score = bottom_score + p_will + p_bb + p_rsi
+            
+            # 눌림목 점수도 침체 시 최소 보장
+            if will_val <= -80 and pullback_rebound_score == 0:
+                pullback_rebound_score = 1
 
             # 손절 조건 검증
             is_stop_loss_triggered = False
