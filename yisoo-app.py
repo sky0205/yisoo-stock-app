@@ -1554,7 +1554,7 @@ if symbol:
             else:
                 pullback_action_str = f"-> <b>[관망]</b> 지표 동조 미충족({pullback_rebound_score}/3점)으로 안착 확인 대기"
 
-            # 3대 지표 충족 개수를 0~3점 그대로 정직하게 노출하되, 2점 이상일 때만 매수 정찰병 자격 부여
+            # 3대 지표 충족 개수를 정직하게 노출
             if bottom_score >= 1:  
                 bottom_status_str = f"<b>(당일 진바닥 지표 {bottom_score}개 터치 달성!)</b>"
                 if bottom_score >= 2:
@@ -1568,27 +1568,21 @@ if symbol:
             if final_code == "BREAK_MA20_CONFIRMED":
                 sub_indicator_str = f"  - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 분할 타진 진행"
             else:
-                # low_b가 float이든 시리즈든 안전하게 받아치도록 방어막 장착 후 실시간 점수 확정
-                _low_b_val = low_b.iloc[-1] if hasattr(low_b, "iloc") else low_b
-                _sync_score = int((1 if will_series.iloc[-1] <= -75 or rsi_series.iloc[-1] <= 40 or df["Close"].iloc[-1] <= (_low_b_val * 1.02) else 0))
-                # 점수에 맞는 행동 지침 문구를 이 자리에서 직접 완벽하게 조립
-                if _sync_score >= 2:
-                    _p_action = "-> <b>[1단계 진바닥 입질 매수]</b> 지표 2개 이상 충족!"
-                elif _sync_score == 1:
-                    _p_action = "-> <b>[관망/대기]</b> 지표 1개 포착, 추가 지표 충족 대기 중"
+                if pullback_rebound_score >= 2:
+                    _p_action = f"-> <b>[눌림목 공방 유효]</b> 중간지대 조건 충족!"
+                elif pullback_rebound_score == 1:
+                    _p_action = f"-> <b>[관망/대기]</b> 지표 1개 포착, 추가 지표 충족 대기 중"
                 else:
-                    _p_action = "-> <b>[관망]</b> 지표 동조 조건 미충족으로 안착 확인 대기"
+                    _p_action = f"-> <b>[관망]</b> 지표 동조 조건 미충족으로 안착 확인 대기"
         
-                sub_indicator_str = f" - <b>전환 동조:</b> {_sync_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
+                sub_indicator_str = f" - <b>전환 동조:</b> {pullback_rebound_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
 
-            # 강제로 현재 1점 상태를 즉각 반영하여 점수판 렌더링 고정 박제
-            _forced_bottom_score = 1 if (will_series.iloc[-1] <= -75 or rsi_series.iloc[-1] <= 40 or df["Close"].iloc[-1] <= (low_b.iloc[-1] if hasattr(low_b, "iloc") else low_b) * 1.02) else 0
-            
+            # ★ [수정 완료]: 하단 지표 검증 텍스트에 진짜 연산된 `bottom_score`와 `pullback_rebound_score`를 정확히 반영
             indicator_verify_text = (
                 f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b><br>"
                 f" {trend_status}<br>• <b>[지표 검증 연산]</b><br><br>"
-                f"• <b>[진바닥 점수]:</b> <b>{_forced_bottom_score}점</b> (기준 2점) | "
-                f"• <b>[눌림목 점수]:</b> <b>{_forced_bottom_score}점</b> (기준 2점)<br>"
+                f"• <b>[진바닥 점수]:</b> <b>{bottom_score}점</b> (기준 2점) | "
+                f"• <b>[눌림목 점수]:</b> <b>{pullback_rebound_score}점</b> (기준 2점)<br>"
                 f"{sub_indicator_str}{squeeze_info_str}"
             )
             if is_ma_tangled:
@@ -1833,7 +1827,7 @@ if symbol:
                         base_macd_desc = "<b>⚠️ 정회전 둔화 (탄력 저하)</b>: 상승 관성은 유지 중이나 상방 추진력이 다소 둔화되었소."
                 elif is_macd_recovering:
                     if is_escape_buy_signal or final_code == "ESCAPE_BUY":
-                        base_macd_desc = "<b>🌤️ 역회전 감소 (바닥 탈출)</b>: 매도세가 잦아들며 5일선 안착 추진력이 가동 중이오."
+                        base_macd_desc = "<b>🌤️ 역회전 감소 (바닥 탈출)</b>: 매도세는 잦아들며 5일선 안착 추진력이 가동 중이오."
                     elif final_code == "BOTTOM_ENTRY":
                         base_macd_desc = "<b>🌤️ 역회전 감소 (바닥 입질)</b>: 하락 압력이 줄어들며 극바닥 다지기가 시도되는 중이오."
                     elif final_code == "BREAK_MA20_CONFIRMED":
@@ -2013,7 +2007,7 @@ if symbol:
                     )
                 st.markdown(
                     f"<div class='ind-box'><p class='ind-title'>RSI (매수"
-                    " 온도)</p><p style='font-size:36px; color:#E65100;"
+                    f" 온도)</p><p style='font-size:36px; color:#E65100;"
                     f" margin:10px 0;'>{rsi_val:.2f} <span style='font-size:22px;"
                     f" color:#333333;'>({rsi_trend})</span></p><p"
                     f" class='ind-diag'>{r_status}</p></div>",
