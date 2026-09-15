@@ -1558,11 +1558,9 @@ if symbol:
             if final_code == "BREAK_MA20_CONFIRMED":
                 sub_indicator_str = f"  - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 분할 타진 진행"
             else:
-                # low_b가 float이든 시리즈든 안전하게 받아치도록 방어막 장착
+                # low_b가 float이든 시리즈든 안전하게 받아치도록 방어막 장착 후 실시간 점수 확정
                 _low_b_val = low_b.iloc[-1] if hasattr(low_b, "iloc") else low_b
-                
-                # [핵심] 위쪽 점수판(_forced_bottom_score)과 완전히 똑같은 점수를 공유하도록 일치시킴
-                _sync_score = _forced_bottom_score
+                _sync_score = int((1 if df["Close"].iloc[-1] <= (_low_b_val * 1.02) else 0) + (1 if rsi_series.iloc[-1] <= 40 else 0) + (1 if will_series.iloc[-1] <= -75 else 0))
                 
                 # 점수에 맞는 행동 지침 문구를 이 자리에서 직접 완벽하게 조립
                 if _sync_score >= 2:
