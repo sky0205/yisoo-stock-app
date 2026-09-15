@@ -1558,10 +1558,19 @@ if symbol:
             if final_code == "BREAK_MA20_CONFIRMED":
                 sub_indicator_str = f"  - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 분할 타진 진행"
             else:
-                # low_b가 float이든 시리즈든 안전하게 받아치도록 방어막 장착
+                # low_b가 float이든 시리즈든 안전하게 받아치도록 방어막 장착 후 실시간 점수 확정
                 _low_b_val = low_b.iloc[-1] if hasattr(low_b, "iloc") else low_b
                 _sync_score = int((1 if df["Close"].iloc[-1] <= (_low_b_val * 1.02) else 0) + (1 if rsi_series.iloc[-1] <= 40 else 0) + (1 if will_series.iloc[-1] <= -75 else 0))
-                sub_indicator_str = f" - <b>전환 동조:</b> {_sync_score}/3점 {pullback_status_str} {pullback_action_str}"
+                
+                # 점수에 맞는 행동 지침 문구를 이 자리에서 직접 완벽하게 조립
+                if _sync_score >= 2:
+                    _p_action = "-> <b>[1단계 진바닥 입질 매수]</b> 지표 2개 이상 충족!"
+                elif _sync_score == 1:
+                    _p_action = "-> <b>[관망/대기]</b> 지표 1개 포착, 추가 지표 충족 대기 중"
+                else:
+                    _p_action = "-> <b>[관망]</b> 지표 동조 조건 미충족으로 안착 확인 대기"
+        
+                sub_indicator_str = f" - <b>전환 동조:</b> {_sync_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
 
             # 강제로 현재 1점 상태를 즉각 반영하여 점수판 렌더링 고정 박제
             _forced_bottom_score = 1 if (will_series.iloc[-1] <= -75 or rsi_series.iloc[-1] <= 40 or df["Close"].iloc[-1] <= (low_b.iloc[-1] if hasattr(low_b, "iloc") else low_b) * 1.02) else 0
