@@ -1196,34 +1196,29 @@ if symbol:
                 unsafe_allow_html=True,
             )
 
-            # 지표 정밀 연산 (이수할아버지 기준 적용: 볼린저 20/2, RSI 14/6, 윌리엄 14/9 반영)
+            # 지표 정밀 연산 (이수할아버지 원칙 준수: 볼린저, 윌리엄, RSI 3대 지표 3점 만점 체계)
             bb_bot_series = (df["Close"] <= (low_b * 1.02)).astype(int)
-            rsi_bot_series = (rsi_series <= 40).astype(int)   # RSI 14/6 기준 완화 및 현실화
-            will_bot_series = (will_series <= -75).astype(int) # 윌리엄 14/9 기준 맞춤형 조정
+            rsi_bot_series = (rsi_series <= 40).astype(int)   # RSI 14/6 기준
+            will_bot_series = (will_series <= -75).astype(int) # 윌리엄 14/9 기준
             
+            # 3대 지표 충족 개수를 정확히 합산 (최대 3점 한도)
             bottom_score_series = (
                 bb_bot_series + rsi_bot_series + will_bot_series
             )
             
             bottom_score = int(bottom_score_series.iloc[-1])
-            
-            # ★ 윌리엄 %R 침체(-80 이하) 시 0점 고착화 방지 보정
-            if will_val <= -80 and bottom_score == 0:
-                bottom_score = 1
+            if bottom_score > 3:
+                bottom_score = 3
                 
             recent_bottom_memory = bottom_score_series.iloc[-3:].max() >= 2
             
-            # 개별 지표 실전 수치 판정 (현재가 기준)
+            # 개별 지표 실전 수치 참고용 판정
             p_will = 1 if will_val <= -60 else 0
             p_bb = 1 if (mid_line * 0.98 <= p <= mid_line * 1.02) else 0
             p_rsi = 1 if (40 <= rsi_val <= 60) else 0
             
-            # 최종 진바닥 및 눌림목 반전 점수 연동
-            pullback_rebound_score = bottom_score + p_will + p_bb + p_rsi
-            
-            # 눌림목 점수도 침체 시 최소 보장
-            if will_val <= -80 and pullback_rebound_score == 0:
-                pullback_rebound_score = 1
+            # 최종 진바닥 및 눌림목 반전 점수는 동일한 3대 지표 점수(최대 3점)로 일원화
+            pullback_rebound_score = bottom_score
 
             # 손절 조건 검증
             is_stop_loss_triggered = False
@@ -1544,12 +1539,9 @@ if symbol:
                 pullback_action_str = f"-> <b>[관망]</b> 지표 동조 미충족({pullback_rebound_score}/3점)으로 안착 확인 대기"
 
             # ★ 윌리엄 %R 침체 시 점수 강제 보정 및 텍스트 조립 완화
-            current_bottom_score = bottom_score
-            if will_val <= -80 and current_bottom_score == 0:
-                current_bottom_score = 1
-        
-            if current_bottom_score >= 1:  # 기준을 1점으로 완화하여 0점 고착화 방지
-                bottom_status_str = f"<b>(당일 진바닥 지표 {current_bottom_score}개 터치 달성!)</b>"
+            # 3대 지표 기준(2점 이상)에 따른 진바닥 상태 조립
+            if bottom_score >= 2:  
+                bottom_status_str = f"<b>(당일 진바닥 지표 {bottom_score}개 터치 달성!)</b>"
                 bottom_action_str = "-> <b>[1단계 진바닥 입질 매수]</b> 지표 충족! 1단계 정찰병 타진 구역"
             else:
                 bottom_status_str = "<b>(조건 미충족)</b>"
