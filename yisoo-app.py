@@ -1574,7 +1574,10 @@ if symbol:
         
                 sub_indicator_str = f" - <b>전환 동조:</b> {pullback_rebound_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
 
-            # ★ [완벽 수정]: 낡은 강제 오버라이드( _forced_bottom_score 등 )를 완전히 도려내고 진짜 연산된 점수를 온전히 반영
+            # 🔍 [할배의 긴급 진단용 실시간 연산 확인 디버그]
+            st.write(f"🔍 [실시간 연산 확인] bottom_score={bottom_score}점 | pullback_rebound_score={pullback_rebound_score}점 | RSI={rsi_val:.2f} | 윌리엄={will_val:.2f}")
+
+            # 진짜로 연산된 bottom_score와 pullback_rebound_score 값이 오차 없이 화면에 꽂히도록 확정
             indicator_verify_text = (
                 f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b><br>"
                 f" {trend_status}<br>• <b>[지표 검증 연산]</b><br><br>"
