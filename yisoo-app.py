@@ -1202,8 +1202,8 @@ if symbol:
             # 1. 진바닥 점수 산정 (3점 만점: 볼린저 하단, RSI 30 이하, 윌리엄 -80 이하)
             low_b_val = low_b.iloc[-1] if hasattr(low_b, "iloc") else low_b
             b_val = 1 if df["Close"].iloc[-1] <= (low_b_val * 1.02) else 0  # 볼린저 하단선 접변
-            r_val = 1 if rsi_series.iloc[-1] <= 30 else 0                   # RSI 14/6 기준 30 이하
-            w_val = 1 if will_series.iloc[-1] <= -80 else 0                 # 윌리엄 14/9 기준 -80 이하
+            r_val = 1 if rsi_series.iloc[-1] <= 30 else 0                 # RSI 14/6 기준 30 이하
+            w_val = 1 if will_series.iloc[-1] <= -80 else 0               # 윌리엄 14/9 기준 -80 이하
             
             bottom_score = int(b_val + r_val + w_val)
             if bottom_score > 3:
@@ -1392,14 +1392,14 @@ if symbol:
                 col = "#388E3C"
                 sig = f"🟢 [진바닥 안착] 1단계 분할 입절 유효 구역 ({time_tag_ok})"
                 action_time_guide = (
-                    "14:00 이후 5일선 및 볼린저 바닥 지지 확인 시 30~50% 분할 타진하고, "
+                    "14:00 이후 5일선 및 볼린저 바닥 지지 확인 시 10% 분할 타진하고, "
                     "저녁 8시 애프터마켓 마감 사수 시 완성하시게. (단, 윗꼬리 달고 5일선 이탈 시 즉시 철수)"
                     if is_kr else
-                    "07:00 마감 일봉상 5일선 및 바닥선 사수를 확인 후 30~50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
+                    "07:00 마감 일봉상 5일선 및 바닥선 사수를 확인 후 10% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
                 )
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"• <b>[진바닥 포착 완료]</b> 지표 충족 및 5일선 안착! 전면 매수가 아닌 <b>비중 30~50% 수준의 1단계 분할 입절(매수)</b>로 가볍게 접근하시게. {action_time_guide}"
+                    f"• <b>[진바닥 포착 완료]</b> 지표 충족 및 5일선 안착! 전면 매수가 아닌 <b>비중 10% 수준의 1단계 분할 입절(매수)</b>로 가볍게 접근하시게. {action_time_guide}"
                 )
             # 6순위: 2단계 진바닥 탈출 매수
             elif is_escape_buy_signal and (bottom_score >= 2 or pullback_rebound_score >= 2):
@@ -1462,7 +1462,7 @@ if symbol:
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
                         "<b>[이평선 꼬임 속 진바닥 포착]</b> 수급과 밴드폭이 뒷받침된 상태에서 5일선 안착 및 냉골 바닥 지표가 충족되었으므로, "
-                        "비중 30~50%의 1단계 분할 입절로 냉정하게 대응하시게."
+                        "비중 10%의 1단계 분할 입절로 냉정하게 대응하시게."
                     )
                 else:
                     final_code = "MA_TANGLED_WARNING"
@@ -1561,7 +1561,7 @@ if symbol:
                 bottom_action_str = "-> <b>[관망]</b> 진바닥 지표 조건 미충족 (0점)"
 
             if final_code == "BREAK_MA20_CONFIRMED":
-                sub_indicator_str = f"  - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 분할 타진 진행"
+                sub_indicator_str = f"   - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 분할 타진 진행"
             else:
                 if pullback_rebound_score >= 2:
                     _p_action = f"-> <b>[눌림목 공방 유효]</b> 중간지대 조건 충족!"
@@ -1859,7 +1859,7 @@ if symbol:
                     )
                 elif final_code == "BOTTOM_ENTRY":
                     bb_time_diag = (
-                        "14:00 이후 50% 타진, 저녁 8시 애프터마켓 마감 사수 시 완성"
+                        "14:00 이후 10% 타진, 저녁 8시 애프터마켓 마감 사수 시 완성"
                         if is_kr
                         else "07:00 일봉 바닥 지지 확인 시 완성"
                     )
