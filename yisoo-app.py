@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36083", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36084", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,12 +227,12 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36083 (KRX 정규장 일봉 종가 고정)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36084 (KRX 일봉 종가 완전 복원)")
 display_global_risk()
 st.divider()
 
 # ==============================================================================
-# ★ [상단: 종목 / 평단가 / HTS 잔량 입력창 (수동 칸 완전 제거)]
+# ★ [상단: 종목 / 평단가 / HTS 매도·매수잔량 통합 입력창 (수동 칸 완전 제거)]
 # ==============================================================================
 col_symbol, col_avg, col_ask, col_bid, col_btn = st.columns(
     [2.0, 1.5, 1.5, 1.5, 1.0]
@@ -299,8 +299,6 @@ if symbol:
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
-            
-            # ★ [KRX 정규장 일봉 데이터 최우선 수집]: FinanceDataReader로 순수 일봉 로드
             try:
                 df = fdr.DataReader(clean_symbol, start=start_date.strftime("%Y-%m-%d"))
             except Exception:
@@ -314,7 +312,7 @@ if symbol:
                 except Exception:
                     pass
 
-            # 실시간 현재가 및 거래량은 네이버 모바일 API로 별도 취득
+            kr_fetched = False
             try:
                 api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -323,10 +321,26 @@ if symbol:
                     data = res.json()
                     auto_p = float(str(data["closePrice"]).replace(",", ""))
                     v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
+                    kr_fetched = True
             except Exception:
-                if not df.empty:
-                    auto_p = float(df["Close"].iloc[-1])
-                    v_curr = float(df["Volume"].iloc[-1])
+                pass
+
+            if not kr_fetched:
+                try:
+                    url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
+                    res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
+                    soup = BeautifulSoup(res.text, "html.parser")
+                    auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                    v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+                    kr_fetched = True
+                    if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
+                        _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
+                        if _avg_v > 0 and v_curr > _avg_v * 10:
+                            v_curr = float(df["Volume"].iloc[-1])
+                except Exception:
+                    if not df.empty:
+                        auto_p = float(df["Close"].iloc[-1])
+                        v_curr = float(df["Volume"].iloc[-1])
         else:
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
@@ -341,22 +355,39 @@ if symbol:
                 info = ticker.fast_info
                 auto_p = getattr(info, "last_price", float(df["Close"].iloc[-1]))
                 v_curr = getattr(info, "last_volume", float(df["Volume"].iloc[-1]))
+                
+                if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
+                    _us_avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
+                    if _us_avg_v > 0 and v_curr > _us_avg_v * 10:
+                        v_curr = float(df["Volume"].iloc[-1])
             except Exception:
-                if not df.empty:
-                    auto_p = float(df["Close"].iloc[-1])
-                    v_curr = float(df["Volume"].iloc[-1])
+                pass
+
+            if auto_p == 0.0 and not df.empty:
+                auto_p = float(df["Close"].iloc[-1])
+                v_curr = float(df["Volume"].iloc[-1])
 
         # 호가창 잔량 기본 설정
         multiplier = 1000.0 if is_kr else 1.0
 
         if manual_ask > 0 and manual_bid > 0:
             calc_ratio = round(manual_ask / manual_bid, 2)
+            display_ask = manual_ask * multiplier
+            display_bid = manual_bid * multiplier
             ob_data = {
-                "ask": manual_ask * multiplier,
-                "bid": manual_bid * multiplier,
+                "ask": display_ask,
+                "bid": display_bid,
                 "ratio": calc_ratio,
                 "ok": True,
                 "msg": "HTS 직접입력",
+            }
+        elif manual_ask > 0 or manual_bid > 0:
+            ob_data = {
+                "ask": manual_ask * multiplier,
+                "bid": manual_bid * multiplier,
+                "ratio": None,
+                "ok": False,
+                "msg": "HTS 매도·매수잔량을 모두 입력해야 분석 가능",
             }
         else:
             ob_data = {"ask": 0.0, "bid": 0.0, "ratio": None, "ok": False, "msg": "실시간 호가 API 미연결"}
@@ -371,7 +402,7 @@ if symbol:
             today_date = now_local.date()
 
             # ==================================================================
-            # ★ [KRX 정규장 닻 고정]: 일봉 데이터 상에서 오늘 날짜를 제외한 '순수 직전 영업일 종가'를 무조건 전일 종가로 고정
+            # ★ [KRX 일봉 종가 100% 강제 추출 닻 고정]: FinanceDataReader 일봉 장부에서 진짜 어제 정규장 마감 종가 추출
             # ==================================================================
             try:
                 df_sorted = df.sort_index()
@@ -412,7 +443,7 @@ if symbol:
             v_avg5 = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # ★ [철저한 KRX 기준 등락률 연산]: 순수 일봉 전일종가(prev_p)와 현재가(p)의 차이 산출
+            # 전일비 및 등락률 연산 (KRX 정규장 일봉 종가 기준)
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
@@ -518,29 +549,35 @@ if symbol:
             ob_ratio_available = ob_ratio_val is not None and float(ob_ratio_val) > 0 and has_manual_ob
     
             if not is_kr and not has_manual_ob:
-                ob_status_msg = "💡 <b>미장 자동 호가 미제공</b>"
+                ob_status_msg = "💡 <b>미장 자동 호가 미제공</b> (수동 입력 시에만 HTS 잔량비 연산 가동)"
                 is_orderbook_safe = True
             elif ob_ratio_available:
                 ob_ratio_val = float(ob_ratio_val)
                 ask_formatted = f"{ob_data.get('ask', 0.0):,.0f}"
                 bid_formatted = f"{ob_data.get('bid', 0.0):,.0f}"
                 if ob_ratio_val > 2.8:
-                    ob_status_msg = f"🚨 <b>[매도벽 과다 저항]</b> 잔량비 <b>{ob_ratio_val:.2f}배</b>"
+                    ob_status_msg = f"🚨 <b>[매도벽 과다 저항]</b> 잔량비 <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 / 매수:{bid_formatted}주)"
                     is_orderbook_safe = False
                 elif ob_ratio_val >= 1.5:
-                    ob_status_msg = f"🟡 <b>[매도 우위 공방]</b> 잔량비 <b>{ob_ratio_val:.2f}배</b>"
+                    ob_status_msg = f"🟡 <b>[매도 우위 공방]</b> 잔량비 <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 / 매수:{bid_formatted}주)"
                     is_orderbook_safe = False
-                else:
-                    ob_status_msg = f"🟢 <b>[수급 공방 호가]</b> 잔량비 <b>{ob_ratio_val:.2f}배</b>"
+                elif ob_ratio_val >= 1.0:
+                    ob_status_msg = f"⚖️ <b>[정상 공방 호가]</b> 잔량비 <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 / 매수:{bid_formatted}주)"
                     is_orderbook_safe = True
+                else:
+                    ob_status_msg = f"🟢 <b>[매수 우위 호가]</b> 잔량비 <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted}주 / 매수:{bid_formatted}주)"
+                    is_orderbook_safe = True
+            elif manual_ask > 0 or manual_bid > 0:
+                ob_status_msg = "⚠️ <b>[호가 입력 불완전]</b> 총매도·총매수잔량을 모두 입력해야 합니다."
+                is_orderbook_safe = False
             else:
-                ob_status_msg = "💡 <b>HTS 총매도·매수잔량을 입력하면 잔량비 분석을 가동합니다.</b>"
+                ob_status_msg = "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 가동합니다.</b>"
                 is_orderbook_safe = True
 
             if bandwidth < 12.0:
                 is_bandwidth_ok = False
                 bw_diag_msg = f"밴드폭 극소({bandwidth:.1f}%) 에너지 응축 중"
-                squeeze_info_str = f"<br>• ⚡ <b>[밴드폭 극소({bandwidth:.1f}%)]</b> 에너지가 응축 중이오."
+                squeeze_info_str = f"<br>• ⚡ <b>[밴드폭 극소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축 중이오."
             elif 12.0 <= bandwidth < 20.0:
                 if p >= ma5_val:
                     is_bandwidth_ok = True
@@ -583,10 +620,10 @@ if symbol:
 
             if not is_below_ma5:
                 stop_loss_price = dynamic_stop_price
-                stop_loss_label = f"🛡️ 5일선 -{dynamic_stop_pct:.1f}% 이탈 시 관망({stop_loss_price:{fmt_p}}{currency})"
+                stop_loss_label = f"🛡️ 단기 추세 체크포인트: 5일선 -{dynamic_stop_pct:.1f}% 이탈 시 관망({stop_loss_price:{fmt_p}}{currency})"
             else:
                 stop_loss_price = prev_low
-                stop_loss_label = f"🚨 전저점 이탈 마지노선({stop_loss_price:{fmt_p}}{currency})"
+                stop_loss_label = f"🚨 칼손절 경보: 전저점 이탈 마지노선({stop_loss_price:{fmt_p}}{currency})"
 
             defense_link_idx = min(21, len(df))
             raw_defense = float(df["High"].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
@@ -596,6 +633,7 @@ if symbol:
             is_bullish = ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val
             is_bearish = ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val
             is_down_trend_structural = is_bearish or (p < mid_line and mid_line <= ma60_val)
+            is_ma5_safe = p >= ma5_val
 
             ma5_str = f"{ma5_val:{fmt_p}}{currency}"
             ma20_str = f"{mid_line:{fmt_p}}{currency}"
@@ -627,7 +665,7 @@ if symbol:
               hierarchy_parts = [f'<span style="color:#ff6600; font-weight:bold;">현재가({current_price:{fmt_p}}{currency})</span>' if name == "현재가" else name for name, price in sorted_items]
               return f"&nbsp;&nbsp;&nbsp;&nbsp;<b>[이평선 층위]</b> {' > '.join(hierarchy_parts)}"
 
-            ma_price_summary = f"<br>• 📌 <b>[주요 이동평균선 현황]</b><br>&nbsp;&nbsp;&nbsp;<span style='color:#D32F2F;'>🔴 5일선: {ma5_str}</span> | <span style='color:#1976D2;'>🔵 20일선: {ma20_str}</span> | <span style='color:#388E3C;'>🟢 60일선: {ma60_str}</span> | <span style='color:#7B1FA2;'>🟣 120일선: {ma120_str}</span><br>"
+            ma_price_summary = f"<br>• 📌 <b>[주요 이동평균선 현황]</b><br>&nbsp;&nbsp;&nbsp;<span style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str} (이격: {bias_ma5:+.1f}%)</span> | <span style='color:#1976D2;'>🔵 20일선: {ma20_str}</span> | <span style='color:#388E3C;'>🟢 60일선: {ma60_str}</span> | <span style='color:#7B1FA2;'>🟣 120일선: {ma120_str}</span><br>"
             ma_price_summary += generate_ma_hierarchy(df, p)
 
             core_vault = {
@@ -749,6 +787,19 @@ if symbol:
                 <hr style='border:1px solid #FFEBEE; margin: 20px 0;'><div class='final-msg'>{final_adv}</div></div>""",
                 unsafe_allow_html=True,
             )
+
+            st.divider()
+
+            # 하단 4대 핵심 지표 박스
+            i1, i2, i3, i4 = st.columns(4)
+            with i1:
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger</p><p class='ind-diag'>밴드폭: {bandwidth:.1f}%<br>{bw_diag_msg}</p></div>", unsafe_allow_html=True)
+            with i2:
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (매수 온도)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{rsi_val:.2f}</p><p class='ind-diag'>지표 온도 정상 작동 중</p></div>", unsafe_allow_html=True)
+            with i3:
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{will_val:.2f}</p><p class='ind-diag'>민감 반전 지표 연산 중</p></div>", unsafe_allow_html=True)
+            with i4:
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (추세 엔진)</p><p class='ind-diag'>{base_macd_desc}</p></div>", unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"👵 아이구! 오류: {e}")
