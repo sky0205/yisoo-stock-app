@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36078", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36080", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,34 +227,20 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36078 (HTS 전일종가 강제 고정)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36080 (HTS 전일종가 자동 동기화)")
 display_global_risk()
 st.divider()
 
 # ==============================================================================
-# ★ [상단: 종목 / 수동시세 / 평단가 / HTS 기준가 / 매도·매수잔량 통합 입력창]
+# ★ [상단: 종목 / 평단가 / HTS 매도·매수잔량 통합 입력창 (전일종가 자동 수집)]
 # ==============================================================================
-col_symbol, col_manual, col_prev_override, col_avg, col_ask, col_bid, col_btn = st.columns(
-    [1.4, 1.2, 1.2, 1.2, 1.0, 1.0, 0.8]
+col_symbol, col_avg, col_ask, col_bid, col_btn = st.columns(
+    [2.0, 1.5, 1.5, 1.5, 1.0]
 )
 
 with col_symbol:
     raw_symbol_input = st.text_input("📊 종목번호", "050890")
     symbol = raw_symbol_input.strip()
-
-with col_manual:
-    manual_price_str = st.text_input(
-        "⚡ 수동 실시간가",
-        value="",
-        help="직접 가격을 적으시면 자동 시세 대신 우선 적용합니다.",
-    ).strip()
-
-with col_prev_override:
-    manual_prev_price_str = st.text_input(
-        "🎯 HTS 전일종가",
-        value="",
-        help="HTS 호가창에 찍힌 전일 종가를 적으시면 100% 일치시킵니다.",
-    ).strip()
 
 with col_avg:
     user_avg_price = st.number_input(
@@ -308,7 +294,7 @@ if symbol:
         now_local = kst_now if is_kr else datetime.now(ny_tz)
 
         df = pd.DataFrame()
-        auto_p, v_curr = 0.0, 0.0
+        auto_p, v_curr, api_prev_p = 0.0, 0.0, 0.0
         us_prev_p = None
 
         if is_kr:
@@ -340,6 +326,9 @@ if symbol:
                     v_curr = float(
                         str(data["accumulatedTradingVolume"]).replace(",", "")
                     )
+                    # 네이버 API가 제공하는 공식 전일 종가(prevClosePrice) 수집 장착
+                    if "prevClosePrice" in data and data["prevClosePrice"]:
+                        api_prev_p = float(str(data["prevClosePrice"]).replace(",", ""))
                     kr_fetched = True
             except Exception:
 
@@ -387,6 +376,9 @@ if symbol:
                 )
                 
                 us_prev_p = getattr(info, "previous_close", None)
+                if us_prev_p:
+                    api_prev_p = float(us_prev_p)
+
                 # [미장 거래량 왜곡 방어 가드]
                 if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
                     _us_avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
@@ -400,7 +392,7 @@ if symbol:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
 
-        # 호가창 실시간 기본값 설정 및 수동 입력 연동 교정
+        # 호가창 실시간 기본값 설정
         multiplier = 1000.0 if is_kr else 1.0
 
         if manual_ask > 0 and manual_bid > 0:
@@ -425,22 +417,7 @@ if symbol:
         else:
             ob_data = {"ask": 0.0, "bid": 0.0, "ratio": None, "ok": False, "msg": "실시간 호가 API 미연결"}
 
-        # 수동 입력 시세 우선 채택
-        is_manual_mode = False
-        if manual_price_str:
-            try:
-                parsed_val = float(
-                    manual_price_str.replace(",", "").replace("$", "")
-                )
-                if parsed_val > 0:
-                    p = parsed_val
-                    is_manual_mode = True
-                else:
-                    p = auto_p
-            except ValueError:
-                p = auto_p
-        else:
-            p = auto_p
+        p = auto_p
 
         if df.empty:
             st.warning(
@@ -452,15 +429,8 @@ if symbol:
             today_date = now_local.date()
 
             # ==================================================================
-            # ★ [HTS 기준가 완벽 강제 고정 가드]: 수동 입력값이 있으면 1순위 강제 적용
+            # ★ [HTS 전일종가 자동 수집 동기화 가드]: API 제공 종가 우선 적용, 없으면 일봉 직전 영업일 종가 자동 추출
             # ==================================================================
-            override_prev_p = 0.0
-            if manual_prev_price_str:
-                try:
-                    override_prev_p = float(manual_prev_price_str.replace(",", "").replace("원", ""))
-                except ValueError:
-                    pass
-
             try:
                 df_sorted = df.sort_index()
                 if today_date in df_sorted.index:
@@ -475,8 +445,8 @@ if symbol:
             except Exception:
                 calc_prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
 
-            # HTS 전일종가 수동 입력값이 있으면 100% 강제 고정
-            prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
+            # API 전일종가가 존재하면 1순위 적용, 없으면 일봉 기반 직전 종가 적용
+            prev_p = api_prev_p if api_prev_p > 0 else calc_prev_p
 
             # 오늘 날짜 시세 반영 (데이터프레임 업데이트)
             if today_date in df.index:
@@ -507,7 +477,7 @@ if symbol:
             )
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # ★ [등락률 계산 완벽 보정]: 사용자가 입력한 HTS 전일종가 기준 대비 차이와 등락률을 100% 강제 산출
+            # ★ [등락률 계산 완벽 보정]: 자동으로 수집된 HTS 전일종가 기준 대비 차이와 등락률 산출
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
@@ -534,7 +504,7 @@ if symbol:
             else:
                 vol_strength_auto = v_ratio
 
-            vol_strength = 100.0 if is_manual_mode else vol_strength_auto
+            vol_strength = vol_strength_auto
 
             # 당일 시가/고가/저가 및 양봉/음봉 판정 변수 선행 정의
             today_open = float(df["Open"].iloc[-1])
@@ -1075,12 +1045,7 @@ if symbol:
             st.write("")
             is_positive_day = p >= prev_p if prev_p > 0 else False
         
-            if is_manual_mode:
-                v_status, v_adv = (
-                    "수동검증",
-                    "⚡ <b>[프리장/수동 연산]</b> 수동 입력 시세를 기준으로 정밀 검증 중이외다.",
-                )
-            elif is_positive_day and vol_strength < 100:
+            if is_positive_day and vol_strength < 100:
               v_status, v_adv = (
                   "거래 숨고르기",
                   (
@@ -1173,7 +1138,7 @@ if symbol:
 
             st.markdown(
                 f"<div class='vol-box'><div style='font-size:32px; "
-                f"font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전환: {v_status} ({'수동 연산 모드' if is_manual_mode else f'실시간 {v_ratio:.1f}% / 5일평균대비'})</div>"
+                f"font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전환: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div>"
                 f"<div style='font-size:18px; color:#37474F; background:#FFFFFF; "
                 f"padding:10px; border-radius:8px; border-left:6px solid #1976D2; margin-bottom:10px;'>{v_adv}</div>"
                 f"<div style='font-size: 18px; color: #37474F; background: #FFFFFF; "
@@ -1275,22 +1240,18 @@ if symbol:
             )
 
             # 시간 족쇄 (애프터마켓 반영 문구 조율)
-            if is_kr and not is_manual_mode:
+            if is_kr:
                 is_afternoon_safe_time = (now_local.hour > 14) or (
                     now_local.hour == 14 and now_local.minute >= 0
                 )
                 time_tag_wait = "★ 14:00 매수 대기"
                 time_tag_ok = "14:00 이후 / 애프터장 안착 완료"
-            elif not is_kr and not is_manual_mode:
+            else:
                 is_afternoon_safe_time = (kst_now.hour >= 7) and (
                     kst_now.hour < 22
                 )
                 time_tag_wait = "★ 07:00 마감 일봉 대기"
                 time_tag_ok = "07:00 일봉 안착 확인"
-            else:
-                is_afternoon_safe_time = True
-                time_tag_wait = "★ 수동 검증"
-                time_tag_ok = "수동 시세 확인"
 
             # ==================================================================
             # ★ [신호등 분기 논리 - 밴드 라이딩 우선순위 격상 반영 완성본]
@@ -1858,7 +1819,7 @@ if symbol:
                     )
                 elif final_code == "ESCAPE_BUY":
                     bb_time_diag = (
-                        "14:00 이후 5일선 안착 시 50% 분할 타진, 저녁 8시 애프터마켓 마감 사수 시 2단계 완성"
+                        "14:00 이후 5일선 안착 시 50% 분할 진입, 저녁 8시 애프터마켓 마감 사수 시 2단계 완성"
                         if is_kr
                         else "07:00 일봉 5일선 안착 확인 시 2단계 완성"
                     )
@@ -1869,7 +1830,7 @@ if symbol:
                     )
                 elif final_code == "BREAK_MA20_CONFIRMED":
                     bb_time_diag = (
-                        "14:00 이후 지지 확인 시 50% 분할 타진, 저녁 8시 애프터마켓 마감 사수 시 완성"
+                        "14:00 이후 지지 확인 시 50% 분할 진입, 저녁 8시 애프터마켓 마감 사수 시 완성"
                         if is_kr
                         else "07:00 일봉 안착 확인 시 완성"
                     )
