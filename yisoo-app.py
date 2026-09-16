@@ -1,4 +1,3 @@
-
 import html
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -11,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36075", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36076", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -228,7 +227,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36075 (실전 무결점 판)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36076 (KRX 공식 종가 사수)")
 display_global_risk()
 st.divider()
 
@@ -452,7 +451,7 @@ if symbol:
             today_date = now_local.date()
 
             # ==================================================================
-            # ★ [완벽한 전일 종가 확정 가드]: 외부 API 변조 방지 및 데이터프레임 진짜 직전 영업일 종가 우선 사수
+            # ★ [KRX 공식 정규장 종가 절대 사수 가드]: 외부 API 변조 방지 및 순수 직전 영업일 종가 1순위 고정
             # ==================================================================
             try:
                 df_sorted = df.sort_index()
@@ -467,10 +466,6 @@ if symbol:
                     prev_p = p
             except Exception:
                 prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
-
-            if not is_kr and us_prev_p and us_prev_p > 0:
-                # 미장의 경우 야후 파이낸스 fast_info의 공식 전일 종가 신뢰도가 높으면 보완 활용 가능하나 내부 데이터 우선
-                pass
 
             # 오늘 날짜 시세 반영 (데이터프레임 업데이트)
             if today_date in df.index:
@@ -501,7 +496,7 @@ if symbol:
             )
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # 전일비 및 등락률 최종 연산 (확정된 정확한 prev_p 기준)
+            # 전일비 및 등락률 최종 연산 (KRX 확정된 정확한 prev_p 기준)
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
@@ -935,6 +930,7 @@ if symbol:
                     "101490": "에스앤에스텍",
                     "051600": "한전KPS",
                     "064350": "현대로템",
+                    "032300": "솔리드",
                 }
                 final_display_name = core_vault.get(symbol.zfill(6), f"국내종목 ({symbol})")
                 if symbol.zfill(6) not in core_vault:
