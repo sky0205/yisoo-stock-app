@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36081", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36082", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,12 +227,12 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36081 (KRX 자동 기준가 전용)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36082 (KRX 일봉 종가 강제 추출)")
 display_global_risk()
 st.divider()
 
 # ==============================================================================
-# ★ [상단: 종목 / 평단가 / HTS 매도·매수잔량 통합 입력창 (수동 칸 완전 제거)]
+# ★ [상단: 종목 / 평단가 / HTS 매도·매수잔량 통합 입력창]
 # ==============================================================================
 col_symbol, col_avg, col_ask, col_bid, col_btn = st.columns(
     [2.0, 1.5, 1.5, 1.5, 1.0]
@@ -294,8 +294,7 @@ if symbol:
         now_local = kst_now if is_kr else datetime.now(ny_tz)
 
         df = pd.DataFrame()
-        auto_p, v_curr, api_prev_p = 0.0, 0.0, 0.0
-        us_prev_p = None
+        auto_p, v_curr = 0.0, 0.0
 
         if is_kr:
             currency, fmt_p = "원", ",.0f"
@@ -326,8 +325,6 @@ if symbol:
                     v_curr = float(
                         str(data["accumulatedTradingVolume"]).replace(",", "")
                     )
-                    if "prevClosePrice" in data and data["prevClosePrice"]:
-                        api_prev_p = float(str(data["prevClosePrice"]).replace(",", ""))
                     kr_fetched = True
             except Exception:
 
@@ -374,10 +371,6 @@ if symbol:
                     info, "last_volume", float(df["Volume"].iloc[-1])
                 )
                 
-                us_prev_p = getattr(info, "previous_close", None)
-                if us_prev_p:
-                    api_prev_p = float(us_prev_p)
-
                 # [미장 거래량 왜곡 방어 가드]
                 if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
                     _us_avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
@@ -428,7 +421,7 @@ if symbol:
             today_date = now_local.date()
 
             # ==================================================================
-            # ★ [KRX 기준가 자동 동기화 닻 고정]: API 제공 종가 우선, 없으면 일봉 직전 영업일 종가 자동 추출
+            # ★ [KRX 일봉 종가 100% 강제 추출 가드]: API 값을 거치지 않고 순수 직전 영업일 일봉 종가를 정확히 닻으로 고정
             # ==================================================================
             try:
                 df_sorted = df.sort_index()
@@ -438,13 +431,11 @@ if symbol:
                     df_past = df_sorted
                     
                 if len(df_past) >= 1:
-                    calc_prev_p = float(df_past["Close"].iloc[-1])
+                    prev_p = float(df_past["Close"].iloc[-1])
                 else:
-                    calc_prev_p = p
+                    prev_p = p
             except Exception:
-                calc_prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
-
-            prev_p = api_prev_p if api_prev_p > 0 else calc_prev_p
+                prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
 
             # 오늘 날짜 시세 반영 (데이터프레임 업데이트)
             if today_date in df.index:
@@ -475,7 +466,7 @@ if symbol:
             )
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # 전일비 및 등락률 연산
+            # 전일비 및 등락률 연산 (정확한 일봉 직전 종가 기준)
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
