@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36090", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36092", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,27 +227,20 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36090 (HTS 전일종가 수동 입력 보장)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36092 (네이버 기준가 자동 연동)")
 display_global_risk()
 st.divider()
 
 # ==============================================================================
-# ★ [상단: 종목 / HTS 전일종가 / 평단가 / HTS 매도·매수잔량 통합 입력창]
+# ★ [상단: 종목 / 평단가 / HTS 매도·매수잔량 통합 입력창 (수동 전일종가 칸 제거)]
 # ==============================================================================
-col_symbol, col_prev_override, col_avg, col_ask, col_bid, col_btn = st.columns(
-    [1.5, 1.4, 1.4, 1.4, 1.4, 1.0]
+col_symbol, col_avg, col_ask, col_bid, col_btn = st.columns(
+    [2.0, 1.5, 1.5, 1.5, 1.0]
 )
 
 with col_symbol:
     raw_symbol_input = st.text_input("📊 종목번호", "005930")
     symbol = raw_symbol_input.strip()
-
-with col_prev_override:
-    manual_prev_price_str = st.text_input(
-        "🎯 HTS 전일종가",
-        value="",
-        help="HTS 호가창의 전일 종가를 적으시면 100% 일치합니다.",
-    ).strip()
 
 with col_avg:
     user_avg_price = st.number_input(
@@ -265,7 +258,7 @@ with col_ask:
         value=0.0,
         step=1.0,
         format="%.2f",
-        help="HTS 총매도잔량을 적으시게. (입력값에 무조건 x1,000하여 주수로 표기)",
+        help="HTS 총매도잔량 (x1,000 주)",
     )
 
 with col_bid:
@@ -275,7 +268,7 @@ with col_bid:
         value=0.0,
         step=1.0,
         format="%.2f",
-        help="HTS 총매수잔량을 적으시게. (입력값에 무조건 x1,000하여 주수로 표기)",
+        help="HTS 총매수잔량 (x1,000 주)",
     )
 
 with col_btn:
@@ -302,6 +295,7 @@ if symbol:
 
         df = pd.DataFrame()
         auto_p, v_curr = 0.0, 0.0
+        naver_prev_p = 0.0
         us_prev_p = None
 
         if is_kr:
@@ -333,6 +327,9 @@ if symbol:
                     v_curr = float(
                         str(data["accumulatedTradingVolume"]).replace(",", "")
                     )
+                    # ★ [네이버 공식 기준가(어제 종가) 즉시 추출]
+                    if "prevClosePrice" in data and data["prevClosePrice"]:
+                        naver_prev_p = float(str(data["prevClosePrice"]).replace(",", ""))
                     kr_fetched = True
             except Exception:
 
@@ -431,15 +428,8 @@ if symbol:
             today_date = now_local.date()
 
             # ==================================================================
-            # ★ [HTS 전일종가 수동 오버라이드 닻 고정 장치]
+            # ★ [네이버 공식 기준가 우선 적용 닻 고정 장치]
             # ==================================================================
-            override_prev_p = 0.0
-            if manual_prev_price_str:
-                try:
-                    override_prev_p = float(manual_prev_price_str.replace(",", "").replace("원", ""))
-                except ValueError:
-                    pass
-
             try:
                 df_sorted = df.sort_index()
                 if today_date in df_sorted.index:
@@ -454,8 +444,11 @@ if symbol:
             except Exception:
                 calc_prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
 
-            # 사용자가 HTS 전일종가를 직접 입력했으면 100% 강제 적용, 아니면 자동 연산값 채택
-            prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
+            # 네이버 API가 제공하는 공식 기준가(prevClosePrice)가 존재하면 100% 우선 적용, 아니면 데이터프레임 직전 종가 적용
+            prev_p = naver_prev_p if naver_prev_p > 0 else calc_prev_p
+
+            if not is_kr and us_prev_p and us_prev_p > 0:
+                prev_p = float(us_prev_p)
 
             # 오늘 날짜 시세 반영 (데이터프레임 업데이트)
             if today_date in df.index:
@@ -486,7 +479,7 @@ if symbol:
             )
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # 전일비 및 등락률 최종 연산 (수동 입력된 HTS 전일종가 기준 완벽 보정)
+            # 전일비 및 등락률 최종 연산 (네이버 기준가 기준)
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
@@ -1755,7 +1748,7 @@ if symbol:
                 else:
                     def_status = (
                         f"성벽({defense_line:{fmt_p}}{currency}) 아래로 함락된"
-                        " 채 기세마저 밑으로 처박히고 있네! <b>절대 칼을 뽑지"
+                        " 채 기세마저 밑으로 처박히고 있네! <b>절대 칼를 뽑지"
                         " 마시게.</b>"
                     )
 
@@ -1837,7 +1830,7 @@ if symbol:
                     )
                 elif final_code == "ESCAPE_BUY":
                     bb_time_diag = (
-                        "14:00 이후 5일선 안착 시 50% 분할 타진, 저녁 8시 애프터마켓 마감 사수 시 2단계 완성"
+                        "14:00 이후 5일선 안착 시 50% 분할 진입, 저녁 8시 애프터마켓 마감 사수 시 2단계 완성"
                         if is_kr
                         else "07:00 일봉 5일선 안착 확인 시 2단계 완성"
                     )
@@ -1848,7 +1841,7 @@ if symbol:
                     )
                 elif final_code == "BREAK_MA20_CONFIRMED":
                     bb_time_diag = (
-                        "14:00 이후 지지 확인 시 50% 분할 타진, 저녁 8시 애프터마켓 마감 사수 시 완성"
+                        "14:00 이후 지지 확인 시 50% 분할 진입, 저녁 8시 애프터마켓 마감 사수 시 완성"
                         if is_kr
                         else "07:00 일봉 안착 확인 시 완성"
                     )
