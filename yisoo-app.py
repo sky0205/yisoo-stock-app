@@ -1,3 +1,4 @@
+
 import html
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -450,24 +451,27 @@ if symbol:
             df.index = pd.to_datetime(df.index).date
             today_date = now_local.date()
 
-            # [국장/미장 완벽 분리 무적 전일 종가 확정 로직]
+            # ==================================================================
+            # ★ [완벽한 전일 종가 확정 가드]: 외부 API 변조 방지 및 데이터프레임 진짜 직전 영업일 종가 우선 사수
+            # ==================================================================
+            try:
+                df_sorted = df.sort_index()
+                if today_date in df_sorted.index:
+                    df_past = df_sorted.drop(today_date, errors="ignore")
+                else:
+                    df_past = df_sorted
+                    
+                if len(df_past) >= 1:
+                    prev_p = float(df_past["Close"].iloc[-1])
+                else:
+                    prev_p = p
+            except Exception:
+                prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
+
             if not is_kr and us_prev_p and us_prev_p > 0:
-                prev_p = us_prev_p
-            else:
-                try:
-                    df_sorted = df.sort_index()
-                    if today_date in df_sorted.index:
-                        df_past = df_sorted.drop(today_date, errors="ignore")
-                    else:
-                        df_past = df_sorted
-                        
-                    if len(df_past) >= 1:
-                        prev_p = float(df_past["Close"].iloc[-1])
-                    else:
-                        prev_p = p
-                except Exception:
-                    prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
-                    prev_low = float(df["Low"].iloc[-2]) if len(df) >= 2 else p
+                # 미장의 경우 야후 파이낸스 fast_info의 공식 전일 종가 신뢰도가 높으면 보완 활용 가능하나 내부 데이터 우선
+                pass
+
             # 오늘 날짜 시세 반영 (데이터프레임 업데이트)
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
@@ -497,7 +501,7 @@ if symbol:
             )
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # 전일비 및 등락률 최종 연산
+            # 전일비 및 등락률 최종 연산 (확정된 정확한 prev_p 기준)
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
@@ -531,7 +535,6 @@ if symbol:
             today_high = float(df["High"].iloc[-1])
             today_low = float(df["Low"].iloc[-1])
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
-            # [수정] 실시간 등락률(p_chg)을 기준으로 정확하게 양봉/음봉 판정
             is_candle_bearish = p_chg < 0  # 등락률이 마이너스일 때만 진정한 음봉으로 판정
 
             # ★ [이수할아버지 특별 가드]: 긴 위꼬리(고가 대비 현재가/종가 밀림 비율 35% 이상) 판정 변수
@@ -931,6 +934,7 @@ if symbol:
                     "272210": "한화시스템",
                     "101490": "에스앤에스텍",
                     "051600": "한전KPS",
+                    "064350": "현대로템",
                 }
                 final_display_name = core_vault.get(symbol.zfill(6), f"국내종목 ({symbol})")
                 if symbol.zfill(6) not in core_vault:
@@ -996,34 +1000,6 @@ if symbol:
             # ==================================================================
             # ★ [상단 대형 현재주가현황 전광판]
             # ==================================================================
-            try:
-                _p_now = float(p) if 'p' in locals() and p else 0.0
-                _p_old = 0.0
-                if 'df' in locals() and df is not None and not df.empty:
-                    df_s = df.sort_index()
-                    if today_date in df_s.index:
-                        df_sub = df_s.drop(today_date, errors="ignore")
-                    else:
-                        df_sub = df_s
-                    if len(df_sub) >= 1:
-                        _p_old = float(df_sub["Close"].iloc[-1])
-                if _p_old == 0.0:
-                    _p_old = float(prev_p) if 'prev_p' in locals() and prev_p and float(prev_p) > 0 else _p_now
-                if _p_old == _p_now and _p_now > 0:
-                    if len(df) >= 3:
-                        _p_old = float(df["Close"].iloc[-3])
-                    elif len(df) >= 2:
-                        _p_old = float(df["Close"].iloc[-2])
-                if _p_old > 0 and _p_now > 0:
-                    p_diff = _p_now - _p_old
-                    p_chg = (p_diff / _p_old) * 100
-                else:
-                    p_diff = 0.0
-                    p_chg = 0.0
-            except Exception:
-                p_diff = 0.0
-                p_chg = 0.0
-
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(
@@ -1407,7 +1383,7 @@ if symbol:
                 sig = f"🟢 [추가 진격] 2단계 진바닥 탈출 매수 ({time_tag_ok})"
                 action_guide = (
                     "14:00 이후 5일선 안착 확인 시 50% 분할 진입하고, 저녁 8시 애프터마켓 마감 사수 시 2단계 완성하시게. (단, 윗꼬리 달고 5일선 하회 시 즉시 철수)"
-                    if is_kr else "07:00 마감 일봉상 5일선 위 안착을 확인 후 2단계 진입하시게. (단, 윗꼬리 달고 5일선 하회 시 즉시 철수)"
+                    if is_kr else "07:00 일봉상 5일선 위 안착을 확인 후 2단계 진입하시게. (단, 윗꼬리 달고 5일선 하회 시 즉시 철수)"
                 )
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
