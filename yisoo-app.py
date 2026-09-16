@@ -1367,8 +1367,8 @@ if symbol:
                         f"<b>[성벽 위 {candlestick_type_str}]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 "
                         "추격 매수를 엄금하고 선제적 분할 익절(수확)을 준비하시게."
                     )
-                # [여기서부터 추가] 목표선 근처(또는 터치 후) 위꼬리 밀림 국면 판정
-                elif upper_band and p >= (upper_band * 0.98):
+                # [여기서부터 수정 완료] target_price_100 변수를 사용하여 상단 목표선 도달/저항 판정
+                elif p >= (target_price_100 * 0.98):
                     final_code = "RED_SELL_WARNING"
                     sig = "🔴 [성벽 위 저항 익절] 목표선 터치 후 위꼬리 이탈!"
                     col = "#D32F2F"
@@ -1453,7 +1453,7 @@ if symbol:
                     f" 20일선 및 안전마진선({ma20_safe_threshold:{fmt_p}}{currency})을 돌파하였소!"
                     f" {action_guide}"
                 )
-            # 9순위: 혼조세 속 진바닥 입질 예외 가드 (★ 수정: 혼조세일 때 점수를 강제로 0점으로 박살 내던 예외 가드를 해제하여 실제 연산 점수 사수)
+            # 9순위: 혼조세 속 진바닥 입질 예외 가드
             elif is_ma_tangled:
                 if is_ma5_safe and vol_strength >= 75.0 and bandwidth >= 12.0 and (rsi_val <= 35 or temp_bottom_score >= 2 or (p_chg >= 0.0 and p >= mid_line)):
                     final_code = "BOTTOM_ENTRY"
