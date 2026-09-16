@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36093", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36094", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,20 +227,27 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36093 (네이버 기준가 웹 크롤링 연동)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36094 (HTS 전일종가 수동 입력 완벽 보장)")
 display_global_risk()
 st.divider()
 
 # ==============================================================================
-# ★ [상단: 종목 / 평단가 / HTS 매도·매수잔량 통합 입력창]
+# ★ [상단: 종목 / HTS 전일종가 / 보유 평단가 / HTS 매도·매수잔량 입력창]
 # ==============================================================================
-col_symbol, col_avg, col_ask, col_bid, col_btn = st.columns(
-    [2.0, 1.5, 1.5, 1.5, 1.0]
+col_symbol, col_prev, col_avg, col_ask, col_bid, col_btn = st.columns(
+    [1.5, 1.4, 1.4, 1.4, 1.4, 1.0]
 )
 
 with col_symbol:
     raw_symbol_input = st.text_input("📊 종목번호", "005930")
     symbol = raw_symbol_input.strip()
+
+with col_prev:
+    manual_prev_price_str = st.text_input(
+        "🎯 HTS 전일종가",
+        value="",
+        help="HTS 기준가(어제종가)를 적으시면 100% 일치합니다.",
+    ).strip()
 
 with col_avg:
     user_avg_price = st.number_input(
@@ -295,7 +302,6 @@ if symbol:
 
         df = pd.DataFrame()
         auto_p, v_curr = 0.0, 0.0
-        naver_web_prev_p = 0.0
         us_prev_p = None
 
         if is_kr:
@@ -316,58 +322,46 @@ if symbol:
 
                     pass
 
-            # ★ [네이버 웹페이지 HTML 크롤링으로 진짜 '기준가(어제 종가)' 추출]
+            kr_fetched = False
             try:
-                url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
-                res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
+                api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
+                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+                res = requests.get(api_url, headers=headers, timeout=3)
                 if res.status_code == 200:
-                    soup = BeautifulSoup(res.text, "html.parser")
-                    
-                    # 현재가 취득
-                    today_tag = soup.select_one(".no_today .blind")
-                    if today_tag:
-                        auto_p = float(today_tag.text.replace(",", ""))
-                        
-                    # 거래량 취득
-                    info_tags = soup.select(".no_info .blind")
-                    if len(info_tags) >= 4:
-                        v_curr = float(info_tags[3].text.replace(",", ""))
-                        
-                    # ★ [기준가(어제 종가) 웹 크롤링 닻 고정]
-                    table_th = soup.find_all("th", text=lambda t: t and "기준가" in t)
-                    for th in table_th:
-                        td = th.find_next_sibling("td")
-                        if td:
-                            blind_span = td.select_one(".blind")
-                            target_text = blind_span.text if blind_span else td.text
-                            naver_web_prev_p = float(target_text.replace(",", "").strip())
-                            break
+                    data = res.json()
+                    auto_p = float(str(data["closePrice"]).replace(",", ""))
+                    v_curr = float(
+                        str(data["accumulatedTradingVolume"]).replace(",", "")
+                    )
+                    kr_fetched = True
             except Exception:
+
                 pass
 
-            # 만약 웹 크롤링 실패 시 네이버 모바일 API 백업 활용
-            if auto_p == 0.0:
+            if not kr_fetched:
                 try:
-                    api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
-                    res = requests.get(api_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
-                    if res.status_code == 200:
-                        data = res.json()
-                        auto_p = float(str(data["closePrice"]).replace(",", ""))
-                        v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
-                        if "prevClosePrice" in data and data["prevClosePrice"]:
-                            naver_web_prev_p = float(str(data["prevClosePrice"]).replace(",", ""))
+                    url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
+                    res = requests.get(
+                        url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3
+                    )
+                    soup = BeautifulSoup(res.text, "html.parser")
+                    auto_p = float(
+                        soup.select_one(".no_today .blind").text.replace(",", "")
+                    )
+                    v_curr = float(
+                        soup.select(".no_info .blind")[3].text.replace(",", "")
+                    )
+                    kr_fetched = True
+                    # [국장 거래량 왜곡 방어 가드]
+                    if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
+                        _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
+                        if _avg_v > 0 and v_curr > _avg_v * 10:
+                            v_curr = float(df["Volume"].iloc[-1])
                 except Exception:
-                    pass
 
-            if auto_p == 0.0 and not df.empty:
-                auto_p = float(df["Close"].iloc[-1])
-                v_curr = float(df["Volume"].iloc[-1])
-                
-            # [국장 거래량 왜곡 방어 가드]
-            if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
-                _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
-                if _avg_v > 0 and v_curr > _avg_v * 10:
-                    v_curr = float(df["Volume"].iloc[-1])
+                    if not df.empty:
+                        auto_p = float(df["Close"].iloc[-1])
+                        v_curr = float(df["Volume"].iloc[-1])
         else:
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
@@ -437,8 +431,15 @@ if symbol:
             today_date = now_local.date()
 
             # ==================================================================
-            # ★ [네이버 웹 크롤링 기준가를 전일 종가(prev_p)로 100% 강제 고정]
+            # ★ [HTS 전일종가 수동 오버라이드 닻 고정 장치]
             # ==================================================================
+            override_prev_p = 0.0
+            if manual_prev_price_str:
+                try:
+                    override_prev_p = float(manual_prev_price_str.replace(",", "").replace("원", ""))
+                except ValueError:
+                    pass
+
             try:
                 df_sorted = df.sort_index()
                 if today_date in df_sorted.index:
@@ -453,10 +454,10 @@ if symbol:
             except Exception:
                 calc_prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
 
-            # 네이버 웹에서 긁어온 공식 기준가(naver_web_prev_p)가 존재하면 절대 우선 적용!
-            prev_p = naver_web_prev_p if naver_web_prev_p > 0 else calc_prev_p
+            # 사용자가 HTS 전일종가를 직접 입력했으면 100% 강제 적용, 아니면 자동 연산값 채택
+            prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
 
-            if not is_kr and us_prev_p and us_prev_p > 0:
+            if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
                 prev_p = float(us_prev_p)
 
             # 오늘 날짜 시세 반영 (데이터프레임 업데이트)
@@ -488,7 +489,7 @@ if symbol:
             )
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # 전일비 및 등락률 최종 연산 (네이버 기준가 100% 일치)
+            # 전일비 및 등락률 최종 연산 (수동 입력된 HTS 전일종가 기준 완벽 보정)
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
