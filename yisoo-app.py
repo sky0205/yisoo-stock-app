@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36080", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36081", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,12 +227,12 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36080 (HTS 전일종가 자동 동기화)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36081 (KRX 자동 기준가 전용)")
 display_global_risk()
 st.divider()
 
 # ==============================================================================
-# ★ [상단: 종목 / 평단가 / HTS 매도·매수잔량 통합 입력창 (전일종가 자동 수집)]
+# ★ [상단: 종목 / 평단가 / HTS 매도·매수잔량 통합 입력창 (수동 칸 완전 제거)]
 # ==============================================================================
 col_symbol, col_avg, col_ask, col_bid, col_btn = st.columns(
     [2.0, 1.5, 1.5, 1.5, 1.0]
@@ -326,7 +326,6 @@ if symbol:
                     v_curr = float(
                         str(data["accumulatedTradingVolume"]).replace(",", "")
                     )
-                    # 네이버 API가 제공하는 공식 전일 종가(prevClosePrice) 수집 장착
                     if "prevClosePrice" in data and data["prevClosePrice"]:
                         api_prev_p = float(str(data["prevClosePrice"]).replace(",", ""))
                     kr_fetched = True
@@ -429,7 +428,7 @@ if symbol:
             today_date = now_local.date()
 
             # ==================================================================
-            # ★ [HTS 전일종가 자동 수집 동기화 가드]: API 제공 종가 우선 적용, 없으면 일봉 직전 영업일 종가 자동 추출
+            # ★ [KRX 기준가 자동 동기화 닻 고정]: API 제공 종가 우선, 없으면 일봉 직전 영업일 종가 자동 추출
             # ==================================================================
             try:
                 df_sorted = df.sort_index()
@@ -445,7 +444,6 @@ if symbol:
             except Exception:
                 calc_prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
 
-            # API 전일종가가 존재하면 1순위 적용, 없으면 일봉 기반 직전 종가 적용
             prev_p = api_prev_p if api_prev_p > 0 else calc_prev_p
 
             # 오늘 날짜 시세 반영 (데이터프레임 업데이트)
@@ -477,7 +475,7 @@ if symbol:
             )
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # ★ [등락률 계산 완벽 보정]: 자동으로 수집된 HTS 전일종가 기준 대비 차이와 등락률 산출
+            # 전일비 및 등락률 연산
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
