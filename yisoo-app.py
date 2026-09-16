@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36089", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36090", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,14 +227,14 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36089 (구버전 완전 복원 + 수동 입력 부활)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36090 (HTS 전일종가 수동 입력 보장)")
 display_global_risk()
 st.divider()
 
 # ==============================================================================
-# ★ [상단: 종목 / 수동시세 / 평단가 / HTS 매도·매수잔량 통합 입력창]
+# ★ [상단: 종목 / HTS 전일종가 / 평단가 / HTS 매도·매수잔량 통합 입력창]
 # ==============================================================================
-col_symbol, col_manual, col_avg, col_ask, col_bid, col_btn = st.columns(
+col_symbol, col_prev_override, col_avg, col_ask, col_bid, col_btn = st.columns(
     [1.5, 1.4, 1.4, 1.4, 1.4, 1.0]
 )
 
@@ -242,11 +242,11 @@ with col_symbol:
     raw_symbol_input = st.text_input("📊 종목번호", "005930")
     symbol = raw_symbol_input.strip()
 
-with col_manual:
-    manual_price_str = st.text_input(
-        "⚡ 수동 실시간가 (선택)",
+with col_prev_override:
+    manual_prev_price_str = st.text_input(
+        "🎯 HTS 전일종가",
         value="",
-        help="직접 가격을 적으시면 자동 시세 대신 우선 적용합니다.",
+        help="HTS 호가창의 전일 종가를 적으시면 100% 일치합니다.",
     ).strip()
 
 with col_avg:
@@ -393,7 +393,7 @@ if symbol:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
 
-        # 호가창 실시간 기본값 설정 및 수동 입력 연동 교정
+        # 호가창 실시간 기본값 설정
         multiplier = 1000.0 if is_kr else 1.0
 
         if manual_ask > 0 and manual_bid > 0:
@@ -418,28 +418,8 @@ if symbol:
         else:
             ob_data = {"ask": 0.0, "bid": 0.0, "ratio": None, "ok": False, "msg": "실시간 호가 API 미연결"}
 
-        # 수동 입력 시세 우선 채택
+        p = auto_p
         is_manual_mode = False
-        if manual_price_str:
-            try:
-                parsed_val = float(
-                    manual_price_str.replace(",", "").replace("$", "")
-                )
-                if parsed_val > 0:
-                    p = parsed_val
-                    is_manual_mode = True
-                    st.info(
-                        f"💡 **[수동 입력 모드]** 현재가를 **{p:{fmt_p}}{currency}** 기준으로 정밀 연산합니다."
-                    )
-                else:
-                    p = auto_p
-            except ValueError:
-                st.warning(
-                    "⚠️ 올바른 숫자 형식으로 입력해 주십시오. (자동 시세로 연산합니다)"
-                )
-                p = auto_p
-        else:
-            p = auto_p
 
         if df.empty:
             st.warning(
@@ -451,8 +431,15 @@ if symbol:
             today_date = now_local.date()
 
             # ==================================================================
-            # ★ [완벽한 전일 종가 확정 가드]: 외부 API 변조 방지 및 데이터프레임 진짜 직전 영업일 종가 우선 사수
+            # ★ [HTS 전일종가 수동 오버라이드 닻 고정 장치]
             # ==================================================================
+            override_prev_p = 0.0
+            if manual_prev_price_str:
+                try:
+                    override_prev_p = float(manual_prev_price_str.replace(",", "").replace("원", ""))
+                except ValueError:
+                    pass
+
             try:
                 df_sorted = df.sort_index()
                 if today_date in df_sorted.index:
@@ -461,14 +448,14 @@ if symbol:
                     df_past = df_sorted
                     
                 if len(df_past) >= 1:
-                    prev_p = float(df_past["Close"].iloc[-1])
+                    calc_prev_p = float(df_past["Close"].iloc[-1])
                 else:
-                    prev_p = p
+                    calc_prev_p = p
             except Exception:
-                prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
+                calc_prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
 
-            if not is_kr and us_prev_p and us_prev_p > 0:
-                pass
+            # 사용자가 HTS 전일종가를 직접 입력했으면 100% 강제 적용, 아니면 자동 연산값 채택
+            prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
 
             # 오늘 날짜 시세 반영 (데이터프레임 업데이트)
             if today_date in df.index:
@@ -499,7 +486,7 @@ if symbol:
             )
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # 전일비 및 등락률 최종 연산 (확정된 정확한 prev_p 기준)
+            # 전일비 및 등락률 최종 연산 (수동 입력된 HTS 전일종가 기준 완벽 보정)
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
@@ -526,7 +513,7 @@ if symbol:
             else:
                 vol_strength_auto = v_ratio
 
-            vol_strength = 100.0 if is_manual_mode else vol_strength_auto
+            vol_strength = vol_strength_auto
 
             # 당일 시가/고가/저가 및 양봉/음봉 판정 변수 선행 정의
             today_open = float(df["Open"].iloc[-1])
@@ -1850,7 +1837,7 @@ if symbol:
                     )
                 elif final_code == "ESCAPE_BUY":
                     bb_time_diag = (
-                        "14:00 이후 5일선 안착 시 50% 분할 진입, 저녁 8시 애프터마켓 마감 사수 시 2단계 완성"
+                        "14:00 이후 5일선 안착 시 50% 분할 타진, 저녁 8시 애프터마켓 마감 사수 시 2단계 완성"
                         if is_kr
                         else "07:00 일봉 5일선 안착 확인 시 2단계 완성"
                     )
@@ -1861,7 +1848,7 @@ if symbol:
                     )
                 elif final_code == "BREAK_MA20_CONFIRMED":
                     bb_time_diag = (
-                        "14:00 이후 지지 확인 시 50% 분할 진입, 저녁 8시 애프터마켓 마감 사수 시 완성"
+                        "14:00 이후 지지 확인 시 50% 분할 타진, 저녁 8시 애프터마켓 마감 사수 시 완성"
                         if is_kr
                         else "07:00 일봉 안착 확인 시 완성"
                     )
