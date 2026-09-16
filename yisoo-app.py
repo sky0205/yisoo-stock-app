@@ -1,4 +1,3 @@
-
 import html
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -11,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36075", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36089", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -228,7 +227,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36075 (실전 무결점 판)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36089 (구버전 완전 복원 + 수동 입력 부활)")
 display_global_risk()
 st.divider()
 
@@ -469,7 +468,6 @@ if symbol:
                 prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
 
             if not is_kr and us_prev_p and us_prev_p > 0:
-                # 미장의 경우 야후 파이낸스 fast_info의 공식 전일 종가 신뢰도가 높으면 보완 활용 가능하나 내부 데이터 우선
                 pass
 
             # 오늘 날짜 시세 반영 (데이터프레임 업데이트)
@@ -935,6 +933,8 @@ if symbol:
                     "101490": "에스앤에스텍",
                     "051600": "한전KPS",
                     "064350": "현대로템",
+                    "032300": "솔리드",
+                    "050890": "솔리드",
                 }
                 final_display_name = core_vault.get(symbol.zfill(6), f"국내종목 ({symbol})")
                 if symbol.zfill(6) not in core_vault:
@@ -1763,7 +1763,7 @@ if symbol:
                     def_status = (
                         f"성벽({defense_line:{fmt_p}}{currency}) 아래에 있으나,"
                         " 단기 5일선<b>(생명선)을 사수</b>하며 반격의 시동을"
-                        " 거는 중이네!"
+                        " 거는 중이오!"
                     )
                 else:
                     def_status = (
@@ -1850,7 +1850,7 @@ if symbol:
                     )
                 elif final_code == "ESCAPE_BUY":
                     bb_time_diag = (
-                        "14:00 이후 5일선 안착 시 50% 분할 타진, 저녁 8시 애프터마켓 마감 사수 시 2단계 완성"
+                        "14:00 이후 5일선 안착 시 50% 분할 진입, 저녁 8시 애프터마켓 마감 사수 시 2단계 완성"
                         if is_kr
                         else "07:00 일봉 5일선 안착 확인 시 2단계 완성"
                     )
@@ -1861,7 +1861,7 @@ if symbol:
                     )
                 elif final_code == "BREAK_MA20_CONFIRMED":
                     bb_time_diag = (
-                        "14:00 이후 지지 확인 시 50% 분할 타진, 저녁 8시 애프터마켓 마감 사수 시 완성"
+                        "14:00 이후 지지 확인 시 50% 분할 진입, 저녁 8시 애프터마켓 마감 사수 시 완성"
                         if is_kr
                         else "07:00 일봉 안착 확인 시 완성"
                     )
