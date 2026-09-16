@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36084", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36085", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,12 +227,12 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36084 (KRX 일봉 종가 완전 복원)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36085 (KRX 일봉 종가 사수 완성본)")
 display_global_risk()
 st.divider()
 
 # ==============================================================================
-# ★ [상단: 종목 / 평단가 / HTS 매도·매수잔량 통합 입력창 (수동 칸 완전 제거)]
+# ★ [상단: 종목 / 평단가 / HTS 매도·매수잔량 통합 입력창]
 # ==============================================================================
 col_symbol, col_avg, col_ask, col_bid, col_btn = st.columns(
     [2.0, 1.5, 1.5, 1.5, 1.0]
@@ -299,6 +299,8 @@ if symbol:
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
+            
+            # ★ [KRX 일봉 데이터 수집]: FinanceDataReader를 통해 순수 일봉 장부 로드
             try:
                 df = fdr.DataReader(clean_symbol, start=start_date.strftime("%Y-%m-%d"))
             except Exception:
@@ -312,7 +314,7 @@ if symbol:
                 except Exception:
                     pass
 
-            kr_fetched = False
+            # 실시간 현재가 및 거래량 취득
             try:
                 api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -321,26 +323,10 @@ if symbol:
                     data = res.json()
                     auto_p = float(str(data["closePrice"]).replace(",", ""))
                     v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
-                    kr_fetched = True
             except Exception:
-                pass
-
-            if not kr_fetched:
-                try:
-                    url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
-                    res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
-                    soup = BeautifulSoup(res.text, "html.parser")
-                    auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-                    v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
-                    kr_fetched = True
-                    if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
-                        _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
-                        if _avg_v > 0 and v_curr > _avg_v * 10:
-                            v_curr = float(df["Volume"].iloc[-1])
-                except Exception:
-                    if not df.empty:
-                        auto_p = float(df["Close"].iloc[-1])
-                        v_curr = float(df["Volume"].iloc[-1])
+                if not df.empty:
+                    auto_p = float(df["Close"].iloc[-1])
+                    v_curr = float(df["Volume"].iloc[-1])
         else:
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
@@ -355,17 +341,10 @@ if symbol:
                 info = ticker.fast_info
                 auto_p = getattr(info, "last_price", float(df["Close"].iloc[-1]))
                 v_curr = getattr(info, "last_volume", float(df["Volume"].iloc[-1]))
-                
-                if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
-                    _us_avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
-                    if _us_avg_v > 0 and v_curr > _us_avg_v * 10:
-                        v_curr = float(df["Volume"].iloc[-1])
             except Exception:
-                pass
-
-            if auto_p == 0.0 and not df.empty:
-                auto_p = float(df["Close"].iloc[-1])
-                v_curr = float(df["Volume"].iloc[-1])
+                if not df.empty:
+                    auto_p = float(df["Close"].iloc[-1])
+                    v_curr = float(df["Volume"].iloc[-1])
 
         # 호가창 잔량 기본 설정
         multiplier = 1000.0 if is_kr else 1.0
@@ -402,7 +381,7 @@ if symbol:
             today_date = now_local.date()
 
             # ==================================================================
-            # ★ [KRX 일봉 종가 100% 강제 추출 닻 고정]: FinanceDataReader 일봉 장부에서 진짜 어제 정규장 마감 종가 추출
+            # ★ [KRX 정규장 닻 고정 완성]: 일봉 장부에서 '순수 직전 영업일 종가'를 정확히 추출하여 전일 종가 고정
             # ==================================================================
             try:
                 df_sorted = df.sort_index()
@@ -443,7 +422,7 @@ if symbol:
             v_avg5 = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # 전일비 및 등락률 연산 (KRX 정규장 일봉 종가 기준)
+            # 전일비 및 등락률 연산 (KRX 정규장 닻 기준)
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
