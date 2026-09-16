@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36077", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36078", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,7 +227,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36077 (HTS 기준가 완벽 동기화)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36078 (HTS 전일종가 강제 고정)")
 display_global_risk()
 st.divider()
 
@@ -452,7 +452,7 @@ if symbol:
             today_date = now_local.date()
 
             # ==================================================================
-            # ★ [HTS 기준가 완벽 동기화 가드]: 수동 입력값이 있으면 1순위 강제 고정, 없으면 기본 일봉 종가 적용
+            # ★ [HTS 기준가 완벽 강제 고정 가드]: 수동 입력값이 있으면 1순위 강제 적용
             # ==================================================================
             override_prev_p = 0.0
             if manual_prev_price_str:
@@ -475,7 +475,7 @@ if symbol:
             except Exception:
                 calc_prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
 
-            # HTS 전일종가 수동 입력값이 있으면 강제 우선 적용
+            # HTS 전일종가 수동 입력값이 있으면 100% 강제 고정
             prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
 
             # 오늘 날짜 시세 반영 (데이터프레임 업데이트)
@@ -507,7 +507,7 @@ if symbol:
             )
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
 
-            # 전일비 및 등락률 최종 연산 (HTS 동기화된 완벽한 prev_p 기준)
+            # ★ [등락률 계산 완벽 보정]: 사용자가 입력한 HTS 전일종가 기준 대비 차이와 등락률을 100% 강제 산출
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
@@ -1671,7 +1671,7 @@ if symbol:
             if is_band_riding:
                 ma5_guide_text = (
                     f"현재가({p:{fmt_p}}{currency})가 볼린저 상단을 타고 확장 중이오! "
-                    f"절절반 익절 완료 후 남은 50%는 <b>5일선({ma5_val:{fmt_p}}{currency}) 종가 이탈 전까지</b> 흔들리지 말고 끝까지 추종하시게."
+                    f"절반 익절 완료 후 남은 50%는 <b>5일선({ma5_val:{fmt_p}}{currency}) 종가 이탈 전까지</b> 흔들리지 말고 끝까지 추종하시게."
                 )
             elif is_target_reached or p >= (target_price_100 * 0.98):
                 ma5_guide_text = (
