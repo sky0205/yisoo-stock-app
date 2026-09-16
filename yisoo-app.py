@@ -1309,7 +1309,7 @@ if symbol:
                 time_tag_ok = "수동 시세 확인"
 
             # ==================================================================
-            # ★ [신호등 분기 논리 - 긴 위꼬리 저항 관망 가드 적용 완성본]
+            # ★ [신호등 분기 논리 - 밴드 라이딩 우선순위 격상 반영 완성본]
             # ==================================================================
             try:
                 current_chg = float(p_chg)
@@ -1335,7 +1335,17 @@ if symbol:
                     f"<b>[긴 위꼬리 저항 포착]</b> 장중 고점 대비 위꼬리가 길게 밀려 내려왔소! "
                     "지표상 안착처럼 보여도 위쪽 매물벽 저항이 맵사오니 섣부른 추격매수를 금하고 냉정하게 관망하시게."
                 )
-            # 2순위: 수학 목표선 98% 도달 / 오버슈팅 수확 구역
+            # ★ [우선순위 상향]: 밴드 라이딩 대시세 구역 (목표선 도달 판정보다 최우선 배치)
+            elif is_band_riding:
+                final_code = "BAND_RIDING_HARVEST"
+                sig = "🟣 [1차 수확 / 잔여 밴드 추종] 목표선 상방 확장 중!"
+                col = "#6A1B9A"
+                final_adv = (
+                    f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[볼린저 상단 상방 확장]</b> 현재가({p:{fmt_p}}{currency})가 밴드 상단을 타고 위로 시원하게 뻗어 나가는 중이오! "
+                    "<b>물량의 50%는 1차 익절하여 수익을 확정</b>하고, <b>잔여 50%는 5일선 이탈 전까지 목표선 상향을 즐기며 홀딩</b>하시게."
+                )
+            # 2순위: 수학 목표선 98% 도달 / 오버슈팅 수확 구역 (밴드 라이딩이 아닐 때만 발동)
             elif p >= (target_price_100 * 0.98) or is_target_reached:
                 final_code = "RED_SELL_TARGET"
                 sig = "🔴 [목표 도달] 수학 목표선 저항! 1차 50% 수확 및 분할 매도!"
@@ -1344,16 +1354,6 @@ if symbol:
                     f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
                     f"<b>[수학 목표선 도달 완료]</b> 볼린저 상단({target_price_100:{fmt_p}}{currency}) 코앞에 도달했거나 저항을 받고 있소! "
                     "신규 매수를 절대 금지하고, <b>우선 50% 물량을 기계적으로 수확(익절)</b>한 뒤 잔여 물량은 매도 주문을 걸어두시게."
-                )
-            # 3순위: 밴드 라이딩 대시세 구역
-            elif is_band_riding:
-                final_code = "BAND_RIDING_HARVEST"
-                sig = "🟣 [1차 수확 / 잔여 밴드 추종] 목표선 상방 확장 중!"
-                col = "#6A1B9A"
-                final_adv = (
-                    f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[볼린저 상단 상방 확장]</b> 현재가({p:{fmt_p}}{currency})가 볼린저 상단을 타고 위로 솟구치는 중이오! "
-                    "<b>물량의 50%는 1차 익절하여 수익을 확정</b>하고, <b>잔여 50%는 5일선 이탈 전까지 목표선 상향을 즐기며 홀딩</b>하시게."
                 )
             # 4순위: 성벽 위 전용 전황 판정
             elif p >= defense_line:
@@ -1367,7 +1367,6 @@ if symbol:
                         f"<b>[성벽 위 {candlestick_type_str}]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 "
                         "추격 매수를 엄금하고 선제적 분할 익절(수확)을 준비하시게."
                     )
-                # [여기서부터 수정 완료] target_price_100 변수를 사용하여 상단 목표선 도달/저항 판정
                 elif p >= (target_price_100 * 0.98):
                     final_code = "RED_SELL_WARNING"
                     sig = "🔴 [성벽 위 저항 익절] 목표선 터치 후 위꼬리 이탈!"
@@ -1519,9 +1518,14 @@ if symbol:
                 "YELLOW_CAUTION", "RED_SELL_WARNING", "MA_TANGLED_WARNING", "LONG_TAIL_WARNING"
             ]
 
-            if final_code in ["BOTTOM_ENTRY", "BREAK_MA20_CONFIRMED"]:
+            if final_code in ["BOTTOM_ENTRY", "BREAK_MA20_CONFIRMED", "BAND_RIDING_HARVEST"]:
                 is_overall_cautious_state = False
-                col = "#1E88E5" if final_code == "BREAK_MA20_CONFIRMED" else "#388E3C"
+                if final_code == "BAND_RIDING_HARVEST":
+                    col = "#6A1B9A"
+                elif final_code == "BREAK_MA20_CONFIRMED":
+                    col = "#1E88E5"
+                else:
+                    col = "#388E3C"
 
             # 지표 세부 텍스트 조립
             pullback_status_str = f"<b>(밴드폭 {bandwidth:.1f}%)</b>"
