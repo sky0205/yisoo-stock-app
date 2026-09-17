@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36103", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36104", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,7 +227,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36103 (지표 출력 모순 동기화 보수)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36104 (돌파 매수 시 수급 필터 누락 보수)")
 display_global_risk()
 st.divider()
 
@@ -700,7 +700,7 @@ if symbol:
                         bw_status_category = "SQUEEZE_BREAKOUT"
                         bw_diag_msg = (
                             f"밴드폭 응축돌파({bandwidth:.1f}%) 5일선 안착 / 에너지"
-                            " 분출 초입"
+                            " 분출 초 초입"
                         )
                         if vol_strength < 65 or is_candle_bearish:
                             adjust_type_str = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
@@ -1282,7 +1282,7 @@ if symbol:
                 final_adv = (
                     f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
                     f"<b>[수학 목표선 도달 완료]</b> 볼린저 상단({target_price_100:{fmt_p}}{currency}) 코앞에 도달했거나 저항을 받고 있소! "
-                    "신규 매수를 절대 금지하고, <b>우선 50% 물량을 기계적으로 수확(익절)</b>한 뒤 잔여 물량은 매도 주문을 걸어두시게."
+                    "신규 매수를 절대 금지하고, <b>우선 50% 물문을 기계적으로 수확(익절)</b>한 뒤 잔여 물량은 매도 주문을 걸어두시게."
                 )
             elif p >= defense_line:
                 if is_candle_bearish or (is_positive_day and vol_strength < 65 and not is_pre_market_mode):
@@ -1357,6 +1357,7 @@ if symbol:
                 and (not is_down_trend_structural)
                 and is_ma5_safe
                 and pullback_rebound_score >= 1
+                and (vol_strength >= 65 or is_pre_market_mode) # ★ [v36104 누락 수정] 돌파 타점에도 수급 족쇄 장착 완료!
             ):
                 final_code = "BREAK_MA20_CONFIRMED"
                 sig = "🔵 [돌파 확인] 20일선 안착 타진 (기민한 선제 대응)"
@@ -1407,11 +1408,11 @@ if symbol:
                 and not is_down_trend_structural
             ):
                 final_code = "WAIT_INDICATOR"
-                sig = "🟡 [관망/보류] 5일선 안착했으나 지표 동조 미충족 (안착 대기)"
+                sig = "🟡 [관망/보류] 5일선 안착했으나 지표/수급 미충족 (안착 대기)"
                 col = "#F57C00"
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[지표 동조 미충족]</b> 5일선 위에 안착했으나 눌림목 지지 동조 점수 부족({pullback_rebound_score}/3점) 및 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
+                    f"<b>[매수 조건 미충족]</b> 5일선 위에 안착했으나 수급 불량 또는 눌림목 지지 동조 점수 부족({pullback_rebound_score}/3점)으로 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
                 )
             else:
                 final_code = "WAIT_GENERAL"
@@ -1481,7 +1482,6 @@ if symbol:
                 bottom_status_str = "<b>(조건 미충족)</b>"
                 bottom_action_str = "-> <b>[관망]</b> 진바닥 지표 조건 미충족 (0점)"
 
-            # ★ [v36103 보완]: 메인 신호등(final_code)과 하위 지표 검증 텍스트 완벽 동기화 (모순 제거)
             if final_code == "BREAK_MA20_CONFIRMED":
                 sub_indicator_str = f"   - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 기민한 분할 타진 진행"
             elif final_code == "ESCAPE_BUY":
