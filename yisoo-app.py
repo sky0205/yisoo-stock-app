@@ -1029,8 +1029,7 @@ if symbol:
             st.write("")
             is_positive_day = p >= prev_p if prev_p > 0 else False
         
-            # ★ [v36096 개선]: 오전장 300점 이상 폭발적 화력 즉시 인정 로직 적용
-            if is_positive_day and vol_strength < 70:
+            if is_positive_day and vol_strength < 65:
               v_status, v_adv = (
                   "거래 숨고르기",
                   (
@@ -1039,7 +1038,7 @@ if symbol:
                       " 지지력 확인 구역이오니 차분히 타진하시게."
                   ),
               )
-            elif vol_strength >= 300:  # 기준 완화: 500점 -> 300점 이상을 오전장 폭발 화력으로 즉시 인정
+            elif vol_strength >= 300:
                 if not is_down_trend_v:
                     v_status, v_adv = (
                         "과열폭발(돌파)",
@@ -1131,7 +1130,6 @@ if symbol:
                 unsafe_allow_html=True,
             )
 
-            # 지표 정밀 연산
             low_b_val = low_b.iloc[-1] if hasattr(low_b, "iloc") else low_b
             b_val = 1 if df["Close"].iloc[-1] <= (low_b_val * 1.02) else 0 
             r_val = 1 if rsi_series.iloc[-1] <= 38 else 0               
@@ -1214,7 +1212,6 @@ if symbol:
                 and (not is_target_reached)
             )
 
-            # ★ [v36096 개조]: 14:00 족쇄 완화 -> 오전장(10시~11시 이후)에도 화력 충족 시 즉시 타점 개방
             if is_kr:
                 is_morning_breakout_fast = (now_local.hour >= 10) and (vol_strength >= 300) and is_ma5_safe
                 time_tag_wait = "★ 오전장 돌파 모니터링"
@@ -1296,7 +1293,7 @@ if symbol:
                         f"<b>[성벽 위 안착 진격]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 기세를 타고 양봉으"
                         "로 진격 중이오! 5일선을 사수하며 상방 목표선까지 추세를 즐기시게."
                     )
-            elif is_ bottom_entry_signal and (p >= today_open) and (p_chg >= -1.5):
+            elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= -1.5):
                 final_code = "BOTTOM_ENTRY"
                 col = "#388E3C"
                 sig = f"🟢 [진바닥 안착] 1단계 분할 입절 유효 구역 ({time_tag_ok})"
@@ -1345,10 +1342,10 @@ if symbol:
                 sig = "🔵 [돌파 확인] 20일선 안착 타진 (기민한 선제 대응)"
                 col = "#1E88E5"
                 action_guide = (
-                    "오전장 거래량(300점 이상) 동반 돌파 확인 시 즉시 50% 분할 타진 가동하시게."
+                    "오전장 거래량(300점 이상) 동반 돌파 확인 시 즉시 50% 분할 진입 가동하시게."
                     " (단, 윗꼬리 이탈 시 즉시 철수)"
                     if (is_kr and is_morning_breakout_fast)
-                    else "14:00 이후 지지 확인 시 50% 분할 타진하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
+                    else "14:00 이후 지지 확인 시 50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
                 )
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
@@ -1365,7 +1362,7 @@ if symbol:
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
                         "<b>[이평선 꼬임 속 진바닥 포착]</b> 수급과 밴드폭이 뒷받침된 상태에서 5일선 안착 및 냉골 바닥 지표가 충족되었으므로, "
-                        "비중 10%의 1단계 분할 입절로 기민하게 대응하시게."
+                        "비중 10%의 1단계 분할 입절로 냉정하게 대응하시게."
                     )
                 else:
                     final_code = "MA_TANGLED_WARNING"
