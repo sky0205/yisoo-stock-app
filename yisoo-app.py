@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36100", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36101", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,7 +227,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36100 (미장 프리장 입력칸 복원 보수)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36101 (프리마켓 거래량 함정 우회 보수)")
 display_global_risk()
 st.divider()
 
@@ -253,7 +253,7 @@ with col_pre_us:
     manual_pre_price_str = st.text_input(
         "🇺🇸 미장 프리(Pre) 시세",
         value="",
-        help="미장 프리마켓 실시간 가격 입력 시 우선 반영",
+        help="미장 프리마켓 실시간 가격 입력 시 수급 페널티 제외 반영",
     ).strip()
 
 with col_avg:
@@ -423,15 +423,18 @@ if symbol:
         else:
             ob_data = {"ask": 0.0, "bid": 0.0, "ratio": None, "ok": False, "msg": "실시간 호가 API 미연결"}
 
-        # ★ [v36100 보완]: 미장 프리마켓 수동 입력값 오버라이드 적용
+        # ★ [v36101 보완]: 프리마켓 모드 발동 감지 및 거래량 함정 우회
         override_pre_p = 0.0
+        is_pre_market_mode = False
         if not is_kr and manual_pre_price_str:
             try:
                 override_pre_p = float(manual_pre_price_str.replace(",", "").replace("$", ""))
+                if override_pre_p > 0:
+                    is_pre_market_mode = True
             except ValueError:
                 pass
 
-        p = override_pre_p if override_pre_p > 0 else auto_p
+        p = override_pre_p if is_pre_market_mode else auto_p
         is_manual_mode = False
 
         if df.empty:
@@ -1051,15 +1054,21 @@ if symbol:
             st.write("")
             is_positive_day = p >= prev_p if prev_p > 0 else False
         
-            if is_positive_day and vol_strength < 65:
-              v_status, v_adv = (
-                  "거래 숨고르기",
-                  (
-                      f"• <b>[거래 숨고르기]</b> 시간보정 강도"
-                      f" {vol_strength:.1f}점! 1단계 진바닥 입질 및 양봉"
-                      " 지지력 확인 구역이오니 차분히 타진하시게."
-                  ),
-              )
+            # ★ [v36101 보완]: 프리마켓 수동 입력 시 '거래절벽' 오판 방지 가드
+            if is_pre_market_mode:
+                v_status, v_adv = (
+                    "프리장 대기",
+                    "🇺🇸 <b>[프리마켓 모드]</b> 수동 가격 반영 중이오. 장전 거래량이 희박하니 실시간 수급 차단 로직을 우회하여 타점을 판독하오. 정규장 개장 후 화력을 반드시 재확인하시게."
+                )
+            elif is_positive_day and vol_strength < 65:
+                v_status, v_adv = (
+                    "거래 숨고르기",
+                    (
+                        f"• <b>[거래 숨고르기]</b> 시간보정 강도"
+                        f" {vol_strength:.1f}점! 1단계 진바닥 입질 및 양봉"
+                        " 지지력 확인 구역이오니 차분히 타진하시게."
+                    ),
+                )
             elif vol_strength >= 300:
                 if not is_down_trend_v:
                     v_status, v_adv = (
@@ -1127,10 +1136,7 @@ if symbol:
                         f"🟡 <b>[거래량 미달 / 관망]</b> 실시간 {vol_strength:.1f}점! 5일선 아래이므로 섣부른 진입을 엄금하네.",
                     )
                 else:
-                    is_healthy_volume_dry = (
-                        ('has_entered_first' in locals() and has_entered_first) or 
-                        (p_chg >= 0)
-                    )
+                    is_healthy_volume_dry = p_chg >= 0
                     if is_healthy_volume_dry:
                         v_status, v_adv = (
                             "거래 숨고르기",
@@ -1194,10 +1200,10 @@ if symbol:
             )
             is_macd_not_deepening = not is_macd_reverse_deepening
 
+            # ★ [v36101 보완]: 프리마켓 모드일 경우 거래량 가드 우회하여 지표 중심 타점 허용
             is_volume_ok_for_bottom = (
-                (vol_strength >= 65.0)
-                if (p_chg >= 0.0 and p >= today_open)
-                else (vol_strength >= 70.0)
+                is_pre_market_mode or 
+                ((vol_strength >= 65.0) if (p_chg >= 0.0 and p >= today_open) else (vol_strength >= 70.0))
             )
             
             is_bottom_entry_signal = (
@@ -1213,7 +1219,7 @@ if symbol:
             is_escape_buy_signal = (
                 is_ma5_safe
                 and is_bottom_indicator_ok
-                and (vol_strength >= 65)
+                and (vol_strength >= 65 or is_pre_market_mode)
                 and is_macd_not_deepening
                 and is_valid_buy_candle
                 and is_bandwidth_ok
@@ -1227,7 +1233,7 @@ if symbol:
                 and is_ma5_safe
                 and is_orderbook_safe
                 and (pullback_rebound_score >= 1)
-                and (vol_strength >= 65)
+                and (vol_strength >= 65 or is_pre_market_mode)
                 and is_bandwidth_ok
                 and is_macd_not_deepening
                 and is_valid_buy_candle
@@ -1246,10 +1252,7 @@ if symbol:
             # ==================================================================
             # ★ [신호등 분기 논리]
             # ==================================================================
-            try:
-                current_chg = float(p_chg)
-            except:
-                current_chg = -1.0
+            current_chg = float(p_chg)
 
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -1287,7 +1290,7 @@ if symbol:
                     "신규 매수를 절대 금지하고, <b>우선 50% 물량을 기계적으로 수확(익절)</b>한 뒤 잔여 물량은 매도 주문을 걸어두시게."
                 )
             elif p >= defense_line:
-                if is_candle_bearish or (is_positive_day and vol_strength < 65):
+                if is_candle_bearish or (is_positive_day and vol_strength < 65 and not is_pre_market_mode):
                     candlestick_type_str = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                     final_code = "RED_SELL_WARNING"
                     sig = f"🔴 [성벽 위 {candlestick_type_str}] 선제적 익절 및 수성 구간"
@@ -1462,7 +1465,7 @@ if symbol:
                 pullback_status_str = f"<b>(수학 목표선 저항 도달)</b>"
                 pullback_action_str = "-> <b>[50% 수확]</b> 상단 목표 도달 완료로 신규 진입 절대 금지"
             elif p >= defense_line:
-                if is_candle_bearish or (is_positive_day and vol_strength < 65):
+                if is_candle_bearish or (is_positive_day and vol_strength < 65 and not is_pre_market_mode):
                     pullback_status_str = f"<b>(성벽 위 음봉 조정 / 밴드폭 {bandwidth:.1f}%)</b>"
                     pullback_action_str = "-> <b>[선제 익절 준비]</b> 성벽 위 차익 매물 출회 중이므로 분할 수확 검토"
                 else:
@@ -1618,7 +1621,12 @@ if symbol:
                     "돌파 안착 신호가 확인될 때까지 손가락을 묶고 관망하시게."
                 )
             else:
-                if vol_strength < 65:
+                if is_pre_market_mode:
+                    ma5_guide_text = (
+                        f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있소! "
+                        f"단, <b>미장 프리마켓 수동 반영 중</b>이므로 정규장 개장 후 5일선 지지 사수 여부를 반드시 재확인하시게."
+                    )
+                elif vol_strength < 65:
                     ma5_guide_text = (
                         f"현재가({p:{fmt_p}}{currency})가"
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, <b>거래절벽({vol_strength:.1f}점)</b>으로 수급이 마른 상태이오. 섣부른 추격을 금하고 관망하시게."
@@ -1669,7 +1677,7 @@ if symbol:
                     "상방 동력이 완전히 메말랐으니 섣부른 진격을 금하고 철저히 관망하시게."
                 )
             elif p >= defense_line:
-                if is_candle_bearish or (is_positive_day and vol_strength < 65):
+                if is_candle_bearish or (is_positive_day and vol_strength < 65 and not is_pre_market_mode):
                     def_status = (
                         f"성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 당일 차익 매물 출회 및 숨고르기 공방 중이오! "
                         "무리한 추격을 삼가고 익절 및 지지력을 주시하시게."
@@ -1941,7 +1949,7 @@ if symbol:
                     w_status = (
                         "<b>🚀 상방 저항 도달 구역</b><br>• <b>역할:</b> 단기"
                         " 상향 압력 한계 측정.<br>• <b>진단:</b> 목표선 도달 완료!"
-                        " 추격 매수 엄금 및 선제적 분할 매도 집행."
+                        " 추격 매 매수 엄금 및 선제적 분할 매도 집행."
                     )
                 elif will_val <= -75:
                     w_time_txt = "오전장 화력 동조 시 즉시 입질 대기." if (is_kr and is_morning_breakout_fast) else "14:00 이후 지지 동조 시 입질 대기."
