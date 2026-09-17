@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36101", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36102", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,7 +227,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36101 (프리마켓 거래량 함정 우회 보수)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36102 (미장 국장 멘트 분리 보수)")
 display_global_risk()
 st.divider()
 
@@ -423,7 +423,7 @@ if symbol:
         else:
             ob_data = {"ask": 0.0, "bid": 0.0, "ratio": None, "ok": False, "msg": "실시간 호가 API 미연결"}
 
-        # ★ [v36101 보완]: 프리마켓 모드 발동 감지 및 거래량 함정 우회
+        # ★ 프리마켓 모드 발동 감지 및 거래량 함정 우회
         override_pre_p = 0.0
         is_pre_market_mode = False
         if not is_kr and manual_pre_price_str:
@@ -446,9 +446,6 @@ if symbol:
             df.index = pd.to_datetime(df.index).date
             today_date = now_local.date()
 
-            # ==================================================================
-            # ★ [전일종가 수동 오버라이드 닻 고정 장치]
-            # ==================================================================
             override_prev_p = 0.0
             if manual_prev_price_str:
                 try:
@@ -1054,7 +1051,6 @@ if symbol:
             st.write("")
             is_positive_day = p >= prev_p if prev_p > 0 else False
         
-            # ★ [v36101 보완]: 프리마켓 수동 입력 시 '거래절벽' 오판 방지 가드
             if is_pre_market_mode:
                 v_status, v_adv = (
                     "프리장 대기",
@@ -1200,7 +1196,6 @@ if symbol:
             )
             is_macd_not_deepening = not is_macd_reverse_deepening
 
-            # ★ [v36101 보완]: 프리마켓 모드일 경우 거래량 가드 우회하여 지표 중심 타점 허용
             is_volume_ok_for_bottom = (
                 is_pre_market_mode or 
                 ((vol_strength >= 65.0) if (p_chg >= 0.0 and p >= today_open) else (vol_strength >= 70.0))
@@ -1245,12 +1240,12 @@ if symbol:
                 time_tag_wait = "★ 오전장 돌파 모니터링"
                 time_tag_ok = "오전장 화력 및 5일선 안착 완료 (기민 타점 가동)" if is_morning_breakout_fast else "14:00 이후 / 안정적 안착 확인"
             else:
-                is_morning_breakout_fast = (kst_now.hour >= 14) and (vol_strength >= 300) and is_ma5_safe
+                is_morning_breakout_fast = False
                 time_tag_wait = "★ 세션 돌파 대기"
                 time_tag_ok = "세션 화력 안착 확인"
 
             # ==================================================================
-            # ★ [신호등 분기 논리]
+            # ★ [신호등 분기 논리: 국장/미장 멘트 분리 적용]
             # ==================================================================
             current_chg = float(p_chg)
 
@@ -1323,9 +1318,9 @@ if symbol:
                 col = "#388E3C"
                 sig = f"🟢 [진바닥 안착] 1단계 분할 입절 유효 구역 ({time_tag_ok})"
                 action_time_guide = (
-                    "오전장 화력(300점 이상) 및 5일선 지지 확인 시 10% 선제 타진하고 종가 사수를 확인하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
-                    if (is_kr and is_morning_breakout_fast) else
-                    "14:00 이후 5일선 및 볼린저 바닥 지지 확인 시 10% 분할 타진하시게. (단, 이탈 시 철수)"
+                    "오전장 화력(300점 이상) 및 5일선 지지 확인 시 10% 선제 타진하고 종가 사수를 확인하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if (is_kr and is_morning_breakout_fast)
+                    else "14:00 이후 5일선 및 볼린저 바닥 지지 확인 시 10% 분할 타진하시게. (단, 이탈 시 철수)" if is_kr
+                    else "정규장(세션) 화력 및 5일선 지지 확인 시 10% 분할 타진하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
                 )
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
@@ -1336,9 +1331,9 @@ if symbol:
                 col = "#2E7D32"
                 sig = f"🟢 [추가 진격] 2단계 진바닥 탈출 매수 ({time_tag_ok})"
                 action_guide = (
-                    "오전장 수급(300점 이상)과 5일선 안착 확인 시 즉시 50% 분할 진입 가동하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
-                    if (is_kr and is_morning_breakout_fast) else
-                    "14:00 이후 5일선 안착 확인 시 50% 분할 진입하시게. (단, 이탈 시 즉시 철수)"
+                    "오전장 수급(300점 이상)과 5일선 안착 확인 시 즉시 50% 분할 진입 가동하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if (is_kr and is_morning_breakout_fast)
+                    else "14:00 이후 5일선 안착 확인 시 50% 분할 진입하시게. (단, 이탈 시 즉시 철수)" if is_kr
+                    else "정규장(세션) 수급 동반 및 5일선 안착 확인 시 50% 분할 진입하시게. (단, 이탈 시 즉시 철수)"
                 )
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
@@ -1349,9 +1344,9 @@ if symbol:
                 col = "#1976D2"
                 sig = f"🔵 [본진 진격] 3단계 눌림목 추가 매수 ({time_tag_ok})"
                 action_guide = (
-                    "오전장 화력(300점 이상) 속 안전마진 안착 시 즉시 50% 타진 가동하시게. (단, 밀림 시 매수 취소)"
-                    if (is_kr and is_morning_breakout_fast) else
-                    "14:00 이후 5·20일선 안전마진 안착 시 50% 분할 타진하시게. (단, 밀림 시 매수 취소)"
+                    "오전장 화력(300점 이상) 속 안전마진 안착 시 즉시 50% 타진 가동하시게. (단, 밀림 시 매수 취소)" if (is_kr and is_morning_breakout_fast)
+                    else "14:00 이후 5·20일선 안전마진 안착 시 50% 분할 타진하시게. (단, 밀림 시 매수 취소)" if is_kr
+                    else "정규장(세션) 화력 속 5·20일선 안전마진 안착 시 50% 분할 타진하시게. (단, 밀림 시 매수 취소)"
                 )
                 final_adv = (
                     f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
@@ -1367,10 +1362,9 @@ if symbol:
                 sig = "🔵 [돌파 확인] 20일선 안착 타진 (기민한 선제 대응)"
                 col = "#1E88E5"
                 action_guide = (
-                    "오전장 거래량(300점 이상) 동반 돌파 확인 시 즉시 50% 분할 진입 가동하시게."
-                    " (단, 윗꼬리 이탈 시 즉시 철수)"
-                    if (is_kr and is_morning_breakout_fast)
-                    else "14:00 이후 지지 확인 시 50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
+                    "오전장 거래량(300점 이상) 동반 돌파 확인 시 즉시 50% 분할 진입 가동하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if (is_kr and is_morning_breakout_fast)
+                    else "14:00 이후 지지 확인 시 50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if is_kr
+                    else "정규장(세션) 거래량 동반 돌파 확인 시 50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
                 )
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
@@ -1638,14 +1632,18 @@ if symbol:
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, 당일 {candlestick_name} 중이오. 5일선 지지 사수 확인 후 대응하시게."
                     )
                 elif final_code == "ESCAPE_BUY":
-                    ma5_time_str = "오전장 화력 속 즉시 50% 분할 진입" if (is_kr and is_morning_breakout_fast) else "14:00 이후 지지 확인 50% 분할 진입"
+                    if is_kr and is_morning_breakout_fast: ma5_time_str = "오전장 화력 속 즉시 50% 분할 진입"
+                    elif is_kr: ma5_time_str = "14:00 이후 지지 확인 50% 분할 진입"
+                    else: ma5_time_str = "정규장 세션 지지 확인 50% 분할 진입"
                     ma5_guide_text = (
                         f"현재가({p:{fmt_p}}{currency})가"
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하며 2단계"
                         f" 진바닥 탈출 성공! {ma5_time_str} 유효 구역이오."
                     )
                 elif final_code == "PULLBACK_BUY":
-                    ma5_time_str = "오전장 화력 속 즉시 3단계 분할 진격" if (is_kr and is_morning_breakout_fast) else "14:00 이후 지지 시 3단계 분할 진격"
+                    if is_kr and is_morning_breakout_fast: ma5_time_str = "오전장 화력 속 즉시 3단계 분할 진격"
+                    elif is_kr: ma5_time_str = "14:00 이후 지지 시 3단계 분할 진격"
+                    else: ma5_time_str = "정규장 세션 지지 시 3단계 분할 진격"
                     ma5_guide_text = (
                         f"현재가({p:{fmt_p}}{currency})가"
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 단기"
@@ -1788,33 +1786,27 @@ if symbol:
                         " <b>역할:</b> 고점 매물 소화 대기.<br>• <b>진단:</b> 긴 위꼬리가 밀려 내려왔으니 섣부른 추격을 금하고 관망."
                     )
                 elif final_code == "BOTTOM_ENTRY":
-                    bb_time_diag = (
-                        "오전장 화력(300점 이상) 속 10% 선제 타진 및 종가 사수"
-                        if (is_kr and is_morning_breakout_fast)
-                        else "14:00 이후 10% 타진, 저녁 8시 애프터마켓 마감 사수 시 완성"
-                    )
+                    if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 화력(300점 이상) 속 10% 선제 타진 및 종가 사수"
+                    elif is_kr: bb_time_diag = "14:00 이후 10% 타진, 저녁 8시 애프터마켓 마감 사수 시 완성"
+                    else: bb_time_diag = "정규장(세션) 수급 유입 시 10% 타진, 마감 사수 시 완성"
                     bb_diag = (
                         f"🔴 <b>[1단계 진바닥 입질 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
                         " <b>역할:</b> 과매도 바닥권 선취매.<br>• <b>진단:</b> 지표"
                         f" 터치 + 바닥 지지 확인! {bb_time_diag} (윗꼬리 바닥 이탈 시 철수)"
                     )
                 elif final_code == "ESCAPE_BUY":
-                    bb_time_diag = (
-                        "오전장 수급(300점 이상) 속 50% 분할 진입 가동"
-                        if (is_kr and is_morning_breakout_fast)
-                        else "14:00 이후 5일선 안착 시 50% 분할 진입"
-                    )
+                    if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 수급(300점 이상) 속 50% 분할 진입 가동"
+                    elif is_kr: bb_time_diag = "14:00 이후 5일선 안착 시 50% 분할 진입"
+                    else: bb_time_diag = "정규장(세션) 수급 동반 5일선 안착 시 50% 분할 진입"
                     bb_diag = (
                         f"🟢 <b>[2단계 진바닥 탈출 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
                         " <b>역할:</b> 5일선 안착 후 배팅 확대.<br>• <b>진단:</b>"
                         f" {bw_diag_msg}. {bb_time_diag} (윗꼬리 5일선 이탈 시 철수)"
                     )
                 elif final_code == "BREAK_MA20_CONFIRMED":
-                    bb_time_diag = (
-                        "오전장 거래량(300점 이상) 동반 돌파 시 즉시 분할 진입"
-                        if (is_kr and is_morning_breakout_fast)
-                        else "14:00 이후 지지 확인 시 50% 분할 진입"
-                    )
+                    if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 거래량(300점 이상) 동반 돌파 시 즉시 분할 진입"
+                    elif is_kr: bb_time_diag = "14:00 이후 지지 확인 시 50% 분할 진입"
+                    else: bb_time_diag = "정규장(세션) 거래량 동반 돌파 시 50% 분할 진입"
                     bb_diag = (
                         f"🔵 <b>[20일선 돌파 안착 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
                         " <b>역할:</b> 돌파 매수 타점.<br>• <b>진단:</b> 20일선 돌파 및 지표 동조 성공! "
@@ -1840,11 +1832,9 @@ if symbol:
                         f" 안착 상태이나 당일 {candlestick_word} 중이오. 5일선 지지 사수 확인 후 대응하시게."
                     )
                 elif final_code == "PULLBACK_BUY":
-                    bb_time_diag = (
-                        "오전장 화력(300점 이상) 속 안전마진 안착 시 즉시 50% 타진"
-                        if (is_kr and is_morning_breakout_fast)
-                        else "14:00 이후 안전마진 안착 시 50% 타진"
-                    )
+                    if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 화력(300점 이상) 속 안전마진 안착 시 즉시 50% 타진"
+                    elif is_kr: bb_time_diag = "14:00 이후 안전마진 안착 시 50% 타진"
+                    else: bb_time_diag = "정규장(세션) 화력 속 안전마진 안착 시 50% 타진"
                     bb_diag = (
                         f"🔵 <b>[3단계 눌림목 추가 매수 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
                         " <b>역할:</b> 승수 확대.<br>• <b>진단:</b>"
@@ -1918,7 +1908,9 @@ if symbol:
                         " 차익 실현을 준비하시게."
                     )
                 elif rsi_val <= 38:
-                    r_time_txt = "오전장 화력 속 즉시 입질 매수 타이밍." if (is_kr and is_morning_breakout_fast) else "14:00 이후 지지 확인 후 1단계 입질 매수 타이밍."
+                    if is_kr and is_morning_breakout_fast: r_time_txt = "오전장 화력 속 즉시 입질 매수 타이밍."
+                    elif is_kr: r_time_txt = "14:00 이후 지지 확인 후 1단계 입질 매수 타이밍."
+                    else: r_time_txt = "정규장(세션) 지지 확인 후 1단계 입질 매수 타이밍."
                     r_status = (
                         "<b>🧊 냉골 바닥권</b><br>• <b>역할:</b> 진바닥 수급"
                         " 감지.<br>• <b>진단:</b> 바닥권 지표 터치 및 수급 유입"
@@ -1949,10 +1941,12 @@ if symbol:
                     w_status = (
                         "<b>🚀 상방 저항 도달 구역</b><br>• <b>역할:</b> 단기"
                         " 상향 압력 한계 측정.<br>• <b>진단:</b> 목표선 도달 완료!"
-                        " 추격 매 매수 엄금 및 선제적 분할 매도 집행."
+                        " 추격 매수 엄금 및 선제적 분할 매도 집행."
                     )
                 elif will_val <= -75:
-                    w_time_txt = "오전장 화력 동조 시 즉시 입질 대기." if (is_kr and is_morning_breakout_fast) else "14:00 이후 지지 동조 시 입질 대기."
+                    if is_kr and is_morning_breakout_fast: w_time_txt = "오전장 화력 동조 시 즉시 입질 대기."
+                    elif is_kr: w_time_txt = "14:00 이후 지지 동조 시 입질 대기."
+                    else: w_time_txt = "정규장(세션) 지지 동조 시 입질 대기."
                     w_status = (
                         "<b>🏳️ 개미 항복 구역</b><br>• <b>역할:</b> 세력"
                         " 선취매 포착.<br>• <b>진단:</b> 🧊 <b>[바닥 침체]</b>"
