@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36099", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36100", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,26 +227,33 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36099 (기준가 오버라이드 닻 완벽 일치 보수)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36100 (미장 프리장 입력칸 복원 보수)")
 display_global_risk()
 st.divider()
 
 # ==============================================================================
-# ★ [상단: 종목번호 / HTS 전일종가(기준가) / 보유 평단가 / HTS 매도·매수잔량]
+# ★ [상단: 종목 / HTS 전일종가 / 미장 프리시세 / 보유 평단가 / 호가잔량]
 # ==============================================================================
-col_symbol, col_prev, col_avg, col_ask, col_bid, col_btn = st.columns(
-    [1.5, 1.4, 1.4, 1.4, 1.4, 1.0]
+col_symbol, col_prev, col_pre_us, col_avg, col_ask, col_bid, col_btn = st.columns(
+    [1.4, 1.2, 1.2, 1.2, 1.1, 1.1, 0.8]
 )
 
 with col_symbol:
-    raw_symbol_input = st.text_input("📊 종목번호", "101490")
+    raw_symbol_input = st.text_input("📊 종목번호", "LRCX")
     symbol = raw_symbol_input.strip()
 
 with col_prev:
     manual_prev_price_str = st.text_input(
         "🎯 HTS 전일종가",
         value="",
-        help="HTS 기준가(어제종가)를 적으시면 100% 일치합니다.",
+        help="국장/미장 전일 기준가",
+    ).strip()
+
+with col_pre_us:
+    manual_pre_price_str = st.text_input(
+        "🇺🇸 미장 프리(Pre) 시세",
+        value="",
+        help="미장 프리마켓 실시간 가격 입력 시 우선 반영",
     ).strip()
 
 with col_avg:
@@ -255,27 +262,25 @@ with col_avg:
         min_value=0.0,
         value=0.0,
         step=100.0,
-        help="평단가를 적으시면 맞춤형 가이드를 제공합니다.",
+        help="맞춤형 가이드 제공",
     )
 
 with col_ask:
     manual_ask = st.number_input(
-        "🔴 HTS 총매도잔량",
+        "🔴 총매도잔량",
         min_value=0.0,
         value=0.0,
         step=1.0,
         format="%.2f",
-        help="HTS 총매도잔량 (x1,000 주)",
     )
 
 with col_bid:
     manual_bid = st.number_input(
-        "🔵 HTS 총매수잔량",
+        "🔵 총매수잔량",
         min_value=0.0,
         value=0.0,
         step=1.0,
         format="%.2f",
-        help="HTS 총매수잔량 (x1,000 주)",
     )
 
 with col_btn:
@@ -418,7 +423,15 @@ if symbol:
         else:
             ob_data = {"ask": 0.0, "bid": 0.0, "ratio": None, "ok": False, "msg": "실시간 호가 API 미연결"}
 
-        p = auto_p
+        # ★ [v36100 보완]: 미장 프리마켓 수동 입력값 오버라이드 적용
+        override_pre_p = 0.0
+        if not is_kr and manual_pre_price_str:
+            try:
+                override_pre_p = float(manual_pre_price_str.replace(",", "").replace("$", ""))
+            except ValueError:
+                pass
+
+        p = override_pre_p if override_pre_p > 0 else auto_p
         is_manual_mode = False
 
         if df.empty:
@@ -431,12 +444,12 @@ if symbol:
             today_date = now_local.date()
 
             # ==================================================================
-            # ★ [v36099 보완]: HTS 전일종가(기준가) 수동 오버라이드 닻 완벽 고정
+            # ★ [전일종가 수동 오버라이드 닻 고정 장치]
             # ==================================================================
             override_prev_p = 0.0
             if manual_prev_price_str:
                 try:
-                    override_prev_p = float(manual_prev_price_str.replace(",", "").replace("원", ""))
+                    override_prev_p = float(manual_prev_price_str.replace(",", "").replace("원", "").replace("$", ""))
                 except ValueError:
                     pass
 
@@ -454,7 +467,6 @@ if symbol:
             except Exception:
                 calc_prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
 
-            # 사용자가 상단에 HTS 전일종가를 적어넣었다면 100% 우선 적용하여 오차 원천 차단
             prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
 
             if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
@@ -948,6 +960,7 @@ if symbol:
                     "BE": "블룸에너지",
                     "RKLB": "로켓랩",
                     "AVGO": "브로드컴",
+                    "LRCX": "램리서치",
                 }
                 tk = symbol.upper()
                 kor_name = us_vault.get(tk, None)
