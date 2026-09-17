@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36096", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36098", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,7 +227,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36096 (오전장 기민성 및 화력 기준 조율)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36098 (국장 애프터마켓 시세 연동 복원)")
 display_global_risk()
 st.divider()
 
@@ -321,6 +321,7 @@ if symbol:
                     pass
 
             kr_fetched = False
+            # ★ [v36098 보완]: 국장 네이버 API에서 애프터마켓(시간외) 연동 포함 실시간 체결가 우선 확보
             try:
                 api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -368,22 +369,31 @@ if symbol:
                 df = ticker.history(period="1y")
 
             try:
-                info = ticker.fast_info
-                auto_p = getattr(info, "last_price", float(df["Close"].iloc[-1]))
-                v_curr = getattr(
-                    info, "last_volume", float(df["Volume"].iloc[-1])
-                )
-                us_prev_p = getattr(info, "previous_close", None)
-                if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
-                    _us_avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
-                    if _us_avg_v > 0 and v_curr > _us_avg_v * 10:
-                        v_curr = float(df["Volume"].iloc[-1])
+                fast_inf = ticker.fast_info
+                auto_p = getattr(fast_inf, "last_price", 0.0)
+                v_curr = getattr(fast_inf, "last_volume", 0.0)
+                us_prev_p = getattr(fast_inf, "previous_close", None)
             except Exception:
-                pass
+                auto_p, v_curr, us_prev_p = 0.0, 0.0, None
 
-            if auto_p == 0.0 and not df.empty:
-                auto_p = float(df["Close"].iloc[-1])
-                v_curr = float(df["Volume"].iloc[-1])
+            if auto_p == 0.0 or pd.isna(auto_p):
+                try:
+                    inf_dict = ticker.info
+                    auto_p = inf_dict.get("regularMarketPrice", inf_dict.get("currentPrice", 0.0))
+                    if auto_p == 0.0 or pd.isna(auto_p):
+                        auto_p = float(df["Close"].iloc[-1])
+                except Exception:
+                    if not df.empty:
+                        auto_p = float(df["Close"].iloc[-1])
+
+            if v_curr == 0.0 or pd.isna(v_curr):
+                if not df.empty:
+                    v_curr = float(df["Volume"].iloc[-1])
+
+            if not df.empty and not df.empty:
+                _us_avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
+                if _us_avg_v > 0 and v_curr > _us_avg_v * 10:
+                    v_curr = float(df["Volume"].iloc[-1])
 
         # 호가창 실시간 기본값 설정
         multiplier = 1000.0 if is_kr else 1.0
@@ -485,6 +495,7 @@ if symbol:
                 m_start = now_local.replace(
                     hour=9, minute=0, second=0, microsecond=0
                 )
+                # ★ [v36098 보완]: 국장 애프터마켓(시간외 접속매매) 마감 시간인 저녁 8시까지 시간 보정 연동 반영
                 m_end = now_local.replace(
                     hour=20, minute=0, second=0, microsecond=0
                 )
