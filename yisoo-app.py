@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36098", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36099", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,19 +227,19 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36098 (국장 애프터마켓 시세 연동 복원)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36099 (기준가 오버라이드 닻 완벽 일치 보수)")
 display_global_risk()
 st.divider()
 
 # ==============================================================================
-# ★ [상단: 종목 / HTS 전일종가 / 보유 평단가 / HTS 매도·매수잔량 입력창]
+# ★ [상단: 종목번호 / HTS 전일종가(기준가) / 보유 평단가 / HTS 매도·매수잔량]
 # ==============================================================================
 col_symbol, col_prev, col_avg, col_ask, col_bid, col_btn = st.columns(
     [1.5, 1.4, 1.4, 1.4, 1.4, 1.0]
 )
 
 with col_symbol:
-    raw_symbol_input = st.text_input("📊 종목번호", "005930")
+    raw_symbol_input = st.text_input("📊 종목번호", "101490")
     symbol = raw_symbol_input.strip()
 
 with col_prev:
@@ -321,7 +321,6 @@ if symbol:
                     pass
 
             kr_fetched = False
-            # ★ [v36098 보완]: 국장 네이버 API에서 애프터마켓(시간외) 연동 포함 실시간 체결가 우선 확보
             try:
                 api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -395,7 +394,6 @@ if symbol:
                 if _us_avg_v > 0 and v_curr > _us_avg_v * 10:
                     v_curr = float(df["Volume"].iloc[-1])
 
-        # 호가창 실시간 기본값 설정
         multiplier = 1000.0 if is_kr else 1.0
 
         if manual_ask > 0 and manual_bid > 0:
@@ -433,7 +431,7 @@ if symbol:
             today_date = now_local.date()
 
             # ==================================================================
-            # ★ [HTS 전일종가 수동 오버라이드 닻 고정 장치]
+            # ★ [v36099 보완]: HTS 전일종가(기준가) 수동 오버라이드 닻 완벽 고정
             # ==================================================================
             override_prev_p = 0.0
             if manual_prev_price_str:
@@ -456,6 +454,7 @@ if symbol:
             except Exception:
                 calc_prev_p = float(df["Close"].iloc[-2]) if len(df) >= 2 else p
 
+            # 사용자가 상단에 HTS 전일종가를 적어넣었다면 100% 우선 적용하여 오차 원천 차단
             prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
 
             if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
@@ -495,7 +494,6 @@ if symbol:
                 m_start = now_local.replace(
                     hour=9, minute=0, second=0, microsecond=0
                 )
-                # ★ [v36098 보완]: 국장 애프터마켓(시간외 접속매매) 마감 시간인 저녁 8시까지 시간 보정 연동 반영
                 m_end = now_local.replace(
                     hour=20, minute=0, second=0, microsecond=0
                 )
