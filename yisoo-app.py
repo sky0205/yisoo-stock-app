@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36102", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36103", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,7 +227,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36102 (미장 국장 멘트 분리 보수)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36103 (지표 출력 모순 동기화 보수)")
 display_global_risk()
 st.divider()
 
@@ -1245,7 +1245,7 @@ if symbol:
                 time_tag_ok = "세션 화력 안착 확인"
 
             # ==================================================================
-            # ★ [신호등 분기 논리: 국장/미장 멘트 분리 적용]
+            # ★ [신호등 분기 논리]
             # ==================================================================
             current_chg = float(p_chg)
 
@@ -1481,8 +1481,15 @@ if symbol:
                 bottom_status_str = "<b>(조건 미충족)</b>"
                 bottom_action_str = "-> <b>[관망]</b> 진바닥 지표 조건 미충족 (0점)"
 
+            # ★ [v36103 보완]: 메인 신호등(final_code)과 하위 지표 검증 텍스트 완벽 동기화 (모순 제거)
             if final_code == "BREAK_MA20_CONFIRMED":
                 sub_indicator_str = f"   - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 기민한 분할 타진 진행"
+            elif final_code == "ESCAPE_BUY":
+                sub_indicator_str = f"   - <b>진바닥 탈출 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 유지 -> <b>[매수 유효]</b> 2단계 분할 진격 타점 가동"
+            elif final_code == "BOTTOM_ENTRY":
+                sub_indicator_str = f"   - <b>진바닥 타점 도달:</b> 극바닥 지표 동조 완료 -> <b>[매수 유효]</b> 1단계 정찰병 입질 타점 가동"
+            elif final_code == "PULLBACK_BUY":
+                sub_indicator_str = f"   - <b>눌림목 지지 성공:</b> 안전마진 확보 완료 -> <b>[매수 유효]</b> 3단계 본진 진격 타점 가동"
             else:
                 if pullback_rebound_score >= 2:
                     _p_action = f"-> <b>[눌림목 공방 유효]</b> 중간지대 조건 충족!"
