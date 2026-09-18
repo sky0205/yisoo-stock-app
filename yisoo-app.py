@@ -11,7 +11,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36113", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36114", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -69,7 +69,7 @@ def fetch_global_market():
     for k, tk in tickers.items():
         try:
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{tk}?interval=1d&range=1d"
-            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
+            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
             meta = res.json()["chart"]["result"][0]["meta"]
             results[f"{k}_last"] = float(meta["regularMarketPrice"])
             results[f"{k}_prev"] = float(meta["chartPreviousClose"])
@@ -94,7 +94,7 @@ def get_stock_name(symbol, is_kr):
             return core_vault[clean_sym]
         try:
             url = f"https://finance.naver.com/item/main.naver?code={clean_sym}"
-            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
+            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
             soup = BeautifulSoup(res.text, "html.parser")
             return soup.select_one(".wrap_company h2 a").text.strip()
         except Exception:
@@ -148,6 +148,17 @@ def get_historical_data(symbol, is_kr, start_dt_str):
             except Exception:
                 pass
     return df_hist
+
+
+# --- [호가창 실시간 매도/매수 잔량 수집 및 수급 압력 산출 함수] ---
+def fetch_kr_orderbook(symbol):
+    return {
+        "ask": 0.0,
+        "bid": 0.0,
+        "ratio": None,
+        "ok": False,
+        "msg": "실시간 호가 API 미연결",
+    }
 
 
 # 1. 스타일 및 화면 구성
@@ -283,7 +294,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36113 (현재가 초시계 실시간 강제 갱신)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36114 (실시간 강제 갱신 & 초시계 탑재)")
 display_global_risk()
 st.divider()
 
@@ -361,26 +372,31 @@ if symbol:
         kst_now = datetime.now(kst_tz)
         now_local = kst_now if is_kr else datetime.now(ny_tz)
 
-        # 1시간 동안 캐시에 박아두는 무거운 과거 장부
         df_raw = get_historical_data(symbol, is_kr, start_date_str)
         df = df_raw.copy()
 
         auto_p, v_curr = 0.0, 0.0
         us_prev_p = None
 
-        # ★ [네이버/야후 꼼수 타파] 0.001초 단위 초시계 꼬리표 생성
+        # ★ [네이버/야후 꼼수 타파] 0.001초 단위 초시계 꼬리표 생성 및 위장 헤더 부착
         cache_buster_ts = int(time.time() * 1000)
+        strong_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
 
-        # ★ 실시간 현재가 번개 강제 낚아채기
+        # ★ 실시간 현재가 번개 강제 낚아채기 (서버 캐시 무력화)
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
+            strong_headers["Referer"] = f"https://m.stock.naver.com/domestic/stock/{clean_symbol}/total"
             kr_fetched = False
             try:
-                # 꼬리표(_t)를 붙여서 네이버 서버의 캐시(옛날 가격)를 무조건 무시하게 만듦
+                # 1안: 모바일 API 강제 돌파
                 api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic?_t={cache_buster_ts}"
-                headers = {"User-Agent": "Mozilla/5.0"}
-                res = requests.get(api_url, headers=headers, timeout=2)
+                res = requests.get(api_url, headers=strong_headers, timeout=3)
                 if res.status_code == 200:
                     data = res.json()
                     auto_p = float(str(data["closePrice"]).replace(",", ""))
@@ -391,8 +407,9 @@ if symbol:
 
             if not kr_fetched:
                 try:
+                    # 2안: 웹 스크래핑 강제 돌파
                     url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}&_t={cache_buster_ts}"
-                    res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
+                    res = requests.get(url, headers=strong_headers, timeout=3)
                     soup = BeautifulSoup(res.text, "html.parser")
                     auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
                     v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
@@ -402,6 +419,7 @@ if symbol:
                         if _avg_v > 0 and v_curr > _avg_v * 10:
                             v_curr = float(df["Volume"].iloc[-1])
                 except Exception:
+                    # 완벽히 실패 시에만 과거 5분전 캐시 사용
                     if not df.empty:
                         auto_p = float(df["Close"].iloc[-1])
                         v_curr = float(df["Volume"].iloc[-1])
@@ -413,7 +431,7 @@ if symbol:
             try:
                 # 미장 역시 야후 서버의 꼼수를 막기 위해 꼬리표 부착
                 url = f"https://query1.finance.yahoo.com/v8/finance/chart/{tk_upper}?interval=1d&range=1d&_t={cache_buster_ts}"
-                res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
+                res = requests.get(url, headers=strong_headers, timeout=3)
                 if res.status_code == 200:
                     meta = res.json()["chart"]["result"][0]["meta"]
                     auto_p = float(meta["regularMarketPrice"])
@@ -945,14 +963,16 @@ if symbol:
             is_band_riding = is_target_reached and is_band_expanding and is_ma5_safe and (not is_bearish_candle)
 
             # ==================================================================
-            # ★ [상단 대형 현재주가현황 전광판]
+            # ★ [상단 대형 현재주가현황 전광판] 및 ★ [초시계 장착]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(
                 f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'>"
                 f"<p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{safe_display_name}</p>"
-                f"<p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>",
+                f"<p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p>"
+                f"<p style='font-size:16px; color:#78909C; font-weight:bold; margin:10px 0 0 0;'>⏱️ 장부 판독 시각: {kst_now.strftime('%Y-%m-%d %H:%M:%S')} (KST)</p>"
+                f"</div>",
                 unsafe_allow_html=True,
             )
 
@@ -1183,7 +1203,7 @@ if symbol:
                         "로 진격 중이오! 5일선을 사수하며 상방 목표선까지 추세를 즐기시게."
                     )
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= -1.5):
-                if margin_diff < 7.0:
+                if margin_diff < 7.0: # ★ [v36114 보수] 상승여력 7% 필터 엄격 적용
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
@@ -1202,7 +1222,7 @@ if symbol:
                         f"• <b>[진바닥 포착 완료]</b> 지표 충족 및 5일선 안착! 전면 매수가 아닌 <b>비중 10% 수준의 1단계 분할 입절(매수)</b>로 기민하게 접근하시게. {action_time_guide}"
                     )
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
-                if margin_diff < 7.0:
+                if margin_diff < 7.0: # ★ [v36114 보수] 상승여력 7% 필터 엄격 적용
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
@@ -1221,7 +1241,7 @@ if symbol:
                         f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
                     )
             elif is_pullback_buy_signal:
-                if margin_diff < 7.0:
+                if margin_diff < 7.0: # ★ [v36114 보수] 상승여력 7% 필터 엄격 적용
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
@@ -1246,7 +1266,7 @@ if symbol:
                 and pullback_rebound_score >= 1
                 and (vol_strength >= 65 or is_pre_market_mode)
             ):
-                if margin_diff < 7.0:
+                if margin_diff < 7.0: # ★ [v36114 보수] 상승여력 7% 필터 엄격 적용
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 돌파 조건 충족이나 상승 여력 부족"
                     col = "#F57C00"
