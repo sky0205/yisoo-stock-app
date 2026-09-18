@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36118", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36119", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,7 +227,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36118 (오리지널 복원 + 호가창/수익비 필터)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36119 (오리지널 복원 및 종목명 에러 제거)")
 display_global_risk()
 st.divider()
 
@@ -309,7 +309,6 @@ if symbol:
         auto_p, v_curr = 0.0, 0.0
         us_prev_p = None
 
-        # ★ v36103 오리지널 통신 규격 (가장 빠르고 안정적인 원상복구)
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
@@ -345,7 +344,7 @@ if symbol:
                 try:
                     url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
                     res = requests.get(
-                        url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3
+                        url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}, timeout=3
                     )
                     soup = BeautifulSoup(res.text, "html.parser")
                     auto_p = float(
@@ -913,7 +912,52 @@ if symbol:
             )
             ma_price_summary += generate_ma_hierarchy(df, p)
             
-            final_display_name = get_stock_name(symbol, is_kr)
+            if is_kr:
+                core_vault = {
+                    "005930": "삼성전자",
+                    "000660": "SK하이닉스",
+                    "033100": "제룡전기",
+                    "257720": "실리콘투",
+                    "058610": "에스피지",
+                    "010140": "삼성중공업",
+                    "068270": "셀트리온",
+                    "272210": "한화시스템",
+                    "101490": "에스앤에스텍",
+                    "051600": "한전KPS",
+                    "064350": "현대로템",
+                    "032300": "솔리드",
+                    "050890": "솔리드",
+                }
+                final_display_name = core_vault.get(symbol.zfill(6), f"국내종목 ({symbol})")
+                if symbol.zfill(6) not in core_vault:
+                    try:
+                        url = f"https://finance.naver.com/item/main.naver?code={symbol.zfill(6)}"
+                        res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
+                        soup = BeautifulSoup(res.text, "html.parser")
+                        final_display_name = soup.select_one(".wrap_company h2 a").text.strip()
+                    except Exception:
+                        try:
+                            df_krx_backup = load_krx_listing()
+                            final_display_name = df_krx_backup[df_krx_backup["Code"] == symbol.zfill(6)]["Name"].values[0]
+                        except Exception:
+                            pass
+            else:
+                us_vault = {
+                    "TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", "MSFT": "마이크로소프트",
+                    "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타", "IONQ": "아이온큐",
+                    "CPNG": "쿠팡", "NFLX": "넷플릭스", "SKHY": "SK하이닉스", "INTC": "인텔",
+                    "BE": "블룸에너지", "RKLB": "로켓랩", "AVGO": "브로드컴", "LRCX": "램리서치",
+                }
+                tk = symbol.upper()
+                kor_name = us_vault.get(tk, None)
+                if not kor_name:
+                    try:
+                        info_dict = ticker.info
+                        kor_name = info_dict.get("longName", info_dict.get("shortName", tk))
+                    except Exception:
+                        kor_name = tk
+                final_display_name = f"{kor_name} ({tk})"
+
             safe_display_name = html.escape(final_display_name)
             
             target_price_100 = up_b
@@ -1059,7 +1103,7 @@ if symbol:
                 ((vol_strength >= 65.0) if (p_chg >= 0.0 and p >= today_open) else (vol_strength >= 70.0))
             )
             
-            # ★ 1. 1단계 호가창 폭락 경고 족쇄 (비율 0.5 미만 시 진입 금지)
+            # ★★★ v36118: 호가창 족쇄를 매수 신호 로직에 적용
             is_bottom_entry_signal = (
                 (not is_ma5_safe) and (bottom_score >= 1 or will_val <= -75)
                 and is_volume_ok_for_bottom and (not is_down_trend_v)
@@ -1067,7 +1111,6 @@ if symbol:
                 and (not has_manual_ob or ob_ratio_val is None or ob_ratio_val >= 0.5)
             )
         
-            # ★ 2. 2단계 호가창 속임수 족쇄 (비율 1.0 미만 시 진입 금지)
             is_escape_buy_signal = (
                 is_ma5_safe and is_bottom_indicator_ok
                 and (vol_strength >= 65 or is_pre_market_mode)
@@ -1075,7 +1118,6 @@ if symbol:
                 and is_bandwidth_ok and is_ob_stage2_safe and (not is_target_reached)
             )
         
-            # ★ 3. 3단계 호가창 본진 투입 족쇄 (비율 1.5 미만 시 진입 금지)
             is_pullback_buy_signal = (
                 (not is_down_trend_structural) and is_ma20_buffer_safe
                 and is_ma5_safe and is_ob_stage3_safe
@@ -1163,6 +1205,40 @@ if symbol:
                         f"<b>[성벽 위 안착 진격]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 기세를 타고 양봉으"
                         "로 진격 중이오! 5일선을 사수하며 상방 목표선까지 추세를 즐기시게."
                     )
+            # ★★★ [v36118 추가] 호가창 매도벽/잔량비 미달에 따른 실전 병법 방어 로직 ★★★
+            elif (
+                (bottom_score >= 1 or pullback_rebound_score >= 1)
+                and has_manual_ob
+                and ob_ratio_val is not None
+                and ob_ratio_val < 0.5
+                and not is_ma5_safe
+            ):
+                final_code = "WAIT_ORDERBOOK"
+                sig = "🟡 [관망/보류] 허매수 징후 포착 (폭락 경계)"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[허매수 투매 경계]</b> 진바닥 지표는 포착되었으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 0.5배 미만으로 매수잔량이 비정상적으로 많소! "
+                    "세력이 바닥을 가장해 개미에게 물량을 떠넘길 위험이 크니 절대 칼날을 잡지 마시게."
+                )
+            elif (
+                is_ma5_safe
+                and not is_down_trend_structural
+                and (bottom_score >= 1 or pullback_rebound_score >= 1)
+                and has_manual_ob
+                and (
+                    (pullback_rebound_score >= 1 and not is_ob_stage3_safe) or 
+                    (bottom_score >= 1 and not is_ob_stage2_safe)
+                )
+            ):
+                final_code = "WAIT_ORDERBOOK"
+                sig = "🟡 [관망/보류] 매도잔량비 실전 기준 미달 (속임수 윗꼬리 경계)"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[호가창 기준 미달]</b> 타점 지표는 충족했으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 실전 투입 기준에 미달하오. "
+                    "세력이 윗꼬리로 밀어버릴 속임수일 확률이 높으니 방아쇠를 잠그고 관망하시게."
+                )
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= -1.5):
                 if margin_diff < 7.0:
                     final_code = "WAIT_NARROW_MARGIN"
@@ -1264,40 +1340,6 @@ if symbol:
                         f" 20일선 및 안전마진선({ma20_safe_threshold:{fmt_p}}{currency})을 돌파하였소!"
                         f" {action_guide}"
                     )
-            # ★★★ [v36118 추가] 호가창 매도벽/잔량비 미달에 따른 실전 병법 방어 로직 ★★★
-            elif (
-                (bottom_score >= 1 or pullback_rebound_score >= 1)
-                and has_manual_ob
-                and ob_ratio_val is not None
-                and ob_ratio_val < 0.5
-                and not is_ma5_safe
-            ):
-                final_code = "WAIT_ORDERBOOK"
-                sig = "🟡 [관망/보류] 허매수 징후 포착 (폭락 경계)"
-                col = "#F57C00"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[허매수 투매 경계]</b> 진바닥 지표는 포착되었으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 0.5배 미만으로 매수잔량이 비정상적으로 많소! "
-                    "세력이 바닥을 가장해 개미에게 물량을 떠넘길 위험이 크니 절대 칼날을 잡지 마시게."
-                )
-            elif (
-                is_ma5_safe
-                and not is_down_trend_structural
-                and (bottom_score >= 1 or pullback_rebound_score >= 1)
-                and has_manual_ob
-                and (
-                    (pullback_rebound_score >= 1 and not is_ob_stage3_safe) or 
-                    (bottom_score >= 1 and not is_ob_stage2_safe)
-                )
-            ):
-                final_code = "WAIT_ORDERBOOK"
-                sig = "🟡 [관망/보류] 매도잔량비 실전 기준 미달 (속임수 윗꼬리 경계)"
-                col = "#F57C00"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[호가창 기준 미달]</b> 타점 지표는 충족했으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 실전 투입 기준에 미달하오. "
-                    "세력이 윗꼬리로 밀어버릴 속임수일 확률이 높으니 방아쇠를 잠그고 관망하시게."
-                )
             elif is_ma_tangled:
                 if is_ma5_safe and vol_strength >= 65.0 and bandwidth >= 10.0 and (rsi_val <= 40 or temp_bottom_score >= 1 or (p_chg >= 0.0 and p >= mid_line)):
                     final_code = "BOTTOM_ENTRY"
@@ -1337,7 +1379,7 @@ if symbol:
                     col = "#F57C00"
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                        f"<b>[추세 불안정 관망]</b> 눌림목 점수({pullback_rebound_score}/3점)는 충족되었으나, 20일선 안전마진이 부족하거나 이평선 꼬임으로 추세적 안정성이 확보되지 않았소. 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
+                        f"<b>[추세 불안정 관망]</b> 눌림목 점수({pullback_rebound_score}/3점)는 충족되었으나, 20일선 안전마진이 부족하거나 이평선 단기 꼬임으로 추세적 안정성이 확보되지 않았소. 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
                     )
                 else:
                     final_code = "WAIT_INDICATOR"
@@ -1699,6 +1741,7 @@ if symbol:
                         " 마시게.</b>"
                     )
 
+            # ★ [MACD 텍스트 로직 완벽 복구]
             if is_macd_accelerating:
                 if rsi_val >= 70:
                     base_macd_desc = "<b>🔥 정회전 가속 (과열권)</b>: 추진력은 강력하나 보조지표 초과열권이오."
@@ -1868,13 +1911,19 @@ if symbol:
                     bb_diag = (
                         "🟡 <b>[성벽 위 경계 및 추격 차단 구역]</b><br>•"
                         " <b>역할:</b> 추격 매수 원천 차단.<br>• <b>진단:</b> 성벽"
-                        " 위 공방 중이므로 신규 매수를 금지하고 익절 타이밍 노림."
+                        " 위 공방 중이므로 신규 매수를 금지하고 익절 타이밍을 노림."
                     )
                 elif final_code == "WAIT_OVER_EXTENDED":
                     bb_diag = (
                         f"🟡 <b>[과다이격 추격 금지 구역] (5일선 이격: +{bias_ma5:.1f}%)</b><br>•"
                         " <b>역할:</b> 고점 물림 방지.<br>• <b>진단:</b> 5일선"
                         " 대비 5% 이상 벌어졌으니 숨고르기까지 매수 보류."
+                    )
+                elif final_code in ["WAIT_MA20_BUFFER", "WAIT_ORDERBOOK"]:
+                    bb_diag = (
+                        f"🟡 <b>[호가/20일선 검증 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                        " <b>역할:</b> 휩소 및 허매수 방지.<br>•"
+                        " <b>진단:</b> 매도/매수 잔량비가 1.5배 이상이면 매도벽 우세로 보고 진입을 보류."
                     )
                 else:
                     if pullback_rebound_score >= 1:
