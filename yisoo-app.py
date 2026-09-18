@@ -917,11 +917,14 @@ if symbol:
             is_volume_ok_for_bottom = is_pre_market_mode or ((vol_strength >= 65.0) if (p_chg >= 0.0 and p >= today_open) else (vol_strength >= 70.0))
             
             # ★★★ 신호등 진입 판별 로직 ★★★
+            # ★★★ [수정] 5일선 아래 1.5% 이내(이격 -1.5% 이상)의 미세 조정권은 1단계 입질 허용
+            is_near_ma5_bottom = (not is_ma5_safe) and (bias_ma5 >= -1.5)
+
             is_bottom_entry_signal = (
-                (not is_ma5_safe) and (bottom_score >= 1 or will_val <= -75)
+                (is_near_ma5_bottom) and (bottom_score >= 1 or will_val <= -75)
                 and is_volume_ok_for_bottom and (not is_down_trend_v)
                 and is_macd_not_deepening and is_valid_bottom_candle and (not is_target_reached)
-                and (not has_manual_ob or ob_ratio_val is None or ob_ratio_val >= 0.5) # 1단계 허매수 폭락 차단
+                and (not has_manual_ob or ob_ratio_val is None or ob_ratio_val >= 0.5)
             )
         
             is_escape_buy_signal = (
@@ -1063,10 +1066,11 @@ if symbol:
                 else:
                     final_code = "BOTTOM_ENTRY"
                     col = "#388E3C"
-                    sig = f"🟢 [진바닥 안착] 1단계 분할 입절 유효 구역 ({time_tag_ok})"
+                    sig = f"🟢 [진바닥 입질] 1단계 정찰병 매수 유효 구역 ({time_tag_ok})"
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                        f"• <b>[진바닥 포착 완료]</b> 지표 충족 및 5일선 안착! 전면 매수가 아닌 <b>비중 10% 수준의 1단계 분할 입절(매수)</b>로 기민하게 접근하시게."
+                        f"<b>[1단계 정찰병 포착]</b> 5일선 아래 미세 조정권이나 진바닥 지표(점수 {bottom_score}점)가 켜졌소! "
+                        "전면 매수가 아닌 <b>비중 10% 수준의 1단계 정찰병(입질)</b>로 가볍게 담아보시게."
                     )
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
                 if margin_diff < 7.0:
