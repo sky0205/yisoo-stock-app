@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36109", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36110", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -298,7 +298,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36109 (수익비 필터 장착)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36110 (출력 모순/오류 완벽 보수)")
 display_global_risk()
 st.divider()
 
@@ -1307,21 +1307,38 @@ if symbol:
                 and not is_bottom_indicator_ok
                 and not is_down_trend_structural
             ):
-                final_code = "WAIT_INDICATOR"
-                sig = "🟡 [관망/보류] 5일선 안착했으나 지표/수급 미충족 (안착 대기)"
-                col = "#F57C00"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[매수 조건 미충족]</b> 5일선 위에 안착했으나 수급 불량 또는 눌림목 지지 동조 점수 부족({pullback_rebound_score}/3점)으로 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
-                )
+                # ★ [v36110 보수] 지표는 충족했으나 다른 이유(안전마진 등)로 넘어온 경우 문구 분리
+                if pullback_rebound_score >= 1:
+                    final_code = "WAIT_INDICATOR"
+                    sig = "🟡 [관망/보류] 지표 충족이나 추세/안전마진 부족"
+                    col = "#F57C00"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"<b>[추세 불안정 관망]</b> 눌림목 점수({pullback_rebound_score}/3점)는 충족되었으나, 20일선 안전마진이 부족하거나 이평선 단기 꼬임으로 추세적 안정성이 확보되지 않았소. 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
+                    )
+                else:
+                    final_code = "WAIT_INDICATOR"
+                    sig = "🟡 [관망/보류] 5일선 안착했으나 지표/수급 미충족 (안착 대기)"
+                    col = "#F57C00"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"<b>[매수 조건 미충족]</b> 5일선 위에 안착했으나 수급 불량 또는 눌림목 지지 동조 점수 부족({pullback_rebound_score}/3점)으로 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
+                    )
             else:
                 final_code = "WAIT_GENERAL"
                 sig = "🟡 [관망] 조건 미충족 / 뇌동매매 금지"
                 col = "#FBC02D"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    " 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
-                )
+                # ★ [v36110 보수] 일반 관망에서도 점수가 충족되었을 때의 문구 분리
+                if pullback_rebound_score >= 1:
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"지표 점수({pullback_rebound_score}/3점)는 포착되었으나, 역배열 하락 추세 등 핵심 전제 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
+                    )
+                else:
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        "조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
+                    )
 
             st.markdown(
                 f"<div class='signal-box' style='background-color: {col};'>"
@@ -1544,6 +1561,11 @@ if symbol:
                     ma5_guide_text = (
                         f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으나, 상승 여력이 너무 좁아 뇌동매매를 강제 차단 중이오."
                     )
+                elif final_code == "WAIT_INDICATOR":
+                    if pullback_rebound_score >= 1:
+                        ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있고 지표는 충족되었으나, 안전마진 확보 전까지 추격 매수를 차단 중이오."
+                    else:
+                        ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으나 수급 및 지표 미달로 진입 대기 중이오."
                 elif final_code == "ESCAPE_BUY":
                     if is_kr and is_morning_breakout_fast: ma5_time_str = "오전장 화력 속 즉시 50% 분할 진입"
                     elif is_kr: ma5_time_str = "14:00 이후 지지 확인 50% 분할 진입"
@@ -1610,6 +1632,10 @@ if symbol:
                 elif final_code == "BREAK_MA20_CONFIRMED":
                     def_status = (
                         f"성벽({defense_line:{fmt_p}}{currency}) 아래이나, 지표 동조와 함께 <b>20일선 돌파 안착</b>에 성공하여 기민한 매수 타점을 형성 중이네!"
+                    )
+                elif final_code == "WAIT_INDICATOR" and pullback_rebound_score >= 1:
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 아래에서 지표는 충족했으나, 20일선 돌파 안전마진이 미달하여 기민하게 대기 중이오."
                     )
                 elif not is_ma5_safe:
                     def_status = (
@@ -1712,6 +1738,17 @@ if symbol:
                         f"🟡 <b>[상승 여력 부족 / 관망] (여력: +{margin_diff:.1f}%)</b><br>•"
                         " <b>역할:</b> 수지타산 불량 타점 회피.<br>• <b>진단:</b> 타점 조건은 좋으나 상단 목표선까지 거리가 너무 좁소. 진입을 보류하시게."
                     )
+                elif final_code == "WAIT_INDICATOR":
+                    if pullback_rebound_score >= 1:
+                        bb_diag = (
+                            f"🟡 <b>[추세/안전마진 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                            f" <b>진단:</b> 점수({pullback_rebound_score}/3점)는 충족했으나 안전마진 부족으로 관망."
+                        )
+                    else:
+                        bb_diag = (
+                            f"🟡 <b>[지표/수급 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                            f" <b>진단:</b> 지표 동조 점수 부족({pullback_rebound_score}/3점)으로 안착 대기 중."
+                        )
                 elif final_code == "BOTTOM_ENTRY":
                     if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 화력(300점 이상) 속 10% 선제 타진 및 종가 사수"
                     elif is_kr: bb_time_diag = "14:00 이후 10% 타진, 저녁 8시 애프터마켓 마감 사수 시 완성"
@@ -1810,11 +1847,16 @@ if symbol:
                         " <b>진단:</b> 매도/매수 잔량비가 1.5배 이상이면 매도벽 우세로 보고 진입을 보류."
                     )
                 else:
-                    bb_diag = (
-                        f"⚖️ <b>[관망 및 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        " <b>역할:</b> 뇌동매매 방지.<br>• <b>진단:</b> 지표 동조 점수 미흡("
-                        f"{pullback_rebound_score}/3점)으로 안착 대기 중."
-                    )
+                    if pullback_rebound_score >= 1:
+                        bb_diag = (
+                            f"⚖️ <b>[관망 및 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                            f" <b>진단:</b> 지표 동조({pullback_rebound_score}/3점)는 되었으나 역배열 등 조건 미달로 관망."
+                        )
+                    else:
+                        bb_diag = (
+                            f"⚖️ <b>[관망 및 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                            f" <b>진단:</b> 지표 동조 점수 미흡({pullback_rebound_score}/3점)으로 안착 대기 중."
+                        )
 
                 st.markdown(
                     f"<div class='ind-box'><p class='ind-title'>Bollinger"
