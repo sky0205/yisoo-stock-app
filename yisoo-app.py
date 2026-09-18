@@ -319,19 +319,6 @@ if symbol:
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
-            try:
-                df = fdr.DataReader(clean_symbol, start=start_date.strftime("%Y-%m-%d"))
-            except Exception:
-                pass
-
-            if df.empty:
-                try:
-                    df = yf.Ticker(f"{clean_symbol}.KS").history(start=start_date)
-                    if df.empty:
-                        df = yf.Ticker(f"{clean_symbol}.KQ").history(start=start_date)
-                except Exception:
-                    pass
-
             kr_fetched = False
             try:
                 api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
@@ -633,17 +620,12 @@ if symbol:
             is_target_reached = p >= (target_price_100 * 0.98)
             is_on_the_wall = (p >= defense_line) and (p < target_price_100)
             is_band_riding = is_target_reached and is_band_expanding and is_ma5_safe and (not is_bearish_candle)
-            # ★★★ [추가] 고점 투매 (유성형 캔들) 완벽 감지 센서
-            is_peak_dumping = is_long_upper_tail and (is_band_riding or is_target_reached or p >= (target_price_100 * 0.98))
             
-            # ★★★ 고점 투매 (유성형 캔들) 감지 ★★★
+            # ★★★ 고점 투매 (유성형 캔들) 완벽 감지 센서 ★★★
             is_peak_dumping = is_long_upper_tail and (is_band_riding or is_target_reached or p >= (target_price_100 * 0.98))
 
             # ==================================================================
-            # ★★★ [호가창 실전 병법 필터 가동] ★★★
-            # ==================================================================
-            # ==================================================================
-            # ★★★ [호가창 실전 병법 필터 가동] ★★★
+            # ★★★ [호가창 실전 병법 필터 가동 (신호등 강제 잠금용)] ★★★
             # ==================================================================
             is_ob_stage2_safe = True
             is_ob_stage3_safe = True
@@ -731,27 +713,27 @@ if symbol:
             else: trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
 
             def generate_ma_hierarchy(df, current_price):
-              try:
-                ma_5 = df["MA5"].iloc[-1] if "MA5" in df.columns else df[df.columns[df.columns.str.contains("5")][0]].iloc[-1]
-                ma_20 = df["MA20"].iloc[-1] if "MA20" in df.columns else df[df.columns[df.columns.str.contains("20")][0]].iloc[-1]
-                ma_60 = df["MA60"].iloc[-1] if "MA60" in df.columns else df[df.columns[df.columns.str.contains("60")][0]].iloc[-1]
-                ma_120 = df["MA120"].iloc[-1] if "MA120" in df.columns else df[df.columns[df.columns.str.contains("120")][0]].iloc[-1]
-              except Exception:
-                ma_5 = float(ma5_str.replace(",", ""))
-                ma_20 = float(ma20_str.replace(",", ""))
-                ma_60 = float(ma60_str.replace(",", ""))
-                ma_120 = float(ma120_str.replace(",", ""))
-              ma_dict = {"120일": ma_120, "60일": ma_60, "20일": ma_20, "5일": ma_5, "현재가": current_price}
-              sorted_items = sorted(ma_dict.items(), key=lambda x: x[1], reverse=True)
-              hierarchy_parts = []
-              for name, price in sorted_items:
-                  if name == "현재가": hierarchy_parts.append(f'<span style="color:#ff6600; font-weight:bold;">현재가({current_price:{fmt_p}}{currency})</span>')
-                  else: hierarchy_parts.append(f"{name}")
-              hierarchy_str = " > ".join(hierarchy_parts)
-              if ma_5 < ma_20 < ma_60 < ma_120: comment = "*(대세 역배열 저항 압박)*"
-              elif ma_5 > ma_20 > ma_60 > ma_120: comment = "*(완벽한 정배열 상승 랠리)*"
-              else: comment = "*(이평선 혼조세 횡보 구간)*"
-              return f"&nbsp;&nbsp;&nbsp;&nbsp;<b>[이평선 층위]</b> {hierarchy_str} {comment}"
+                try:
+                    ma_5 = df["MA5"].iloc[-1] if "MA5" in df.columns else df[df.columns[df.columns.str.contains("5")][0]].iloc[-1]
+                    ma_20 = df["MA20"].iloc[-1] if "MA20" in df.columns else df[df.columns[df.columns.str.contains("20")][0]].iloc[-1]
+                    ma_60 = df["MA60"].iloc[-1] if "MA60" in df.columns else df[df.columns[df.columns.str.contains("60")][0]].iloc[-1]
+                    ma_120 = df["MA120"].iloc[-1] if "MA120" in df.columns else df[df.columns[df.columns.str.contains("120")][0]].iloc[-1]
+                except Exception:
+                    ma_5 = float(ma5_str.replace(",", ""))
+                    ma_20 = float(ma20_str.replace(",", ""))
+                    ma_60 = float(ma60_str.replace(",", ""))
+                    ma_120 = float(ma120_str.replace(",", ""))
+                ma_dict = {"120일": ma_120, "60일": ma_60, "20일": ma_20, "5일": ma_5, "현재가": current_price}
+                sorted_items = sorted(ma_dict.items(), key=lambda x: x[1], reverse=True)
+                hierarchy_parts = []
+                for name, price in sorted_items:
+                    if name == "현재가": hierarchy_parts.append(f'<span style="color:#ff6600; font-weight:bold;">현재가({current_price:{fmt_p}}{currency})</span>')
+                    else: hierarchy_parts.append(f"{name}")
+                hierarchy_str = " > ".join(hierarchy_parts)
+                if ma_5 < ma_20 < ma_60 < ma_120: comment = "*(대세 역배열 저항 압박)*"
+                elif ma_5 > ma_20 > ma_60 > ma_120: comment = "*(완벽한 정배열 상승 랠리)*"
+                else: comment = "*(이평선 혼조세 횡보 구간)*"
+                return f"&nbsp;&nbsp;&nbsp;&nbsp;<b>[이평선 층위]</b> {hierarchy_str} {comment}"
               
             ma_price_summary = (
                 "<br>• 📌 <b>[주요 이동평균선 현황]</b><br>&nbsp;&nbsp;&nbsp;<span"
@@ -955,9 +937,6 @@ if symbol:
             # ==================================================================
             # ★ [신호등 분기 논리]
             # ==================================================================
-            # ==================================================================
-            # ★ [신호등 분기 논리]
-            # ==================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
@@ -972,7 +951,7 @@ if symbol:
                 col = "#D32F2F"
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[고점 윗꼬리 폭탄 포착]</b> 수확 목표선 부근에서 윗꼬리를 길게 달고 밀려 내려오고 있소! "
+                    f"<b>[고점 윗꼬 폭탄 포착]</b> 수확 목표선 부근에서 윗꼬리를 길게 달고 밀려 내려오고 있소! "
                     "세력의 대량 차익 실현이 시작되었으니 보유자는 즉시 전량 익절하시게."
                 )
             elif is_long_upper_tail and (p >= defense_line or p >= mid_line):
@@ -1321,7 +1300,7 @@ if symbol:
             st.divider()
 
             # ==================================================================
-            # ★ 하단 4대 핵심 지표 박스 (오리지널 다중행 상세 텍스트 포맷 100% 복원)
+            # ★ 하단 4대 핵심 지표 박스 (오리지널 다중행 상세 텍스트 포맷 완벽 복원)
             # ==================================================================
             i1, i2, i3, i4 = st.columns(4)
             with i1:
@@ -1433,7 +1412,7 @@ if symbol:
                     bb_diag = (
                         f"🟢 <b>[성벽 위 진격 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
                         " <b>역할:</b> 상방 분출 추진력 가속.<br>• <b>진단:</b> 성벽을"
-                        f" 뚫고 목표선({target_price_100:{fmt_p}}{currency})을 향해 진격 중이오. 5일선 사수하며 수익을 극대화하시게."
+                        f" 뚫고 목표선({target_price_100:{fmt_p}}{currency})을 향해 진격 중이오. 5일선을 사수하며 수익을 극대화하시게."
                     )
                 elif final_code == "YELLOW_CAUTION":
                     bb_diag = (
