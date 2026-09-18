@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36110", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36111", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -298,7 +298,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36110 (출력 모순/오류 완벽 보수)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36111 (수익비 7% 철통 방어 필터 장착)")
 display_global_risk()
 st.divider()
 
@@ -376,14 +376,12 @@ if symbol:
         kst_now = datetime.now(kst_tz)
         now_local = kst_now if is_kr else datetime.now(ny_tz)
 
-        # ★ 투트랙 고속도로: 1. 무거운 과거 장부는 캐시에서 즉시 복사
         df_raw = get_historical_data(symbol, is_kr, start_date_str)
         df = df_raw.copy()
 
         auto_p, v_curr = 0.0, 0.0
         us_prev_p = None
 
-        # ★ 투트랙 고속도로: 2. 실시간 현재가만 번개처럼 낚아채기
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
@@ -942,7 +940,6 @@ if symbol:
             )
             ma_price_summary += generate_ma_hierarchy(df, p)
             
-            # ★ [병목 제거 연동] 캐시에서 바로 종목명 호출
             final_display_name = get_stock_name(symbol, is_kr)
             safe_display_name = html.escape(final_display_name)
             
@@ -1190,7 +1187,7 @@ if symbol:
                         "로 진격 중이오! 5일선을 사수하며 상방 목표선까지 추세를 즐기시게."
                     )
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= -1.5):
-                if margin_diff < 5.0:
+                if margin_diff < 7.0: # ★ [v36111 보수] 상승여력 7% 필터 엄격 적용
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
@@ -1209,7 +1206,7 @@ if symbol:
                         f"• <b>[진바닥 포착 완료]</b> 지표 충족 및 5일선 안착! 전면 매수가 아닌 <b>비중 10% 수준의 1단계 분할 입절(매수)</b>로 기민하게 접근하시게. {action_time_guide}"
                     )
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
-                if margin_diff < 5.0:
+                if margin_diff < 7.0: # ★ [v36111 보수] 상승여력 7% 필터 엄격 적용
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
@@ -1228,7 +1225,7 @@ if symbol:
                         f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
                     )
             elif is_pullback_buy_signal:
-                if margin_diff < 5.0:
+                if margin_diff < 7.0: # ★ [v36111 보수] 상승여력 7% 필터 엄격 적용
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
@@ -1253,7 +1250,7 @@ if symbol:
                 and pullback_rebound_score >= 1
                 and (vol_strength >= 65 or is_pre_market_mode)
             ):
-                if margin_diff < 5.0:
+                if margin_diff < 7.0: # ★ [v36111 보수] 상승여력 7% 필터 엄격 적용
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 돌파 조건 충족이나 상승 여력 부족"
                     col = "#F57C00"
@@ -1307,7 +1304,6 @@ if symbol:
                 and not is_bottom_indicator_ok
                 and not is_down_trend_structural
             ):
-                # ★ [v36110 보수] 지표는 충족했으나 다른 이유(안전마진 등)로 넘어온 경우 문구 분리
                 if pullback_rebound_score >= 1:
                     final_code = "WAIT_INDICATOR"
                     sig = "🟡 [관망/보류] 지표 충족이나 추세/안전마진 부족"
@@ -1328,7 +1324,6 @@ if symbol:
                 final_code = "WAIT_GENERAL"
                 sig = "🟡 [관망] 조건 미충족 / 뇌동매매 금지"
                 col = "#FBC02D"
-                # ★ [v36110 보수] 일반 관망에서도 점수가 충족되었을 때의 문구 분리
                 if pullback_rebound_score >= 1:
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
