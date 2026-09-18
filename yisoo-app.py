@@ -918,7 +918,8 @@ if symbol:
             
             # ★★★ 신호등 진입 판별 로직 ★★★
             # ★★★ [수정] 5일선 아래 1.5% 이내(이격 -1.5% 이상)의 미세 조정권은 1단계 입질 허용
-            is_near_ma5_bottom = (not is_ma5_safe) and (bias_ma5 >= -1.5)
+            # ★★★ [수정] 5일선 아래 1.5% 이내이더라도 음봉 캔들이면 정찰병 입질 차단 (관망 유지)
+            is_near_ma5_bottom = (not is_ma5_safe) and (bias_ma5 >= -1.5) and (not is_candle_bearish)
 
             is_bottom_entry_signal = (
                 (is_near_ma5_bottom) and (bottom_score >= 1 or will_val <= -75)
@@ -1053,7 +1054,8 @@ if symbol:
                     f"<b>[호가창 기준 미달]</b> 타점 지표는 충족했으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 실전 투입 기준에 미달하오. "
                     "세력이 윗꼬리로 밀어버릴 속임수일 확률이 높으니 방아쇠를 잠그고 관망하시게."
                 )
-            elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= -1.5):
+            # ★★★ [수정] 신호등과 최종결론에서도 5일선 아래 미세조정 + 양봉(비음봉) 조건이 일치할 때만 정찰병 발동
+            elif is_near_ma5_bottom and (bottom_score >= 1 or will_val <= -75) and (p >= today_open) and (p_chg >= -1.5):
                 if margin_diff < 7.0:
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
@@ -1069,7 +1071,7 @@ if symbol:
                     sig = f"🟢 [진바닥 입질] 1단계 정찰병 매수 유효 구역 ({time_tag_ok})"
                     final_adv = (
                         f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                        f"<b>[1단계 정찰병 포착]</b> 5일선 아래 미세 조정권이나 진바닥 지표(점수 {bottom_score}점)가 켜졌소! "
+                        f"<b>[1단계 정찰병 포착]</b> 5일선 아래 미세 조정권(양봉 방어) 및 진바닥 지표(점수 {bottom_score}점)가 켜졌소! "
                         "전면 매수가 아닌 <b>비중 10% 수준의 1단계 정찰병(입질)</b>로 가볍게 담아보시게."
                     )
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
