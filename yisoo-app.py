@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36107", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36108", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -60,7 +60,8 @@ def load_krx_listing():
         return pd.DataFrame()
 
 
-@st.cache_data(ttl=10)
+# ★ [병목 제거 1] 글로벌 지수 통신 주기 연장 (10초 -> 60초)
+@st.cache_data(ttl=60)
 def fetch_global_market():
     nasdaq = yf.Ticker("^IXIC").fast_info
     sp500 = yf.Ticker("^GSPC").fast_info
@@ -81,7 +82,50 @@ def fetch_global_market():
     }
 
 
-# ★ [통신 속도 극대화] 과거 500일 장부 전용 고속 캐싱 (5분 유지)
+# ★ [병목 제거 2] 종목명 전용 캐싱 (하루 1번만 검색하도록 뇌에 저장)
+@st.cache_data(ttl=86400)
+def get_stock_name(symbol, is_kr):
+    if is_kr:
+        core_vault = {
+            "005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기",
+            "257720": "실리콘투", "058610": "에스피지", "010140": "삼성중공업",
+            "068270": "셀트리온", "272210": "한화시스템", "101490": "에스앤에스텍",
+            "051600": "한전KPS", "064350": "현대로템", "032300": "솔리드",
+            "050890": "솔리드",
+        }
+        clean_sym = symbol.zfill(6)
+        if clean_sym in core_vault: 
+            return core_vault[clean_sym]
+        try:
+            url = f"https://finance.naver.com/item/main.naver?code={clean_sym}"
+            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
+            soup = BeautifulSoup(res.text, "html.parser")
+            return soup.select_one(".wrap_company h2 a").text.strip()
+        except Exception:
+            try:
+                df_krx_backup = load_krx_listing()
+                return df_krx_backup[df_krx_backup["Code"] == clean_sym]["Name"].values[0]
+            except Exception:
+                return f"국내종목 ({symbol})"
+    else:
+        us_vault = {
+            "TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", "MSFT": "마이크로소프트",
+            "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타", "IONQ": "아이온큐",
+            "CPNG": "쿠팡", "NFLX": "넷플릭스", "SKHY": "SK하이닉스", "INTC": "인텔",
+            "BE": "블룸에너지", "RKLB": "로켓랩", "AVGO": "브로드컴", "LRCX": "램리서치",
+        }
+        tk = symbol.upper()
+        if tk in us_vault: 
+            return f"{us_vault[tk]} ({tk})"
+        try:
+            info_dict = yf.Ticker(tk).info
+            kor_name = info_dict.get("longName", info_dict.get("shortName", tk))
+            return f"{kor_name} ({tk})"
+        except Exception:
+            return tk
+
+
+# ★ 과거 500일 장부 전용 고속 캐싱 (5분 유지)
 @st.cache_data(ttl=300)
 def get_historical_data(symbol, is_kr, start_dt_str):
     df_hist = pd.DataFrame()
@@ -108,6 +152,17 @@ def get_historical_data(symbol, is_kr, start_dt_str):
             except Exception:
                 pass
     return df_hist
+
+
+# --- [호가창 실시간 매도/매수 잔량 수집 및 수급 압력 산출 함수] ---
+def fetch_kr_orderbook(symbol):
+    return {
+        "ask": 0.0,
+        "bid": 0.0,
+        "ratio": None,
+        "ok": False,
+        "msg": "실시간 호가 API 미연결",
+    }
 
 
 # 1. 스타일 및 화면 구성
@@ -243,7 +298,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36107 (오리지널 양식 복구 및 통신 보수)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36108 (속도 최적화 완결판)")
 display_global_risk()
 st.divider()
 
@@ -383,14 +438,8 @@ if symbol:
                 auto_p, v_curr, us_prev_p = 0.0, 0.0, None
 
             if auto_p == 0.0 or pd.isna(auto_p):
-                try:
-                    inf_dict = ticker.info
-                    auto_p = inf_dict.get("regularMarketPrice", inf_dict.get("currentPrice", 0.0))
-                    if auto_p == 0.0 or pd.isna(auto_p):
-                        auto_p = float(df["Close"].iloc[-1]) if not df.empty else 0.0
-                except Exception:
-                    if not df.empty:
-                        auto_p = float(df["Close"].iloc[-1])
+                if not df.empty:
+                    auto_p = float(df["Close"].iloc[-1])
 
             if v_curr == 0.0 or pd.isna(v_curr):
                 if not df.empty:
@@ -893,53 +942,10 @@ if symbol:
             )
             ma_price_summary += generate_ma_hierarchy(df, p)
             
-            if is_kr:
-                core_vault = {
-                    "005930": "삼성전자",
-                    "000660": "SK하이닉스",
-                    "033100": "제룡전기",
-                    "257720": "실리콘투",
-                    "058610": "에스피지",
-                    "010140": "삼성중공업",
-                    "068270": "셀트리온",
-                    "272210": "한화시스템",
-                    "101490": "에스앤에스텍",
-                    "051600": "한전KPS",
-                    "064350": "현대로템",
-                    "032300": "솔리드",
-                    "050890": "솔리드",
-                }
-                final_display_name = core_vault.get(symbol.zfill(6), f"국내종목 ({symbol})")
-                if symbol.zfill(6) not in core_vault:
-                    try:
-                        url = f"https://finance.naver.com/item/main.naver?code={symbol.zfill(6)}"
-                        res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
-                        soup = BeautifulSoup(res.text, "html.parser")
-                        final_display_name = soup.select_one(".wrap_company h2 a").text.strip()
-                    except Exception:
-                        try:
-                            df_krx_backup = load_krx_listing()
-                            final_display_name = df_krx_backup[df_krx_backup["Code"] == symbol.zfill(6)]["Name"].values[0]
-                        except Exception:
-                            pass
-            else:
-                us_vault = {
-                    "TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", "MSFT": "마이크로소프트",
-                    "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타", "IONQ": "아이온큐",
-                    "CPNG": "쿠팡", "NFLX": "넷플릭스", "SKHY": "SK하이닉스", "INTC": "인텔",
-                    "BE": "블룸에너지", "RKLB": "로켓랩", "AVGO": "브로드컴", "LRCX": "램리서치",
-                }
-                tk = symbol.upper()
-                kor_name = us_vault.get(tk, None)
-                if not kor_name:
-                    try:
-                        info_dict = ticker.info
-                        kor_name = info_dict.get("longName", info_dict.get("shortName", tk))
-                    except Exception:
-                        kor_name = tk
-                final_display_name = f"{kor_name} ({tk})"
-
+            # ★ [병목 제거 연동] 캐시에서 바로 종목명 호출
+            final_display_name = get_stock_name(symbol, is_kr)
             safe_display_name = html.escape(final_display_name)
+            
             target_price_100 = up_b
             is_target_reached = p >= (target_price_100 * 0.98)
             is_on_the_wall = (p >= defense_line) and (p < target_price_100)
@@ -1133,8 +1139,7 @@ if symbol:
                 col = "#F57C00"
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[긴 위꼬리 저항 포착]</b> 장중 고점 대비 위꼬리가 길게 밀려 내려왔소! "
-                    "지표상 안착처럼 보여도 위쪽 매물벽 저항이 맵사오니 섣부른 추격매수를 금하고 냉정하게 관망하시게."
+                    f"<b>[긴 위꼬리 저항 포착]</b> 지표상 안착처럼 보여도 위쪽 매물벽 저항이 맵사오니 섣부른 추격매수를 금하고 냉정하게 관망하시게."
                 )
             elif is_band_riding:
                 final_code = "BAND_RIDING_HARVEST"
@@ -1411,7 +1416,7 @@ if symbol:
                     )
             elif user_avg_price <= 0:
                 holder_guide_msg = (
-                    "현재 추세 탐색 및 방향 정립 구간이니"
+                    "현재 추 추세 탐색 및 방향 정립 구간이니"
                     f" 성벽({defense_line:{fmt_p}}{currency})이나 5일선 사수"
                     " 여부를 확인하며 차분히 보유 판단을 내리시게. (★ <b>손절"
                     f" 마지노선: {stop_loss_label}</b>)"
