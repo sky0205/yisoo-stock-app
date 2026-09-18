@@ -314,11 +314,27 @@ if symbol:
         df = pd.DataFrame()
         auto_p, v_curr = 0.0, 0.0
         us_prev_p = None
+        
+        # ★ [에러 박멸] 날짜를 기계가 오류 없이 읽도록 완벽한 문자로 변환
+        start_dt_str = start_date.strftime("%Y-%m-%d") 
 
         # ★ v36103 기반: 가장 단순하고 튼튼한 오리지널 실시간 갱신 통신망
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
+            try:
+                df = fdr.DataReader(clean_symbol, start=start_dt_str)
+            except Exception:
+                pass
+
+            if df.empty:
+                try:
+                    df = yf.Ticker(f"{clean_symbol}.KS").history(start=start_dt_str)
+                    if df.empty:
+                        df = yf.Ticker(f"{clean_symbol}.KQ").history(start=start_dt_str)
+                except Exception:
+                    pass
+
             kr_fetched = False
             try:
                 api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
@@ -340,7 +356,7 @@ if symbol:
                     auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
                     v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
                     kr_fetched = True
-                    if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
+                    if not df.empty:
                         _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
                         if _avg_v > 0 and v_curr > _avg_v * 10:
                             v_curr = float(df["Volume"].iloc[-1])
@@ -354,7 +370,7 @@ if symbol:
             ticker = yf.Ticker(tk_upper)
 
             try:
-                df = ticker.history(start=start_date)
+                df = ticker.history(start=start_dt_str)
             except Exception:
                 df = ticker.history(period="1y")
 
