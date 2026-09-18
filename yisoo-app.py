@@ -1,4 +1,5 @@
 import html
+import time
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
@@ -10,12 +11,11 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36103", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36115", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
 def check_password():
-    """비밀번호를 확인하는 함수 (st.secrets 호환 보안 보수)"""
     correct_pw = str(st.secrets.get("APP_PASSWORD", "1111"))
 
     def password_entered():
@@ -61,30 +61,94 @@ def load_krx_listing():
         return pd.DataFrame()
 
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=300)
 def fetch_global_market():
-    nasdaq = yf.Ticker("^IXIC").fast_info
-    sp500 = yf.Ticker("^GSPC").fast_info
-    dow = yf.Ticker("^DJI").fast_info
-    tnx = yf.Ticker("^TNX").fast_info
-    usdkrw = yf.Ticker("USDKRW=X").fast_info
-    return {
-        "n_last": nasdaq.last_price,
-        "n_prev": nasdaq.previous_close,
-        "s_last": sp500.last_price,
-        "s_prev": sp500.previous_close,
-        "d_last": dow.last_price,
-        "d_prev": dow.previous_close,
-        "t_last": tnx.last_price,
-        "t_prev": tnx.previous_close,
-        "u_last": usdkrw.last_price,
-        "u_prev": usdkrw.previous_close,
-    }
+    tickers = {"n": "^IXIC", "s": "^GSPC", "d": "^DJI", "t": "^TNX", "u": "USDKRW=X"}
+    results = {}
+    for k, tk in tickers.items():
+        try:
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{tk}?interval=1d&range=1d"
+            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
+            meta = res.json()["chart"]["result"][0]["meta"]
+            results[f"{k}_last"] = float(meta["regularMarketPrice"])
+            results[f"{k}_prev"] = float(meta["chartPreviousClose"])
+        except Exception:
+            results[f"{k}_last"], results[f"{k}_prev"] = 0.0, 0.0
+    return results
+
+
+@st.cache_data(ttl=86400)
+def get_stock_name(symbol, is_kr):
+    if is_kr:
+        core_vault = {
+            "005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기",
+            "257720": "실리콘투", "058610": "에스피지", "010140": "삼성중공업",
+            "068270": "셀트리온", "272210": "한화시스템", "101490": "에스앤에스텍",
+            "051600": "한전KPS", "064350": "현대로템", "032300": "솔리드",
+            "050890": "솔리드",
+        }
+        clean_sym = symbol.zfill(6)
+        if clean_sym in core_vault: 
+            return core_vault[clean_sym]
+        try:
+            url = f"https://finance.naver.com/item/main.naver?code={clean_sym}"
+            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
+            soup = BeautifulSoup(res.text, "html.parser")
+            return soup.select_one(".wrap_company h2 a").text.strip()
+        except Exception:
+            try:
+                df_krx_backup = load_krx_listing()
+                return df_krx_backup[df_krx_backup["Code"] == clean_sym]["Name"].values[0]
+            except Exception:
+                return f"국내종목 ({symbol})"
+    else:
+        us_vault = {
+            "TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", "MSFT": "마이크로소프트",
+            "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타", "IONQ": "아이온큐",
+            "CPNG": "쿠팡", "NFLX": "넷플릭스", "SKHY": "SK하이닉스", "INTC": "인텔",
+            "BE": "블룸에너지", "RKLB": "로켓랩", "AVGO": "브로드컴", "LRCX": "램리서치",
+        }
+        tk = symbol.upper()
+        if tk in us_vault: 
+            return f"{us_vault[tk]} ({tk})"
+        try:
+            info_dict = yf.Ticker(tk).info
+            kor_name = info_dict.get("longName", info_dict.get("shortName", tk))
+            return f"{kor_name} ({tk})"
+        except Exception:
+            return tk
+
+
+@st.cache_data(ttl=3600)
+def get_historical_data(symbol, is_kr, start_dt_str):
+    df_hist = pd.DataFrame()
+    if is_kr:
+        clean_sym = symbol.zfill(6)
+        try:
+            df_hist = fdr.DataReader(clean_sym, start=start_dt_str)
+        except Exception:
+            pass
+        if df_hist.empty:
+            try:
+                df_hist = yf.Ticker(f"{clean_sym}.KS").history(start=start_dt_str)
+                if df_hist.empty:
+                    df_hist = yf.Ticker(f"{clean_sym}.KQ").history(start=start_dt_str)
+            except Exception:
+                pass
+    else:
+        tk = yf.Ticker(symbol.upper())
+        try:
+            df_hist = tk.history(start=start_dt_str)
+        except Exception:
+            try:
+                df_hist = tk.history(period="1y")
+            except Exception:
+                pass
+    return df_hist
 
 
 # --- [호가창 실시간 매도/매수 잔량 수집 및 수급 압력 산출 함수] ---
 def fetch_kr_orderbook(symbol):
-    """국내 주식 호가 데이터."""
     return {
         "ask": 0.0,
         "bid": 0.0,
@@ -227,7 +291,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36103 (지표 출력 모순 동기화 보수)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36115 (v36103 오리지널 직통망 복구)")
 display_global_risk()
 st.divider()
 
@@ -290,102 +354,87 @@ with col_btn:
         st.rerun()
 
 
-
 if symbol:
     try:
         try:
             start_date = datetime.now() - timedelta(days=500)
         except Exception:
             start_date = datetime.now(ZoneInfo("UTC")) - timedelta(days=500)
-
+            
+        start_date_str = start_date.strftime("%Y-%m-%d")
         is_kr = symbol.isdigit()
-
+        
         kst_tz = ZoneInfo("Asia/Seoul")
         ny_tz = ZoneInfo("America/New_York")
         kst_now = datetime.now(kst_tz)
         now_local = kst_now if is_kr else datetime.now(ny_tz)
 
-        df = pd.DataFrame()
+        df_raw = get_historical_data(symbol, is_kr, start_date_str)
+        df = df_raw.copy()
+
         auto_p, v_curr = 0.0, 0.0
         us_prev_p = None
 
+        cache_buster_ts = int(time.time() * 1000)
+
+        # ★ [v36103 오리지널 통신 규격 복구] 꼼수 헤더 제거, 순정 헤더 + 캐시 회피 꼬리표만 장착
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
-            try:
-                df = fdr.DataReader(clean_symbol, start=start_date.strftime("%Y-%m-%d"))
-            except Exception:
-                pass
-
-            if df.empty:
-                try:
-                    df = yf.Ticker(f"{clean_symbol}.KS").history(start=start_date)
-                    if df.empty:
-                        df = yf.Ticker(f"{clean_symbol}.KQ").history(start=start_date)
-                except Exception:
-                    pass
-
             kr_fetched = False
             try:
-                api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
+                api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic?_t={cache_buster_ts}"
                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
                 res = requests.get(api_url, headers=headers, timeout=3)
                 if res.status_code == 200:
                     data = res.json()
                     auto_p = float(str(data["closePrice"]).replace(",", ""))
-                    v_curr = float(
-                        str(data["accumulatedTradingVolume"]).replace(",", "")
-                    )
+                    v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
                     kr_fetched = True
             except Exception:
                 pass
 
             if not kr_fetched:
                 try:
-                    url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
-                    res = requests.get(
-                        url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3
-                    )
+                    url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}&_t={cache_buster_ts}"
+                    res = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}, timeout=3)
                     soup = BeautifulSoup(res.text, "html.parser")
-                    auto_p = float(
-                        soup.select_one(".no_today .blind").text.replace(",", "")
-                    )
-                    v_curr = float(
-                        soup.select(".no_info .blind")[3].text.replace(",", "")
-                    )
+                    auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                    v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
                     kr_fetched = True
-                    if 'v_curr' in locals() and 'df' in locals() and df is not None and not df.empty:
+                    if not df.empty:
                         _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
                         if _avg_v > 0 and v_curr > _avg_v * 10:
                             v_curr = float(df["Volume"].iloc[-1])
                 except Exception:
+                    # 완벽히 실패 시에만 과거 캐시 사용 (정상 통신 시 여기 올 일 없음)
                     if not df.empty:
                         auto_p = float(df["Close"].iloc[-1])
                         v_curr = float(df["Volume"].iloc[-1])
         else:
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
-            ticker = yf.Ticker(tk_upper)
-
+            
+            fetch_success = False
             try:
-                df = ticker.history(start=start_date)
+                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{tk_upper}?interval=1d&range=1d&_t={cache_buster_ts}"
+                res = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}, timeout=3)
+                if res.status_code == 200:
+                    meta = res.json()["chart"]["result"][0]["meta"]
+                    auto_p = float(meta["regularMarketPrice"])
+                    us_prev_p = float(meta["chartPreviousClose"])
+                    v_curr = float(meta.get("regularMarketVolume", 0.0))
+                    fetch_success = True
             except Exception:
-                df = ticker.history(period="1y")
-
-            try:
-                fast_inf = ticker.fast_info
-                auto_p = getattr(fast_inf, "last_price", 0.0)
-                v_curr = getattr(fast_inf, "last_volume", 0.0)
-                us_prev_p = getattr(fast_inf, "previous_close", None)
-            except Exception:
-                auto_p, v_curr, us_prev_p = 0.0, 0.0, None
-
-            if auto_p == 0.0 or pd.isna(auto_p):
+                pass
+            
+            if not fetch_success or auto_p == 0.0 or pd.isna(auto_p):
+                ticker = yf.Ticker(tk_upper)
                 try:
-                    inf_dict = ticker.info
-                    auto_p = inf_dict.get("regularMarketPrice", inf_dict.get("currentPrice", 0.0))
-                    if auto_p == 0.0 or pd.isna(auto_p):
-                        auto_p = float(df["Close"].iloc[-1])
+                    fast_inf = ticker.fast_info
+                    auto_p = getattr(fast_inf, "last_price", 0.0)
+                    v_curr = getattr(fast_inf, "last_volume", 0.0)
+                    us_prev_p = getattr(fast_inf, "previous_close", None)
                 except Exception:
                     if not df.empty:
                         auto_p = float(df["Close"].iloc[-1])
@@ -394,7 +443,7 @@ if symbol:
                 if not df.empty:
                     v_curr = float(df["Volume"].iloc[-1])
 
-            if not df.empty and not df.empty:
+            if not df.empty:
                 _us_avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
                 if _us_avg_v > 0 and v_curr > _us_avg_v * 10:
                     v_curr = float(df["Volume"].iloc[-1])
@@ -472,6 +521,7 @@ if symbol:
             if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
                 prev_p = float(us_prev_p)
 
+            # 실시간 강제 갱신된 현재가를 장부 맨 끝에 찰싹 붙임
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
                 df.loc[today_date, "Volume"] = v_curr
@@ -677,12 +727,10 @@ if symbol:
                 is_bandwidth_ok = False
                 bw_status_category = "EXTREME_SQUEEZE"
                 bw_diag_msg = (
-                    f"밴드폭 극소({bandwidth:.1f}%) 에너지 응축 중 / 돌파 방향"
-                    " 확인 대기"
+                    f"밴드폭 극소({bandwidth:.1f}%) 에너지 응축 중 / 돌파 방향 확인 대기"
                 )
                 squeeze_info_str = (
-                    f"<br>• ⚡ <b>[밴드폭 극소({bandwidth:.1f}%)]</b> 에너지가"
-                    " 바짝 응축 중이오! 돌파 방향 확인 전까지 진입 금지."
+                    f"<br>• ⚡ <b>[밴드폭 극소({bandwidth:.1f}%)]</b> 에너지가 바짝 응축 중이오! 돌파 방향 확인 전까지 진입 금지."
                 )
             elif 10.0 <= bandwidth < 20.0:
                 if p >= ma5_val:
@@ -692,34 +740,29 @@ if symbol:
                         bw_status_category = "BEARISH_RESISTANCE"
                         bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 위 안착 / 역배열 저항 경계"
                         squeeze_info_str = (
-                            f"<br>• ⚠️ <b>[밴드폭 응축({bandwidth:.1f}%)]</b>"
-                            " 5일선 위 안착 중이나, 머리 위 역배열 저항 매물벽을 경계하시오."
+                            f"<br>• ⚠️ <b>[밴드폭 응축({bandwidth:.1f}%)]</b> 5일선 위 안착 중이나, 머리 위 역배열 저항 매물벽을 경계하시오."
                         )
                     else:
                         is_bandwidth_ok = True
                         bw_status_category = "SQUEEZE_BREAKOUT"
                         bw_diag_msg = (
-                            f"밴드폭 응축돌파({bandwidth:.1f}%) 5일선 안착 / 에너지"
-                            " 분출 초입"
+                            f"밴드폭 응축돌파({bandwidth:.1f}%) 5일선 안착 / 에너지 분출 초입"
                         )
                         if vol_strength < 65 or is_candle_bearish:
                             adjust_type_str = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                             squeeze_info_str = (
-                                f"<br>• ⚠️ <b>[성벽 위 {adjust_type_str}/차익매물출회({bandwidth:.1f}%)]</b>"
-                                f" 5일선 위 안착 상태이나 당일 고점 차익 매물이 출회 중이오."
+                                f"<br>• ⚠️ <b>[성벽 위 {adjust_type_str}/차익매물출회({bandwidth:.1f}%)]</b> 5일선 위 안착 상태이나 당일 고점 차익 매물이 출회 중이오."
                             )
                         else:
                             squeeze_info_str = (
-                                f"<br>• 🟢 <b>[밴드폭 응축돌파({bandwidth:.1f}%)]</b>"
-                                " 5일선을 뚫고 올라섰네! 상방 분출 초입으로 유효하오."
+                                f"<br>• 🟢 <b>[밴드폭 응축돌파({bandwidth:.1f}%)]</b> 5일선을 뚫고 올라섰네! 상방 분출 초입으로 유효하오."
                             )
                 else:
                     is_bandwidth_ok = False
                     bw_status_category = "SQUEEZE_WAIT"
                     bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 돌파 대기"
                     squeeze_info_str = (
-                        f"<br>• ⏳ <b>[밴드폭 응축({bandwidth:.1f}%)]</b>"
-                        " 5일선 돌파 전이오. 안착 신호를 기다리시게."
+                        f"<br>• ⏳ <b>[밴드폭 응축({bandwidth:.1f}%)]</b> 5일선 돌파 전이오. 안착 신호를 기다리시게."
                     )
             else:
                 is_bandwidth_ok = True
@@ -728,9 +771,7 @@ if symbol:
                     f"밴드폭 넉넉함({bandwidth:.1f}%) 상하 변동 진폭 확보"
                 )
                 squeeze_info_str = (
-                    f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 상하"
-                    " 진폭 활주로는 충분히 트였으나, 위 지표 조건 충족 시에만"
-                    " 진격하시게."
+                    f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 상하 진폭 활주로는 충분히 트였으나, 위 지표 조건 충족 시에만 진격하시게."
                 )
 
             candle_range = max(0.01, today_high - today_low)
@@ -783,14 +824,12 @@ if symbol:
                 stop_loss_price = dynamic_stop_price
                 stop_loss_label = (
                     "🛡️ 단기 추세 체크포인트: 5일선"
-                    f" -{dynamic_stop_pct:.1f}% 이탈 시 비중 조절 및"
-                    f" 관망({stop_loss_price:{fmt_p}}{currency})"
+                    f" -{dynamic_stop_pct:.1f}% 이탈 시 비중 조절 및 관망({stop_loss_price:{fmt_p}}{currency})"
                 )
             else:
                 stop_loss_price = prev_low
                 stop_loss_label = (
-                    "🚨 칼손절 경보: 바닥권 전저점 이탈"
-                    f" 마지노선({stop_loss_price:{fmt_p}}{currency})"
+                    "🚨 칼손절 경보: 바닥권 전저점 이탈 마지노선({stop_loss_price:{fmt_p}}{currency})"
                 )
 
             defense_link_idx = min(21, len(df))
@@ -828,13 +867,11 @@ if symbol:
                 trend_status = "⚠️ <b>[대세 역배열]</b> 지하실 향하는 하락 추세"
             elif ma5_val > mid_line:
                 trend_status = (
-                    "🌱 <b>[단기 반등 초입]</b> 5일선이 20일선 돌파! 상방 반전"
-                    " 시도 중"
+                    "🌱 <b>[단기 반등 초입]</b> 5일선이 20일선 돌파! 상방 반전 시도 중"
                 )
             elif ma5_val < mid_line:
                 trend_status = (
-                    "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려"
-                    " 숨고르기 중"
+                    "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려 숨고르기 중"
                 )
             else:
                 trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
@@ -894,105 +931,35 @@ if symbol:
               
               return f"&nbsp;&nbsp;&nbsp;&nbsp;<b>[이평선 층위]</b> {hierarchy_str} {comment}"
               
-              
             ma_price_summary = (
                 "<br>• 📌 <b>[주요 이동평균선 현황]</b><br>&nbsp;&nbsp;&nbsp;<span"
                 f" style='color:#D32F2F; font-weight:bold;'>🔴 5일선: {ma5_str} (이격:"
                 f" {bias_ma5:+.1f}%)</span> | <span style='color:#1976D2;'"
                 f" font-weight:bold;'>🔵 20일선: {ma20_str}</span> | <span"
                 f" style='color:#388E3C; font-weight:bold;'>🟢 60일선: {ma60_str}</span> |"
-                f" <span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선:"
-                f" {ma120_str}</span><br>"
+                f" <span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
             )
-              
             ma_price_summary += generate_ma_hierarchy(df, p)
-            if is_kr:
-                core_vault = {
-                    "005930": "삼성전자",
-                    "000660": "SK하이닉스",
-                    "033100": "제룡전기",
-                    "257720": "실리콘투",
-                    "058610": "에스피지",
-                    "010140": "삼성중공업",
-                    "068270": "셀트리온",
-                    "272210": "한화시스템",
-                    "101490": "에스앤에스텍",
-                    "051600": "한전KPS",
-                    "064350": "현대로템",
-                    "032300": "솔리드",
-                    "050890": "솔리드",
-                }
-                final_display_name = core_vault.get(symbol.zfill(6), f"국내종목 ({symbol})")
-                if symbol.zfill(6) not in core_vault:
-                    try:
-                        url = f"https://finance.naver.com/item/main.naver?code={symbol.zfill(6)}"
-                        res = requests.get(
-                            url,
-                            headers={"User-Agent": "Mozilla/5.0"},
-                            timeout=3,
-                        )
-                        soup = BeautifulSoup(res.text, "html.parser")
-                        final_display_name = soup.select_one(
-                            ".wrap_company h2 a"
-                        ).text.strip()
-                    except Exception:
-                        try:
-                            df_krx_backup = load_krx_listing()
-                            final_display_name = df_krx_backup[
-                                df_krx_backup["Code"] == symbol.zfill(6)
-                            ]["Name"].values[0]
-                        except Exception:
-                            pass
-            else:
-                us_vault = {
-                    "TSLA": "테슬라",
-                    "NVDA": "엔비디아",
-                    "AAPL": "애플",
-                    "MSFT": "마이크로소프트",
-                    "AMZN": "아마존",
-                    "GOOGL": "알파벳A",
-                    "META": "메타",
-                    "IONQ": "아이온큐",
-                    "CPNG": "쿠팡",
-                    "NFLX": "넷플릭스",
-                    "SKHY": "SK하이닉스",
-                    "INTC": "인텔",
-                    "BE": "블룸에너지",
-                    "RKLB": "로켓랩",
-                    "AVGO": "브로드컴",
-                    "LRCX": "램리서치",
-                }
-                tk = symbol.upper()
-                kor_name = us_vault.get(tk, None)
-                if not kor_name:
-                    try:
-                        info_dict = ticker.info
-                        kor_name = info_dict.get(
-                            "longName", info_dict.get("shortName", tk)
-                        )
-                    except Exception:
-                        kor_name = tk
-                final_display_name = f"{kor_name} ({tk})"
-
+            
+            final_display_name = get_stock_name(symbol, is_kr)
             safe_display_name = html.escape(final_display_name)
-
+            
             target_price_100 = up_b
             is_target_reached = p >= (target_price_100 * 0.98)
             is_on_the_wall = (p >= defense_line) and (p < target_price_100)
             is_band_riding = is_target_reached and is_band_expanding and is_ma5_safe and (not is_bearish_candle)
 
             # ==================================================================
-            # ★ [상단 대형 현재주가현황 전광판]
+            # ★ [상단 대형 현재주가현황 전광판] - 초시계 찰칵!
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(
-                f"<div style='background-color:#f8f9fa; padding:20px;"
-                " border-radius:10px; border-left:10px solid #1565C0;'><p"
-                " style='font-size:35px; color:#1565C0; font-weight:bold;"
-                f" margin:0;'>{safe_display_name}</p><p style='font-size:30px;"
-                " color:#FF4B4B; font-weight:bold; margin:10px 0 0"
-                f" 0;'>{display_price}</p></div>",
+                f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'>"
+                f"<p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{safe_display_name}</p>"
+                f"<p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p>"
+                f"<p style='font-size:16px; color:#78909C; font-weight:bold; margin:10px 0 0 0;'>⏱️ 장부 판독 시각: {kst_now.strftime('%Y-%m-%d %H:%M:%S')} (KST)</p>"
+                f"</div>",
                 unsafe_allow_html=True,
             )
 
@@ -1000,7 +967,6 @@ if symbol:
             # ★ [3열 핵심 가격 카드]: 🎯 공략대기선 / 🛡️ 성벽 / 🏆 수확목표선
             # ==================================================================
             c_wait, c_def, c_tgt = st.columns(3)
-
             with c_wait:
                 wait_diff = ((p - wait_line) / wait_line) * 100 if wait_line > 0 else 0
                 wait_tag = "🎯 바닥 사정권 진입" if p <= wait_line * 1.03 else "바닥 상회"
@@ -1010,8 +976,7 @@ if symbol:
                     <div style='font-size: 20px; color: #37474F;'>🎯 공략대기선 (볼린저 바닥선)</div>
                     <div style='font-size: 30px; color: {wait_color}; margin: 8px 0;'>{wait_line:{fmt_p}}{currency}</div>
                     <div style='font-size: 17px; color: {wait_color};'>{wait_tag} ({wait_diff:+.1f}%)</div>
-                    </div>""",
-                    unsafe_allow_html=True,
+                    </div>""", unsafe_allow_html=True,
                 )
 
             with c_def:
@@ -1023,8 +988,7 @@ if symbol:
                     <div style='font-size: 20px; color: #37474F;'>🛡️ 성벽 (최후 방어선 / 돌파선)</div>
                     <div style='font-size: 30px; color: {def_color}; margin: 8px 0;'>{defense_line:{fmt_p}}{currency}</div>
                     <div style='font-size: 17px; color: {def_color};'>{def_status_tag} ({def_diff:+.1f}%)</div>
-                    </div>""",
-                    unsafe_allow_html=True,
+                    </div>""", unsafe_allow_html=True,
                 )
 
             with c_tgt:
@@ -1044,113 +1008,41 @@ if symbol:
                     <div style='font-size: 20px; color: #37474F;'>🏆 수확 목표선 (볼린저 상단)</div>
                     <div style='font-size: 30px; color: {tgt_color}; margin: 8px 0;'>{target_price_100:{fmt_p}}{currency}</div>
                     <div style='font-size: 17px; color: {tgt_color};'>{tgt_status_tag}</div>
-                    </div>""",
-                    unsafe_allow_html=True,
+                    </div>""", unsafe_allow_html=True,
                 )
 
             st.write("")
             is_positive_day = p >= prev_p if prev_p > 0 else False
         
             if is_pre_market_mode:
-                v_status, v_adv = (
-                    "프리장 대기",
-                    "🇺🇸 <b>[프리마켓 모드]</b> 수동 가격 반영 중이오. 장전 거래량이 희박하니 실시간 수급 차단 로직을 우회하여 타점을 판독하오. 정규장 개장 후 화력을 반드시 재확인하시게."
-                )
+                v_status, v_adv = ("프리장 대기", "🇺🇸 <b>[프리마켓 모드]</b> 수동 가격 반영 중이오. 장전 거래량이 희박하니 실시간 수급 차단 로직을 우회하여 타점을 판독하오. 정규장 개장 후 화력을 반드시 재확인하시게.")
             elif is_positive_day and vol_strength < 65:
-                v_status, v_adv = (
-                    "거래 숨고르기",
-                    (
-                        f"• <b>[거래 숨고르기]</b> 시간보정 강도"
-                        f" {vol_strength:.1f}점! 1단계 진바닥 입질 및 양봉"
-                        " 지지력 확인 구역이오니 차분히 타진하시게."
-                    ),
-                )
+                v_status, v_adv = ("거래 숨고르기", f"• <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! 1단계 진바닥 입질 및 양봉 지지력 확인 구역이오니 차분히 타진하시게.")
             elif vol_strength >= 300:
                 if not is_down_trend_v:
-                    v_status, v_adv = (
-                        "과열폭발(돌파)",
-                        f"🔥 <b>[화력폭발/돌파]</b> 시간보정 강도 {vol_strength:.1f}점!"
-                        " 아침장 수급이 강력하게 폭발하며 본진 진격 중이오.",
-                    )
+                    v_status, v_adv = ("과열폭발(돌파)", f"🔥 <b>[화력폭발/돌파]</b> 시간보정 강도 {vol_strength:.1f}점! 아침장 수급이 강력하게 폭발하며 본진 진격 중이오.")
                 else:
-                    if is_down_trend_structural:
-                        v_status, v_adv = (
-                            "역배열투매",
-                            f"🚨 <b>[역배열/하방 투매과열]</b> 시간보정 강도"
-                            f" {vol_strength:.1f}점! 하방 압력 속 투매 물량 폭발"
-                            " 중이니 절대 칼날을 잡지 마시게.",
-                        )
-                    else:
-                        v_status, v_adv = (
-                            "차익투매주의",
-                            f"⚠️ <b>[고점 차익투매 경계]</b> 시간보정 강도"
-                            f" {vol_strength:.1f}점! 정배열 상승 속 차익 매물 대량"
-                            " 출회 중이니 5일선 지지를 확인하시게.",
-                        )
+                    if is_down_trend_structural: v_status, v_adv = ("역배열투매", f"🚨 <b>[역배열/하방 투매과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하방 압력 속 투매 물량 폭발 중이니 절대 칼날을 잡지 마시게.")
+                    else: v_status, v_adv = ("차익투매주의", f"⚠️ <b>[고점 차익투매 경계]</b> 시간보정 강도 {vol_strength:.1f}점! 정배열 상승 속 차익 매물 대량 출회 중이니 5일선 지지를 확인하시게.")
             elif vol_strength >= 100:
-                if not is_down_trend_v:
-                    v_status, v_adv = (
-                        "매집시작",
-                        f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점!"
-                        " 화력이 차오르네.",
-                    )
-                elif is_down_trend_structural:
-                    v_status, v_adv = (
-                        "역배열과열",
-                        f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점!"
-                        " 하락 추세 속 속임수 음봉 거래량 주의.",
-                    )
-                else:
-                    v_status, v_adv = (
-                        "차익매물출회",
-                        f"⚠️ <b>[차익매물출회]</b> 시간보정 강도 {vol_strength:.1f}점!"
-                        " 우상향 성벽 속 고점 차익 음봉 매물이니 5일선 지지를 확인하시게.",
-                    )
+                if not is_down_trend_v: v_status, v_adv = ("매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네.")
+                elif is_down_trend_structural: v_status, v_adv = ("역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 음봉 거래량 주의.")
+                else: v_status, v_adv = ("차익매물출회", f"⚠️ <b>[차익매물출회]</b> 시간보정 강도 {vol_strength:.1f}점! 우상향 성벽 속 고점 차익 음봉 매물이니 5일선 지지를 확인하시게.")
             elif vol_strength >= 65:
-                if not is_down_trend_v:
-                    v_status, v_adv = (
-                        "정상화력",
-                        f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점!"
-                        " 기세가 뻣뻣하구먼.",
-                    )
-                elif is_down_trend_structural:
-                    v_status, v_adv = (
-                        "역배열과열",
-                        f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점!"
-                        " 하락 추세 속 속임수 음봉 거래량 주의.",
-                    )
-                else:
-                    v_status, v_adv = (
-                        "숨고르기조정",
-                        f"☕ <b>[숨고르기조정]</b> 시간보정 강도 {vol_strength:.1f}점!"
-                        " 정배열 속 정상적인 눌림목 음봉 조정 중이오.",
-                    )
+                if not is_down_trend_v: v_status, v_adv = ("정상화력", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점! 기세가 뻣뻣하구먼.")
+                elif is_down_trend_structural: v_status, v_adv = ("역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 음봉 거래량 주의.")
+                else: v_status, v_adv = ("숨고르기조정", f"☕ <b>[숨고르기조정]</b> 시간보정 강도 {vol_strength:.1f}점! 정배열 속 정상적인 눌림목 음봉 조정 중이오.")
             else:
-                if p < ma5_val:
-                    v_status, v_adv = (
-                        "거래량 미달",
-                        f"🟡 <b>[거래량 미달 / 관망]</b> 실시간 {vol_strength:.1f}점! 5일선 아래이므로 섣부른 진입을 엄금하네.",
-                    )
+                if p < ma5_val: v_status, v_adv = ("거래량 미달", f"🟡 <b>[거래량 미달 / 관망]</b> 실시간 {vol_strength:.1f}점! 5일선 아래이므로 섣부른 진입을 엄금하네.")
                 else:
                     is_healthy_volume_dry = p_chg >= 0
-                    if is_healthy_volume_dry:
-                        v_status, v_adv = (
-                            "거래 숨고르기",
-                            f"🧊 <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! 정배열 성벽 위 눌림목 숨 고르는 중이오니 지지력을 관망하시게.",
-                        )
-                    else:
-                        v_status, v_adv = (
-                            "거래절벽",
-                            f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! 수급이 마르고 동력이 없으니 속지 마시게.",
-                        )
+                    if is_healthy_volume_dry: v_status, v_adv = ("거래 숨고르기", f"🧊 <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! 정배열 성벽 위 눌림목 숨 고르는 중이오니 지지력을 관망하시게.")
+                    else: v_status, v_adv = ("거래절벽", f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! 수급이 마르고 동력이 없으니 속지 마시게.")
 
             st.markdown(
-                f"<div class='vol-box'><div style='font-size:32px; "
-                f"font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전환: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div>"
-                f"<div style='font-size:18px; color:#37474F; background:#FFFFFF; "
-                f"padding:10px; border-radius:8px; border-left:6px solid #1976D2; margin-bottom:10px;'>{v_adv}</div>"
-                f"<div style='font-size: 18px; color: #37474F; background: #FFFFFF; "
-                f"padding: 10px; border-radius: 8px; border-left: 6px solid #FF9800;'>🎯 <b>[호가창 잔량 공방]</b> {ob_status_msg}</div></div>",
+                f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전환: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div>"
+                f"<div style='font-size:18px; color:#37474F; background:#FFFFFF; padding:10px; border-radius:8px; border-left:6px solid #1976D2; margin-bottom:10px;'>{v_adv}</div>"
+                f"<div style='font-size: 18px; color: #37474F; background: #FFFFFF; padding: 10px; border-radius: 8px; border-left: 6px solid #FF9800;'>🎯 <b>[호가창 잔량 공방]</b> {ob_status_msg}</div></div>",
                 unsafe_allow_html=True,
             )
 
@@ -1160,16 +1052,14 @@ if symbol:
             w_val = 1 if will_series.iloc[-1] <= -75 else 0             
             
             bottom_score = int(b_val + r_val + w_val)
-            if bottom_score > 3:
-                bottom_score = 3
+            if bottom_score > 3: bottom_score = 3
             
             rsi_pullback_val = 1 if (38.0 <= rsi_series.iloc[-1] <= 62.0) else 0
             will_pullback_val = 1 if (-65.0 <= will_series.iloc[-1] <= -35.0) else 0
             bb_center_val = 1 if (mid_line * 0.99 <= p <= mid_line * 1.01) else 0
             
             pullback_rebound_score = int(rsi_pullback_val + will_pullback_val + bb_center_val)
-            if pullback_rebound_score > 3:
-                pullback_rebound_score = 3
+            if pullback_rebound_score > 3: pullback_rebound_score = 3
 
             bb_bot_series = (df["Close"] <= (low_b_val * 1.02)).astype(int)
             rsi_bot_series = (rsi_series <= 38).astype(int)
@@ -1191,9 +1081,7 @@ if symbol:
                 is_stop_loss_triggered = True
                 stop_reason = "바닥권 전저점 이탈 마지노선"
 
-            is_bottom_indicator_ok = (
-                bottom_score >= 1 or recent_bottom_memory
-            )
+            is_bottom_indicator_ok = (bottom_score >= 1 or recent_bottom_memory)
             is_macd_not_deepening = not is_macd_reverse_deepening
 
             is_volume_ok_for_bottom = (
@@ -1202,37 +1090,25 @@ if symbol:
             )
             
             is_bottom_entry_signal = (
-                (not is_ma5_safe)
-                and (bottom_score >= 1 or will_val <= -75)
-                and is_volume_ok_for_bottom
-                and (not is_down_trend_v)
-                and is_macd_not_deepening
-                and is_valid_bottom_candle
-                and (not is_target_reached)
+                (not is_ma5_safe) and (bottom_score >= 1 or will_val <= -75)
+                and is_volume_ok_for_bottom and (not is_down_trend_v)
+                and is_macd_not_deepening and is_valid_bottom_candle and (not is_target_reached)
             )
         
             is_escape_buy_signal = (
-                is_ma5_safe
-                and is_bottom_indicator_ok
+                is_ma5_safe and is_bottom_indicator_ok
                 and (vol_strength >= 65 or is_pre_market_mode)
-                and is_macd_not_deepening
-                and is_valid_buy_candle
-                and is_bandwidth_ok
-                and is_orderbook_safe
-                and (not is_target_reached)
+                and is_macd_not_deepening and is_valid_buy_candle
+                and is_bandwidth_ok and is_orderbook_safe and (not is_target_reached)
             )
         
             is_pullback_buy_signal = (
-                (not is_down_trend_structural)
-                and is_ma20_buffer_safe
-                and is_ma5_safe
-                and is_orderbook_safe
+                (not is_down_trend_structural) and is_ma20_buffer_safe
+                and is_ma5_safe and is_orderbook_safe
                 and (pullback_rebound_score >= 1)
                 and (vol_strength >= 65 or is_pre_market_mode)
-                and is_bandwidth_ok
-                and is_macd_not_deepening
-                and is_valid_buy_candle
-                and (not is_target_reached)
+                and is_bandwidth_ok and is_macd_not_deepening
+                and is_valid_buy_candle and (not is_target_reached)
             )
 
             if is_kr:
@@ -1248,6 +1124,7 @@ if symbol:
             # ★ [신호등 분기 논리]
             # ==================================================================
             current_chg = float(p_chg)
+            margin_diff = ((target_price_100 - p) / p) * 100 if p > 0 else 0
 
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -1263,8 +1140,7 @@ if symbol:
                 col = "#F57C00"
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[긴 위꼬리 저항 포착]</b> 장중 고점 대비 위꼬리가 길게 밀려 내려왔소! "
-                    "지표상 안착처럼 보여도 위쪽 매물벽 저항이 맵사오니 섣부른 추격매수를 금하고 냉정하게 관망하시게."
+                    f"<b>[긴 위꼬리 저항 포착]</b> 지표상 안착처럼 보여도 위쪽 매물벽 저항이 맵사오니 섣부른 추격매수를 금하고 냉정하게 관망하시게."
                 )
             elif is_band_riding:
                 final_code = "BAND_RIDING_HARVEST"
@@ -1314,65 +1190,90 @@ if symbol:
                         "로 진격 중이오! 5일선을 사수하며 상방 목표선까지 추세를 즐기시게."
                     )
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= -1.5):
-                final_code = "BOTTOM_ENTRY"
-                col = "#388E3C"
-                sig = f"🟢 [진바닥 안착] 1단계 분할 입절 유효 구역 ({time_tag_ok})"
-                action_time_guide = (
-                    "오전장 화력(300점 이상) 및 5일선 지지 확인 시 10% 선제 타진하고 종가 사수를 확인하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if (is_kr and is_morning_breakout_fast)
-                    else "14:00 이후 5일선 및 볼린저 바닥 지지 확인 시 10% 분할 타진하시게. (단, 이탈 시 철수)" if is_kr
-                    else "정규장(세션) 화력 및 5일선 지지 확인 시 10% 분할 타진하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
-                )
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"• <b>[진바닥 포착 완료]</b> 지표 충족 및 5일선 안착! 전면 매수가 아닌 <b>비중 10% 수준의 1단계 분할 입절(매수)</b>로 기민하게 접근하시게. {action_time_guide}"
-                )
+                if margin_diff < 7.0:
+                    final_code = "WAIT_NARROW_MARGIN"
+                    sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
+                    col = "#F57C00"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! 리스크 대비 먹을 게 없는 좁은 자리이니 뇌동매매를 금하고 관망하시게."
+                else:
+                    final_code = "BOTTOM_ENTRY"
+                    col = "#388E3C"
+                    sig = f"🟢 [진바닥 안착] 1단계 분할 입절 유효 구역 ({time_tag_ok})"
+                    action_time_guide = (
+                        "오전장 화력(300점 이상) 및 5일선 지지 확인 시 10% 선제 타진하고 종가 사수를 확인하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if (is_kr and is_morning_breakout_fast)
+                        else "14:00 이후 5일선 및 볼린저 바닥 지지 확인 시 10% 분할 타진하시게. (단, 이탈 시 철수)" if is_kr
+                        else "정규장(세션) 화력 및 5일선 지지 확인 시 10% 분할 타진하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
+                    )
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"• <b>[진바닥 포착 완료]</b> 지표 충족 및 5일선 안착! 전면 매수가 아닌 <b>비중 10% 수준의 1단계 분할 입절(매수)</b>로 기민하게 접근하시게. {action_time_guide}"
+                    )
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
-                final_code = "ESCAPE_BUY"
-                col = "#2E7D32"
-                sig = f"🟢 [추가 진격] 2단계 진바닥 탈출 매수 ({time_tag_ok})"
-                action_guide = (
-                    "오전장 수급(300점 이상)과 5일선 안착 확인 시 즉시 50% 분할 진입 가동하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if (is_kr and is_morning_breakout_fast)
-                    else "14:00 이후 5일선 안착 확인 시 50% 분할 진입하시게. (단, 이탈 시 즉시 철수)" if is_kr
-                    else "정규장(세션) 수급 동반 및 5일선 안착 확인 시 50% 분할 진입하시게. (단, 이탈 시 즉시 철수)"
-                )
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
-                )
+                if margin_diff < 7.0:
+                    final_code = "WAIT_NARROW_MARGIN"
+                    sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
+                    col = "#F57C00"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! 리스크 대비 먹을 게 없는 좁은 자리이니 뇌동매매를 금하고 관망하시게."
+                else:
+                    final_code = "ESCAPE_BUY"
+                    col = "#2E7D32"
+                    sig = f"🟢 [추가 진격] 2단계 진바닥 탈출 매수 ({time_tag_ok})"
+                    action_guide = (
+                        "오전장 수급(300점 이상)과 5일선 안착 확인 시 즉시 50% 분할 진입 가동하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if (is_kr and is_morning_breakout_fast)
+                        else "14:00 이후 5일선 안착 확인 시 50% 분할 진입하시게. (단, 이탈 시 철수)" if is_kr
+                        else "정규장(세션) 수급 동반 및 5일선 안착 확인 시 50% 분할 진입하시게. (단, 이탈 시 즉시 철수)"
+                    )
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                        f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
+                    )
             elif is_pullback_buy_signal:
-                final_code = "PULLBACK_BUY"
-                col = "#1976D2"
-                sig = f"🔵 [본진 진격] 3단계 눌림목 추가 매수 ({time_tag_ok})"
-                action_guide = (
-                    "오전장 화력(300점 이상) 속 안전마진 안착 시 즉시 50% 타진 가동하시게. (단, 밀림 시 매수 취소)" if (is_kr and is_morning_breakout_fast)
-                    else "14:00 이후 5·20일선 안전마진 안착 시 50% 분할 타진하시게. (단, 밀림 시 매수 취소)" if is_kr
-                    else "정규장(세션) 화력 속 5·20일선 안전마진 안착 시 50% 분할 타진하시게. (단, 밀림 시 매수 취소)"
-                )
-                final_adv = (
-                    f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
-                )
+                if margin_diff < 7.0:
+                    final_code = "WAIT_NARROW_MARGIN"
+                    sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
+                    col = "#F57C00"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! 리스크 대비 먹을 게 없는 좁은 자리이니 뇌동매매를 금하고 관망하시게."
+                else:
+                    final_code = "PULLBACK_BUY"
+                    col = "#1976D2"
+                    sig = f"🔵 [본진 진격] 3단계 눌림목 추가 매수 ({time_tag_ok})"
+                    action_guide = (
+                        "오전장 화력(300점 이상) 속 안전마진 안착 시 즉시 50% 타진 가동하시게. (단, 밀림 시 매수 취소)" if (is_kr and is_morning_breakout_fast)
+                        else "14:00 이후 5·20일선 안전마진 안착 시 50% 분할 타진하시게. (단, 밀림 시 매수 취소)" if is_kr
+                        else "정규장(세션) 화력 속 5·20일선 안전마진 안착 시 50% 분할 타진하시게. (단, 밀림 시 매수 취소)"
+                    )
+                    final_adv = (
+                        f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                        f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
+                    )
             elif (
                 p >= ma20_safe_threshold
                 and (not is_down_trend_structural)
                 and is_ma5_safe
                 and pullback_rebound_score >= 1
+                and (vol_strength >= 65 or is_pre_market_mode)
             ):
-                final_code = "BREAK_MA20_CONFIRMED"
-                sig = "🔵 [돌파 확인] 20일선 안착 타진 (기민한 선제 대응)"
-                col = "#1E88E5"
-                action_guide = (
-                    "오전장 거래량(300점 이상) 동반 돌파 확인 시 즉시 50% 분할 진입 가동하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if (is_kr and is_morning_breakout_fast)
-                    else "14:00 이후 지지 확인 시 50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if is_kr
-                    else "정규장(세션) 거래량 동반 돌파 확인 시 50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
-                )
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    f" <b>[20일선 돌파 안착 타진]</b>"
-                    f" 현재가({p:{fmt_p}}{currency})가"
-                    f" 20일선 및 안전마진선({ma20_safe_threshold:{fmt_p}}{currency})을 돌파하였소!"
-                    f" {action_guide}"
-                )
+                if margin_diff < 7.0:
+                    final_code = "WAIT_NARROW_MARGIN"
+                    sig = "🟡 [관망/보류] 돌파 조건 충족이나 상승 여력 부족"
+                    col = "#F57C00"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 돌파 조건은 완벽하나 목표선까지의 활주로(상승 여력)가 {margin_diff:.1f}%밖에 되지 않아 리스크 대비 기대 수익이 낮소. 진입을 보류하시게."
+                else:
+                    final_code = "BREAK_MA20_CONFIRMED"
+                    col = "#1E88E5"
+                    sig = "🔵 [돌파 확인] 20일선 안착 타진 (기민한 선제 대응)"
+                    action_guide = (
+                        "오전장 거래량(300점 이상) 동반 돌파 확인 시 즉시 50% 분할 진입 가동하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if (is_kr and is_morning_breakout_fast)
+                        else "14:00 이후 지지 확인 시 50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if is_kr
+                        else "정규장(세션) 거래량 동반 돌파 확인 시 50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
+                    )
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                        f" <b>[20일선 돌파 안착 타진]</b>"
+                        f" 현재가({p:{fmt_p}}{currency})가"
+                        f" 20일선 및 안전마진선({ma20_safe_threshold:{fmt_p}}{currency})을 돌파하였소!"
+                        f" {action_guide}"
+                    )
             elif is_ma_tangled:
                 if is_ma5_safe and vol_strength >= 65.0 and bandwidth >= 10.0 and (rsi_val <= 40 or temp_bottom_score >= 1 or (p_chg >= 0.0 and p >= mid_line)):
                     final_code = "BOTTOM_ENTRY"
@@ -1406,21 +1307,36 @@ if symbol:
                 and not is_bottom_indicator_ok
                 and not is_down_trend_structural
             ):
-                final_code = "WAIT_INDICATOR"
-                sig = "🟡 [관망/보류] 5일선 안착했으나 지표 동조 미충족 (안착 대기)"
-                col = "#F57C00"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[지표 동조 미충족]</b> 5일선 위에 안착했으나 눌림목 지지 동조 점수 부족({pullback_rebound_score}/3점) 및 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
-                )
+                if pullback_rebound_score >= 1:
+                    final_code = "WAIT_INDICATOR"
+                    sig = "🟡 [관망/보류] 지표 충족이나 추세/안전마진 부족"
+                    col = "#F57C00"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"<b>[추세 불안정 관망]</b> 눌림목 점수({pullback_rebound_score}/3점)는 충족되었으나, 20일선 안전마진이 부족하거나 이평선 단기 꼬임으로 추세적 안정성이 확보되지 않았소. 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
+                    )
+                else:
+                    final_code = "WAIT_INDICATOR"
+                    sig = "🟡 [관망/보류] 5일선 안착했으나 지표/수급 미충족 (안착 대기)"
+                    col = "#F57C00"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"<b>[매수 조건 미충족]</b> 5일선 위에 안착했으나 수급 불량 또는 눌림목 지지 동조 점수 부족({pullback_rebound_score}/3점)으로 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
+                    )
             else:
                 final_code = "WAIT_GENERAL"
                 sig = "🟡 [관망] 조건 미충족 / 뇌동매매 금지"
                 col = "#FBC02D"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
-                    " 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
-                )
+                if pullback_rebound_score >= 1:
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"지표 점수({pullback_rebound_score}/3점)는 포착되었으나, 역배열 하락 추세 등 핵심 전제 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
+                    )
+                else:
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        "조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
+                    )
 
             st.markdown(
                 f"<div class='signal-box' style='background-color: {col};'>"
@@ -1434,7 +1350,7 @@ if symbol:
                 "WAIT_GENERAL", "WAIT_INDICATOR", "WAIT_MACD", "WAIT_VOLUME",
                 "WAIT_DOWNTREND_FALL", "WAIT_PULLBACK_CANDLE", "WAIT_PULLBACK",
                 "WAIT_MA20_BUFFER", "WAIT_ORDERBOOK", "WAIT_OVER_EXTENDED",
-                "YELLOW_CAUTION", "RED_SELL_WARNING", "MA_TANGLED_WARNING", "LONG_TAIL_WARNING"
+                "YELLOW_CAUTION", "RED_SELL_WARNING", "MA_TANGLED_WARNING", "LONG_TAIL_WARNING", "BEARISH_GUARD", "WAIT_NARROW_MARGIN"
             ]
 
             if final_code in ["BOTTOM_ENTRY", "BREAK_MA20_CONFIRMED", "BAND_RIDING_HARVEST"]:
@@ -1481,7 +1397,6 @@ if symbol:
                 bottom_status_str = "<b>(조건 미충족)</b>"
                 bottom_action_str = "-> <b>[관망]</b> 진바닥 지표 조건 미충족 (0점)"
 
-            # ★ [v36103 보완]: 메인 신호등(final_code)과 하위 지표 검증 텍스트 완벽 동기화 (모순 제거)
             if final_code == "BREAK_MA20_CONFIRMED":
                 sub_indicator_str = f"   - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 기민한 분할 타진 진행"
             elif final_code == "ESCAPE_BUY":
@@ -1491,7 +1406,9 @@ if symbol:
             elif final_code == "PULLBACK_BUY":
                 sub_indicator_str = f"   - <b>눌림목 지지 성공:</b> 안전마진 확보 완료 -> <b>[매수 유효]</b> 3단계 본진 진격 타점 가동"
             else:
-                if pullback_rebound_score >= 2:
+                if final_code == "WAIT_NARROW_MARGIN":
+                    _p_action = f"-> <b>[수익비 불량 관망]</b> 타점은 좋으나 상승 여력이 좁음"
+                elif pullback_rebound_score >= 2:
                     _p_action = f"-> <b>[눌림목 공방 유효]</b> 중간지대 조건 충족!"
                 elif pullback_rebound_score == 1:
                     _p_action = f"-> <b>[입질 대기]</b> 지표 1개 포착, 눌림목 공방 모색"
@@ -1638,6 +1555,15 @@ if symbol:
                         f"현재가({p:{fmt_p}}{currency})가"
                         f" 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, 당일 {candlestick_name} 중이오. 5일선 지지 사수 확인 후 대응하시게."
                     )
+                elif final_code == "WAIT_NARROW_MARGIN":
+                    ma5_guide_text = (
+                        f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으나, 상승 여력이 너무 좁아 뇌동매매를 강제 차단 중이오."
+                    )
+                elif final_code == "WAIT_INDICATOR":
+                    if pullback_rebound_score >= 1:
+                        ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있고 지표는 충족되었으나, 안전마진 확보 전까지 추격 매수를 차단 중이오."
+                    else:
+                        ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으나 수급 및 지표 미달로 진입 대기 중이오."
                 elif final_code == "ESCAPE_BUY":
                     if is_kr and is_morning_breakout_fast: ma5_time_str = "오전장 화력 속 즉시 50% 분할 진입"
                     elif is_kr: ma5_time_str = "14:00 이후 지지 확인 50% 분할 진입"
@@ -1687,15 +1613,27 @@ if symbol:
                         f"성벽({defense_line:{fmt_p}}{currency}) 위에서 안착 중이나 당일 차익 매물 출회 및 숨고르기 공방 중이오! "
                         "무리한 추격을 삼가고 익절 및 지지력을 주시하시게."
                     )
+                elif final_code == "WAIT_NARROW_MARGIN":
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 위에서 진격 타점을 잡았으나, <b>상단 목표선까지 먹을 게 {margin_diff:.1f}%밖에 없어</b> 진입을 강제 차단했소."
+                    )
                 else:
                     def_status = (
                         f"성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 타고 <b>상방 랠리 진격 중</b>이네! "
                         "든든한 성벽 방어선을 등지고 추세를 마음껏 즐기시게."
                     )
             else:
-                if final_code == "BREAK_MA20_CONFIRMED":
+                if final_code == "WAIT_NARROW_MARGIN":
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 공방 중 타점이 나왔으나, <b>상단 목표선까지 먹을 게 {margin_diff:.1f}%뿐이라</b> 진입을 강제 차단했소."
+                    )
+                elif final_code == "BREAK_MA20_CONFIRMED":
                     def_status = (
                         f"성벽({defense_line:{fmt_p}}{currency}) 아래이나, 지표 동조와 함께 <b>20일선 돌파 안착</b>에 성공하여 기민한 매수 타점을 형성 중이네!"
+                    )
+                elif final_code == "WAIT_INDICATOR" and pullback_rebound_score >= 1:
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 아래에서 지표는 충족했으나, 20일선 돌파 안전마진이 미달하여 기민하게 대기 중이오."
                     )
                 elif not is_ma5_safe:
                     def_status = (
@@ -1727,6 +1665,36 @@ if symbol:
                         " 마시게.</b>"
                     )
 
+            # ★ [MACD 텍스트 로직 완벽 복구]
+            if is_macd_accelerating:
+                if rsi_val >= 70:
+                    base_macd_desc = "<b>🔥 정회전 가속 (과열권)</b>: 추진력은 강력하나 보조지표 초과열권이오."
+                elif vol_strength < 65 or is_candle_bearish:
+                    mac_desc_word = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
+                    base_macd_desc = f"<b>⚡ 가속 중이나 거래절벽/{mac_desc_word}</b>: MACD는 가속 중이나 성벽 위에서 {mac_desc_word} 중이오."
+                elif p >= defense_line:
+                    base_macd_desc = "<b>🔥 정회전 가속 (성벽 수성)</b>: 성벽 사수하며 5일선 타고 상승 탄력 풀가동 중이오."
+                else:
+                    base_macd_desc = "<b>🔥 정회전 가속 (돌파 시도)</b>: 상방을 향해 5일선 지지받으며 추진력이 붙고 있소."
+            elif is_macd_decelerating:
+                if is_down_trend_structural or not is_ma5_safe:
+                    base_macd_desc = "<b>⚠️ 정회전 둔화 (반탄력 소멸)</b>: 하락 험지 속 단기 반등 추진력이 꺾였소."
+                else:
+                    base_macd_desc = "<b>⚠️ 정회전 둔화 (탄력 저하)</b>: 상승 관성은 유지 중이나 상방 추진력이 다소 둔화되었소."
+            elif is_macd_recovering:
+                if is_escape_buy_signal or final_code == "ESCAPE_BUY":
+                    base_macd_desc = "<b>🌤️ 역회전 감소 (바닥 탈출)</b>: 매도세는 잦아들며 5일선 안착 추진력이 가동 중이오."
+                elif final_code == "BOTTOM_ENTRY":
+                    base_macd_desc = "<b>🌤️ 역회전 감소 (바닥 입질)</b>: 하락 압력이 줄어들며 극바닥 다지기가 시도되는 중이오."
+                elif final_code == "BREAK_MA20_CONFIRMED":
+                    base_macd_desc = "<b>🔥 정회전 가속 (20일선 돌파)</b>: 매도세를 압도하는 수급 화력으로 20일선 안착 추진력 가동 중이오."
+                elif is_down_trend_structural or p < defense_line:
+                    base_macd_desc = "<b>🌤 역회전 감소 (기술적 반등)</b>: 매도세는 잦아들었으나 역배열/공방 구역이라 주의가 필요하오."
+                else:
+                    base_macd_desc = "<b>🌤 역회전 감소 (반등 시동)</b>: 하락 관성이 둔화되며 바닥 다지기 반등을 모색 중이오."
+            else:
+                base_macd_desc = "<b>⚙️ 엔진 역회전 심화</b>: 하락 관성이 지속되며 매도 압력이 깊어지는 중이오."
+
             if is_band_riding:
                 macd_strategy_msg = (
                     "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b>"
@@ -1740,35 +1708,6 @@ if symbol:
                     "추격 매수는 엄금이며, 1~2호가 아래에 매도 주문을 깔아두어 이익을 챙기시게."
                 )
             else:
-                if is_macd_accelerating:
-                    if rsi_val >= 70:
-                        base_macd_desc = "<b>🔥 정회전 가속 (과열권)</b>: 추진력은 강력하나 보조지표 초과열권이오."
-                    elif vol_strength < 65 or is_candle_bearish:
-                        mac_desc_word = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
-                        base_macd_desc = f"<b>⚡ 가속 중이나 거래절벽/{mac_desc_word}</b>: MACD는 가속 중이나 성벽 위에서 {mac_desc_word} 중이오."
-                    elif p >= defense_line:
-                        base_macd_desc = "<b>🔥 정회전 가속 (성벽 수성)</b>: 성벽 사수하며 5일선 타고 상승 탄력 풀가동 중이오."
-                    else:
-                        base_macd_desc = "<b>🔥 정회전 가속 (돌파 시도)</b>: 상방을 향해 5일선 지지받으며 추진력이 붙고 있소."
-                elif is_macd_decelerating:
-                    if is_down_trend_structural or not is_ma5_safe:
-                        base_macd_desc = "<b>⚠️ 정회전 둔화 (반탄력 소멸)</b>: 하락 험지 속 단기 반등 추진력이 꺾였소."
-                    else:
-                        base_macd_desc = "<b>⚠️ 정회전 둔화 (탄력 저하)</b>: 상승 관성은 유지 중이나 상방 추진력이 다소 둔화되었소."
-                elif is_macd_recovering:
-                    if is_escape_buy_signal or final_code == "ESCAPE_BUY":
-                        base_macd_desc = "<b>🌤️ 역회전 감소 (바닥 탈출)</b>: 매도세는 잦아들며 5일선 안착 추진력이 가동 중이오."
-                    elif final_code == "BOTTOM_ENTRY":
-                        base_macd_desc = "<b>🌤️ 역회전 감소 (바닥 입질)</b>: 하락 압력이 줄어들며 극바닥 다지기가 시도되는 중이오."
-                    elif final_code == "BREAK_MA20_CONFIRMED":
-                        base_macd_desc = "<b>🔥 정회전 가속 (20일선 돌파)</b>: 매도세를 압도하는 수급 화력으로 20일선 안착 추진력 가동 중이오."
-                    elif is_down_trend_structural or p < defense_line:
-                        base_macd_desc = "<b>🌤 역회전 감소 (기술적 반등)</b>: 매도세는 잦아들었으나 역배열/공방 구역이라 주의가 필요하오."
-                    else:
-                        base_macd_desc = "<b>🌤 역회전 감소 (반등 시동)</b>: 하락 관성이 둔화되며 바닥 다지기 반등을 모색 중이오."
-                else:
-                    base_macd_desc = "<b>⚙️ 엔진 역회전 심화</b>: 하락 관성이 지속되며 매도 압력이 깊어지는 중이오."
-
                 if is_overall_cautious_state and not (is_kr and is_morning_breakout_fast):
                     macd_strategy_msg = (
                         f"{base_macd_desc}<br>• <b>[관망 기조 동조]:</b> 현재 상단 종합 결론이 관망/경계 상태이므로, "
@@ -1784,7 +1723,7 @@ if symbol:
 
             st.divider()
 
-            # 하단 4대 핵심 지표 박스
+            # 하단 4대 핵심 지표 박스 (오리지널 포맷 완벽 복구)
             i1, i2, i3, i4 = st.columns(4)
             with i1:
                 if is_long_upper_tail:
@@ -1792,6 +1731,22 @@ if symbol:
                         "🟡 <b>[위꼬리 저항 관망 구역]</b><br>•"
                         " <b>역할:</b> 고점 매물 소화 대기.<br>• <b>진단:</b> 긴 위꼬리가 밀려 내려왔으니 섣부른 추격을 금하고 관망."
                     )
+                elif final_code == "WAIT_NARROW_MARGIN":
+                    bb_diag = (
+                        f"🟡 <b>[상승 여력 부족 / 관망] (여력: +{margin_diff:.1f}%)</b><br>•"
+                        " <b>역할:</b> 수지타산 불량 타점 회피.<br>• <b>진단:</b> 타점 조건은 좋으나 상단 목표선까지 거리가 너무 좁소. 진입을 보류하시게."
+                    )
+                elif final_code == "WAIT_INDICATOR":
+                    if pullback_rebound_score >= 1:
+                        bb_diag = (
+                            f"🟡 <b>[추세/안전마진 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                            f" <b>진단:</b> 점수({pullback_rebound_score}/3점)는 충족했으나 안전마진 부족으로 관망."
+                        )
+                    else:
+                        bb_diag = (
+                            f"🟡 <b>[지표/수급 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                            f" <b>진단:</b> 지표 동조 점수 부족({pullback_rebound_score}/3점)으로 안착 대기 중."
+                        )
                 elif final_code == "BOTTOM_ENTRY":
                     if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 화력(300점 이상) 속 10% 선제 타진 및 종가 사수"
                     elif is_kr: bb_time_diag = "14:00 이후 10% 타진, 저녁 8시 애프터마켓 마감 사수 시 완성"
@@ -1890,11 +1845,16 @@ if symbol:
                         " <b>진단:</b> 매도/매수 잔량비가 1.5배 이상이면 매도벽 우세로 보고 진입을 보류."
                     )
                 else:
-                    bb_diag = (
-                        f"⚖️ <b>[관망 및 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        " <b>역할:</b> 뇌동매매 방지.<br>• <b>진단:</b> 지표 동조 점수 미흡("
-                        f"{pullback_rebound_score}/3점)으로 안착 대기 중."
-                    )
+                    if pullback_rebound_score >= 1:
+                        bb_diag = (
+                            f"⚖️ <b>[관망 및 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                            f" <b>진단:</b> 지표 동조({pullback_rebound_score}/3점)는 되었으나 역배열 등 조건 미달로 관망."
+                        )
+                    else:
+                        bb_diag = (
+                            f"⚖️ <b>[관망 및 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                            f" <b>진단:</b> 지표 동조 점수 미흡({pullback_rebound_score}/3점)으로 안착 대기 중."
+                        )
 
                 st.markdown(
                     f"<div class='ind-box'><p class='ind-title'>Bollinger"
@@ -1974,6 +1934,7 @@ if symbol:
                 )
 
             with i4:
+                # 하단 MACD 전용 지표 텍스트 복구
                 if is_band_riding:
                     m_diag = (
                         "<b>🔥 엔진 풀가동 (대세 추종)</b><br>• <b>역할:</b> 추세 지속력 측정.<br>• <b>진단:</b>"
