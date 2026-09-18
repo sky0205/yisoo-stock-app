@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36116", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36118", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -227,7 +227,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36116 (오리지널 통신망 + 최신 지능 결합)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36118 (오리지널 복원 + 호가창/수익비 필터)")
 display_global_risk()
 st.divider()
 
@@ -290,6 +290,7 @@ with col_btn:
         st.rerun()
 
 
+
 if symbol:
     try:
         try:
@@ -308,7 +309,7 @@ if symbol:
         auto_p, v_curr = 0.0, 0.0
         us_prev_p = None
 
-        # ★ v36103 오리지널 통신 로직 (가장 안정적이고 정확한 실시간 갱신)
+        # ★ v36103 오리지널 통신 규격 (가장 빠르고 안정적인 원상복구)
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
@@ -401,6 +402,10 @@ if symbol:
 
         multiplier = 1000.0 if is_kr else 1.0
 
+        # ★★★ [호가창 실전 병법 변수 초기화] ★★★
+        is_ob_stage2_safe = True
+        is_ob_stage3_safe = True
+
         if manual_ask > 0 and manual_bid > 0:
             calc_ratio = round(manual_ask / manual_bid, 2)
             display_ask = manual_ask * multiplier
@@ -423,6 +428,7 @@ if symbol:
         else:
             ob_data = {"ask": 0.0, "bid": 0.0, "ratio": None, "ok": False, "msg": "실시간 호가 API 미연결"}
 
+        # ★ 프리마켓 모드 발동 감지 및 거래량 함정 우회
         override_pre_p = 0.0
         is_pre_market_mode = False
         if not is_kr and manual_pre_price_str:
@@ -619,6 +625,9 @@ if symbol:
                 p < ma20_safe_threshold
             )
 
+            # ==================================================================
+            # ★★★ [호가창 실전 병법 필터 가동 (신호등 강제 잠금용)] ★★★
+            # ==================================================================
             ob_ratio_val = ob_data.get("ratio")
             has_manual_ob = manual_ask > 0 and manual_bid > 0
             ob_ratio_available = (
@@ -632,45 +641,59 @@ if symbol:
                     "💡 <b>미장 자동 호가 미제공</b> (수동 입력 시에만 HTS 잔량비 연산 가동)"
                 )
                 is_orderbook_safe = True
+                is_ob_stage2_safe = True
+                is_ob_stage3_safe = True
             elif ob_ratio_available:
                 ob_ratio_val = float(ob_ratio_val)
                 ask_formatted = f"{ob_data.get('ask', 0.0):,.0f}"
                 bid_formatted = f"{ob_data.get('bid', 0.0):,.0f}"
     
-                if ob_ratio_val > 2.8:
+                if ob_ratio_val >= 1.5:
                     ob_status_msg = (
-                        f"🚨 <b>[매도벽 과다 저항]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> "
-                        f"(매도:{ask_formatted}주 / 매수:{bid_formatted}주) - 매도잔량이 크게 우세하여 진격 경계"
+                        f"🔥 <b>[본진 투입 합격]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> "
+                        f"(매도:{ask_formatted} / 매수:{bid_formatted}) - 매도벽을 걷어차는 강력한 매수세 확정 (3단계 합격)"
                     )
-                    is_orderbook_safe = False
-                elif ob_ratio_val >= 1.5:
-                    ob_status_msg = (
-                        f"🟡 <b>[매도 우위 공방]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> "
-                        f"(매도:{ask_formatted}주 / 매수:{bid_formatted}주) - 매도잔량 우세로 추가 확인 필요"
-                    )
-                    is_orderbook_safe = False
+                    is_orderbook_safe = True
+                    is_ob_stage2_safe = True
+                    is_ob_stage3_safe = True
                 elif ob_ratio_val >= 1.0:
                     ob_status_msg = (
-                        f"⚖️ <b>[정상 공방 호가]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> "
-                        f"(매도:{ask_formatted}주 / 매수:{bid_formatted}주) - 균형권 공방"
+                        f"⚖️ <b>[탈출 공방 호가]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> "
+                        f"(매도:{ask_formatted} / 매수:{bid_formatted}) - 5일선 돌파 의지 확인 (2단계 합격 / 3단계 보류)"
                     )
                     is_orderbook_safe = True
+                    is_ob_stage2_safe = True
+                    is_ob_stage3_safe = False
+                elif ob_ratio_val >= 0.5:
+                    ob_status_msg = (
+                        f"⚠️ <b>[속임수/윗꼬리 경계]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> "
+                        f"(매도:{ask_formatted} / 매수:{bid_formatted}) - 1.0배 미만! 세력이 위로 살 의지가 없는 속임수 경계"
+                    )
+                    is_orderbook_safe = False
+                    is_ob_stage2_safe = False
+                    is_ob_stage3_safe = False
                 else:
                     ob_status_msg = (
-                        f"🟢 <b>[매수 우위 호가]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> "
-                        f"(매도:{ask_formatted}주 / 매수:{bid_formatted}주) - 매수잔량이 상대적으로 우세"
+                        f"🚨 <b>[허매수 폭락 경고]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> "
+                        f"(매도:{ask_formatted} / 매수:{bid_formatted}) - 매수잔량이 2배 이상 많아 바닥을 가장한 허매수 투매 위험!"
                     )
-                    is_orderbook_safe = True
+                    is_orderbook_safe = False
+                    is_ob_stage2_safe = False
+                    is_ob_stage3_safe = False
             elif manual_ask > 0 or manual_bid > 0:
                 ob_status_msg = (
                     "⚠️ <b>[호가 입력 불완전]</b> HTS 총매도잔량과 총매수잔량을 둘 다 입력해야 잔량비를 계산할 수 있습니다."
                 )
                 is_orderbook_safe = False
+                is_ob_stage2_safe = False
+                is_ob_stage3_safe = False
             else:
                 ob_status_msg = (
                     "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 가동합니다.</b> 자동 호가 데이터는 현재 연결되어 있지 않습니다."
                 )
                 is_orderbook_safe = True
+                is_ob_stage2_safe = True
+                is_ob_stage3_safe = True
 
             if bandwidth < 10.0:
                 is_bandwidth_ok = False
@@ -890,52 +913,7 @@ if symbol:
             )
             ma_price_summary += generate_ma_hierarchy(df, p)
             
-            if is_kr:
-                core_vault = {
-                    "005930": "삼성전자",
-                    "000660": "SK하이닉스",
-                    "033100": "제룡전기",
-                    "257720": "실리콘투",
-                    "058610": "에스피지",
-                    "010140": "삼성중공업",
-                    "068270": "셀트리온",
-                    "272210": "한화시스템",
-                    "101490": "에스앤에스텍",
-                    "051600": "한전KPS",
-                    "064350": "현대로템",
-                    "032300": "솔리드",
-                    "050890": "솔리드",
-                }
-                final_display_name = core_vault.get(symbol.zfill(6), f"국내종목 ({symbol})")
-                if symbol.zfill(6) not in core_vault:
-                    try:
-                        url = f"https://finance.naver.com/item/main.naver?code={symbol.zfill(6)}"
-                        res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
-                        soup = BeautifulSoup(res.text, "html.parser")
-                        final_display_name = soup.select_one(".wrap_company h2 a").text.strip()
-                    except Exception:
-                        try:
-                            df_krx_backup = load_krx_listing()
-                            final_display_name = df_krx_backup[df_krx_backup["Code"] == symbol.zfill(6)]["Name"].values[0]
-                        except Exception:
-                            pass
-            else:
-                us_vault = {
-                    "TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", "MSFT": "마이크로소프트",
-                    "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타", "IONQ": "아이온큐",
-                    "CPNG": "쿠팡", "NFLX": "넷플릭스", "SKHY": "SK하이닉스", "INTC": "인텔",
-                    "BE": "블룸에너지", "RKLB": "로켓랩", "AVGO": "브로드컴", "LRCX": "램리서치",
-                }
-                tk = symbol.upper()
-                kor_name = us_vault.get(tk, None)
-                if not kor_name:
-                    try:
-                        info_dict = ticker.info
-                        kor_name = info_dict.get("longName", info_dict.get("shortName", tk))
-                    except Exception:
-                        kor_name = tk
-                final_display_name = f"{kor_name} ({tk})"
-
+            final_display_name = get_stock_name(symbol, is_kr)
             safe_display_name = html.escape(final_display_name)
             
             target_price_100 = up_b
@@ -1081,22 +1059,26 @@ if symbol:
                 ((vol_strength >= 65.0) if (p_chg >= 0.0 and p >= today_open) else (vol_strength >= 70.0))
             )
             
+            # ★ 1. 1단계 호가창 폭락 경고 족쇄 (비율 0.5 미만 시 진입 금지)
             is_bottom_entry_signal = (
                 (not is_ma5_safe) and (bottom_score >= 1 or will_val <= -75)
                 and is_volume_ok_for_bottom and (not is_down_trend_v)
                 and is_macd_not_deepening and is_valid_bottom_candle and (not is_target_reached)
+                and (not has_manual_ob or ob_ratio_val is None or ob_ratio_val >= 0.5)
             )
         
+            # ★ 2. 2단계 호가창 속임수 족쇄 (비율 1.0 미만 시 진입 금지)
             is_escape_buy_signal = (
                 is_ma5_safe and is_bottom_indicator_ok
                 and (vol_strength >= 65 or is_pre_market_mode)
                 and is_macd_not_deepening and is_valid_buy_candle
-                and is_bandwidth_ok and is_orderbook_safe and (not is_target_reached)
+                and is_bandwidth_ok and is_ob_stage2_safe and (not is_target_reached)
             )
         
+            # ★ 3. 3단계 호가창 본진 투입 족쇄 (비율 1.5 미만 시 진입 금지)
             is_pullback_buy_signal = (
                 (not is_down_trend_structural) and is_ma20_buffer_safe
-                and is_ma5_safe and is_orderbook_safe
+                and is_ma5_safe and is_ob_stage3_safe
                 and (pullback_rebound_score >= 1)
                 and (vol_strength >= 65 or is_pre_market_mode)
                 and is_bandwidth_ok and is_macd_not_deepening
@@ -1113,7 +1095,7 @@ if symbol:
                 time_tag_ok = "세션 화력 안착 확인"
 
             # ==================================================================
-            # ★ [신호등 분기 논리 + 수익비 7% 필터 탑재]
+            # ★ [신호등 분기 논리]
             # ==================================================================
             current_chg = float(p_chg)
             margin_diff = ((target_price_100 - p) / p) * 100 if p > 0 else 0
@@ -1122,109 +1104,228 @@ if symbol:
                 final_code = "STOP_LOSS_ALERT"
                 sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
                 col = "#D32F2F"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[바닥권 전저점 방어선 붕괴]</b> 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    "<b>[바닥권 전저점 방어선 붕괴]</b> 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
+                )
             elif is_long_upper_tail and (p >= defense_line or p >= mid_line):
                 final_code = "LONG_TAIL_WARNING"
                 sig = "🟡 [위꼬리 저항 경계] 고점 매물 출회 / 추격 매수 금지"
                 col = "#F57C00"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[긴 위꼬리 저항 포착]</b> 지표상 안착처럼 보여도 위쪽 매물벽 저항이 맵사오니 섣부른 추격매수를 금하고 냉정하게 관망하시게."
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[긴 위꼬리 저항 포착]</b> 지표상 안착처럼 보여도 위쪽 매물벽 저항이 맵사오니 섣부른 추격매수를 금하고 냉정하게 관망하시게."
+                )
             elif is_band_riding:
                 final_code = "BAND_RIDING_HARVEST"
                 sig = "🟣 [1차 수확 / 잔여 밴드 추종] 목표선 상방 확장 중!"
                 col = "#6A1B9A"
-                final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[볼린저 상단 상방 확장]</b> 현재가({p:{fmt_p}}{currency})가 밴드 상단을 타고 위로 시원하게 뻗어 나가는 중이오! <b>물량의 50%는 1차 익절하여 수익을 확정</b>하고, <b>잔여 50%는 5일선 이탈 전까지 목표선 상향을 즐기며 홀딩</b>하시게."
+                final_adv = (
+                    f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[볼린저 상단 상방 확장]</b> 현재가({p:{fmt_p}}{currency})가 밴드 상단을 타고 위로 시원하게 뻗어 나가는 중이오! "
+                    "<b>물량의 50%는 1차 익절하여 수익을 확정</b>하고, <b>잔여 50%는 5일선 이탈 전까지 목표선 상향을 즐기며 홀딩</b>하시게."
+                )
             elif p >= (target_price_100 * 0.98) or is_target_reached:
                 final_code = "RED_SELL_TARGET"
                 sig = "🔴 [목표 도달] 수학 목표선 저항! 1차 50% 수확 및 분할 매도!"
                 col = "#D32F2F"
-                final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수학 목표선 도달 완료]</b> 볼린저 상단({target_price_100:{fmt_p}}{currency}) 코앞에 도달했거나 저항을 받고 있소! 신규 매수를 절대 금지하고, <b>우선 50% 물량을 기계적으로 수확(익절)</b>한 뒤 잔여 물량은 매도 주문을 걸어두시게."
+                final_adv = (
+                    f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[수학 목표선 도달 완료]</b> 볼린저 상단({target_price_100:{fmt_p}}{currency}) 코앞에 도달했거나 저항을 받고 있소! "
+                    "신규 매수를 절대 금지하고, <b>우선 50% 물량을 기계적으로 수확(익절)</b>한 뒤 잔여 물량은 매도 주문을 걸어두시게."
+                )
             elif p >= defense_line:
                 if is_candle_bearish or (is_positive_day and vol_strength < 65 and not is_pre_market_mode):
                     candlestick_type_str = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                     final_code = "RED_SELL_WARNING"
                     sig = f"🔴 [성벽 위 {candlestick_type_str}] 선제적 익절 및 수성 구간"
                     col = "#D32F2F"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. <b>[성벽 위 {candlestick_type_str}]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 추격 매수를 엄금하고 선제적 분할 익절(수확)을 준비하시게."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. "
+                        f"<b>[성벽 위 {candlestick_type_str}]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 "
+                        "추격 매수를 엄금하고 선제적 분할 익절(수확)을 준비하시게."
+                    )
                 elif p >= (target_price_100 * 0.98):
                     final_code = "RED_SELL_WARNING"
                     sig = "🔴 [성벽 위 저항 익절] 목표선 터치 후 위꼬리 이탈!"
                     col = "#D32F2F"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. <b>[성벽 위 저항 익절]</b> 현재가({p:{fmt_p}}{currency})가 수확 목표선 터치 후 위꼬리를 길게 달고 밀려 내려왔소! 잔여 물량까지 서둘러 매도(수확)를 집행하시게."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. "
+                        f"<b>[성벽 위 저항 익절]</b> 현재가({p:{fmt_p}}{currency})가 수확 목표선 터치 후 위꼬리를 길게 달고 밀려 내려왔소! "
+                        "잔여 물량까지 서둘러 매도(수확)를 집행하시게."
+                    )
                 else:
                     final_code = "BREAKOUT_ATTACK"
                     sig = "🟢 [성벽 위 진격] 상방 랠리 추종 구역"
                     col = "#2E7D32"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. <b>[성벽 위 안착 진격]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 기세를 타고 양봉으로 진격 중이오! 5일선을 사수하며 상방 목표선까지 추세를 즐기시게."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. "
+                        f"<b>[성벽 위 안착 진격]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 기세를 타고 양봉으"
+                        "로 진격 중이오! 5일선을 사수하며 상방 목표선까지 추세를 즐기시게."
+                    )
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= -1.5):
                 if margin_diff < 7.0:
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! 리스크 대비 먹을 게 없는 좁은 자리이니 뇌동매매를 금하고 관망하시게."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! "
+                        "리스크 대비 먹을 게 없는 좁은 자리이니 뇌동매매를 금하고 관망하시게."
+                    )
                 else:
                     final_code = "BOTTOM_ENTRY"
                     col = "#388E3C"
                     sig = f"🟢 [진바닥 안착] 1단계 분할 입절 유효 구역 ({time_tag_ok})"
-                    action_time_guide = "오전장 화력(300점 이상) 및 5일선 지지 확인 시 10% 선제 타진하고 종가 사수를 확인하시게." if (is_kr and is_morning_breakout_fast) else "14:00 이후 5일선 및 볼린저 바닥 지지 확인 시 10% 분할 타진하시게." if is_kr else "정규장(세션) 화력 및 5일선 지지 확인 시 10% 분할 타진하시게."
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 포착 완료]</b> 지표 충족 및 5일선 안착! 전면 매수가 아닌 <b>비중 10% 수준의 1단계 분할 입절(매수)</b>로 기민하게 접근하시게. {action_time_guide}"
+                    action_time_guide = (
+                        "오전장 화력(300점 이상) 및 5일선 지지 확인 시 10% 선제 타진하고 종가 사수를 확인하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if (is_kr and is_morning_breakout_fast)
+                        else "14:00 이후 5일선 및 볼린저 바닥 지지 확인 시 10% 분할 타진하시게. (단, 이탈 시 철수)" if is_kr
+                        else "정규장(세션) 화력 및 5일선 지지 확인 시 10% 분할 타진하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
+                    )
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"• <b>[진바닥 포착 완료]</b> 지표 충족 및 5일선 안착! 전면 매수가 아닌 <b>비중 10% 수준의 1단계 분할 입절(매수)</b>로 기민하게 접근하시게. {action_time_guide}"
+                    )
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
                 if margin_diff < 7.0:
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! 리스크 대비 먹을 게 없는 좁은 자리이니 뇌동매매를 금하고 관망하시게."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! "
+                        "리스크 대비 먹을 게 없는 좁은 자리이니 뇌동매매를 금하고 관망하시게."
+                    )
                 else:
                     final_code = "ESCAPE_BUY"
                     col = "#2E7D32"
                     sig = f"🟢 [추가 진격] 2단계 진바닥 탈출 매수 ({time_tag_ok})"
-                    action_guide = "오전장 수급(300점 이상)과 5일선 안착 확인 시 즉시 50% 분할 진입 가동하시게." if (is_kr and is_morning_breakout_fast) else "14:00 이후 5일선 안착 확인 시 50% 분할 진입하시게." if is_kr else "정규장(세션) 수급 동반 및 5일선 안착 확인 시 50% 분할 진입하시게."
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
+                    action_guide = (
+                        "오전장 수급(300점 이상)과 5일선 안착 확인 시 즉시 50% 분할 진입 가동하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if (is_kr and is_morning_breakout_fast)
+                        else "14:00 이후 5일선 안착 확인 시 50% 분할 진입하시게. (단, 이탈 시 철수)" if is_kr
+                        else "정규장(세션) 수급 동반 및 5일선 안착 확인 시 50% 분할 진입하시게. (단, 이탈 시 즉시 철수)"
+                    )
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                        f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
+                    )
             elif is_pullback_buy_signal:
                 if margin_diff < 7.0:
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! 리스크 대비 먹을 게 없는 좁은 자리이니 뇌동매매를 금하고 관망하시게."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! "
+                        "리스크 대비 먹을 게 없는 좁은 자리이니 뇌동매매를 금하고 관망하시게."
+                    )
                 else:
                     final_code = "PULLBACK_BUY"
                     col = "#1976D2"
                     sig = f"🔵 [본진 진격] 3단계 눌림목 추가 매수 ({time_tag_ok})"
-                    action_guide = "오전장 화력(300점 이상) 속 안전마진 안착 시 즉시 50% 타진 가동하시게." if (is_kr and is_morning_breakout_fast) else "14:00 이후 5·20일선 안전마진 안착 시 50% 분할 타진하시게." if is_kr else "정규장(세션) 화력 속 5·20일선 안전마진 안착 시 50% 분할 타진하시게."
-                    final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
+                    action_guide = (
+                        "오전장 화력(300점 이상) 속 안전마진 안착 시 즉시 50% 타진 가동하시게. (단, 밀림 시 매수 취소)" if (is_kr and is_morning_breakout_fast)
+                        else "14:00 이후 5·20일선 안전마진 안착 시 50% 분할 타진하시게. (단, 밀림 시 매수 취소)" if is_kr
+                        else "정규장(세션) 화력 속 5·20일선 안전마진 안착 시 50% 분할 타진하시게. (단, 밀림 시 매수 취소)"
+                    )
+                    final_adv = (
+                        f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                        f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
+                    )
             elif (
                 p >= ma20_safe_threshold
                 and (not is_down_trend_structural)
                 and is_ma5_safe
                 and pullback_rebound_score >= 1
                 and (vol_strength >= 65 or is_pre_market_mode)
+                and is_ob_stage3_safe
             ):
                 if margin_diff < 7.0:
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 돌파 조건 충족이나 상승 여력 부족"
                     col = "#F57C00"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 돌파 조건은 완벽하나 목표선까지의 활주로(상승 여력)가 {margin_diff:.1f}%밖에 되지 않아 리스크 대비 기대 수익이 낮소. 진입을 보류하시게."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"돌파 조건은 완벽하나 목표선까지의 활주로(상승 여력)가 {margin_diff:.1f}%밖에 되지 않아 리스크 대비 기대 수익이 낮소. 진입을 보류하시게."
+                    )
                 else:
                     final_code = "BREAK_MA20_CONFIRMED"
                     col = "#1E88E5"
                     sig = "🔵 [돌파 확인] 20일선 안착 타진 (기민한 선제 대응)"
-                    action_guide = "오전장 거래량 동반 돌파 확인 시 즉시 50% 분할 진입 가동하시게." if (is_kr and is_morning_breakout_fast) else "14:00 이후 지지 확인 시 50% 분할 진입하시게." if is_kr else "정규장(세션) 거래량 동반 돌파 확인 시 50% 분할 진입하시게."
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[20일선 돌파 안착 타진]</b> 현재가({p:{fmt_p}}{currency})가 20일선 및 안전마진선({ma20_safe_threshold:{fmt_p}}{currency})을 돌파하였소! {action_guide}"
+                    action_guide = (
+                        "오전장 거래량(300점 이상) 동반 돌파 확인 시 즉시 50% 분할 진입 가동하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if (is_kr and is_morning_breakout_fast)
+                        else "14:00 이후 지지 확인 시 50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)" if is_kr
+                        else "정규장(세션) 거래량 동반 돌파 확인 시 50% 분할 진입하시게. (단, 윗꼬리 이탈 시 즉시 철수)"
+                    )
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)."
+                        f" <b>[20일선 돌파 안착 타진]</b>"
+                        f" 현재가({p:{fmt_p}}{currency})가"
+                        f" 20일선 및 안전마진선({ma20_safe_threshold:{fmt_p}}{currency})을 돌파하였소!"
+                        f" {action_guide}"
+                    )
+            # ★★★ [v36118 추가] 호가창 매도벽/잔량비 미달에 따른 실전 병법 방어 로직 ★★★
+            elif (
+                (bottom_score >= 1 or pullback_rebound_score >= 1)
+                and has_manual_ob
+                and ob_ratio_val is not None
+                and ob_ratio_val < 0.5
+                and not is_ma5_safe
+            ):
+                final_code = "WAIT_ORDERBOOK"
+                sig = "🟡 [관망/보류] 허매수 징후 포착 (폭락 경계)"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[허매수 투매 경계]</b> 진바닥 지표는 포착되었으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 0.5배 미만으로 매수잔량이 비정상적으로 많소! "
+                    "세력이 바닥을 가장해 개미에게 물량을 떠넘길 위험이 크니 절대 칼날을 잡지 마시게."
+                )
+            elif (
+                is_ma5_safe
+                and not is_down_trend_structural
+                and (bottom_score >= 1 or pullback_rebound_score >= 1)
+                and has_manual_ob
+                and (
+                    (pullback_rebound_score >= 1 and not is_ob_stage3_safe) or 
+                    (bottom_score >= 1 and not is_ob_stage2_safe)
+                )
+            ):
+                final_code = "WAIT_ORDERBOOK"
+                sig = "🟡 [관망/보류] 매도잔량비 실전 기준 미달 (속임수 윗꼬리 경계)"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[호가창 기준 미달]</b> 타점 지표는 충족했으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 실전 투입 기준에 미달하오. "
+                    "세력이 윗꼬리로 밀어버릴 속임수일 확률이 높으니 방아쇠를 잠그고 관망하시게."
+                )
             elif is_ma_tangled:
                 if is_ma5_safe and vol_strength >= 65.0 and bandwidth >= 10.0 and (rsi_val <= 40 or temp_bottom_score >= 1 or (p_chg >= 0.0 and p >= mid_line)):
                     final_code = "BOTTOM_ENTRY"
                     col = "#388E3C"
                     sig = f"🟢 [혼조세 속 진바닥 입절] 1단계 분할 매수 유효 구역 ({time_tag_ok})"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[이평선 꼬임 속 진바닥 포착]</b> 수급과 밴드폭이 뒷받침된 상태에서 5일선 안착 및 냉골 바닥 지표가 충족되었으므로 비중 10%의 1단계 분할 입절로 대응하시게."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        "<b>[이평선 꼬임 속 진바닥 포착]</b> 수급과 밴드폭이 뒷받침된 상태에서 5일선 안착 및 냉골 바닥 지표가 충족되었으므로, "
+                        "비중 10%의 1단계 분할 입절로 냉정하게 대응하시게."
+                    )
                 else:
                     final_code = "MA_TANGLED_WARNING"
                     sig = "🟡 [이평선 꼬임 혼조세] 방향성 상실로 인한 관망"
                     col = "#F57C00"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[이평선 꼬임 혼조세]</b> 방향성을 상실했으니 뇌동매매를 금하고 냉정하게 관망하시게."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        "<b>[이평선 꼬임 혼조세]</b> 거래량 부족 또는 밴드 응축 상태에서 이동평균선들이 엉켜 방향성을 상실했으니, "
+                        "무관한 추격을 금하고 냉정하게 관망하시게."
+                    )
             elif (current_chg < 0.0) and (bias_ma5 < 0.0):
                 final_code = "BEARISH_GUARD"
                 sig = f"🟡 [하락/조정] 음봉 압력 속 추세 이탈 경계 "
                 col = "#F57C00"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 현재 하락 음봉 국면이오니 헛된 기대를 버리고 성벽 및 5일선 이탈에 따른 칼질 관망을 유지하시게."
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"현재 하락 음봉 국면이오니, 양봉 숨고르라는 헛된 기대를 버리고 "
+                    f"성벽 및 5일선 이탈에 따른 칼질 관망을 유지하시게."
+                )
             elif (
                 is_ma5_safe
                 and not is_bottom_indicator_ok
@@ -1234,20 +1335,32 @@ if symbol:
                     final_code = "WAIT_INDICATOR"
                     sig = "🟡 [관망/보류] 지표 충족이나 추세/안전마진 부족"
                     col = "#F57C00"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[추세 불안정 관망]</b> 눌림목 점수({pullback_rebound_score}/3점)는 충족되었으나, 20일선 안전마진이 부족하거나 이평선 꼬임으로 추세적 안정성이 확보되지 않았소. 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"<b>[추세 불안정 관망]</b> 눌림목 점수({pullback_rebound_score}/3점)는 충족되었으나, 20일선 안전마진이 부족하거나 이평선 꼬임으로 추세적 안정성이 확보되지 않았소. 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
+                    )
                 else:
                     final_code = "WAIT_INDICATOR"
-                    sig = "🟡 [관망/보류] 5일선 안착했으나 지표 동조 미충족 (안착 대기)"
+                    sig = "🟡 [관망/보류] 5일선 안착했으나 지표/수급 미충족 (안착 대기)"
                     col = "#F57C00"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[지표 동조 미충족]</b> 5일선 위에 안착했으나 눌림목 지지 동조 점수 부족({pullback_rebound_score}/3점) 및 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"<b>[매수 조건 미충족]</b> 5일선 위에 안착했으나 수급 불량 또는 눌림목 지지 동조 점수 부족({pullback_rebound_score}/3점)으로 안착 대기 중이므로 뇌동매매를 금하고 관망하시게."
+                    )
             else:
                 final_code = "WAIT_GENERAL"
                 sig = "🟡 [관망] 조건 미충족 / 뇌동매매 금지"
                 col = "#FBC02D"
                 if pullback_rebound_score >= 1:
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 지표 점수({pullback_rebound_score}/3점)는 포착되었으나, 역배열 하락 추세 등 핵심 전제 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"지표 점수({pullback_rebound_score}/3점)는 포착되었으나, 역배열 하락 추세 등 핵심 전제 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
+                    )
                 else:
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        "조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
+                    )
 
             st.markdown(
                 f"<div class='signal-box' style='background-color: {col};'>"
@@ -1260,7 +1373,7 @@ if symbol:
             is_overall_cautious_state = final_code in [
                 "WAIT_GENERAL", "WAIT_INDICATOR", "WAIT_MACD", "WAIT_VOLUME",
                 "WAIT_DOWNTREND_FALL", "WAIT_PULLBACK_CANDLE", "WAIT_PULLBACK",
-                "WAIT_MA20_BUFFER", "WAIT_ORDERBOOK", "WAIT_OVER_EXTENDED",
+                "WAIT_ORDERBOOK", "WAIT_OVER_EXTENDED",
                 "YELLOW_CAUTION", "RED_SELL_WARNING", "MA_TANGLED_WARNING", "LONG_TAIL_WARNING", "BEARISH_GUARD", "WAIT_NARROW_MARGIN"
             ]
 
@@ -1319,6 +1432,8 @@ if symbol:
             else:
                 if final_code == "WAIT_NARROW_MARGIN":
                     _p_action = f"-> <b>[수익비 불량 관망]</b> 타점은 좋으나 상승 여력이 좁음"
+                elif final_code == "WAIT_ORDERBOOK":
+                    _p_action = f"-> <b>[호가창 미달 관망]</b> 허매수/속임수 경계"
                 elif pullback_rebound_score >= 2:
                     _p_action = f"-> <b>[눌림목 공방 유효]</b> 중간지대 조건 충족!"
                 elif pullback_rebound_score == 1:
@@ -1470,6 +1585,10 @@ if symbol:
                     ma5_guide_text = (
                         f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으나, 상승 여력이 너무 좁아 뇌동매매를 강제 차단 중이오."
                     )
+                elif final_code == "WAIT_ORDERBOOK":
+                    ma5_guide_text = (
+                        f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으나, 호가창 매도잔량비가 미달하여 속임수 경계 중이오."
+                    )
                 elif final_code == "WAIT_INDICATOR":
                     if pullback_rebound_score >= 1:
                         ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있고 지표는 충족되었으나, 안전마진 확보 전까지 추격 매수를 차단 중이오."
@@ -1538,13 +1657,17 @@ if symbol:
                     def_status = (
                         f"성벽({defense_line:{fmt_p}}{currency}) 공방 중 타점이 나왔으나, <b>상단 목표선까지 먹을 게 {margin_diff:.1f}%뿐이라</b> 진입을 강제 차단했소."
                     )
+                elif final_code == "WAIT_ORDERBOOK":
+                    def_status = (
+                        f"성벽({defense_line:{fmt_p}}{currency}) 아래에서 호가창 기준 미달(허매수 의심)로 돌파 진입을 강제 보류 중이오."
+                    )
                 elif final_code == "BREAK_MA20_CONFIRMED":
                     def_status = (
                         f"성벽({defense_line:{fmt_p}}{currency}) 아래이나, 지표 동조와 함께 <b>20일선 돌파 안착</b>에 성공하여 기민한 매수 타점을 형성 중이네!"
                     )
                 elif final_code == "WAIT_INDICATOR" and pullback_rebound_score >= 1:
                     def_status = (
-                        f"성벽({defense_line:{fmt_p}}{currency}) 아래에서 지표는 충족했으나, 20일선 돌파 안전마진이 미달하여 기민하게 대기 중이오."
+                        f"성벽({defense_line:{fmt_p}}{currency}) 아래에서 지표는 충족했으나, 안전마진 미달로 기민하게 대기 중이오."
                     )
                 elif not is_ma5_safe:
                     def_status = (
@@ -1576,7 +1699,6 @@ if symbol:
                         " 마시게.</b>"
                     )
 
-            # ★ [MACD 텍스트 로직 완벽 복구]
             if is_macd_accelerating:
                 if rsi_val >= 70:
                     base_macd_desc = "<b>🔥 정회전 가속 (과열권)</b>: 추진력은 강력하나 보조지표 초과열권이오."
@@ -1634,7 +1756,7 @@ if symbol:
 
             st.divider()
 
-            # 하단 4대 핵심 지표 박스
+            # 하단 4대 핵심 지표 박스 (오리지널 포맷 완벽 복원)
             i1, i2, i3, i4 = st.columns(4)
             with i1:
                 if is_long_upper_tail:
@@ -1646,6 +1768,11 @@ if symbol:
                     bb_diag = (
                         f"🟡 <b>[상승 여력 부족 / 관망] (여력: +{margin_diff:.1f}%)</b><br>•"
                         " <b>역할:</b> 수지타산 불량 타점 회피.<br>• <b>진단:</b> 타점 조건은 좋으나 상단 목표선까지 거리가 너무 좁소. 진입을 보류하시게."
+                    )
+                elif final_code == "WAIT_ORDERBOOK":
+                    bb_diag = (
+                        f"🟡 <b>[호가창/매도벽 미달 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                        " <b>역할:</b> 속임수/허매수 함정 회피.<br>• <b>진단:</b> 매도잔량비 기준 미달! 세력의 위로 살 의지가 약하거나 허매수로 의심되니 진입을 강제 보류."
                     )
                 elif final_code == "WAIT_INDICATOR":
                     if pullback_rebound_score >= 1:
@@ -1741,19 +1868,13 @@ if symbol:
                     bb_diag = (
                         "🟡 <b>[성벽 위 경계 및 추격 차단 구역]</b><br>•"
                         " <b>역할:</b> 추격 매수 원천 차단.<br>• <b>진단:</b> 성벽"
-                        " 위 공방 중이므로 신규 매수를 금지하고 익절 타이밍을 노림."
+                        " 위 공방 중이므로 신규 매수를 금지하고 익절 타이밍 노림."
                     )
                 elif final_code == "WAIT_OVER_EXTENDED":
                     bb_diag = (
                         f"🟡 <b>[과다이격 추격 금지 구역] (5일선 이격: +{bias_ma5:.1f}%)</b><br>•"
                         " <b>역할:</b> 고점 물림 방지.<br>• <b>진단:</b> 5일선"
                         " 대비 5% 이상 벌어졌으니 숨고르기까지 매수 보류."
-                    )
-                elif final_code in ["WAIT_MA20_BUFFER", "WAIT_ORDERBOOK"]:
-                    bb_diag = (
-                        f"🟡 <b>[호가/20일선 검증 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        " <b>역할:</b> 휩소 및 허매수 방지.<br>•"
-                        " <b>진단:</b> 매도/매수 잔량비가 1.5배 이상이면 매도벽 우세로 보고 진입을 보류."
                     )
                 else:
                     if pullback_rebound_score >= 1:
