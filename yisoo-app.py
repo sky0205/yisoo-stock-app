@@ -10,7 +10,7 @@ import yfinance as yf
 
 
 st.set_page_config(
-    page_title="이수할아버지의 냉정 진단기 v36111", layout="wide"
+    page_title="이수할아버지의 냉정 진단기 v36112", layout="wide"
 )
 
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
@@ -60,29 +60,24 @@ def load_krx_listing():
         return pd.DataFrame()
 
 
-# ★ [병목 제거 1] 글로벌 지수 통신 주기 연장 (10초 -> 60초)
-@st.cache_data(ttl=60)
+# ★ [속도 최적화 1] 글로벌 5대 지수 - 다이렉트 직통 API (0.1초 컷) & 캐시 5분(300초) 연장
+@st.cache_data(ttl=300)
 def fetch_global_market():
-    nasdaq = yf.Ticker("^IXIC").fast_info
-    sp500 = yf.Ticker("^GSPC").fast_info
-    dow = yf.Ticker("^DJI").fast_info
-    tnx = yf.Ticker("^TNX").fast_info
-    usdkrw = yf.Ticker("USDKRW=X").fast_info
-    return {
-        "n_last": nasdaq.last_price,
-        "n_prev": nasdaq.previous_close,
-        "s_last": sp500.last_price,
-        "s_prev": sp500.previous_close,
-        "d_last": dow.last_price,
-        "d_prev": dow.previous_close,
-        "t_last": tnx.last_price,
-        "t_prev": tnx.previous_close,
-        "u_last": usdkrw.last_price,
-        "u_prev": usdkrw.previous_close,
-    }
+    tickers = {"n": "^IXIC", "s": "^GSPC", "d": "^DJI", "t": "^TNX", "u": "USDKRW=X"}
+    results = {}
+    for k, tk in tickers.items():
+        try:
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{tk}?interval=1d&range=1d"
+            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
+            meta = res.json()["chart"]["result"][0]["meta"]
+            results[f"{k}_last"] = float(meta["regularMarketPrice"])
+            results[f"{k}_prev"] = float(meta["chartPreviousClose"])
+        except Exception:
+            results[f"{k}_last"], results[f"{k}_prev"] = 0.0, 0.0
+    return results
 
 
-# ★ [병목 제거 2] 종목명 전용 캐싱 (하루 1번만 검색하도록 뇌에 저장)
+# ★ [속도 최적화 2] 종목명 전용 캐싱 (하루 1번만 검색하도록 뇌에 저장)
 @st.cache_data(ttl=86400)
 def get_stock_name(symbol, is_kr):
     if is_kr:
@@ -125,8 +120,9 @@ def get_stock_name(symbol, is_kr):
             return tk
 
 
-# ★ 과거 500일 장부 전용 고속 캐싱 (5분 유지)
-@st.cache_data(ttl=300)
+# ★ [속도 최적화 3] 과거 500일 장부 무거운 짐 - 캐시 1시간(3600초) 연장
+# (실시간 현재가는 하단에서 0.1초만에 낚아채서 수동으로 장부에 붙이므로, 과거 데이터는 1시간에 한 번만 받아오면 됩니다)
+@st.cache_data(ttl=3600)
 def get_historical_data(symbol, is_kr, start_dt_str):
     df_hist = pd.DataFrame()
     if is_kr:
@@ -298,7 +294,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36111 (수익비 7% 철통 방어 필터 장착)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36112 (직통망 개통 및 수익비 7% 필터)")
 display_global_risk()
 st.divider()
 
@@ -376,26 +372,27 @@ if symbol:
         kst_now = datetime.now(kst_tz)
         now_local = kst_now if is_kr else datetime.now(ny_tz)
 
+        # 1시간 동안 뇌에 박아두는 500일 치 과거 장부 (고속 복사)
         df_raw = get_historical_data(symbol, is_kr, start_date_str)
         df = df_raw.copy()
 
         auto_p, v_curr = 0.0, 0.0
         us_prev_p = None
 
+        # ★ [속도 최적화 4] 실시간 현재가 다이렉트 낚아채기
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
             kr_fetched = False
             try:
+                # 네이버 모바일 API 직통 (가장 빠름)
                 api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
-                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+                headers = {"User-Agent": "Mozilla/5.0"}
                 res = requests.get(api_url, headers=headers, timeout=2)
                 if res.status_code == 200:
                     data = res.json()
                     auto_p = float(str(data["closePrice"]).replace(",", ""))
-                    v_curr = float(
-                        str(data["accumulatedTradingVolume"]).replace(",", "")
-                    )
+                    v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
                     kr_fetched = True
             except Exception:
                 pass
@@ -403,16 +400,10 @@ if symbol:
             if not kr_fetched:
                 try:
                     url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
-                    res = requests.get(
-                        url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2
-                    )
+                    res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
                     soup = BeautifulSoup(res.text, "html.parser")
-                    auto_p = float(
-                        soup.select_one(".no_today .blind").text.replace(",", "")
-                    )
-                    v_curr = float(
-                        soup.select(".no_info .blind")[3].text.replace(",", "")
-                    )
+                    auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                    v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
                     kr_fetched = True
                     if not df.empty:
                         _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
@@ -425,19 +416,32 @@ if symbol:
         else:
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
-            ticker = yf.Ticker(tk_upper)
-
+            
+            # ★ 1. ⚡ 초고속 야후 다이렉트 API 호출 (무거운 yfinance 껍데기 우회)
+            fetch_success = False
             try:
-                fast_inf = ticker.fast_info
-                auto_p = getattr(fast_inf, "last_price", 0.0)
-                v_curr = getattr(fast_inf, "last_volume", 0.0)
-                us_prev_p = getattr(fast_inf, "previous_close", None)
+                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{tk_upper}?interval=1d&range=1d"
+                res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
+                if res.status_code == 200:
+                    meta = res.json()["chart"]["result"][0]["meta"]
+                    auto_p = float(meta["regularMarketPrice"])
+                    us_prev_p = float(meta["chartPreviousClose"])
+                    v_curr = float(meta.get("regularMarketVolume", 0.0))
+                    fetch_success = True
             except Exception:
-                auto_p, v_curr, us_prev_p = 0.0, 0.0, None
-
-            if auto_p == 0.0 or pd.isna(auto_p):
-                if not df.empty:
-                    auto_p = float(df["Close"].iloc[-1])
+                pass
+            
+            # 2. 실패 시에만 기존 yfinance 사용
+            if not fetch_success or auto_p == 0.0 or pd.isna(auto_p):
+                ticker = yf.Ticker(tk_upper)
+                try:
+                    fast_inf = ticker.fast_info
+                    auto_p = getattr(fast_inf, "last_price", 0.0)
+                    v_curr = getattr(fast_inf, "last_volume", 0.0)
+                    us_prev_p = getattr(fast_inf, "previous_close", None)
+                except Exception:
+                    if not df.empty:
+                        auto_p = float(df["Close"].iloc[-1])
 
             if v_curr == 0.0 or pd.isna(v_curr):
                 if not df.empty:
@@ -521,6 +525,7 @@ if symbol:
             if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
                 prev_p = float(us_prev_p)
 
+            # ★ [속도 최적화 연동] 캐시에 저장된 과거 장부 맨 끝에 실시간 현재가를 찰싹 붙여 넣음
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
                 df.loc[today_date, "Volume"] = v_curr
@@ -866,7 +871,7 @@ if symbol:
                 trend_status = "⚠️ <b>[대세 역배열]</b> 지하실 향하는 하락 추세"
             elif ma5_val > mid_line:
                 trend_status = (
-                    "🌱 <b>[단기 반등 초입]</b> 5일선이 20일선 돌파! 상방 반전 시도 중"
+                    "🌱 <b>[단기 반등 초 초입]</b> 5일선이 20일선 돌파! 상방 반전 시도 중"
                 )
             elif ma5_val < mid_line:
                 trend_status = (
@@ -1187,7 +1192,7 @@ if symbol:
                         "로 진격 중이오! 5일선을 사수하며 상방 목표선까지 추세를 즐기시게."
                     )
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= -1.5):
-                if margin_diff < 7.0: # ★ [v36111 보수] 상승여력 7% 필터 엄격 적용
+                if margin_diff < 7.0: # ★ [v36112 보수] 상승여력 7% 필터 엄격 적용
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
@@ -1206,7 +1211,7 @@ if symbol:
                         f"• <b>[진바닥 포착 완료]</b> 지표 충족 및 5일선 안착! 전면 매수가 아닌 <b>비중 10% 수준의 1단계 분할 입절(매수)</b>로 기민하게 접근하시게. {action_time_guide}"
                     )
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
-                if margin_diff < 7.0: # ★ [v36111 보수] 상승여력 7% 필터 엄격 적용
+                if margin_diff < 7.0: # ★ [v36112 보수] 상승여력 7% 필터 엄격 적용
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
@@ -1225,7 +1230,7 @@ if symbol:
                         f" <b>[{time_tag_ok}]</b> {bw_diag_msg}. {action_guide}"
                     )
             elif is_pullback_buy_signal:
-                if margin_diff < 7.0: # ★ [v36111 보수] 상승여력 7% 필터 엄격 적용
+                if margin_diff < 7.0: # ★ [v36112 보수] 상승여력 7% 필터 엄격 적용
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
@@ -1250,7 +1255,7 @@ if symbol:
                 and pullback_rebound_score >= 1
                 and (vol_strength >= 65 or is_pre_market_mode)
             ):
-                if margin_diff < 7.0: # ★ [v36111 보수] 상승여력 7% 필터 엄격 적용
+                if margin_diff < 7.0: # ★ [v36112 보수] 상승여력 7% 필터 엄격 적용
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 돌파 조건 충족이나 상승 여력 부족"
                     col = "#F57C00"
