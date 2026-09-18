@@ -1,5 +1,4 @@
 import html
-import time
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
@@ -261,7 +260,7 @@ def display_global_risk():
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36126 (오류 완전 박멸 + 지표 텍스트 복구)")
+st.title("🧐 이수할아버지의 냉정 진단기 v36126 (오리지널 통신망 완벽 복구본)")
 display_global_risk()
 st.divider()
 
@@ -316,14 +315,14 @@ if symbol:
 
         auto_p, v_curr = 0.0, 0.0
         us_prev_p = None
-        cache_buster_ts = int(time.time() * 1000)
 
+        # ★★★ [통신망 오리지널 롤백] 꼼수 제거, 가장 안정적인 원래 방식으로 현재가 추출
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
             kr_fetched = False
             try:
-                api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic?_t={cache_buster_ts}"
+                api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
                 res = requests.get(api_url, headers=headers, timeout=3)
                 if res.status_code == 200:
@@ -336,7 +335,7 @@ if symbol:
 
             if not kr_fetched:
                 try:
-                    url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}&_t={cache_buster_ts}"
+                    url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
                     res = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}, timeout=3)
                     soup = BeautifulSoup(res.text, "html.parser")
                     auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
@@ -353,27 +352,22 @@ if symbol:
         else:
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
-            
-            fetch_success = False
+            ticker = yf.Ticker(tk_upper)
+
             try:
-                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{tk_upper}?interval=1d&range=1d&_t={cache_buster_ts}"
-                res = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}, timeout=3)
-                if res.status_code == 200:
-                    meta = res.json()["chart"]["result"][0]["meta"]
-                    auto_p = float(meta["regularMarketPrice"])
-                    us_prev_p = float(meta["chartPreviousClose"])
-                    v_curr = float(meta.get("regularMarketVolume", 0.0))
-                    fetch_success = True
+                fast_inf = ticker.fast_info
+                auto_p = getattr(fast_inf, "last_price", 0.0)
+                v_curr = getattr(fast_inf, "last_volume", 0.0)
+                us_prev_p = getattr(fast_inf, "previous_close", None)
             except Exception:
-                pass
-            
-            if not fetch_success or auto_p == 0.0 or pd.isna(auto_p):
-                ticker = yf.Ticker(tk_upper)
+                auto_p, v_curr, us_prev_p = 0.0, 0.0, None
+
+            if auto_p == 0.0 or pd.isna(auto_p):
                 try:
-                    fast_inf = ticker.fast_info
-                    auto_p = getattr(fast_inf, "last_price", 0.0)
-                    v_curr = getattr(fast_inf, "last_volume", 0.0)
-                    us_prev_p = getattr(fast_inf, "previous_close", None)
+                    inf_dict = ticker.info
+                    auto_p = inf_dict.get("regularMarketPrice", inf_dict.get("currentPrice", 0.0))
+                    if auto_p == 0.0 or pd.isna(auto_p):
+                        auto_p = float(df["Close"].iloc[-1])
                 except Exception:
                     if not df.empty:
                         auto_p = float(df["Close"].iloc[-1])
@@ -388,6 +382,7 @@ if symbol:
 
         multiplier = 1000.0 if is_kr else 1.0
 
+        # 호가창 수동 입력 설정
         if manual_ask > 0 and manual_bid > 0:
             calc_ratio = round(manual_ask / manual_bid, 2)
             display_ask = manual_ask * multiplier
@@ -646,7 +641,7 @@ if symbol:
                 ob_status_msg = "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 가동합니다.</b> (미입력 시 조건 패스)"
 
             # ==================================================================
-            # ★★★ [v36124 밴드폭 판독 텍스트 완벽 복구] ★★★
+            # ★★★ [밴드폭 판독 텍스트 완벽 복구] ★★★
             # ==================================================================
             if bandwidth < 10.0:
                 is_bandwidth_ok = False
@@ -716,7 +711,7 @@ if symbol:
                   else: hierarchy_parts.append(f"{name}")
               hierarchy_str = " > ".join(hierarchy_parts)
               if ma_5 < ma_20 < ma_60 < ma_120: comment = "*(대세 역배열 저항 압박)*"
-              elif ma_5 > ma_20 > ma_60 > ma_120: comment = "*(완벽 정배열 상승 랠리)*"
+              elif ma_5 > ma_20 > ma_60 > ma_120: comment = "*(완벽한 정배열 상승 랠리)*"
               else: comment = "*(이평선 혼조세 횡보 구간)*"
               return f"&nbsp;&nbsp;&nbsp;&nbsp;<b>[이평선 층위]</b> {hierarchy_str} {comment}"
               
@@ -734,16 +729,15 @@ if symbol:
             safe_display_name = html.escape(final_display_name)
 
             # ==================================================================
-            # ★ [상단 대형 현재주가현황 전광판]
+            # ★ [상단 대형 현재주가현황 전광판 (초시계 롤백 및 깔끔한 원상 복구)]
             # ==================================================================
             st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(
                 f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'>"
                 f"<p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{safe_display_name}</p>"
-                f"<p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p>"
-                f"<p style='font-size:16px; color:#78909C; font-weight:bold; margin:10px 0 0 0;'>⏱️ 장부 판독 시각: {kst_now.strftime('%Y-%m-%d %H:%M:%S')} (KST)</p>"
-                f"</div>", unsafe_allow_html=True
+                f"<p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p></div>",
+                unsafe_allow_html=True
             )
 
             # ==================================================================
@@ -1033,7 +1027,7 @@ if symbol:
             ]
 
             # ==================================================================
-            # ★ [하단 지표 동조 텍스트 출력부 (오리지널 양식 완벽 복구)]
+            # ★ [하단 지표 동조 텍스트 출력부]
             # ==================================================================
             if final_code == "BREAK_MA20_CONFIRMED": sub_indicator_str = f"   - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 기민한 분할 타진 진행"
             elif final_code == "ESCAPE_BUY": sub_indicator_str = f"   - <b>진바닥 탈출 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 유지 -> <b>[매수 유효]</b> 2단계 분할 진격 타점 가동"
@@ -1132,19 +1126,18 @@ if symbol:
 
             if is_band_riding: macd_strategy_msg = "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b> 상방 대시세 추종.<br>• <b>진단:</b> 엔진 가속과 함께 상단 밴드가 열리고 있소! 추격 매수는 자제하되, 1차 절반 익절 후 남은 물량은 5일선 이탈 전까지 강하게 끌고 가시게."
             elif is_target_reached or p >= (target_price_100 * 0.99): macd_strategy_msg = "<b>🚨 엔진 과열 경보 (수학 목표선 도달)</b><br>• <b>역할:</b> 상단 오버슈팅 방어.<br>• <b>진단:</b> 엔진 가속도가 붙어 있어도 상단 저항선 코앞일세! 추격 매수는 엄금이며, 1~2호가 아래에 매도 주문을 깔아두어 이익을 챙기시게."
-            elif is_overall_cautious_state and not (is_kr and is_morning_breakout_fast): macd_strategy_msg = f"{base_macd_desc}<br>• <b>[관망 기조 동조]:</b> 상단 결론이 관망 상태이므로, 섣부른 추격매수를 금하고 관망."
+            elif is_overall_cautious_state and not (is_kr and is_morning_breakout_fast): macd_strategy_msg = f"{base_macd_desc}<br>• <b>[관망 기조 동조]:</b> 현재 상단 종합 결론이 관망/경계 상태이므로, 엔진 상태와 무관하게 섣부른 추격매수를 금하고 안전하게 관망하시게."
             else: macd_strategy_msg = f"{base_macd_desc}<br>• <b>[엔진 연동]:</b> 위 전황에 맞춰 유효하게 대응하시게."
 
             st.markdown(
                 f"""<div class='trend-card'><div class='trend-title'>⚔️ 실전 필살 대응 전략</div><div style='margin-bottom: 20px;'><span style='color: #1565C0; font-weight: 900; font-size: 24px;'>1. 단기 생명선(5일선) 사수</span><br><span style='color: #333333; font-weight: bold; font-size: 20px;'>{ma5_guide_text}</span></div><div style='margin-bottom: 20px;'><span style='color: #1565C0; font-weight: 900; font-size: 24px;'>2. 성벽 사수 및 공방 확인</span><br><span style='color: #333333; font-weight: bold; font-size: 20px;'>{def_status}</span></div><div style='margin-bottom: 20px;'><span style='color: #1565C0; font-weight: 900; font-size: 24px;'>3. 중장기 추세 진단 및 지표 동조 현황</span><br><span style='color: #333333; font-weight: bold; font-size: 20px;'>{indicator_verify_text}</span></div><div style='margin-bottom: 20px;'><span style='color: #1565C0; font-weight: 900; font-size: 24px;'>4. 엔진(MACD) 확인</span><br><span style='color: #333333; font-weight: bold; font-size: 20px;'>{macd_strategy_msg}</span></div><div style='margin-bottom: 25px;'><span style='color: #D32F2F; font-weight: 900; font-size: 24px;'>5. 🛡️ [보유자 전용] 실전 행동 가이드</span><br><span style='color: #2E7D32; font-weight: bold; font-size: 20px;'>👉 {holder_guide_msg}</span></div><hr style='border:1px solid #FFEBEE; margin: 20px 0;'><div class='final-msg'>{final_adv}</div></div>""",
                 unsafe_allow_html=True,
             )
-            st.divider()
 
             st.divider()
 
             # ==================================================================
-            # ★ 하단 4대 핵심 지표 박스 (오리지널 상세 텍스트 포맷 완벽 복원)
+            # ★ 하단 4대 핵심 지표 박스 (오리지널 다중행 상세 텍스트 포맷 완벽 복원)
             # ==================================================================
             i1, i2, i3, i4 = st.columns(4)
             with i1:
@@ -1256,7 +1249,7 @@ if symbol:
                     bb_diag = (
                         f"🟢 <b>[성벽 위 진격 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
                         " <b>역할:</b> 상방 분출 추진력 가속.<br>• <b>진단:</b> 성벽을"
-                        f" 뚫고 목표선({target_price_100:{fmt_p}}{currency})을 향해 진격 중이오. 5일선 사수하며 수익을 극대화하시게."
+                        f" 뚫고 목표선({target_price_100:{fmt_p}}{currency})을 향해 진격 중이오. 5일선을 사수하며 수익을 극대화하시게."
                     )
                 elif final_code == "YELLOW_CAUTION":
                     bb_diag = (
