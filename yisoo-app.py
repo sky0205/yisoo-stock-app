@@ -633,7 +633,7 @@ if symbol:
             wait_line = low_b_val * 1.02
 
             target_price_100 = up_b
-            is_target_reached = p >= (target_price_100 * 0.98)
+            is_target_reached = p >= target_price_100
             is_on_the_wall = (p >= defense_line) and (p < target_price_100)
             is_band_riding = is_target_reached and is_band_expanding and is_ma5_safe and (not is_bearish_candle)
             
@@ -853,7 +853,7 @@ if symbol:
             with c_tgt:
                 tgt_diff = ((target_price_100 - p) / p) * 100 if p > 0 else 0
                 if is_band_riding: tgt_status_tag = "🌊 목표선 상방 확장 중 (밴드 라이딩)"; tgt_color = "#6A1B9A"
-                elif is_target_reached: tgt_status_tag = "🎯 목표 도달 완료 (1차 수확 구역)"; tgt_color = "#E65100"
+                elif p >= (target_price_100 * 0.98): tgt_status_tag = "🎯 목표 임박/도달 완료 (1차 수확 구역)"; tgt_color = "#E65100"
                 else: tgt_status_tag = f"상승 여력 {tgt_diff:+.1f}%"; tgt_color = "#1565C0"
 
                 st.markdown(
@@ -955,7 +955,7 @@ if symbol:
             margin_diff = ((target_price_100 - p) / p) * 100 if p > 0 else 0
 
             # ==================================================================
-            # ★ [신호등 분기 논리]
+            # ★ [신호등 분기 논리 - 수정된 3단계 로직 적용]
             # ==================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -983,44 +983,45 @@ if symbol:
                     f"<b>[긴 위꼬리 저항 포착]</b> 장중 고점 대비 위꼬리가 길게 밀려 내려왔소! "
                     "지표상 안착처럼 보여도 위쪽 매물벽 저항이 맵사오니 섣부른 추격매수를 금하고 냉정하게 관망하시게."
                 )
-            elif is_band_riding:
+            # ------------------- 목표선 및 성벽 위 공방 수정 구간 -------------------
+            elif p >= target_price_100:
                 final_code = "BAND_RIDING_HARVEST"
-                sig = "🟣 [1차 수확 / 잔여 밴드 추종] 목표선 상방 확장 중!"
+                sig = "🟣 [상방 확장 중] 목표선 상방 돌파 완료!"
                 col = "#6A1B9A"
                 final_adv = (
-                    f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[볼린저 상단 상방 확장]</b> 현재가({p:{fmt_p}}{currency})가 밴드 상단을 타고 위로 시원하게 뻗어 나가는 중이오! "
-                    "<b>물량의 50%는 1차 익절하여 수익을 확정</b>하고, <b>잔여 50%는 5일선 이탈 전까지 목표선 상향을 즐기며 홀딩</b>하시게."
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[목표선 상방 돌파 완료]</b> 현재가({p:{fmt_p}}{currency})가 최종 수확 목표선({target_price_100:{fmt_p}}{currency})을 돌파하여 안착했소! "
+                    "저항선을 완전히 짓밟았으니, 이제부터는 밴드가 위로 쫙 벌어지는 대세 상승 랠리를 마음껏 즐기며 잔여 물량을 홀딩하시게."
                 )
-            elif p >= (target_price_100 * 0.98) or is_target_reached:
+            elif p >= (target_price_100 * 0.98):
                 final_code = "RED_SELL_TARGET"
-                sig = "🔴 [목표 도달] 수학 목표선 저항! 1차 50% 수확 및 분할 매도!"
+                sig = "🔴 [1차 선제적 익절] 수확 목표선 코앞 도달! (준비 구간)"
                 col = "#D32F2F"
                 final_adv = (
-                    f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
-                    f"<b>[수학 목표선 도달 완료]</b> 볼린저 상단({target_price_100:{fmt_p}}{currency}) 코앞에 도달했거나 저항을 받고 있소! "
-                    "신규 매수를 절대 금지하고, <b>우선 50% 물량을 기계적으로 수확(익절)</b>한 뒤 잔여 물량은 매도 주문을 걸어두시게."
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[수확 목표선 임박]</b> 볼린저 상단({target_price_100:{fmt_p}}{currency}) 고지가 눈앞이오! "
+                    "욕심을 조금 덜어내고 1차 선제적 익절(분할 수확)을 준비하며 수익 일부를 챙길 채비를 하시게."
                 )
             elif p >= defense_line:
-                if is_candle_bearish or (is_positive_day and vol_strength < 65 and not is_pre_market_mode):
-                    candlestick_type_str = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
+                if is_candle_bearish:
                     final_code = "RED_SELL_WARNING"
-                    sig = f"🔴 [성벽 위 {candlestick_type_str}] 선제적 익절 및 수성 구간"
+                    sig = "🔴 [성벽 위 음봉] 가짜 돌파(페이크) 경계 및 리스크 관리"
                     col = "#D32F2F"
                     final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. "
-                        f"<b>[성벽 위 {candlestick_type_str}]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 "
-                        "추격 매수를 엄금하고 선제적 분할 익절(수확)을 준비하시게."
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"<b>[가짜 돌파 경계]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위로 올라왔으나 당일 음봉으로 밀리고 있소! "
+                        "세력의 위꼬리 페이크일 위험이 크니 즉시 비중을 줄이거나 수성(방어) 태세로 전환하시게."
                     )
                 else:
                     final_code = "BREAKOUT_ATTACK"
-                    sig = "🟢 [성벽 위 진격] 상방 랠리 추종 구역"
+                    sig = "🟢 [성벽 위 양봉] 기세 유지 랠리 추종"
                     col = "#2E7D32"
                     final_adv = (
-                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f})점. "
-                        f"<b>[성벽 위 안착 진격]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 기세를 타고 양봉으"
-                        "로 진격 중이오! 5일선을 사수하며 상방 목표선까지 추세를 즐기시게."
+                        f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                        f"<b>[기세 유지 랠리 추종]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 뿜어내고 있소! "
+                        "5일선을 사수하며 위로 밀어 올리는 세력의 힘을 믿고 상방 목표선까지 추세를 끝까지 발라먹도록 하시게."
                     )
+            # ----------------------------------------------------------------------
             elif (
                 (bottom_score >= 1 or pullback_rebound_score >= 1)
                 and has_manual_ob
@@ -1047,7 +1048,7 @@ if symbol:
                 )
             ):
                 final_code = "WAIT_ORDERBOOK"
-                sig = "🟡 [관망/보류] 매도잔량비 실전 기준 미달 (속임수 윗꼬리 경계)"
+                sig = "🟡 [관망/보류] 매도잔량비 실전 기준 미달 (속임수 윗꼬 경계)"
                 col = "#F57C00"
                 final_adv = (
                     f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
@@ -1235,16 +1236,16 @@ if symbol:
 
             ma5_dynamic_stop = dynamic_stop_price
 
-            if is_band_riding:
+            if p >= target_price_100:
                 if user_avg_price > 0:
                     profit_rate = ((p - user_avg_price) / user_avg_price) * 100
-                    holder_guide_msg = f"• <b>[밴드 라이딩 대시세 구역 (수익률: {profit_rate:+.2f}%)]</b><br>• <b>실전 행동:</b> 신규 매수 금지! 보유 물량의 50% 익절 확정.<br>• <b>잔여 50% 홀딩 기준:</b> 5일선({ma5_val:{fmt_p}}{currency}) 종가 사수 시 잔여 물량 유지.<br>• <b>최종 청산선:</b> 5일선 -{dynamic_stop_pct:.1f}% 이탈({ma5_dynamic_stop:{fmt_p}}{currency}) 시 잔여 물량 청산."
-                else: holder_guide_msg = "• <b>[밴드 라이딩 대시세 구역]</b><br>• <b>실전 행동:</b> 상단 밴드가 열리고 있으나 신규 진입은 금물이오! 보유자는 50% 우선 익절."
-            elif is_target_reached or p >= (target_price_100 * 0.98):
+                    holder_guide_msg = f"• <b>[상방 확장 대시세 구역 (수익률: {profit_rate:+.2f}%)]</b><br>• <b>실전 행동:</b> 신규 매수 금지!<br>• <b>잔여 물량 홀딩 기준:</b> 5일선({ma5_val:{fmt_p}}{currency}) 종가 사수 시 잔여 물량 랠리 추종.<br>• <b>최종 청산선:</b> 5일선 -{dynamic_stop_pct:.1f}% 이탈({ma5_dynamic_stop:{fmt_p}}{currency}) 시 전량 청산."
+                else: holder_guide_msg = "• <b>[상방 확장 대시세 구역]</b><br>• <b>실전 행동:</b> 목표선을 뚫고 상단 밴드가 열리고 있으나 신규 진입은 금물이오! 보유자는 5일선 기준으로 끝까지 랠리를 추종하시게."
+            elif p >= (target_price_100 * 0.98):
                 if user_avg_price > 0:
                     profit_rate = ((p - user_avg_price) / user_avg_price) * 100
-                    holder_guide_msg = f"• <b>[수학 목표선 저항 도달 (수익률: {profit_rate:+.2f}%)]</b><br>• <b>실전 행동:</b> 신규 진입 절대 금지! 50% 기계적 매도.<br>• <b>잔여 물량:</b> 성벽({defense_line:{fmt_p}}{currency})이나 5일선 이탈 시 전량 정리."
-                else: holder_guide_msg = "• <b>[수학 목표선 도달 완료 구역]</b><br>• <b>실전 행동:</b> 볼린저 상단 저항선에 닿았으니 매수 엄금, 보유자는 50% 분할 매도."
+                    holder_guide_msg = f"• <b>[수확 목표선 임박 (수익률: {profit_rate:+.2f}%)]</b><br>• <b>실전 행동:</b> 신규 진입 절대 금지! 욕심을 덜고 1차 분할 수확 준비.<br>• <b>잔여 물량:</b> 성벽({defense_line:{fmt_p}}{currency})이나 5일선 이탈 시 전량 정리."
+                else: holder_guide_msg = "• <b>[수확 목표선 임박 구역]</b><br>• <b>실전 행동:</b> 볼린저 상단 고지가 코앞이니 매수 엄금, 보유자는 1차 선제적 익절(수확) 준비."
             elif user_avg_price <= 0:
                 holder_guide_msg = f"현재 추세 탐색 및 방향 정립 구간이니 성벽({defense_line:{fmt_p}}{currency})이나 5일선 사수 여부를 확인하시게. (★ <b>손절 마지노선: {stop_loss_label}</b>)"
             else:
@@ -1255,8 +1256,8 @@ if symbol:
                 else:
                     holder_guide_msg = f" • <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br> • <b>단기 생명선:</b> 5일선 지지 확인.<br> • <b>최후 방어선:</b> 바닥권 전저점({stop_loss_price:{fmt_p}}{currency}) 이탈 시 미련 없이 전량 칼손절 후퇴."
 
-            if is_band_riding: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 볼린저 상단을 타고 확장 중이오! 50% 익절 완료 후 남은 50%는 <b>5일선({ma5_val:{fmt_p}}{currency}) 종가 이탈 전까지</b> 끝까지 추종하시게."
-            elif is_target_reached or p >= (target_price_100 * 0.98): ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있으나 수학 목표선에 도달했으므로 5일선 -{dynamic_stop_pct:.1f}% 이탈({ma5_dynamic_stop:{fmt_p}}{currency})을 잔여 물량 정리선으로 엄수하시게."
+            if p >= target_price_100: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 볼린저 상단을 뚫고 상방 확장 중이오! 남은 물량은 <b>5일선({ma5_val:{fmt_p}}{currency}) 종가 이탈 전까지</b> 끝까지 추종하시게."
+            elif p >= (target_price_100 * 0.98): ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있으나 수학 목표선 임박 구간이므로 5일선 -{dynamic_stop_pct:.1f}% 이탈({ma5_dynamic_stop:{fmt_p}}{currency})을 잔여 물량 방어선으로 엄수하시게."
             elif not is_ma5_safe: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래로 이탈했으니, 돌파 안착 신호가 확인될 때까지 관망하시게."
             else:
                 if is_pre_market_mode: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있소! 정규장 개장 후 지지 사수를 확인하시게."
@@ -1272,11 +1273,11 @@ if symbol:
                 elif final_code == "BREAK_MA20_CONFIRMED": ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 20일선 및 5일선 위 안착에 성공하며 기민한 돌파 매수 타점을 형성 중이오."
                 else: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 단기 전투선 유지 중이오."
 
-            if is_band_riding: def_status = f"성벽({defense_line:{fmt_p}}{currency})을 가뿐히 넘어 볼린저 상단이 찢어지고 있네! 든든한 방어선을 뒤에 두고 잔여 추세를 즐기시게."
-            elif is_target_reached or p >= (target_price_100 * 0.98): def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위 진격은 완수되었네! 수학 목표선({target_price_100:{fmt_p}}{currency}) 코앞이니 현금을 챙기시게."
+            if p >= target_price_100: def_status = f"성벽({defense_line:{fmt_p}}{currency})을 가뿐히 넘고 볼린저 상단 목표선까지 뚫어냈네! 든든한 방어선을 뒤에 두고 상방 랠리를 끝까지 즐기시게."
+            elif p >= (target_price_100 * 0.98): def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위 진격은 완수되었네! 수확 목표선({target_price_100:{fmt_p}}{currency}) 고지가 코앞이니 현금을 챙길 준비를 하시게."
             elif defense_line > target_price_100: def_status = f"성벽({defense_line:{fmt_p}}{currency})이 상단 목표선({target_price_100:{fmt_p}}{currency})보다 위로 왜곡된 <b>[역배열 침체]</b> 구역이오! 섣부른 진격을 금하고 철저히 관망하시게."
             elif p >= defense_line:
-                if is_candle_bearish or (is_positive_day and vol_strength < 65 and not is_pre_market_mode): def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위 안착 중이나 당일 차익 매물 출회 및 숨고르기 공방 중이오! 무리한 추격을 삼가시게."
+                if is_candle_bearish: def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위 안착 중이나 당일 <b>음봉으로 밀려 가짜 돌파(페이크) 리스크</b>가 있소! 즉시 수성 태세로 전환하시게."
                 elif final_code == "WAIT_NARROW_MARGIN": def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위에서 진격 타점을 잡았으나, <b>상단 목표선까지 먹을 게 {margin_diff:.1f}%밖에 없어</b> 진입을 강제 차단했소."
                 else: def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 타고 <b>상방 랠리 진격 중</b>이네! 방어선을 등지고 추세를 즐기시게."
             else:
@@ -1309,8 +1310,8 @@ if symbol:
                 else: base_macd_desc = "<b>🌤 역회전 감소 (반등 시동)</b>: 하락 관성이 둔화되며 바닥 다지기 반등을 모색 중이오."
             else: base_macd_desc = "<b>⚙️ 엔진 역회전 심화</b>: 하락 관성이 지속되며 매도 압력이 깊어지는 중이오."
 
-            if is_band_riding: macd_strategy_msg = "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b> 상방 대시세 추종.<br>• <b>진단:</b> 엔진 가속과 함께 상단 밴드가 열리고 있소! 추격 매수는 자제하되, 1차 절반 익절 후 남은 물량은 5일선 이탈 전까지 강하게 끌고 가시게."
-            elif is_target_reached or p >= (target_price_100 * 0.99): macd_strategy_msg = "<b>🚨 엔진 과열 경보 (수학 목표선 도달)</b><br>• <b>역할:</b> 상단 오버슈팅 방어.<br>• <b>진단:</b> 엔진 가속도가 붙어 있어도 상단 저항선 코앞일세! 추격 매수는 엄금이며, 1~2호가 아래에 매도 주문을 깔아두어 이익을 챙기시게."
+            if p >= target_price_100: macd_strategy_msg = "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b> 상방 대시세 추종.<br>• <b>진단:</b> 엔진 가속과 함께 상단 밴드가 열리고 있소! 추격 매수는 자제하되, 잔여 물량은 5일선 이탈 전까지 강하게 끌고 가시게."
+            elif p >= (target_price_100 * 0.98): macd_strategy_msg = "<b>🚨 엔진 과열 경보 (수확 목표선 임박)</b><br>• <b>역할:</b> 상단 오버슈팅 방어.<br>• <b>진단:</b> 엔진 가속도가 붙어 있어도 상단 저항선 코앞일세! 1차 선제적 익절(분할 수확)을 준비하시게."
             elif is_overall_cautious_state and not (is_kr and is_morning_breakout_fast): macd_strategy_msg = f"{base_macd_desc}<br>• <b>[관망 기조 동조]:</b> 현재 상단 종합 결론이 관망/경계 상태이므로, 엔진 상태와 무관하게 섣부른 추격매수를 금하고 안전하게 관망하시게."
             else: macd_strategy_msg = f"{base_macd_desc}<br>• <b>[엔진 연동]:</b> 위 전황에 맞춰 유효하게 대응하시게."
 
@@ -1326,16 +1327,31 @@ if symbol:
             # ==================================================================
             i1, i2, i3, i4 = st.columns(4)
             with i1:
-                if final_code == "RED_SELL_WARNING" and is_long_upper_tail:
+                # ------------------- 수정된 Bollinger 하단 텍스트 -------------------
+                if final_code == "BAND_RIDING_HARVEST":
                     bb_diag = (
-                        "🔴 <b>[고점 윗꼬리 익절 구간]</b><br>•"
-                        " <b>역할:</b> 선제적 수익 방어.<br>• <b>진단:</b> 고점에서 윗꼬리 매물 출회! 신규 진입 엄금 및 즉시 익절 실행."
+                        f"🟣 <b>[밴드 라이딩 상방 확장] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                        " <b>역할:</b> 대세 상승 랠리 홀딩.<br>• <b>진단:</b> 목표선을 완전히 뚫고 상단 밴드가 확장 중이오! "
+                        "잔여 물량은 5일선 사수 기준으로 끝까지 추종하시게."
                     )
-                elif is_long_upper_tail:
+                elif final_code == "RED_SELL_TARGET":
                     bb_diag = (
-                        "🟡 <b>[위꼬리 저항 관망 구역]</b><br>•"
-                        " <b>역할:</b> 고점 매물 소화 대기.<br>• <b>진단:</b> 긴 위꼬리가 밀려 내려왔으니 섣부른 추격을 금하고 관망."
+                        f"🔴 <b>[수확 목표선 임박 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                        " <b>역할:</b> 1차 선제적 익절 준비.<br>• <b>진단:</b> 볼린저 상단 고지가 코앞이니 "
+                        "욕심을 덜어내고 분할 수확을 준비하시게."
                     )
+                elif final_code == "RED_SELL_WARNING":
+                    bb_diag = (
+                        f"🔴 <b>[성벽 위 리스크 관리]</b><br>•"
+                        f" <b>역할:</b> 가짜 돌파(페이크) 방어.<br>• <b>진단:</b> 성벽 위 음봉으로 밀리고 있으니 즉시 비중을 줄이고 수성 태세로 전환하시게."
+                    )
+                elif final_code == "BREAKOUT_ATTACK":
+                    bb_diag = (
+                        f"🟢 <b>[성벽 위 양봉 랠리 추종] (밴드폭: {bandwidth:.1f}%)</b><br>•"
+                        " <b>역할:</b> 기세 유지 및 수익 극대화.<br>• <b>진단:</b> 성벽을"
+                        f" 뚫고 양봉으로 진격 중이오. 상방 목표선까지 추세를 즐기시게."
+                    )
+                # ----------------------------------------------------------------------
                 elif final_code == "WAIT_NARROW_MARGIN":
                     bb_diag = (
                         f"🟡 <b>[상승 여력 부족 / 관망] (여력: +{margin_diff:.1f}%)</b><br>•"
@@ -1412,30 +1428,6 @@ if symbol:
                         " <b>역할:</b> 승수 확대.<br>• <b>진단:</b>"
                         f" {bw_diag_msg}. {bb_time_diag} (윗꼬리 20일선 이탈 시 철수)"
                     )
-                elif final_code == "BAND_RIDING_HARVEST":
-                    bb_diag = (
-                        f"🟣 <b>[밴드 라이딩 대시세 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        " <b>역할:</b> 상방 대시세 추종.<br>• <b>진단:</b> 상단 밴드가 확장 중이오! "
-                        "50%는 이익을 확정하고 남은 물량은 5일선 사수 기준으로 추종하시게."
-                    )
-                elif final_code == "RED_SELL_TARGET":
-                    bb_diag = (
-                        f"🔴 <b>[수학 목표선 저항 도달 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        " <b>역할:</b> 고점 분할 수익 확정.<br>• <b>진단:</b> 볼린저 상단 저항에 닿았으니 "
-                        "물량의 50%를 즉시 수확하고 분할 매도에 임하시게."
-                    )
-                elif final_code == "RED_SELL_WARNING":
-                    sell_warn_type = "음봉 발생" if is_candle_bearish else "기세 둔화"
-                    bb_diag = (
-                        f"🔴 <b>[성벽 위 {sell_warn_type} 익절 구간]</b><br>•"
-                        f" <b>역할:</b> 선제적 수익 방어.<br>• <b>진단:</b> 성벽 위 {sell_warn_type}으로 분할 익절 실행."
-                    )
-                elif final_code == "BREAKOUT_ATTACK":
-                    bb_diag = (
-                        f"🟢 <b>[성벽 위 진격 구역] (밴드폭: {bandwidth:.1f}%)</b><br>•"
-                        " <b>역할:</b> 상방 분출 추진력 가속.<br>• <b>진단:</b> 성벽을"
-                        f" 뚫고 목표선({target_price_100:{fmt_p}}{currency})을 향해 진격 중이오. 5일선을 사수하며 수익을 극대화하시게."
-                    )
                 elif final_code == "YELLOW_CAUTION":
                     bb_diag = (
                         "🟡 <b>[성벽 위 경계 및 추격 차단 구역]</b><br>•"
@@ -1472,7 +1464,7 @@ if symbol:
                     if rsi_val > rsi_prev
                     else ("▼ 하락" if rsi_val < rsi_prev else "─ 변동없음")
                 )
-                if is_target_reached or rsi_val >= 60:
+                if p >= target_price_100 or rsi_val >= 60:
                     r_status = (
                         "<b>👿 불지옥 과열권</b><br>• <b>역할:</b> 매수 에너지"
                         " 고갈 경보.<br>• <b>진단:</b> 과열 구간 진입, 상단"
@@ -1508,7 +1500,7 @@ if symbol:
                     if will_val > will_prev
                     else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
                 )
-                if is_target_reached or will_val >= -20:
+                if p >= target_price_100 or will_val >= -20:
                     w_status = (
                         "<b>🚀 상방 저항 도달 구역</b><br>• <b>역할:</b> 단기"
                         " 상향 압력 한계 측정.<br>• <b>진단:</b> 목표선 도달 완료!"
@@ -1543,15 +1535,15 @@ if symbol:
                         "<b>🚨 엔진 급제동 (고점 투매)</b><br>• <b>역할:</b> 고점 상투 방어.<br>• <b>진단:</b>"
                         " 목표선 부근에서 윗꼬리가 생기며 세력의 매도세가 쏟아지고 있소! 즉시 수익을 챙기고 철수하시게."
                     )
-                elif is_band_riding:
+                elif p >= target_price_100:
                     m_diag = (
                         "<b>🔥 엔진 풀가동 (대세 추종)</b><br>• <b>역할:</b> 추세 지속력 측정.<br>• <b>진단:</b>"
-                        " 밴드 확장과 함께 엔진이 힘을 내고 있소! 50% 수확 완료 후 5일선 사수 기준으로 잔여 물량을 즐기시게."
+                        " 목표선 돌파와 함께 엔진이 힘을 내고 있소! 5일선 사수 기준으로 잔여 물량을 추종하시게."
                     )
-                elif is_target_reached:
+                elif p >= (target_price_100 * 0.98):
                     m_diag = (
-                        "<b>🚨 엔진 과열 차단</b><br>• <b>역할:</b> 고점 상투 방어.<br>• <b>진단:</b>"
-                        " 목표선 도달 완료로 추가 가속 중단! 잔여 물량 익절에 집중하시게."
+                        "<b>🚨 엔진 과열 차단 (목표선 임박)</b><br>• <b>역할:</b> 고점 상투 방어.<br>• <b>진단:</b>"
+                        " 목표선 도달 임박으로 1차 선제적 익절(분할 수확)을 준비하시게."
                     )
                 elif is_overall_cautious_state and not (is_kr and is_morning_breakout_fast):
                     m_diag = (
