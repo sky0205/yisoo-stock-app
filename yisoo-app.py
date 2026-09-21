@@ -867,7 +867,7 @@ if symbol:
             st.write("")
             is_positive_day = p >= prev_p if prev_p > 0 else False
         
-            # ★ 볼륨 박스 텍스트 계산
+           # ★ 볼륨 박스 텍스트 계산
             if is_pre_market_mode:
                 v_status, v_adv = ("프리장 대기", "🇺🇸 <b>[프리마켓 모드]</b> 수동 가격 반영 중이오. 장전 거래량이 희박하니 실시간 수급 차단 로직을 우회하여 타점을 판독하오.")
             elif is_positive_day and vol_strength < 65:
@@ -876,25 +876,24 @@ if symbol:
                 if is_peak_dumping: v_status, v_adv = ("고점 투매과열", f"🚨 <b>[고점 투매과열]</b> 시간보정 강도 {vol_strength:.1f}점! 상단에서 대량의 차익 매물이 쏟아지고 있소.")
                 elif not is_down_trend_v: v_status, v_adv = ("과열폭발(돌파)", f"🔥 <b>[화력폭발/돌파]</b> 시간보정 강도 {vol_strength:.1f}점! 아침장 수급이 강력하게 폭발 중이오.")
                 else:
-                    if is_down_trend_structural: v_status, v_adv = ("역배열투매", f"🚨 <b>[역배열/하방 투매과열]</b> 투매 물량 폭발 중이니 절대 칼날을 잡지 마시게.")
-                    else: v_status, v_adv = ("차익투매주의", f"⚠️ <b>[고점 차익투매 경계]</b> 정배열 상승 속 차익 매물 대량 출회 중.")
+                    if is_down_trend_structural: v_status, v_adv = ("역배열투매", f"🚨 <b>[역배열/하방 투매과열]</b> 시간보정 강도 {vol_strength:.1f}점! 투매 물량 폭발 중이니 절대 칼날을 잡지 마시게.")
+                    else: v_status, v_adv = ("차익투매주의", f"⚠️ <b>[고점 차익투매 경계]</b> 시간보정 강도 {vol_strength:.1f}점! 정배열 상승 속 차익 매물 대량 출회 중.")
             elif vol_strength >= 100:
                 if is_peak_dumping: v_status, v_adv = ("고점 차익출회", f"⚠️ <b>[고점 차익출회]</b> 시간보정 강도 {vol_strength:.1f}점! 목표선 부근에서 차익 매물 출회 중이오.")
                 elif not is_down_trend_v: v_status, v_adv = ("매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네.")
-                elif is_down_trend_structural: v_status, v_adv = ("역배열과열", f"⚠️ <b>[역배열과열]</b> 하락 추세 속 속임수 음봉 거래량 주의.")
-                else: v_status, v_adv = ("차익매물출회", f"⚠️ <b>[차익매물출회]</b> 우상향 성벽 속 고점 차익 음봉 매물 출회.")
+                elif is_down_trend_structural: v_status, v_adv = ("역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 음봉 거래량 주의.")
+                else: v_status, v_adv = ("차익매물출회", f"⚠️ <b>[차익매물출회]</b> 시간보정 강도 {vol_strength:.1f}점! 우상향 성벽 속 고점 차익 음봉 매물 출회.")
             elif vol_strength >= 65:
-                if is_peak_dumping: v_status, v_adv = ("고점 차익출회", f"⚠️ <b>[고점 차익출회]</b> 목표선 부근에서 윗꼬리가 포착되었으니 관망하시게.")
+                if is_peak_dumping: v_status, v_adv = ("고점 차익출회", f"⚠️ <b>[고점 차익출회]</b> 시간보정 강도 {vol_strength:.1f}점! 목표선 부근에서 윗꼬리가 포착되었으니 관망하시게.")
                 elif not is_down_trend_v: v_status, v_adv = ("정상화력", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점! 기세가 뻣뻣하구먼.")
-                elif is_down_trend_structural: v_status, v_adv = ("역배열과열", f"⚠️ <b>[역배열과열]</b> 하락 추세 속 속임수 음봉 거래량 주의.")
-                else: v_status, v_adv = ("숨고르기조정", f"☕ <b>[숨고르기조정]</b> 정배열 속 정상적인 눌림목 음봉 조정 중이오.")
+                elif is_down_trend_structural: v_status, v_adv = ("역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 음봉 거래량 주의.")
+                else: v_status, v_adv = ("숨고르기조정", f"☕ <b>[숨고르기조정]</b> 시간보정 강도 {vol_strength:.1f}점! 정배열 속 정상적인 눌림목 음봉 조정 중이오.")
             else:
-                if p < ma5_val: v_status, v_adv = ("거래량 미달", f"🟡 <b>[거래량 미달 / 관망]</b> 실시간 {vol_strength:.1f}점! 섣부른 진입을 엄금하네.")
+                if p < ma5_val: v_status, v_adv = ("거래량 미달", f"🟡 <b>[거래량 미달 / 관망]</b> 시간보정 강도 {vol_strength:.1f}점! 섣부른 진입을 엄금하네.")
                 else:
                     is_healthy_volume_dry = p_chg >= 0
-                    if is_healthy_volume_dry: v_status, v_adv = ("거래 숨고르기", f"🧊 <b>[거래 숨고르기]</b> 정배열 성벽 위 눌림목 숨 고르는 중이오.")
-                    else: v_status, v_adv = ("거래절벽", f"🧊 <b>[거래절벽]</b> 수급이 마르고 동력이 없으니 속지 마시게.")
-
+                    if is_healthy_volume_dry: v_status, v_adv = ("거래 숨고르기", f"🧊 <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! 정배열 성벽 위 눌림목 숨 고르는 중이오.")
+                    else: v_status, v_adv = ("거래절벽", f"🧊 <b>[거래절벽]</b> 시간보정 강도 {vol_strength:.1f}점! 수급이 마르고 동력이 없으니 속지 마시게.")
             st.markdown(
                 f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전환: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div>"
                 f"<div style='font-size:18px; color:#37474F; background:#FFFFFF; padding:10px; border-radius:8px; border-left:6px solid #1976D2; margin-bottom:10px;'>{v_adv}</div>"
