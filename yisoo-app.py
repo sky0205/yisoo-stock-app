@@ -1054,6 +1054,22 @@ if symbol:
                     f"<b>[호가창 기준 미달]</b> 타점 지표는 충족했으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 실전 투입 기준에 미달하오. "
                     "세력이 윗꼬리로 밀어버릴 속임수일 확률이 높으니 방아쇠를 잠그고 관망하시게."
                 )
+            # ... (1056번째 줄) )
+            
+            # 🌟🌟🌟 [바로 여기! 1056번 줄과 1057번 줄 사이 틈새] 🌟🌟🌟
+            elif is_over_extended_5:
+                final_code = "WAIT_OVER_EXTENDED"
+                sig = f"🟡 [관망/보류] 5일선 과다이격 (+{bias_ma5:.1f}%) / 추격 매수 금지"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). "
+                    f"<b>[과다이격 진입 차단]</b> 타점 조건은 충족했으나, 현재가가 5일선 대비 <b>+{bias_ma5:.1f}%</b>나 높게 떠 있소! "
+                    "고점 윗꼬리에 물릴 위험이 크니 뇌동매매를 엄금하고 5일선과의 이격이 좁혀질 때까지 철저히 관망하시게."
+                )
+            # 🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟
+
+            # (1057번째 줄) # ★★★ [수정] 신호등과 최종결론에서도 5일선 아래 미세조정 + 양봉(비음봉) 조건이 일치할 때만 정찰병 발동
+            # (1058번째 줄) elif is_near_ma5_bottom and (bottom_score >= 1 or will_val <= -75) and (p >= today_open) and (p_chg >= -1.5):    
             # ★★★ [수정] 신호등과 최종결론에서도 5일선 아래 미세조정 + 양봉(비음봉) 조건이 일치할 때만 정찰병 발동
             elif is_near_ma5_bottom and (bottom_score >= 1 or will_val <= -75) and (p >= today_open) and (p_chg >= -1.5):
                 if margin_diff < 7.0:
