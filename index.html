@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>이수할아버지의 숫자 세기 놀이</title>
+  <title>이수의 재미있는 공부 놀이터</title>
   <style>
     * { box-sizing: border-box; touch-action: manipulation; }
     body {
       margin: 0;
-      padding: 20px 10px;
+      padding: 15px 10px;
       background-color: #f6f8fc;
       font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
       text-align: center;
@@ -18,36 +18,101 @@
       min-height: 100vh;
       user-select: none;
     }
-    .score-board {
+
+    /* 상단 내비게이션 바 */
+    .top-nav {
       width: 100%;
       max-width: 480px;
-      text-align: right;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      min-height: 40px;
+    }
+    .home-btn {
+      background: #edf2f7;
+      border: 2px solid #cbd5e0;
+      border-radius: 12px;
+      padding: 6px 14px;
+      font-size: 15px;
+      font-weight: bold;
+      color: #4a5568;
+      cursor: pointer;
+    }
+    .home-btn:active { background: #e2e8f0; }
+    .score-txt {
       font-size: 20px;
       font-weight: bold;
-      color: #555;
-      padding-right: 15px;
+      color: #2b6cb0;
     }
-    .question {
-      font-size: 26px;
+
+    /* 화면 섹션 제어 */
+    .screen-view { display: none; width: 100%; max-width: 480px; flex-direction: column; align-items: center; }
+    .screen-view.active { display: flex; }
+
+    /* --- [메인 메뉴 화면] --- */
+    .menu-title {
+      font-size: 28px;
+      font-weight: bold;
+      color: #2d3748;
+      margin: 30px 0 10px 0;
+    }
+    .menu-subtitle {
+      font-size: 17px;
+      color: #718096;
+      margin-bottom: 35px;
+    }
+    .menu-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+    }
+    .menu-card {
+      background: white;
+      border-radius: 24px;
+      padding: 24px 20px;
+      border: 3px solid #e2e8f0;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .menu-card:active {
+      transform: scale(0.98);
+      border-color: #3182ce;
+    }
+    .menu-icon { font-size: 55px; }
+    .menu-info { text-align: left; }
+    .menu-info h3 { margin: 0 0 6px 0; font-size: 22px; color: #2d3748; }
+    .menu-info p { margin: 0; font-size: 14px; color: #718096; }
+
+    /* --- [공통 게임 안내/문제창] --- */
+    .question-box {
+      font-size: 25px;
       font-weight: bold;
       color: #2b2b2b;
-      margin: 15px 0 25px 0;
+      margin: 10px 0 20px 0;
       min-height: 38px;
     }
+
+    /* --- [1. 숫자 세기 게임 스타일] --- */
     .apple-field {
       width: 100%;
-      max-width: 480px;
       min-height: 180px;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       align-content: center;
       gap: 15px;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
       background: #ffffff;
       border-radius: 20px;
       padding: 20px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      border: 2px solid #edf2f7;
     }
     .apple {
       position: relative;
@@ -69,12 +134,11 @@
       border-radius: 80% 0 80% 0;
       transform: rotate(-20deg);
     }
-    .button-grid {
+    .number-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       gap: 10px;
       width: 100%;
-      max-width: 480px;
     }
     .num-btn {
       background-color: #ffd754;
@@ -83,15 +147,77 @@
       font-size: 28px;
       font-weight: bold;
       color: #222;
-      padding: 15px 0;
+      padding: 14px 0;
       cursor: pointer;
       box-shadow: 0 4px #c28815;
-      transition: transform 0.1s, box-shadow 0.1s;
     }
     .num-btn:active {
       transform: translateY(3px);
       box-shadow: 0 1px #c28815;
     }
+
+    /* --- [2. 낱말 찾기 게임 스타일] --- */
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+      width: 100%;
+      justify-content: center;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 4px;
+      font-size: 15px;
+      font-weight: bold;
+      border: 2px solid #cbd5e0;
+      background: #fff;
+      border-radius: 12px;
+      cursor: pointer;
+      color: #4a5568;
+    }
+    .tab-btn.active {
+      background: #3182ce;
+      color: white;
+      border-color: #2b6cb0;
+    }
+    .word-card {
+      width: 100%;
+      height: 190px;
+      background: white;
+      border-radius: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+      margin-bottom: 22px;
+      border: 3px solid #edf2f7;
+    }
+    .word-card-emoji {
+      font-size: 100px;
+      animation: pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .word-choices-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+    }
+    .choice-btn {
+      background-color: #ffd166;
+      border: 3px solid #f4a261;
+      border-radius: 16px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #264653;
+      padding: 16px 0;
+      cursor: pointer;
+      box-shadow: 0 4px #e76f51;
+    }
+    .choice-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px #e76f51;
+    }
+
     @keyframes pop {
       0% { transform: scale(0.6); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
@@ -100,16 +226,65 @@
 </head>
 <body>
 
-  <div class="score-board" id="scoreBoard">점수: 0점</div>
-  <div class="question" id="msg">사과가 모두 몇 개 있을까요?</div>
-  
-  <div class="apple-field" id="appleArea"></div>
+  <!-- [메인 메뉴 화면] -->
+  <div class="screen-view active" id="menuScreen">
+    <div class="menu-title">🌟 이수의 놀이터 🌟</div>
+    <div class="menu-subtitle">하고 싶은 놀이를 골라보세요!</div>
 
-  <div class="button-grid" id="btnArea"></div>
+    <div class="menu-card-list">
+      <div class="menu-card" onclick="openGame('num')">
+        <div class="menu-icon">🍎</div>
+        <div class="menu-info">
+          <h3>사과 숫자 세기</h3>
+          <p>사과가 몇 개인지 맞혀봐요 (1~10)</p>
+        </div>
+      </div>
+
+      <div class="menu-card" onclick="openGame('word')">
+        <div class="menu-icon">🚗</div>
+        <div class="menu-info">
+          <h3>한글 낱말 찾기</h3>
+          <p>과일, 자동차, 직업, 동물 낱말 맞히기</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- [1. 숫자 세기 게임 화면] -->
+  <div class="screen-view" id="numGameScreen">
+    <div class="top-nav">
+      <button class="home-btn" onclick="goHome()">🏠 놀이터 홈</button>
+      <div class="score-txt" id="numScore">점수: 0점</div>
+    </div>
+    <div class="question-box" id="numMsg">사과가 모두 몇 개 있을까요?</div>
+    <div class="apple-field" id="appleArea"></div>
+    <div class="number-grid" id="numBtnArea"></div>
+  </div>
+
+  <!-- [2. 한글 낱말 찾기 게임 화면] -->
+  <div class="screen-view" id="wordGameScreen">
+    <div class="top-nav">
+      <button class="home-btn" onclick="goHome()">🏠 놀이터 홈</button>
+      <div class="score-txt" id="wordScore">점수: 0점</div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchWordCategory('과일')">과일</button>
+      <button class="tab-btn" onclick="switchWordCategory('탈것')">자동차</button>
+      <button class="tab-btn" onclick="switchWordCategory('직업')">직업</button>
+      <button class="tab-btn" onclick="switchWordCategory('동물')">동물</button>
+    </div>
+
+    <div class="question-box" id="wordMsg">이 그림의 이름은 무엇일까요?</div>
+    <div class="word-card">
+      <div class="word-card-emoji" id="wordEmoji">🍎</div>
+    </div>
+    <div class="word-choices-grid" id="wordChoiceArea"></div>
+  </div>
 
   <script>
+    // --- 오디오 시스템 ---
     let audioCtx = null;
-
     function initAudio() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -127,83 +302,186 @@
           const gain = audioCtx.createGain();
           osc.connect(gain);
           gain.connect(audioCtx.destination);
-          osc.type = 'triangle'; // 더 맑고 부드러운 음색
+          osc.type = 'triangle';
           osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
           gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
           osc.start();
           osc.stop(audioCtx.currentTime + duration);
-        } catch (e) {
-          console.log(e);
-        }
+        } catch(e) {}
       }, delay);
     }
 
-    function playCorrectSound() {
-      playTone(523.25, 0.15, 0);    // 도 (C5)
-      playTone(659.25, 0.15, 120);  // 미 (E5)
-      playTone(783.99, 0.35, 240);  // 솔 (G5)
+    function playCorrect() {
+      playTone(523.25, 0.14, 0);    // 도
+      playTone(659.25, 0.14, 110);  // 미
+      playTone(783.99, 0.30, 220);  // 솔
+    }
+    function playWrong() {
+      playTone(220.00, 0.25, 0);    // 라
     }
 
-    function playWrongSound() {
-      playTone(220.00, 0.25, 0);    // 낮은 라
+    // --- 화면 전환 ---
+    function goHome() {
+      document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
+      document.getElementById('menuScreen').classList.add('active');
     }
 
-    let count = 0;
-    let score = 0;
-    let canClick = true;
+    function openGame(type) {
+      initAudio();
+      document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
+      if (type === 'num') {
+        document.getElementById('numGameScreen').classList.add('active');
+        startNumRound();
+      } else if (type === 'word') {
+        document.getElementById('wordGameScreen').classList.add('active');
+        nextWordRound();
+      }
+    }
 
+    // --- 1. 숫자 세기 로직 ---
+    let numCount = 0;
+    let numScoreVal = 0;
+    let numCanClick = true;
     const appleArea = document.getElementById('appleArea');
-    const btnArea = document.getElementById('btnArea');
-    const msg = document.getElementById('msg');
-    const scoreBoard = document.getElementById('scoreBoard');
+    const numMsg = document.getElementById('numMsg');
+    const numScore = document.getElementById('numScore');
+    const numBtnArea = document.getElementById('numBtnArea');
 
-    // 1~10 숫자 버튼 생성
     for (let i = 1; i <= 10; i++) {
       const btn = document.createElement('button');
       btn.className = 'num-btn';
       btn.textContent = i;
-      btn.onclick = () => checkAnswer(i);
-      btnArea.appendChild(btn);
+      btn.onclick = () => checkNumAnswer(i);
+      numBtnArea.appendChild(btn);
     }
 
-    function startRound() {
-      count = Math.floor(Math.random() * 10) + 1;
+    function startNumRound() {
+      numCount = Math.floor(Math.random() * 10) + 1;
       appleArea.innerHTML = '';
-      msg.textContent = "사과가 모두 몇 개 있을까요?";
-      msg.style.color = "#2b2b2b";
-
-      for (let i = 0; i < count; i++) {
+      numMsg.textContent = "사과가 모두 몇 개 있을까요?";
+      numMsg.style.color = "#2b2b2b";
+      for (let i = 0; i < numCount; i++) {
         const apple = document.createElement('div');
         apple.className = 'apple';
         appleArea.appendChild(apple);
       }
-      canClick = true;
+      numCanClick = true;
     }
 
-    function checkAnswer(val) {
-      initAudio();
-      if (!canClick) return;
-
-      if (val === count) {
-        canClick = false;
-        score += 10;
-        scoreBoard.textContent = `점수: ${score}점`;
-        msg.textContent = "딩동댕! 정답이에요! 아주 잘했어요!";
-        msg.style.color = "#1f8a43";
-        playCorrectSound();
-        setTimeout(startRound, 1400);
+    function checkNumAnswer(val) {
+      if (!numCanClick) return;
+      if (val === numCount) {
+        numCanClick = false;
+        numScoreVal += 10;
+        numScore.textContent = `점수: ${numScoreVal}점`;
+        numMsg.textContent = "딩동댕! 정답이에요! 아주 잘했어요!";
+        numMsg.style.color = "#1f8a43";
+        playCorrect();
+        setTimeout(startNumRound, 1300);
       } else {
-        msg.textContent = "다시 한번 차근차근 세어볼까요?";
-        msg.style.color = "#c93d3d";
-        playWrongSound();
+        numMsg.textContent = "다시 한번 차근차근 세어볼까요?";
+        numMsg.style.color = "#c93d3d";
+        playWrong();
+      }
+    }
+
+    // --- 2. 낱말 찾기 로직 ---
+    const wordData = {
+      '과일': [
+        { word: '사과', emoji: '🍎' }, { word: '바나나', emoji: '🍌' },
+        { word: '수박', emoji: '🍉' }, { word: '포도', emoji: '🍇' },
+        { word: '딸기', emoji: '🍓' }, { word: '복숭아', emoji: '🍑' },
+        { word: '파인애플', emoji: '🍍' }, { word: '체리', emoji: '🍒' }
+      ],
+      '탈것': [
+        { word: '경찰차', emoji: '🚓' }, { word: '소방차', emoji: '🚒' },
+        { word: '구급차', emoji: '🚑' }, { word: '버스', emoji: '🚌' },
+        { word: '택시', emoji: '🚕' }, { word: '비행기', emoji: '✈️' },
+        { word: '기차', emoji: '🚆' }, { word: '자전거', emoji: '🚲' }
+      ],
+      '직업': [
+        { word: '경찰관', emoji: '👮' }, { word: '소방관', emoji: '🧑‍🚒' },
+        { word: '의사선생님', emoji: '🧑‍⚕️' }, { word: '요리사', emoji: '🧑‍🍳' },
+        { word: '선생님', emoji: '🧑‍🏫' }, { word: '우주비행사', emoji: '🧑‍🚀' },
+        { word: '화가', emoji: '🧑‍🎨' }, { word: '가수', emoji: '🧑‍🎤' }
+      ],
+      '동물': [
+        { word: '강아지', emoji: '🐶' }, { word: '고양이', emoji: '🐱' },
+        { word: '토끼', emoji: '🐰' }, { word: '사자', emoji: '🦁' },
+        { word: '호랑이', emoji: '🐯' }, { word: '코끼리', emoji: '🐘' },
+        { word: '기린', emoji: '🦒' }, { word: '원숭이', emoji: '🐵' }
+      ]
+    };
+
+    let wordCategory = '과일';
+    let currentWordItem = null;
+    let wordScoreVal = 0;
+    let wordCanClick = true;
+
+    const wordEmoji = document.getElementById('wordEmoji');
+    const wordChoiceArea = document.getElementById('wordChoiceArea');
+    const wordMsg = document.getElementById('wordMsg');
+    const wordScore = document.getElementById('wordScore');
+
+    function switchWordCategory(cat) {
+      wordCategory = cat;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.includes(cat) || (cat === '탈것' && btn.textContent.includes('자동차')));
+      });
+      nextWordRound();
+    }
+
+    function shuffle(arr) {
+      return arr.sort(() => Math.random() - 0.5);
+    }
+
+    function nextWordRound() {
+      wordCanClick = true;
+      wordMsg.textContent = "이 그림의 이름은 무엇일까요?";
+      wordMsg.style.color = "#2d3748";
+
+      const list = wordData[wordCategory];
+      currentWordItem = list[Math.floor(Math.random() * list.length)];
+
+      wordEmoji.style.animation = 'none';
+      wordEmoji.offsetHeight;
+      wordEmoji.style.animation = 'pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      wordEmoji.textContent = currentWordItem.emoji;
+
+      const wrongPool = list.filter(item => item.word !== currentWordItem.word);
+      const wrongChoices = shuffle(wrongPool).slice(0, 3);
+      const finalChoices = shuffle([currentWordItem, ...wrongChoices]);
+
+      wordChoiceArea.innerHTML = '';
+      finalChoices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = choice.word;
+        btn.onclick = () => checkWordAnswer(choice.word);
+        wordChoiceArea.appendChild(btn);
+      });
+    }
+
+    function checkWordAnswer(selected) {
+      if (!wordCanClick) return;
+      if (selected === currentWordItem.word) {
+        wordCanClick = false;
+        wordScoreVal += 10;
+        wordScore.textContent = `점수: ${wordScoreVal}점`;
+        wordMsg.textContent = `딩동댕! 정답! "${currentWordItem.word}"!`;
+        wordMsg.style.color = "#2b6cb0";
+        playCorrect();
+        setTimeout(nextWordRound, 1300);
+      } else {
+        wordMsg.textContent = "다시 한번 그림을 잘 살펴볼까요?";
+        wordMsg.style.color = "#e53e3e";
+        playWrong();
       }
     }
 
     window.addEventListener('touchstart', initAudio, { once: true });
     window.addEventListener('click', initAudio, { once: true });
-
-    startRound();
   </script>
 </body>
 </html>
