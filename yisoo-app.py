@@ -729,26 +729,32 @@ if symbol:
             else: trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
 
             def generate_ma_hierarchy(df, current_price):
-                try:
-                    ma_5 = df["MA5"].iloc[-1] if "MA5" in df.columns else df[df.columns[df.columns.str.contains("5")][0]].iloc[-1]
-                    ma_20 = df["MA20"].iloc[-1] if "MA20" in df.columns else df[df.columns[df.columns.str.contains("20")][0]].iloc[-1]
-                    ma_60 = df["MA60"].iloc[-1] if "MA60" in df.columns else df[df.columns[df.columns.str.contains("60")][0]].iloc[-1]
-                    ma_120 = df["MA120"].iloc[-1] if "MA120" in df.columns else df[df.columns[df.columns.str.contains("120")][0]].iloc[-1]
-                except Exception:
-                    ma_5 = float(ma5_str.replace(",", ""))
-                    ma_20 = float(ma20_str.replace(",", ""))
-                    ma_60 = float(ma60_str.replace(",", ""))
-                    ma_120 = float(ma120_str.replace(",", ""))
-                ma_dict = {"120일": ma_120, "60일": ma_60, "20일": ma_20, "5일": ma_5, "현재가": current_price}
+                # ★ 결측치(NaN) 독극물이 든 df를 뒤지지 않고, 어르신께서 이미 정제해둔 안전한 변수들을 바로 씁니다!
+                ma_dict = {
+                    "120일": ma120_val,
+                    "60일": ma60_val,
+                    "20일": mid_line,
+                    "5일": ma5_val,
+                    "현재가": current_price
+                }
+                
+                # ★ 가격(x[1]) 기준으로 내림차순 기계적 정렬 (독극물이 없으니 절대 꼬이지 않음)
                 sorted_items = sorted(ma_dict.items(), key=lambda x: x[1], reverse=True)
+                
                 hierarchy_parts = []
                 for name, price in sorted_items:
-                    if name == "현재가": hierarchy_parts.append(f'<span style="color:#ff6600; font-weight:bold;">현재가({current_price:{fmt_p}}{currency})</span>')
-                    else: hierarchy_parts.append(f"{name}")
+                    if name == "현재가": 
+                        hierarchy_parts.append(f'<span style="color:#ff6600; font-weight:bold;">현재가({current_price:{fmt_p}}{currency})</span>')
+                    else: 
+                        hierarchy_parts.append(f"{name}")
+                
                 hierarchy_str = " > ".join(hierarchy_parts)
-                if ma_5 < ma_20 < ma_60 < ma_120: comment = "*(대세 역배열 저항 압박)*"
-                elif ma_5 > ma_20 > ma_60 > ma_120: comment = "*(완벽한 정배열 상승 랠리)*"
+                
+                # ★ 이평선 상태 판독 코멘트
+                if ma5_val < mid_line < ma60_val < ma120_val: comment = "*(대세 역배열 저항 압박)*"
+                elif ma5_val > mid_line > ma60_val > ma120_val: comment = "*(완벽한 정배열 상승 랠리)*"
                 else: comment = "*(이평선 혼조세 횡보 구간)*"
+                
                 return f"&nbsp;&nbsp;&nbsp;&nbsp;<b>[이평선 층위]</b> {hierarchy_str} {comment}"
               
             ma_price_summary = (
