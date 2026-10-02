@@ -1319,9 +1319,19 @@ if symbol:
                 else:
                     holder_guide_msg = f" • <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br> • <b>단기 생명선:</b> 5일선 지지 확인.<br> • <b>최후 방어선:</b> 바닥권 전저점({stop_loss_price:{fmt_p}}{currency}) 이탈 시 미련 없이 전량 칼손절 후퇴."
 
-            if p >= target_price_100: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 볼린저 상단을 뚫고 상방 확장 중이오! 남은 물량은 <b>5일선({ma5_val:{fmt_p}}{currency}) 종가 이탈 전까지</b> 끝까지 추종하시게."
-            elif p >= (target_price_100 * 0.98): ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있으나 수학 목표선 임박 구간이므로 5일선 -{dynamic_stop_pct:.1f}% 이탈({ma5_dynamic_stop:{fmt_p}}{currency})을 잔여 물량 방어선으로 엄수하시게."
-            elif not is_ma5_safe: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래로 이탈했으니, 돌파 안착 신호가 확인될 때까지 관망하시게."
+            # ==================================================================
+            # ★ [수술 완료] 1. 단기 생명선(5일선) 사수 문구 생성기
+            # ==================================================================
+            if is_peak_dumping: 
+                ma5_guide_text = f"🚨 <b>[비상 탈출] 고점 윗꼬리 투매 발생!</b> 상단에서 대량 차익 매물이 쏟아지고 있소. 5일선({ma5_val:{fmt_p}}{currency}) 믿고 버티다간 다 토해내니 <b>즉시 전량 익절</b>하시게!"
+            elif final_code == "LONG_TAIL_WARNING":
+                ma5_guide_text = f"⚠️ <b>[고점 매물 저항]</b> 현재가({p:{fmt_p}}{currency}) 위로 긴 꼬리가 생겼소! 5일선 위에 있더라도 추격 매수는 멈추고 보수적으로 대응하시게."
+            elif p >= target_price_100: 
+                ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 볼린저 상단을 뚫고 상방 확장 중이오! 남은 물량은 <b>5일선({ma5_val:{fmt_p}}{currency}) 종가 이탈 전까지</b> 끝까지 추종하시게."
+            elif p >= (target_price_100 * 0.98): 
+                ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있으나 수학 목표선 임박 구간이므로 5일선 -{dynamic_stop_pct:.1f}% 이탈({ma5_dynamic_stop:{fmt_p}}{currency})을 잔여 물량 방어선으로 엄수하시게."
+            elif not is_ma5_safe: 
+                ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래로 이탈했으니, 돌파 안착 신호가 확인될 때까지 관망하시게."
             else:
                 if is_pre_market_mode: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있소! 정규장 개장 후 지지 사수를 확인하시게."
                 elif vol_strength < 65: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으나 수급이 마른 상태이오. 추격을 금하고 관망하시게."
@@ -1336,9 +1346,19 @@ if symbol:
                 elif final_code == "BREAK_MA20_CONFIRMED": ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 20일선 및 5일선 위 안착에 성공하며 기민한 돌파 매수 타점을 형성 중이오."
                 else: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 단기 전투선 유지 중이오."
 
-            if p >= target_price_100: def_status = f"성벽({defense_line:{fmt_p}}{currency})을 가뿐히 넘고 볼린저 상단 목표선까지 뚫어냈네! 든든한 방어선을 뒤에 두고 상방 랠리를 끝까지 즐기시게."
-            elif p >= (target_price_100 * 0.98): def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위 진격은 완수되었네! 수확 목표선({target_price_100:{fmt_p}}{currency}) 고지가 코앞이니 현금을 챙길 준비를 하시게."
-            elif defense_line > target_price_100: def_status = f"성벽({defense_line:{fmt_p}}{currency})이 상단 목표선({target_price_100:{fmt_p}}{currency})보다 위로 왜곡된 <b>[역배열 침체]</b> 구역이오! 섣부른 진격을 금하고 철저히 관망하시게."
+            # ==================================================================
+            # ★ [수술 완료] 2. 성벽 사수 및 공방 확인 문구 생성기
+            # ==================================================================
+            if is_peak_dumping: 
+                def_status = f"🚨 <b>[고점 폭탄 투하]</b> 성벽({defense_line:{fmt_p}}{currency})은 뚫었으나 대량 매도 폭탄이 떨어졌소! 상방 랠리가 취소되었으니 당장 도망치시게."
+            elif final_code == "LONG_TAIL_WARNING":
+                def_status = f"⚠️ <b>[성벽 위 가짜 돌파 경계]</b> 성벽({defense_line:{fmt_p}}{currency}) 위에서 긴 윗꼬리가 달렸소. 저항이 거세니 돌파를 맹신하지 마시게."
+            elif p >= target_price_100: 
+                def_status = f"성벽({defense_line:{fmt_p}}{currency})을 가뿐히 넘고 볼린저 상단 목표선까지 뚫어냈네! 든든한 방어선을 뒤에 두고 상방 랠리를 끝까지 즐기시게."
+            elif p >= (target_price_100 * 0.98): 
+                def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위 진격은 완수되었네! 수확 목표선({target_price_100:{fmt_p}}{currency}) 고지가 코앞이니 현금을 챙길 준비를 하시게."
+            elif defense_line > target_price_100: 
+                def_status = f"성벽({defense_line:{fmt_p}}{currency})이 상단 목표선({target_price_100:{fmt_p}}{currency})보다 위로 왜곡된 <b>[역배열 침체]</b> 구역이오! 섣부른 진격을 금하고 철저히 관망하시게."
             elif p >= defense_line:
                 if is_candle_bearish: def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위 안착 중이나 당일 <b>음봉으로 밀려 가짜 돌파(페이크) 리스크</b>가 있소! 즉시 수성 태세로 전환하시게."
                 elif final_code == "WAIT_NARROW_MARGIN": def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위에서 진격 타점을 잡았으나, <b>상단 목표선까지 먹을 게 {margin_diff:.1f}%밖에 없어</b> 진입을 강제 차단했소."
