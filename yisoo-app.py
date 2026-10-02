@@ -77,20 +77,30 @@ def fetch_global_market():
     return results
 
 
-# 1. 외부(fdr) 통신을 완벽 차단하고, 어르신의 엑셀 장부(krx_list.csv)만 뒤지는 무적 엔진
+# 1. 엑셀의 유령 찌꺼기(한글 깨짐, 보이지 않는 공백)를 강제로 찢어발기는 절대 엔진
 @st.cache_data(ttl=86400 * 30)
 def load_krx_database():
-    file_path = "krx_list.csv"
+    import os
+    import pandas as pd
+    
+    # 깃허브 안에서 파일이 어디 숨어있든 멱살을 잡아채는 추적기
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(base_dir, "krx_list.csv")
+    
     if os.path.exists(file_path):
-        import pandas as pd
-        df = pd.read_csv(file_path, dtype=str)
-        if '종목코드' in df.columns and '회사명' in df.columns:
-            df['종목코드'] = df['종목코드'].str.strip().str.zfill(6)
-            df['회사명'] = df['회사명'].str.strip()
-            return df
+        try:
+            # 1차 타격: 엑셀 첫 줄이 깨져있든 말든 싹 무시하고, 강제로 1열=회사명, 2열=종목코드로 명찰을 박아버림!
+            df = pd.read_csv(file_path, dtype=str, usecols=[0, 1], names=['회사명', '종목코드'], header=0)
+        except UnicodeDecodeError:
+            # 2차 타격: 한국 관공서 특유의 구형 엑셀 암호(cp949) 해독 모드 강제 가동!
+            df = pd.read_csv(file_path, dtype=str, usecols=[0, 1], names=['회사명', '종목코드'], header=0, encoding='cp949')
+            
+        df['종목코드'] = df['종목코드'].str.strip().str.zfill(6)
+        df['회사명'] = df['회사명'].str.strip()
+        return df
     return None
 
-# 2. 어르신의 이름표 달기 함수 (구형 fdr 코드 완벽 제거본)
+# 2. 어르신의 이름표 달기 함수
 @st.cache_data(ttl=86400)
 def get_stock_name(symbol, is_kr):
     if is_kr:
