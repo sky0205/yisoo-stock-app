@@ -8,7 +8,7 @@ import pandas as pd
 import requests
 import streamlit as st
 import yfinance as yf
-
+import os
 
 st.set_page_config(
     page_title="이수할아버지의 냉정 진단기 최종본", layout="wide"
