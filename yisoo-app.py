@@ -77,31 +77,28 @@ def fetch_global_market():
     return results
 
 
+# 1. fdr 명검을 빼들어 국장 전체 명부를 0.1초 만에 가져옵니다.
+@st.cache_data(ttl=86400 * 7) # 일주일에 한 번만 갱신
+def fetch_fdr_krx_list():
+    df = fdr.StockListing('KRX')
+    df['Code'] = df['Code'].astype(str).str.zfill(6)
+    return df
+
+# 2. 어르신의 이름표 달기 함수
 @st.cache_data(ttl=86400)
 def get_stock_name(symbol, is_kr):
     if is_kr:
-        core_vault = {
-            "005930": "삼성전자", "000660": "SK하이닉스", "033100": "제룡전기",
-            "257720": "실리콘투", "058610": "에스피지", "010140": "삼성중공업",
-            "068270": "셀트리온", "272210": "한화시스템", "101490": "에스앤에스텍",
-            "051600": "한전KPS", "064350": "현대로템", "032300": "솔리드",
-            "050890": "솔리드",
-        }
         clean_sym = symbol.zfill(6)
-        if clean_sym in core_vault: 
-            return core_vault[clean_sym]
         try:
-            url = f"https://finance.naver.com/item/main.naver?code={clean_sym}"
-            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}, timeout=3)
-            soup = BeautifulSoup(res.text, "html.parser")
-            return soup.select_one(".wrap_company h2 a").text.strip()
+            # fdr 명부에서 정확하게 이름을 낚아챕니다.
+            krx_df = fetch_fdr_krx_list()
+            real_name = krx_df.loc[krx_df['Code'] == clean_sym, 'Name'].values[0]
+            return real_name
         except Exception:
-            try:
-                df_krx_backup = load_krx_listing()
-                return df_krx_backup[df_krx_backup["Code"] == clean_sym]["Name"].values[0]
-            except Exception:
-                return f"국내종목 ({symbol})"
+            return f"국내종목 ({symbol})"
+            
     else:
+        # 미장 로직은 어르신께서 짜두신 기존 코드 (us_vault 등) 그대로 두시면 되옵니다.
         us_vault = {
             "TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", "MSFT": "마이크로소프트",
             "AMZN": "아마존", "GOOGL": "알파벳A", "META": "메타", "IONQ": "아이온큐",
@@ -109,7 +106,7 @@ def get_stock_name(symbol, is_kr):
             "BE": "블룸에너지", "RKLB": "로켓랩", "AVGO": "브로드컴", "LRCX": "램리서치",
         }
         tk = symbol.upper()
-        if tk in us_vault: 
+        if tk in us_vault:
             return f"{us_vault[tk]} ({tk})"
         try:
             info_dict = yf.Ticker(tk).info
