@@ -80,6 +80,7 @@ def fetch_global_market():
 # --- 여기서부터 복사해서 80~98번 줄 위치에 덮어씌우시옵소서 ---
 
 def get_stock_name(symbol, is_kr):
+    st.write(f"🔍 [디버그] 입력된 심볼: {symbol} / 국장여부: {is_kr}")
     if is_kr:
         clean_sym = str(symbol).strip().zfill(6)
         
