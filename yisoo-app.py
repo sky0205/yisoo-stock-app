@@ -804,19 +804,33 @@ if symbol:
                     "032300": "솔리드",
                     "050890": "솔리드",
                 }
-                final_display_name = core_vault.get(symbol.zfill(6), f"국내종목 ({symbol})")
-                if symbol.zfill(6) not in core_vault:
+                # --- 807~819번 줄 위치에 통째로 덮어씌울 무적 코드 ---
+                final_display_name = core_vault.get(symbol.zfill(6), None)
+                
+                if not final_display_name:
                     try:
-                        url = f"https://finance.naver.com/item/main.naver?code={symbol.zfill(6)}"
-                        res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
-                        soup = BeautifulSoup(res.text, "html.parser")
-                        final_display_name = soup.select_one(".wrap_company h2 a").text.strip()
+                        with open("krx_list.csv", "r", encoding="utf-8", errors="ignore") as f:
+                            lines = f.readlines()
+                        
+                        found = False
+                        for line in lines:
+                            parts = line.strip().split(',')
+                            if len(parts) >= 2:
+                                c1 = parts[0].strip().replace('"', '')
+                                c2 = parts[1].strip().replace('"', '')
+                                if c1.zfill(6) == symbol.zfill(6):
+                                    final_display_name = c2
+                                    found = True
+                                    break
+                                elif c2.zfill(6) == symbol.zfill(6):
+                                    final_display_name = c1
+                                    found = True
+                                    break
+                        
+                        if not found:
+                            final_display_name = f"국내종목 ({symbol})"
                     except Exception:
-                        try:
-                            df_krx_backup = load_krx_listing()
-                            final_display_name = df_krx_backup[df_krx_backup["Code"] == symbol.zfill(6)]["Name"].values[0]
-                        except Exception:
-                            pass
+                        final_display_name = f"국내종목 ({symbol})"
             else:
                 us_vault = {
                     "TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", "MSFT": "마이크로소프트",
