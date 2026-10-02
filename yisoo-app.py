@@ -77,42 +77,47 @@ def fetch_global_market():
     return results
 
 
-# 1. 엑셀의 유령 찌꺼기(한글 깨짐, 보이지 않는 공백)를 강제로 찢어발기는 절대 엔진
-@st.cache_data(ttl=86400 * 30)
-def load_krx_database():
-    import os
-    import pandas as pd
-    
-    # 깃허브 안에서 파일이 어디 숨어있든 멱살을 잡아채는 추적기
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(base_dir, "krx_list.csv")
-    
-    if os.path.exists(file_path):
-        try:
-            # 1차 타격: 엑셀 첫 줄이 깨져있든 말든 싹 무시하고, 강제로 1열=회사명, 2열=종목코드로 명찰을 박아버림!
-            df = pd.read_csv(file_path, dtype=str, usecols=[0, 1], names=['회사명', '종목코드'], header=0)
-        except UnicodeDecodeError:
-            # 2차 타격: 한국 관공서 특유의 구형 엑셀 암호(cp949) 해독 모드 강제 가동!
-            df = pd.read_csv(file_path, dtype=str, usecols=[0, 1], names=['회사명', '종목코드'], header=0, encoding='cp949')
-            
-        df['종목코드'] = df['종목코드'].str.strip().str.zfill(6)
-        df['회사명'] = df['회사명'].str.strip()
-        return df
-    return None
+# --- 여기서부터 복사해서 80~98번 줄 위치에 덮어씌우시옵소서 ---
 
-# 2. 어르신의 이름표 달기 함수
-@st.cache_data(ttl=86400)
 def get_stock_name(symbol, is_kr):
     if is_kr:
-        clean_sym = symbol.zfill(6)
-        krx_db = load_krx_database()
+        clean_sym = str(symbol).strip().zfill(6)
         
-        if krx_db is not None:
-            target = krx_db[krx_db['종목코드'] == clean_sym]
-            if not target.empty:
-                return target['회사명'].values[0]
-                
-        return f"국내종목 ({symbol})"
+        import os
+        # 1. 깃허브 안에 파일이 존재하는지부터 뼈저리게 확인!
+        if not os.path.exists("krx_list.csv"):
+            return f"파일못찾음 ({clean_sym})"
+            
+        try:
+            # 2. 복잡한 엑셀 엔진(Pandas)을 버리고, 메모장 열듯 무식하게 한 줄씩 다 뜯어봄!
+            try:
+                with open("krx_list.csv", "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+            except UnicodeDecodeError:
+                # 한국 관공서 특유의 구형 암호(cp949)가 걸려있을 경우 강제 해독!
+                with open("krx_list.csv", "r", encoding="cp949", errors="ignore") as f:
+                    lines = f.readlines()
+                    
+            for line in lines:
+                parts = line.strip().split(',')
+                if len(parts) >= 2:
+                    col1 = parts[0].strip().replace('"', '')
+                    col2 = parts[1].strip().replace('"', '')
+                    
+                    # 엑셀이 앞자리 0을 잘라먹었든, 순서가 반대든 무조건 찾아냄!
+                    if col1.zfill(6) == clean_sym:
+                        return col2
+                    if col2.zfill(6) == clean_sym:
+                        return col1
+                        
+            # 3. 장부를 2,800줄 끝까지 다 뒤졌는데도 유한양행이 없는 경우
+            return f"장부에없음 ({clean_sym})"
+            
+        except Exception as e:
+            # 알 수 없는 고장이 났을 경우
+            return f"해독불가 ({clean_sym})"
+            
+# --- 여기까지입니다. 아래 100번 줄의 else: 미장 로직은 그대로 두시옵소서 ---
             
     else:
         # 미장 로직은 어르신께서 짜두신 기존 코드 (us_vault 등) 그대로 두시면 되옵니다.
