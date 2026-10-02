@@ -92,7 +92,7 @@ def get_stock_name(symbol, is_kr):
             return core_vault[clean_sym]
         try:
             url = f"https://finance.naver.com/item/main.naver?code={clean_sym}"
-            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
+            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}, timeout=3)
             soup = BeautifulSoup(res.text, "html.parser")
             return soup.select_one(".wrap_company h2 a").text.strip()
         except Exception:
