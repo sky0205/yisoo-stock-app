@@ -77,25 +77,32 @@ def fetch_global_market():
     return results
 
 
-# 1. fdr 명검을 빼들어 국장 전체 명부를 0.1초 만에 가져옵니다.
-@st.cache_data(ttl=86400 * 7) # 일주일에 한 번만 갱신
-def fetch_fdr_krx_list():
-    df = fdr.StockListing('KRX')
-    df['Code'] = df['Code'].astype(str).str.zfill(6)
-    return df
+# 1. 외부(fdr) 통신을 완벽 차단하고, 어르신의 엑셀 장부(krx_list.csv)만 뒤지는 무적 엔진
+@st.cache_data(ttl=86400 * 30)
+def load_krx_database():
+    file_path = "krx_list.csv"
+    if os.path.exists(file_path):
+        import pandas as pd
+        df = pd.read_csv(file_path, dtype=str)
+        if '종목코드' in df.columns and '회사명' in df.columns:
+            df['종목코드'] = df['종목코드'].str.strip().str.zfill(6)
+            df['회사명'] = df['회사명'].str.strip()
+            return df
+    return None
 
-# 2. 어르신의 이름표 달기 함수
+# 2. 어르신의 이름표 달기 함수 (구형 fdr 코드 완벽 제거본)
 @st.cache_data(ttl=86400)
 def get_stock_name(symbol, is_kr):
     if is_kr:
         clean_sym = symbol.zfill(6)
-        try:
-            # fdr 명부에서 정확하게 이름을 낚아챕니다.
-            krx_df = fetch_fdr_krx_list()
-            real_name = krx_df.loc[krx_df['Code'] == clean_sym, 'Name'].values[0]
-            return real_name
-        except Exception:
-            return f"국내종목 ({symbol})"
+        krx_db = load_krx_database()
+        
+        if krx_db is not None:
+            target = krx_db[krx_db['종목코드'] == clean_sym]
+            if not target.empty:
+                return target['회사명'].values[0]
+                
+        return f"국내종목 ({symbol})"
             
     else:
         # 미장 로직은 어르신께서 짜두신 기존 코드 (us_vault 등) 그대로 두시면 되옵니다.
