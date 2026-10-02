@@ -808,29 +808,37 @@ if symbol:
                 final_display_name = core_vault.get(symbol.zfill(6), None)
                 
                 if not final_display_name:
-                    try:
-                        with open("krx_list.csv", "r", encoding="utf-8", errors="ignore") as f:
-                            lines = f.readlines()
-                        
-                        found = False
-                        for line in lines:
-                            parts = line.strip().split(',')
-                            if len(parts) >= 2:
-                                c1 = parts[0].strip().replace('"', '')
-                                c2 = parts[1].strip().replace('"', '')
-                                if c1.zfill(6) == symbol.zfill(6):
-                                    final_display_name = c2
-                                    found = True
-                                    break
-                                elif c2.zfill(6) == symbol.zfill(6):
-                                    final_display_name = c1
-                                    found = True
-                                    break
-                        
-                        if not found:
+                        try:
+                            # 1차 시도: 국제 표준 (UTF-8)으로 읽기
+                            try:
+                                with open("krx_list.csv", "r", encoding="utf-8") as f:
+                                    lines = f.readlines()
+                            except UnicodeDecodeError:
+                                # 2차 시도: 실패 시 한국 관공서/엑셀 표준 (CP949)으로 강제 해독!
+                                with open("krx_list.csv", "r", encoding="cp949", errors="ignore") as f:
+                                    lines = f.readlines()
+                            
+                            found = False
+                            for line in lines:
+                                parts = line.strip().split(',')
+                                if len(parts) >= 2:
+                                    c1 = parts[0].strip().replace('"', '')
+                                    c2 = parts[1].strip().replace('"', '')
+                                    
+                                    # 앞뒤 순서가 바뀌어도, 0이 잘려도 무조건 잡아냄
+                                    if c1.zfill(6) == symbol.zfill(6):
+                                        final_display_name = c2
+                                        found = True
+                                        break
+                                    elif c2.zfill(6) == symbol.zfill(6):
+                                        final_display_name = c1
+                                        found = True
+                                        break
+                            
+                            if not found:
+                                final_display_name = f"국내종목 ({symbol})"
+                        except Exception:
                             final_display_name = f"국내종목 ({symbol})"
-                    except Exception:
-                        final_display_name = f"국내종목 ({symbol})"
             else:
                 us_vault = {
                     "TSLA": "테슬라", "NVDA": "엔비디아", "AAPL": "애플", "MSFT": "마이크로소프트",
