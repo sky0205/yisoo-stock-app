@@ -776,6 +776,56 @@ if symbol:
                 unsafe_allow_html=True,
             )
 
+            # --- [수술 누락 복구] 매수 신호 및 손절 분기 로직 ---
+            is_stop_loss_triggered = False
+            stop_reason = ""
+            if user_avg_price > 0 and p < stop_loss_price:
+                is_stop_loss_triggered = True
+                stop_reason = "보유 평단가 대비 손절 마지노선 이탈"
+            elif (recent_bottom_memory or bottom_score >= 1) and p < prev_low:
+                is_stop_loss_triggered = True
+                stop_reason = "바닥권 전저점 이탈 마지노선"
+
+            is_bottom_indicator_ok = (bottom_score >= 1 or recent_bottom_memory)
+            is_macd_not_deepening = not is_macd_reverse_deepening
+            is_volume_ok_for_bottom = is_pre_market_mode or ((vol_strength >= 65.0) if (p_chg >= 0.0 and p >= today_open) else (vol_strength >= 70.0))
+            
+            is_near_ma5_bottom = (not is_ma5_safe) and (bias_ma5 >= -1.5) and (not is_candle_bearish)
+
+            is_bottom_entry_signal = (
+                (is_near_ma5_bottom) and (bottom_score >= 1 or will_val <= -75)
+                and is_volume_ok_for_bottom and (not is_down_trend_v)
+                and is_macd_not_deepening and is_valid_bottom_candle and (not is_target_reached)
+                and (not has_manual_ob or ob_ratio_val is None or ob_ratio_val >= 0.5)
+            )
+        
+            is_escape_buy_signal = (
+                is_ma5_safe and is_bottom_indicator_ok
+                and (vol_strength >= 65 or is_pre_market_mode)
+                and is_macd_not_deepening and is_valid_buy_candle
+                and is_bandwidth_ok and is_ob_stage2_safe and (not is_target_reached) 
+            )
+        
+            is_pullback_buy_signal = (
+                (not is_down_trend_structural) and is_ma20_buffer_safe
+                and is_ma5_safe and is_ob_stage3_safe 
+                and (pullback_rebound_score >= 1)
+                and (vol_strength >= 65 or is_pre_market_mode)
+                and is_bandwidth_ok and is_macd_not_deepening
+                and is_valid_buy_candle and (not is_target_reached)
+            )
+
+            if is_kr:
+                is_morning_breakout_fast = (now_local.hour >= 10) and (vol_strength >= 300) and is_ma5_safe
+                time_tag_ok = "오전장 화력 및 5일선 안착 완료 (기민 타점 가동)" if is_morning_breakout_fast else "14:00 이후 / 안정적 안착 확인"
+            else:
+                is_morning_breakout_fast = False
+                time_tag_ok = "세션 화력 안착 확인"
+
+            current_chg = float(p_chg)
+            margin_diff = ((target_price_100 - p) / p) * 100 if p > 0 else 0
+            # ----------------------------------------------------
+
             # ==================================================================
             # ★ [신호등 분기 논리]
             # ==================================================================
