@@ -539,7 +539,7 @@ if symbol:
             
             if not (p < ma5_val):
                 stop_loss_price = dynamic_stop_price
-                stop_loss_label = f"🛡️ 단기 추세 체크포인트: 5일선 -{dynamic_stop_pct:.1f}% 이탈 시 비중 조절 및 관망({stop_loss_price:{fmt_p}}{currency})"
+                stop_loss_label = f"🛡️️ 단기 추세 체크포인트: 5일선 -{dynamic_stop_pct:.1f}% 이탈 시 비중 조절 및 관망({stop_loss_price:{fmt_p}}{currency})"
             else:
                 stop_loss_price = prev_low
                 stop_loss_label = f"🚨 칼손절 경보: 바닥권 전저점 이탈 마지노선({stop_loss_price:{fmt_p}}{currency})"
@@ -608,7 +608,7 @@ if symbol:
                         bw_diag_msg = f"밴드폭 응축돌파({bandwidth:.1f}%) 5일선 안착 / 에너지 분출 초입"
                         if vol_strength < 65 or is_candle_bearish:
                             adjust_type_str = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
-                            squeeze_info_str = f"<br>• ⚠️️ <b>[성벽 위 {adjust_type_str}/차익매물출회({bandwidth:.1f}%)]</b> 5일선 위 안착 상태이나 당일 고점 차익 매물이 출회 중이오."
+                            squeeze_info_str = f"<br>• ⚠ <b>[성벽 위 {adjust_type_str}/차익매물출회({bandwidth:.1f}%)]</b> 5일선 위 안착 상태이나 당일 고점 차익 매물이 출회 중이오."
                         else:
                             squeeze_info_str = f"<br>• 🟢 <b>[밴드폭 응축돌파({bandwidth:.1f}%)]</b> 5일선을 뚫고 올라섰네! 상방 분출 초입으로 유효하오."
                 else:
@@ -742,7 +742,7 @@ if symbol:
             elif vol_strength >= 100:
                 if is_peak_dumping: v_status, v_adv = ("고점 차익출회", f"⚠️ <b>[고점 차익출회]</b> 시간보정 강도 {vol_strength:.1f}점! 목표선 부근에서 차익 매물 출회 중이오.")
                 elif not is_down_trend_v: v_status, v_adv = ("매집시작", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 차오르네.")
-                elif is_down_trend_structural: v_status, v_adv = ("역배열과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 음봉 거래량 주의.")
+                elif is_down_trend_structural: v_status, v_adv = ("역배열과열", f"⚠️️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 음봉 거래량 주의.")
                 else: v_status, v_adv = ("차익매물출회", f"⚠️ <b>[차익매물출회]</b> 시간보정 강도 {vol_strength:.1f}점! 우상향 성벽 속 고점 차익 음봉 매물 출회.")
             elif vol_strength >= 65:
                 if is_peak_dumping: v_status, v_adv = ("고점 차익출회", f"⚠️ <b>[고점 차익출회]</b> 시간보정 강도 {vol_strength:.1f}점! 목표선 부근에서 윗꼬리가 포착되었으니 관망하시게.")
@@ -885,7 +885,7 @@ if symbol:
                     final_code = "ESCAPE_BUY"
                     col = "#2E7D32"
                     sig = f"🟢 [추가 진격] 2단계 진바닥 탈출 매수 ({time_tag_ok})"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{time_tag_ok}]</b> 밴드폭 응축돌파 및 5일선 안착! 50% 분할 진입 가동하시게."
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{time_tag_ok}]</b> 밴드폭 응축돌파 및 5일선 안착! 단, 머리 위 성벽 저항이 남았으니 20~30% 정찰대 증원으로만 대응하시게."
             elif is_pullback_buy_signal:
                 if margin_diff < 7.0:
                     final_code = "WAIT_NARROW_MARGIN"
@@ -989,7 +989,7 @@ if symbol:
                 f"• <b>[진바닥 점수]:</b> {bottom_score_display} | • <b>[눌림목 점수]:</b> <b>{pullback_rebound_score}점</b> (기준 1점)<br>"
                 f"{sub_indicator_str}{squeeze_info_str}"
             )
-            if is_ma_tangled: indicator_verify_text += "<br>⚠️ <span style='color:red;'><b>[이평선 꼬임 혼조세 속 진바닥 입질 예외 가동]</b></span>"
+            if is_ma_tangled: indicator_verify_text += "<br>⚠️ <span style='color:red;'><b>[이평선 꼬임 혼조세 속 진바닥 입질 예 가동]</b></span>"
 
             ma5_dynamic_stop = dynamic_stop_price
 
@@ -1129,9 +1129,9 @@ if symbol:
                     else: bb_time_diag = "정규장(세션) 수급 유입 시 10% 타진, 마감 사수 시 완성"
                     bb_diag = f"🔴 <b>[1단계 진바닥 입질 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 바닥권 선취매.<br>• <b>진단:</b> 지표 터치 + 바닥 지지 확인! {bb_time_diag} (윗꼬리 바닥 이탈 시 철수)"
                 elif final_code == "ESCAPE_BUY":
-                    if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 수급(300점 이상) 속 50% 분할 진입 가동"
-                    elif is_kr: bb_time_diag = "14:00 이후 5일선 안착 시 50% 분할 진입"
-                    else: bb_time_diag = "정규장(세션) 수급 동반 5일선 안착 시 50% 분할 진입"
+                    if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 수급(300점 이상) 속 20~30% 정찰대 증원"
+                    elif is_kr: bb_time_diag = "14:00 이후 5일선 안착 시 20~30% 정찰대 증원"
+                    else: bb_time_diag = "정규장(세션) 수급 동반 5일선 안착 시 20~30% 정찰대 증원"
                     bb_diag = f"🟢 <b>[2단계 진바닥 탈출 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 5일선 안착 후 배팅 확대.<br>• <b>진단:</b> {bw_diag_msg}. {bb_time_diag} (윗꼬리 5일선 이탈 시 철수)"
                 elif final_code == "BREAK_MA20_CONFIRMED":
                     if defense_line > target_price_100:
