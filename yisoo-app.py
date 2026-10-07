@@ -199,7 +199,7 @@ def display_global_risk():
     except Exception:
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 최종본 (신고가 판독 레이더 탑재)")
+st.title("🧐 이수할아버지의 냉정 진단기 최종본 (스퀴즈 폭발 레이더 탑재)")
 display_global_risk()
 st.divider()
 
@@ -894,8 +894,23 @@ if symbol:
                 sig = f"🟡 [관망/보류] 5일선 과다이격 (+{bias_ma5:.1f}%) / 추격 매수 금지"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[과다이격 진입 차단]</b> 타점 조건은 충족했으나, 현재가가 5일선 대비 <b>+{bias_ma5:.1f}%</b>나 높게 떠 있소! 고점 윗꼬리에 물릴 위험이 크니 뇌동매매를 엄금하고 5일선과의 이격이 좁혀질 때까지 철저히 관망하시게."
+            
+            # --- [스퀴즈 폭발 매수 로직 추가] ---
+            elif p >= ma20_safe_threshold and bandwidth <= 12.0 and p >= today_open and (vol_strength >= 65 or is_pre_market_mode):
+                if margin_diff < 4.0: # 상승 여력 족쇄를 4%로 완화!
+                    final_code = "WAIT_NARROW_MARGIN"
+                    sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
+                    col = "#F57C00"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 돌파 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! 리스크 대비 먹을 게 없는 좁은 자리이니 뇌동매매를 금하고 관망하시게."
+                else:
+                    final_code = "SQUEEZE_BREAKOUT_ATTACK"
+                    col = "#D84315"
+                    sig = "🔥 [스퀴즈 돌파] 압력밥솥 폭발! 20일선 본진 진격"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[스퀴즈 20일선 돌파]</b> 밴드폭이 {bandwidth:.1f}%로 극한 응축된 상태에서 20일선({ma20_safe_threshold:{fmt_p}}{currency})을 강력하게 뚫어냈소! 상방으로 밸브가 터졌으니 망설임 없이 과감하게 30~50% 본진을 투입하시게!"
+            # --------------------------------------
+
             elif is_near_ma5_bottom and (is_bottom_indicator_ok or will_val <= -75) and (p >= today_open) and (p_chg >= -1.5):
-                if margin_diff < 7.0:
+                if margin_diff < 4.0: # 4%로 완화
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
@@ -906,7 +921,7 @@ if symbol:
                     sig = f"🟢 [진바닥 입질] 1단계 정찰병 매수 유효 구역 ({time_tag_ok})"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[1단계 정찰병 포착]</b> 5일선 아래 미세 조정권(양봉 방어) 및 진바닥 지표(당일 {bottom_score}점 / 최근 3일 내 터치 인정)가 켜졌소! 전면 매수가 아닌 <b>비중 10% 수준의 1단계 정찰병(입질)</b>로 가볍게 담아보시게."
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
-                if margin_diff < 7.0:
+                if margin_diff < 4.0: # 4%로 완화
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
@@ -917,7 +932,7 @@ if symbol:
                     sig = f"🟢 [추가 진격] 2단계 진바닥 탈출 매수 ({time_tag_ok})"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{time_tag_ok}]</b> 밴드폭 응축돌파 및 5일선 안착! 단, 머리 위 성벽 저항이 남았으니 20~30% 정찰대 증원으로만 대응하시게."
             elif is_pullback_buy_signal:
-                if margin_diff < 7.0:
+                if margin_diff < 4.0: # 4%로 완화
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
@@ -933,7 +948,7 @@ if symbol:
                     sig = f"🔵 [본진 진격] 3단계 눌림목 추가 매수 ({time_tag_ok})"
                     final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{time_tag_ok}]</b> 눌림목 안전마진 확보 완료! 50% 분할 타진하시게."
             elif p >= ma20_safe_threshold and not is_down_trend_structural and is_ma5_safe and pullback_rebound_score >= 1 and (vol_strength >= 65 or is_pre_market_mode) and is_ob_stage3_safe:
-                if margin_diff < 7.0:
+                if margin_diff < 4.0: # 4%로 완화
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 돌파 조건 충족이나 상승 여력 부족"
                     col = "#F57C00"
@@ -1001,7 +1016,8 @@ if symbol:
             # ==================================================================
             # ★ [하단 지표 동조 텍스트 출력부]
             # ==================================================================
-            if final_code == "NEW_HIGH_PULLBACK_BUY": sub_indicator_str = f"   - <b>신고가 지지 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 과감한 본진 타진 진행"
+            if final_code == "SQUEEZE_BREAKOUT_ATTACK": sub_indicator_str = f"   - <b>스퀴즈 돌파 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 상방 폭발 -> <b>[매수 유효]</b> 과감한 본진 타진 진행"
+            elif final_code == "NEW_HIGH_PULLBACK_BUY": sub_indicator_str = f"   - <b>신고가 지지 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 과감한 본진 타진 진행"
             elif final_code == "NEW_HIGH_BREAKOUT_WARNING": sub_indicator_str = f"   - <b>신고가 돌파 주의:</b> 5일선 이격 과다(과열) -> <b>[관망]</b> 5일선 눌림목까지 추격 매수 차단"
             elif final_code == "BREAK_MA20_CONFIRMED": sub_indicator_str = f"   - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 기민한 분할 타진 진행"
             elif final_code == "ESCAPE_BUY": sub_indicator_str = f"   - <b>진바닥 탈출 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 유지 -> <b>[매수 유효]</b> 2단계 분할 진격 타점 가동"
@@ -1055,6 +1071,8 @@ if symbol:
                 ma5_guide_text = f"🚨 <b>[신고가 불기둥 뇌동매매 차단]</b> 현재가({p:{fmt_p}}{currency})가 1년 최고점을 뚫었으나 5일선과의 이격이 과도하오! 추격을 멈추고 관망하시게."
             elif final_code == "NEW_HIGH_PULLBACK_BUY":
                 ma5_guide_text = f"🟢 <b>[신고가 눌림목 사수]</b> 현재가({p:{fmt_p}}{currency})가 신고가 달성 후 5일선에 완벽히 안착했소! 단기 생명선이 살아있네."
+            elif final_code == "SQUEEZE_BREAKOUT_ATTACK":
+                ma5_guide_text = f"🔥 <b>[스퀴즈 폭발]</b> 현재가({p:{fmt_p}}{currency})가 응축된 밴드를 찢고 20일선 위로 폭발했소! 5일선을 든든한 등대 삼아 진격하시게."
             elif p >= target_price_100: 
                 ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 볼린저 상단을 뚫고 상방 확장 중이오! 남은 물량은 <b>5일선({ma5_val:{fmt_p}}{currency}) 종가 이탈 전까지</b> 끝까지 추종하시게."
             elif p >= (target_price_100 * 0.98): 
@@ -1086,6 +1104,8 @@ if symbol:
                 def_status = f"🚨 <b>[신고가 성벽 돌파]</b> 1년 최고점({high_250:{fmt_p}}{currency}) 성벽을 뚫어냈으나 과열 상태이오! 흥분하지 말고 차분히 관망하시게."
             elif final_code == "NEW_HIGH_PULLBACK_BUY":
                 def_status = f"🔵 <b>[신고가 성벽 안착]</b> 이전 성벽들이 모두 발아래로 깔려 완벽한 활주로가 열렸소! 든든하게 진격하시게."
+            elif final_code == "SQUEEZE_BREAKOUT_ATTACK":
+                def_status = f"🔥 <b>[상방 밸브 폭발]</b> 20일선({ma20_safe_threshold:{fmt_p}}{currency})을 시원하게 뚫었으니, 머리 위 얇은 성벽은 거칠 것이 없소!"
             elif p >= target_price_100: 
                 def_status = f"성벽({defense_line:{fmt_p}}{currency})을 가뿐히 넘고 볼린저 상단 목표선까지 뚫어냈네! 든든한 방어선을 뒤에 두고 상방 랠리를 끝까지 즐기시게."
             elif p >= (target_price_100 * 0.98): 
@@ -1116,7 +1136,7 @@ if symbol:
                 elif vol_strength < 65 or is_candle_bearish:
                     mac_desc_word = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                     base_macd_desc = f"<b>⚡ 가속 중이나 거래절벽/{mac_desc_word}</b>: MACD는 가속 중이나 성벽 위에서 {mac_desc_word} 중이오."
-                elif p >= defense_line or final_code == "NEW_HIGH_PULLBACK_BUY": base_macd_desc = "<b>🔥 정회전 가속 (성벽 수성)</b>: 성벽 사수하며 5일선 타고 상승 탄력 풀가동 중이오."
+                elif p >= defense_line or final_code == "NEW_HIGH_PULLBACK_BUY" or final_code == "SQUEEZE_BREAKOUT_ATTACK": base_macd_desc = "<b>🔥 정회전 가속 (상승 수성)</b>: 방어선을 사수하며 5일선 타고 상승 탄력 풀가동 중이오."
                 else: base_macd_desc = "<b>🔥 정회전 가속 (돌파 시도)</b>: 상방을 향해 5일선 지지받으며 추진력이 붙고 있소."
             elif is_macd_decelerating:
                 if is_down_trend_structural or not is_ma5_safe: base_macd_desc = "<b>⚠️ 정회전 둔화 (반탄력 소멸)</b>: 하락 험지 속 단기 반등 추진력이 꺾였소."
@@ -1129,7 +1149,8 @@ if symbol:
                 else: base_macd_desc = "<b>🌤 역회전 감소 (반등 시동)</b>: 하락 관성이 둔화되며 바닥 다지기 반등을 모색 중이오."
             else: base_macd_desc = "<b>⚙️ 엔진 역회전 심화</b>: 하락 관성이 지속되며 매도 압력이 깊어지는 중이오."
 
-            if final_code == "NEW_HIGH_BREAKOUT_WARNING": macd_strategy_msg = f"{base_macd_desc}<br>• <b>[엔진 과열 주의]:</b> 돌파 첫날 엔진 가속이 붙었으나 과열이 심하니 절대 추격 매수 금지!"
+            if final_code == "SQUEEZE_BREAKOUT_ATTACK": macd_strategy_msg = f"{base_macd_desc}<br>• <b>[스퀴즈 엔진 폭발]:</b> 압축된 에너지가 상방으로 터지며 강력한 랠리 엔진이 점화되었소!"
+            elif final_code == "NEW_HIGH_BREAKOUT_WARNING": macd_strategy_msg = f"{base_macd_desc}<br>• <b>[엔진 과열 주의]:</b> 돌파 첫날 엔진 가속이 붙었으나 과열이 심하니 절대 추격 매수 금지!"
             elif final_code == "NEW_HIGH_PULLBACK_BUY": macd_strategy_msg = f"{base_macd_desc}<br>• <b>[신고가 엔진 재가동]:</b> 눌림목에서 다시 강력한 랠리 엔진이 점화되었소!"
             elif p >= target_price_100: macd_strategy_msg = "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b> 상방 대시세 추종.<br>• <b>진단:</b> 엔진 가속과 함께 상단 밴드가 열리고 있소! 추격 매수는 자제하되, 잔여 물량은 5일선 이탈 전까지 강하게 끌고 가시게."
             elif p >= (target_price_100 * 0.98): macd_strategy_msg = "<b>🚨 엔진 과열 경보 (수확 목표선 임박)</b><br>• <b>역할:</b> 상단 오버슈팅 방어.<br>• <b>진단:</b> 엔진 가속도가 붙어 있어도 상단 저항선 코앞일세! 1차 선제적 익절(분할 수확)을 준비하시게."
@@ -1148,7 +1169,12 @@ if symbol:
             # ==================================================================
             i1, i2, i3, i4 = st.columns(4)
             with i1:
-                if final_code == "NEW_HIGH_BREAKOUT_WARNING":
+                if final_code == "SQUEEZE_BREAKOUT_ATTACK":
+                    if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 화력 폭발 시 과감하게 30~50% 진격"
+                    elif is_kr: bb_time_diag = "14:00 이후 돌파 지지 시 과감하게 30~50% 진격"
+                    else: bb_time_diag = "정규장 화력 동반 돌파 시 과감하게 30~50% 진격"
+                    bb_diag = f"🔥 <b>[스퀴즈 돌파 본진 진격 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 압력밥솥 폭발 대시세 초입 공략.<br>• <b>진단:</b> 에너지가 꽉 찬 상태에서 20일선 상방 돌파 성공! {bb_time_diag} (윗꼬리 이탈 시 철수)"
+                elif final_code == "NEW_HIGH_BREAKOUT_WARNING":
                     bb_diag = f"🔴 <b>[신고가 돌파 추격 금지 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 고점 상투 및 FOMO 뇌동매매 방어.<br>• <b>진단:</b> 신고가 갱신 불기둥이오! 총알의 10% 미만 극소량 정찰병만 허용하며 절대 추격 금지."
                 elif final_code == "NEW_HIGH_PULLBACK_BUY":
                     if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 화력 폭발 시 과감하게 30~50% 진격"
