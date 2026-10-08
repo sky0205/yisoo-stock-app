@@ -924,6 +924,13 @@ if symbol:
                 sig = f"🟡 [관망/보류] 5일선 과다이격 (+{bias_ma5:.1f}%) / 추격 매수 금지"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[과다이격 진입 차단]</b> 타점 조건은 충족했으나, 현재가가 5일선 대비 <b>+{bias_ma5:.1f}%</b>나 높게 떠 있소! 고점 윗꼬리에 물릴 위험이 크니 뇌동매매를 엄금하고 5일선과의 이격이 좁혀질 때까지 철저히 관망하시게."
+            # --- [NEW! 지표 하락 중 뇌동매매 강제 차단 (어르신 최종 병법)] ---
+            elif (bottom_score >= 1 or pullback_rebound_score >= 1) and (rsi_val < rsi_prev) and (will_val < will_prev) and (p < ma5_val):
+                final_code = "WAIT_INDICATOR_FALLING"
+                sig = "🟡 [관망/대기] 지표 하락 진행 중 (떨어지는 칼날)"
+                col = "#F57C00"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 점수 구간에 진입했으나, RSI와 윌리엄스 지표가 계속 <b>아래로 처박히고(▼ 하락)</b> 있소! 바닥이 어디일지 모르니 섣불리 줍지 말고, <b>다음날 지표가 위로 고개를 드는(▲ 상승) 것을 확인한 뒤에</b> 진입 여부를 결정하시게."
+            # -------------------------------------------------------------
             
             # --- [스퀴즈 폭발 매수 로직 추가] ---
             elif p >= ma20_safe_threshold and bandwidth <= 12.0 and p >= today_open and (vol_strength >= 65 or is_pre_market_mode):
