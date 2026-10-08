@@ -629,7 +629,11 @@ if symbol:
                             adjust_type_str = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                             squeeze_info_str = f"<br>• ⚠ <b>[성벽 위 {adjust_type_str}/차익매물출회({bandwidth:.1f}%)]</b> 5일선 위 안착 상태이나 당일 고점 차익 매물이 출회 중이오."
                         else:
-                            squeeze_info_str = f"<br>• 🟢 <b>[밴드폭 응축돌파({bandwidth:.1f}%)]</b> 5일선을 뚫고 올라섰네! 상방 분출 초입으로 유효하오."
+                            # [NEW] 5일선 위라도 위꼬리가 길면 헛바람 척결!
+                            if is_long_upper_tail:
+                                squeeze_info_str = f"<br>• ⚠️ <b>[위꼬리 저항 막힘({bandwidth:.1f}%)]</b> 5일선을 뚫는 듯 했으나 위꼬리 매물 폭탄에 뚜드려 맞았소! 분출 동력이 꺾였으니 맹신하지 마시게."
+                            else:
+                                squeeze_info_str = f"<br>• 🟢 <b>[밴드폭 응축돌파({bandwidth:.1f}%)]</b> 5일선을 뚫고 올라섰네! 상방 분출 초입으로 유효하오."
                 else:
                     is_bandwidth_ok = False
                     if is_candle_bearish or p_chg < 0:
