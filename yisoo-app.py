@@ -869,6 +869,13 @@ if symbol:
                 sig = "🔴 [고점 윗꼬리 투매] 상단 차익 매물 폭발! 즉시 수확(매도)!"
                 col = "#D32F2F"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[고점 윗꼬 폭탄 포착]</b> 수확 목표선 부근에서 윗꼬리를 길게 달고 밀려 내려오고 있소! 세력의 대량 차익 실현이 시작되었으니 보유자는 즉시 전량 익절하시게."
+            # --- [NEW! 고점 과열권 꺾임 (선제 익절 최우선) 로직] ---
+            elif (rsi_val >= 60 and rsi_val < rsi_prev) or (will_val >= -20 and will_val < will_prev):
+                final_code = "SELL_PROFIT_TAKE"
+                sig = "🚨 [익절/수확 경보] 고점 과열권 꺾임 (세력 이탈)"
+                col = "#D32F2F"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[선제적 익절 구간]</b> RSI나 윌리엄스 지표가 극한의 천장을 찍고 <b>아래로 꺾이고(▼ 하락)</b> 있소! 세력의 고점 차익 실현(매도)이 시작되었으니, <b>보유자는 미련 없이 수익을 챙겨 탈출(수확)</b>하고 신규 진입자는 절대 추격 매수를 금하시게."
+            # -------------------------------------------------------------
             elif is_long_upper_tail and (p >= defense_line or p >= mid_line):
                 final_code = "LONG_TAIL_WARNING"
                 sig = "🟡 [위꼬리 저항 경계] 고점 매물 출회 / 추격 매수 금지"
