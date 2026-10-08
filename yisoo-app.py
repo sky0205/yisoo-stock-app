@@ -1227,6 +1227,9 @@ if symbol:
             # ==================================================================
             # ★ 하단 4대 핵심 지표 박스 (투매/칼날 예외 완벽 패치!)
             # ==================================================================
+            # ==================================================================
+            # ★ 하단 4대 핵심 지표 박스 (투매/칼날 예외 및 방향성 패치 완벽 적용!)
+            # ==================================================================
             i1, i2, i3, i4 = st.columns(4)
             with i1:
                 if is_massive_dump:
@@ -1304,7 +1307,7 @@ if symbol:
 
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세/위치)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
 
-           with i2:
+            with i2:
                 rsi_is_up = rsi_val > rsi_prev
                 rsi_is_down = rsi_val < rsi_prev
                 rsi_trend = "▲ 상승" if rsi_is_up else ("▼ 하락" if rsi_is_down else "─ 변동없음")
