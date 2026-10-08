@@ -1104,7 +1104,7 @@ if symbol:
 
             bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1점)"
             indicator_verify_text = (
-                f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b><br> {trend_status}<br>• <b>[지표 검증 연산]</b><br><br>"
+                f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b><br> {trend_status}<br>• <b>[지표 검증 연산]</b><br>"
                 f"• <b>[진바닥 점수]:</b> {bottom_score_display} | • <b>[눌림목 점수]:</b> <b>{pullback_rebound_score}점</b> (기준 1점)<br>"
                 f"{sub_indicator_str}{squeeze_info_str}"
             )
