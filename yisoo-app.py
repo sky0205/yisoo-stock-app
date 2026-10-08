@@ -1304,38 +1304,66 @@ if symbol:
 
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세/위치)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
 
-            with i2:
-                rsi_trend = "▲ 상승" if rsi_val > rsi_prev else ("▼ 하락" if rsi_val < rsi_prev else "─ 변동없음")
+           with i2:
+                rsi_is_up = rsi_val > rsi_prev
+                rsi_is_down = rsi_val < rsi_prev
+                rsi_trend = "▲ 상승" if rsi_is_up else ("▼ 하락" if rsi_is_down else "─ 변동없음")
+                
                 if p >= target_price_100 or rsi_val >= 60:
-                    r_status = "<b>👿 불지옥 과열권</b><br>• <b>역할:</b> 매수 에너지 고갈 경보.<br>• <b>진단:</b> 과열 구간 진입, 상단 차익 실현을 준비하시게."
-                # [투매 시 RSI 강제 침묵 로직 발동!]
+                    if rsi_is_up:
+                        r_status = "<b>👿 불지옥 과열권 (가속 📈)</b><br>• <b>역할:</b> 매수 에너지 초과열.<br>• <b>진단:</b> 매수세가 극에 달해 계속 달아오르고 있소! 언제 쏟아질지 모르니 섣부른 신규 추격은 독이오."
+                    else:
+                        r_status = "<b>👿 불지옥 과열권 (꺾임 📉)</b><br>• <b>역할:</b> 고점 차익 출회 징후.<br>• <b>진단:</b> 과열권에서 드디어 온도가 꺾이기 시작했소! 세력의 차익 실현이 임박했으니 탈출을 준비하시게."
                 elif rsi_val <= 38:
                     if is_massive_dump:
                         r_status = "<b>🩸 투매/칼날 추락 중</b><br>• <b>역할:</b> 지하실 붕괴 경보.<br>• <b>진단:</b> 지표는 바닥이나 대량 투매 폭탄이 떨어지고 있소! 절대 칼날을 잡지 말고 관망하시게."
                     else:
-                        if is_kr and is_morning_breakout_fast: r_time_txt = "오전장 화력 속 즉시 입질 매수 타이밍."
-                        elif is_kr: r_time_txt = "14:00 이후 지지 확인 후 1단계 입질 매수 타이밍."
-                        else: r_time_txt = "정규장(세션) 지지 확인 후 1단계 입질 매수 타이밍."
-                        r_status = f"<b>🧊 냉골 바닥권</b><br>• <b>역할:</b> 진바닥 수급 감지.<br>• <b>진단:</b> 바닥권 지표 터치 및 수급 유입 시 {r_time_txt}"
+                        if rsi_is_up:
+                            if is_kr and is_morning_breakout_fast: r_time_txt = "오전장 화력 속 즉시 입질 매수 타이밍."
+                            elif is_kr: r_time_txt = "14:00 이후 지지 확인 후 1단계 입질 매수 타이밍."
+                            else: r_time_txt = "정규장(세션) 지지 확인 후 1단계 입질 매수 타이밍."
+                            r_status = f"<b>🧊 냉골 바닥권 (반등 시동 📈)</b><br>• <b>역할:</b> 진바닥 수급 유입.<br>• <b>진단:</b> 바닥을 찍고 매수 온도가 위로 고개를 들었소! {r_time_txt}"
+                        else:
+                            r_status = "<b>🧊 냉골 바닥권 (추락 중 📉)</b><br>• <b>역할:</b> 추가 바닥 탐색.<br>• <b>진단:</b> 바닥권이긴 하나 온도가 계속 떨어지며 지하실을 파고 있소. 섣불리 줍지 말고 고개를 들 때까지 대기하시게."
                 else:
-                    r_status = "<b>⚖ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> 에너지 충전 중. 보조지표 고개 돌림을 주시하시게."
+                    if rsi_is_up:
+                        r_status = "<b>📈 적정 온도 (온기 유입)</b><br>• <b>역할:</b> 상승 탄력 및 눌림목 반등.<br>• <b>진단:</b> 매수 온도가 따뜻해지며 위로 고개를 틀었소! 긍정적인 방향 전환이 기대되오."
+                    elif rsi_is_down:
+                        r_status = "<b>📉 적정 온도 (냉기 유입)</b><br>• <b>역할:</b> 하방 압력 및 추세 이탈 경계.<br>• <b>진단:</b> 매수세가 식어가며 아래로 꺾였소. 지지선을 위협할 수 있으니 섣부른 진입을 삼가시게."
+                    else:
+                        r_status = "<b>⚖ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> 에너지 충전 중. 보조지표 고개 돌림을 주시하시게."
+                        
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (매수 온도)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{rsi_val:.2f} <span style='font-size:22px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>{r_status}</p></div>", unsafe_allow_html=True)
 
             with i3:
-                will_trend = "▲ 상승" if will_val > will_prev else ("▼ 하락" if will_val < will_prev else "─ 변동없음")
+                will_is_up = will_val > will_prev
+                will_is_down = will_val < will_prev
+                will_trend = "▲ 상승" if will_is_up else ("▼ 하락" if will_is_down else "─ 변동없음")
+                
                 if p >= target_price_100 or will_val >= -20:
-                    w_status = "<b>🚀 상방 저항 도달 구역</b><br>• <b>역할:</b> 단기 상향 압력 한계 측정.<br>• <b>진단:</b> 목표선 도달 완료! 추격 매수 엄금 및 선제적 분할 매도 집행."
-                # [투매 시 Williams 강제 침묵 로직 발동!]
+                    if will_is_up:
+                        w_status = "<b>🚀 상방 저항 (천장 돌파 시도 📈)</b><br>• <b>역할:</b> 단기 오버슈팅 측정.<br>• <b>진단:</b> 천장에 붙어서 상방 압력을 계속 터뜨리고 있소! 기세가 살아있으니 보유자 영역이오."
+                    else:
+                        w_status = "<b>🚀 상방 저항 (천장 맞고 꺾임 📉)</b><br>• <b>역할:</b> 단기 고점 저항 확인.<br>• <b>진단:</b> 천장을 맞고 세력이 힘을 빼고 있소! 추격 매수 엄금 및 선제적 익절(수확)을 집행하시게."
                 elif will_val <= -75:
                     if is_massive_dump:
                         w_status = "<b>🩸 투매/칼날 추락 중</b><br>• <b>역할:</b> 지하실 붕괴 경보.<br>• <b>진단:</b> 지표는 항복 구역이나 쏟아지는 칼날이 매섭소! 절대 방아쇠를 당기지 마시게."
                     else:
-                        if is_kr and is_morning_breakout_fast: w_time_txt = "오전장 화력 동조 시 즉시 입질 대기."
-                        elif is_kr: w_time_txt = "14:00 이후 지지 동조 시 입질 대기."
-                        else: w_time_txt = "정규장(세션) 지지 동조 시 입질 대기."
-                        w_status = f"<b>🏳️ 개미 항복 구역</b><br>• <b>역할:</b> 세력 선취매 포착.<br>• <b>진단:</b> 🧊 <b>[바닥 침체]</b> -75 밑 투매 진행 중! {w_time_txt}"
+                        if will_is_up:
+                            if is_kr and is_morning_breakout_fast: w_time_txt = "오전장 화력 동조 시 즉시 입질 대기."
+                            elif is_kr: w_time_txt = "14:00 이후 지지 동조 시 입질 대기."
+                            else: w_time_txt = "정규장(세션) 지지 동조 시 입질 대기."
+                            w_status = f"<b>🏳️ 개미 항복 (세력 반전 시동 📈)</b><br>• <b>역할:</b> 세력 선취매 포착.<br>• <b>진단:</b> 🧊 극한 투매 후 세력이 방향을 위로 틀었소! {w_time_txt}"
+                        else:
+                            w_status = "<b>🏳️ 개미 항복 (지하실 굴착 중 📉)</b><br>• <b>역할:</b> 추가 투매 경계.<br>• <b>진단:</b> 개미 항복 구간이나 여전히 밑을 향해 파고 있소. 섣불리 바닥이라 예단 말고 고개를 들 때까지 관망하시게."
                 else:
-                    w_status = "<b>⚖️ 중간 지대</b><br>• <b>역할:</b> 추세 방향 탐색.<br>• <b>진단:</b> 상/하방 방향 탐색 중."
+                    if will_is_up:
+                        w_status = "<b>📈 중간 지대 (상방 턴)</b><br>• <b>역할:</b> 세력의 상방 의지 포착.<br>• <b>진단:</b> 세력이 방향을 위로 틀어 단기 상승 탄력이 붙고 있소! 긍정적 흐름이오."
+                    elif will_is_down:
+                        w_status = "<b>📉 중간 지대 (하방 꺾임)</b><br>• <b>역할:</b> 세력의 하방 이탈 경계.<br>• <b>진단:</b> 세력이 고개를 숙이고 매도 쪽으로 가닥을 잡았소. 단기 하방 압력을 경계하시게."
+                    else:
+                        w_status = "<b>⚖️ 중간 지대</b><br>• <b>역할:</b> 추세 방향 탐색.<br>• <b>진단:</b> 상/하방 방향 탐색 중."
+                        
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R (민감 반전)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{will_val:.2f} <span style='font-size:22px; color:#333333;'>({will_trend})</span></p><p class='ind-diag'>{w_status}</p></div>", unsafe_allow_html=True)
 
             with i4:
