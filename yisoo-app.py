@@ -199,7 +199,7 @@ def display_global_risk():
     except Exception:
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 최종본 (RSI 상충 완벽 교정판)")
+st.title("🧐 이수할아버지의 냉정 진단기 최종본 (추세 이탈 판독 교정판)")
 display_global_risk()
 st.divider()
 
@@ -649,11 +649,25 @@ if symbol:
             ma60_str = f"{ma60_val:{fmt_p}}{currency}"
             ma120_str = f"{ma120_val:{fmt_p}}{currency}"
 
-            if is_bullish: trend_status = "🔥 <b>[대세 정배열]</b> 완벽한 우상향 성벽 구축 완료"
-            elif is_bearish: trend_status = "⚠️ <b>[대세 역배열]</b> 지하실 향하는 하락 추세"
-            elif ma5_val > mid_line: trend_status = "🌱 <b>[단기 반등 초입]</b> 5일선이 20일선 돌파! 상방 반전 시도 중"
-            elif ma5_val < mid_line: trend_status = "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려 숨고르기 중"
-            else: trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
+            # --- [추세 정밀 판독 로직 전면 개조: 팩트 체크 강화] ---
+            if is_bullish:
+                if p < mid_line: trend_status = "⚠️ <b>[정배열 붕괴 경계]</b> 완벽한 우상향이나 현재가가 20일선 성벽을 깨고 추락 중"
+                elif p < ma5_val: trend_status = "⚠️ <b>[정배열 단기 조정]</b> 우상향 성벽 속 5일선 이탈 숨고르기"
+                else: trend_status = "🔥 <b>[대세 정배열]</b> 완벽한 우상향 성벽 구축 완료"
+            elif is_bearish:
+                if p > mid_line: trend_status = "🌱 <b>[역배열 탈출 시도]</b> 지하실에서 20일선을 뚫고 강력 반등 모색 중"
+                else: trend_status = "⚠️ <b>[대세 역배열]</b> 지하실 향하는 하락 추세"
+            elif ma5_val > mid_line:
+                if p < ma5_val and p < mid_line: trend_status = "📉 <b>[추세 이탈/하락 반전]</b> 5일선·20일선 연쇄 붕괴! 하방 압력 심화 중"
+                elif p < ma5_val: trend_status = "📉 <b>[단기 지지 이탈]</b> 5일선이 20일선 위에 있으나 현재가가 5일선을 깨고 밀리는 중"
+                else: trend_status = "🌱 <b>[단기 반등 초입]</b> 5일선이 20일선 돌파! 상방 반전 시도 중"
+            elif ma5_val <= mid_line:
+                if p > ma5_val and p > mid_line: trend_status = "🔥 <b>[강력 반등 국면]</b> 5일선 역배열이나 현재가가 20일선을 강하게 돌파 중"
+                elif p > ma5_val: trend_status = "🌱 <b>[단기 바닥 반등]</b> 5일선 밑에서 현재가가 5일선을 뚫고 고개를 드는 중"
+                else: trend_status = "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려 숨고르기 중"
+            else: 
+                trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
+            # -------------------------------------------------------------
 
             def generate_ma_hierarchy(df, current_price):
                 ma_dict = {
