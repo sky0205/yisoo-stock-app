@@ -1103,6 +1103,9 @@ if symbol:
                 sub_indicator_str = f" - <b>{_score_name} 동조:</b> {_display_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
 
             bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1점)"
+            # --- [NEW! 윗꼬리 및 음봉 투매 시 '추세 정밀 판독' 헛바람 강제 척결] ---
+            if final_code in ["RED_SELL_WARNING", "SELL_PROFIT_TAKE", "LONG_TAIL_WARNING", "STOP_LOSS_ALERT"] or is_long_upper_tail:
+                trend_status = "🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 5일선 위태]</b> 이평선 배열상으론 반등 초입처럼 보이나, 윗꼬리를 길게 달거나 음봉 매물 폭탄을 맞고 밀려 5일선 생명선이 붕괴될 위기요! 섣부른 희망 회로를 접고 즉각 탈출(수확) 및 관망 모드로 전환하시게."
             indicator_verify_text = (
                 f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b><br> {trend_status}<br>• <b>[지표 검증 연산]</b><br>"
                 f"<div style='padding-left: 20px;'>"
