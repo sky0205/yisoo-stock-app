@@ -199,7 +199,7 @@ def display_global_risk():
     except Exception:
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 최종본 (추세 이탈 판독 교정판)")
+st.title("🧐 이수할아버지의 냉정 진단기 최종본 (밴드폭 추락 판독 교정판)")
 display_global_risk()
 st.divider()
 
@@ -607,6 +607,7 @@ if symbol:
             else:
                 ob_status_msg = "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 가동합니다.</b> (미입력 시 조건 패스)"
 
+            # --- [NEW! 밴드폭 출력 시 하락/돌파 모순 완벽 해결] ---
             if bandwidth < 10.0:
                 is_bandwidth_ok = False
                 bw_status_category = "EXTREME_SQUEEZE"
@@ -631,14 +632,25 @@ if symbol:
                             squeeze_info_str = f"<br>• 🟢 <b>[밴드폭 응축돌파({bandwidth:.1f}%)]</b> 5일선을 뚫고 올라섰네! 상방 분출 초입으로 유효하오."
                 else:
                     is_bandwidth_ok = False
-                    bw_status_category = "SQUEEZE_WAIT"
-                    bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 돌파 대기"
-                    squeeze_info_str = f"<br>• ⏳ <b>[밴드폭 응축({bandwidth:.1f}%)]</b> 5일선 돌파 전이오. 안착 신호를 기다리시게."
+                    if is_candle_bearish or p_chg < 0:
+                        bw_status_category = "SQUEEZE_BREAKDOWN"
+                        bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 이탈/하방 압력"
+                        squeeze_info_str = f"<br>• 📉 <b>[밴드폭 응축({bandwidth:.1f}%)]</b> 5일선을 깨고 하락 중이오! 섣부른 매수를 멈추고 지지를 확인하시게."
+                    else:
+                        bw_status_category = "SQUEEZE_WAIT"
+                        bw_diag_msg = f"밴드폭 응축({bandwidth:.1f}%) 5일선 상향 돌파 대기"
+                        squeeze_info_str = f"<br>• ⏳ <b>[밴드폭 응축({bandwidth:.1f}%)]</b> 5일선 돌파 전이오. 안착 신호를 기다리시게."
             else:
                 is_bandwidth_ok = True
                 bw_status_category = "WIDE_OK"
                 bw_diag_msg = f"밴드폭 넉넉함({bandwidth:.1f}%) 상하 변동 진폭 확보"
-                squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 상하 진폭 활주로는 충분히 트였으나, 위 지표 조건 충족 시에만 진격하시게."
+                if p < ma5_val and (is_candle_bearish or p_chg < 0):
+                    squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 진폭은 트였으나 5일선 아래로 추락 중이오. 칼날을 피하시게."
+                elif p < ma5_val:
+                    squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 진폭은 트였으나 5일선 돌파 전이오. 안착을 기다리시게."
+                else:
+                    squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 상하 진폭 활주로는 충분히 트였으나, 위 지표 조건 충족 시에만 진격하시게."
+            # ------------------------------------------------------------------
 
             is_bullish = (ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
             is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
