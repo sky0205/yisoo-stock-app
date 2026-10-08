@@ -1106,10 +1106,16 @@ if symbol:
             bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1점)"
             # --- [NEW! 윗꼬리 및 음봉 투매 시 '추세 정밀 판독' 헛바람 강제 척결] ---
             if final_code in ["RED_SELL_WARNING", "SELL_PROFIT_TAKE", "LONG_TAIL_WARNING", "STOP_LOSS_ALERT"] or is_long_upper_tail:
-                trend_status = (
-                    "🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 5일선 위태]</b> 이평선 배열상으론 반등 초입처럼 보이나, "
-                    "윗꼬리를 길게 달거나 음봉 매물 폭탄을 맞고 밀려 5일선 생명선이 붕괴될 위기요! 섣부른 희망 회로를 접고 즉각 탈출(수확) 및 관망 모드로 전환하시게."
-                )
+                if p < ma5_val:
+                    trend_status = (
+                        "🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 5일선 붕괴]</b> 이평선 배열상으론 반등 초입처럼 보이나, "
+                        "이미 매물 폭탄을 맞고 5일선 생명선 밑으로 완전히 처박혔네! 섣부른 희망 회로를 당장 찢어버리고 미련 없이 탈출하시게."
+                    )
+                else:
+                    trend_status = (
+                        "🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 5일선 위태]</b> 이평선 배열상으론 반등 초입처럼 보이나, "
+                        "윗꼬리를 길게 달고 하방 압력이 거세져 5일선 생명선이 붕괴될 위기요! 섣부른 희망 회로를 접고 즉각 탈출(수확) 및 관망 모드로 전환하시게."
+                    )
             indicator_verify_text = (
                 f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b><br> {trend_status}<br>• <b>[지표 검증 연산]</b><br>"
                 f"<div style='padding-left: 20px;'>"
@@ -1199,10 +1205,15 @@ if symbol:
                     def_status = f"성벽({defense_line:{fmt_p}}{currency})이 상단 목표선({target_price_100:{fmt_p}}{currency})보다 위로 왜곡된 <b>[역배열 매물 소화 구간]</b>이오! 풀매수는 절대 금하되, 5일선 방어를 전제로 가벼운 분할 입질(정찰병)로만 유연하게 대응하시게."
                 else:
                     def_status = f"성벽({defense_line:{fmt_p}}{currency})이 상단 목표선({target_price_100:{fmt_p}}{currency})보다 위로 왜곡된 <b>[역배열 침체]</b> 구역이오! 섣부른 진격을 금하고 철저히 관망하시게."
-            elif p >= defense_line:
-                if is_candle_bearish: def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위 안착 중이나 당일 <b>음봉으로 밀려 가짜 돌파(페이크) 리스크</b>가 있소! 즉시 수성 태세로 전환하시게."
-                elif final_code == "WAIT_NARROW_MARGIN": def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위에서 진격 타점을 잡았으나, <b>상단 목표선까지 먹을 게 {margin_diff:.1f}%밖에 없어</b> 진입을 강제 차단했소."
-                else: def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 타고 <b>상방 랠리 진격 중</b>이네! 방어선을 등지고 추세를 즐기시게."
+           elif p >= defense_line:
+                if p < ma5_val:
+                    def_status = f"🚨 성벽({defense_line:{fmt_p}}{currency}) 위에는 간신히 턱걸이하고 있으나, <b>5일선 생명선이 무너져 하방 폭격을 맞는 중</b>이네! 섣부른 희망 회로를 접고 성벽 붕괴 여부를 뼈저리게 감시하시게."
+                elif is_candle_bearish:
+                    def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위 안착 중이나 당일 <b>음봉으로 밀려 가짜 돌파(페이크) 리스크</b>가 있소! 즉시 수성 태세로 전환하시게."
+                elif final_code == "WAIT_NARROW_MARGIN":
+                    def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위에서 진격 타점을 잡았으나, <b>상단 목표선까지 먹을 게 {margin_diff:.1f}%밖에 없어</b> 진입을 강제 차단했소."
+                else:
+                    def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 타고 <b>상방 랠리 진격 중</b>이네! 방어선을 등지고 추세를 즐기시게."
             else:
                 if is_massive_dump: def_status = f"🚨 성벽({defense_line:{fmt_p}}{currency}) 아래로 <b>대량 투매 폭탄</b>이 떨어지며 붕괴 중이오! 미련을 버리고 대피하시게."
                 elif final_code == "WAIT_NARROW_MARGIN": def_status = f"성벽({defense_line:{fmt_p}}{currency}) 공방 중 타점이 나왔으나, <b>상단 목표선까지 먹을 게 {margin_diff:.1f}%뿐이라</b> 진입을 강제 차단했소."
