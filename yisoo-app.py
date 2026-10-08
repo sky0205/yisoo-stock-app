@@ -1070,8 +1070,10 @@ if symbol:
             elif final_code == "PULLBACK_BUY": sub_indicator_str = f"   - <b>눌림목 지지 성공:</b> 안전마진 확보 완료 -> <b>[매수 유효]</b> 3단계 본진 진격 타점 가동"
             else:
                 if final_code == "BEARISH_GUARD" and is_massive_dump: _p_action = f"-> <b>[투매 관망]</b> 칼날이 떨어지고 있으니 절대 매수 금지"
+                elif final_code == "BEARISH_GUARD": _p_action = f"-> <b>[하락 이탈 관망]</b> 지표 점수와 무관하게 추세가 꺾여 매수 보류"
                 elif final_code == "WAIT_NARROW_MARGIN": _p_action = f"-> <b>[수익비 불량 관망]</b> 상승 여력이 좁아 차단됨"
                 elif final_code == "WAIT_ORDERBOOK": _p_action = f"-> <b>[호가창 미달 관망]</b> 허매수/속임수 경계"
+                elif p < ma5_val and (p_chg < 0 or is_candle_bearish): _p_action = f"-> <b>[추세 꺾임 관망]</b> 지표는 포착되었으나 5일선 아래 하락 중으로 진입 금지"
                 elif pullback_rebound_score >= 2: _p_action = f"-> <b>[눌림목 공방 유효]</b> 중간지대 조건 충족!"
                 elif pullback_rebound_score == 1: _p_action = f"-> <b>[입질 대기]</b> 눌림목 지표 1개 포착"
                 elif bottom_score >= 1: _p_action = f"-> <b>[바닥 포착/대기]</b> 바닥 지표는 켜졌으나 제반 조건 미달"
