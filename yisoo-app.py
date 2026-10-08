@@ -11,6 +11,7 @@ import os
 
 st.set_page_config(page_title="이수할아버지의 냉정 진단기 최종본", layout="wide")
 
+
 # --- 🔒 자물쇠(비밀번호) 보안 장치 ---
 def check_password():
     correct_pw = str(st.secrets.get("APP_PASSWORD", "1111"))
