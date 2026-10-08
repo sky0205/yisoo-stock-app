@@ -676,7 +676,7 @@ if symbol:
             elif ma5_val <= mid_line:
                 if p > ma5_val and p > mid_line: trend_status = "🔥 <b>[강력 반등 국면]</b> 5일선 역배열이나 현재가가 20일선을 강하게 돌파 중"
                 elif p > ma5_val: trend_status = "🌱 <b>[단기 바닥 반등]</b> 5일선 밑에서 현재가가 5일선을 뚫고 고개를 드는 중"
-                else: trend_status = "📉 <b>[단기 조정 국면]</b> 5일선이 20일선 밑으로 밀려 숨고르기 중"
+                else: trend_status = "📉 <b>[하락 추세 심화]</b> 20일선 아래에서 단기 생명선(5일선)마저 붕괴! 하방 위험 증가"
             else: 
                 trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
             # -------------------------------------------------------------
