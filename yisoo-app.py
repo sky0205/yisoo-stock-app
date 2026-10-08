@@ -1205,7 +1205,7 @@ if symbol:
                     def_status = f"성벽({defense_line:{fmt_p}}{currency})이 상단 목표선({target_price_100:{fmt_p}}{currency})보다 위로 왜곡된 <b>[역배열 매물 소화 구간]</b>이오! 풀매수는 절대 금하되, 5일선 방어를 전제로 가벼운 분할 입질(정찰병)로만 유연하게 대응하시게."
                 else:
                     def_status = f"성벽({defense_line:{fmt_p}}{currency})이 상단 목표선({target_price_100:{fmt_p}}{currency})보다 위로 왜곡된 <b>[역배열 침체]</b> 구역이오! 섣부른 진격을 금하고 철저히 관망하시게."
-           elif p >= defense_line:
+            elif p >= defense_line:
                 if p < ma5_val:
                     def_status = f"🚨 성벽({defense_line:{fmt_p}}{currency}) 위에는 간신히 턱걸이하고 있으나, <b>5일선 생명선이 무너져 하방 폭격을 맞는 중</b>이네! 섣부른 희망 회로를 접고 성벽 붕괴 여부를 뼈저리게 감시하시게."
                 elif is_candle_bearish:
