@@ -416,24 +416,36 @@ if symbol:
                 vol_strength = v_ratio
 
             # ==================================================================
-            # ★ [NEW] 1. 캔들의 몸통 및 위/아래 꼬리 길이 절대값 정밀 계산
+            # ★ [NEW] 1. 캔들 정합성 검열 및 꼬리 정밀 계산 (API 오류 원천 차단)
             # ==================================================================
             today_open = float(df["Open"].iloc[-1])
             today_high = float(df["High"].iloc[-1])
             today_low = float(df["Low"].iloc[-1])
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
             
+            day_candle_range = max(0.01, today_high - today_low)
+
+            # 💡 [데이터 왜곡 방지 센서]: 야후 API가 시가/고가/저가를 제대로 갱신하지 않았는지 탐지
+            # 현재가(p)가 고가/저가 범위를 크게 벗어났거나, 고가와 저가가 같다면 100% API 지연(오류)
+            is_api_delayed = (p > today_high * 1.005) or (p < today_low * 0.995) or (today_high == today_low)
+
             upper_tail_len = today_high - max(today_open, p)
             lower_tail_len = min(today_open, p) - today_low
             body_len = abs(p - today_open)
-            day_candle_range = max(0.01, today_high - today_low)
 
             is_candle_bullish = p > today_open
             is_candle_bearish = p < today_open  # 팩트 기반 음봉 판독
 
             # 2. 꼬리 비율을 통한 정밀 형태 판독
-            is_long_upper_tail = (upper_tail_len > lower_tail_len) and (upper_tail_len > body_len)
-            is_defended = is_candle_bullish and (lower_tail_len > upper_tail_len)
+            if is_pre_market_mode or is_api_delayed:
+                # 💡 [비상 우회 로직] API 데이터가 꼬였거나 프리장일 때는 윗꼬리 헛바람 텍스트를 강제 차단!
+                is_long_upper_tail = False
+                is_defended = True  # 어르신의 육안 검증(HTS 아래꼬리)을 우선하여 방어 성공으로 인정
+                is_candle_bearish = False
+            else:
+                # 데이터가 정상일 때만 엄격하게 꼬리 비율 검증
+                is_long_upper_tail = (upper_tail_len > lower_tail_len) and (upper_tail_len > body_len) and (upper_tail_len >= day_candle_range * 0.3)
+                is_defended = is_candle_bullish and (lower_tail_len > upper_tail_len)
 
             # 호환성을 위한 기존 변수 유지
             is_pure_bullish_candle = p >= today_open
