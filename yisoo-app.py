@@ -200,7 +200,7 @@ def display_global_risk():
     except Exception:
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 최종본 (캔들 정밀 판독/칼날 차단 교정판)")
+st.title("🧐 이수할아버지의 냉정 진단기 무결점 통합본 (캔들 정밀 판독/API 지연 우회)")
 display_global_risk()
 st.divider()
 
@@ -426,7 +426,6 @@ if symbol:
             day_candle_range = max(0.01, today_high - today_low)
 
             # 💡 [데이터 왜곡 방지 센서]: 야후 API가 시가/고가/저가를 제대로 갱신하지 않았는지 탐지
-            # 현재가(p)가 고가/저가 범위를 크게 벗어났거나, 고가와 저가가 같다면 100% API 지연(오류)
             is_api_delayed = (p > today_high * 1.005) or (p < today_low * 0.995) or (today_high == today_low)
 
             upper_tail_len = today_high - max(today_open, p)
@@ -442,7 +441,7 @@ if symbol:
                 is_defended = (p_chg >= 0)
                 is_candle_bearish = (p_chg < 0)
                 is_candle_unknown = True
-                is_strong_bull_body = False # 💡 [NEW] 
+                is_strong_bull_body = False
             else:
                 is_long_upper_tail = (upper_tail_len > lower_tail_len) and (upper_tail_len > body_len) and (upper_tail_len >= day_candle_range * 0.3)
                 
@@ -659,7 +658,6 @@ if symbol:
                             adjust_type_str = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
                             squeeze_info_str = f"<br>• ⚠ <b>[성벽 위 {adjust_type_str}/차익매물출회({bandwidth:.1f}%)]</b> 5일선 위 안착 상태이나 당일 고점 차익 매물이 출회 중이오."
                         else:
-                            # [NEW] 5일선 위라도 위꼬리가 길면 헛바람 척결!
                             if is_long_upper_tail:
                                 squeeze_info_str = f"<br>• ⚠️ <b>[위꼬리 저항 막힘({bandwidth:.1f}%)]</b> 5일선을 뚫는 듯 했으나 위꼬리 매물 폭탄에 뚜드려 맞았소! 분출 동력이 꺾였으니 맹신하지 마시게."
                             else:
@@ -1000,12 +998,22 @@ if symbol:
                     final_code = "BEARISH_GUARD"
                     sig = "🔴 [떨어지는 칼날 경고] 지표는 바닥이나 하방 압력 지속!"
                     col = "#D32F2F"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[떨어지는 칼날 경고]</b> 지표는 극한의 바닥이나, 하방 압력(음봉/윗꼬리)이 여전히 거세오! 섣부른 희망 회로를 접고 <b>아래꼬리 양봉으로 방어선이 확인될 때까지</b> 즉각 관망 모드로 대기하시게."
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[떨어지는 칼날 경고]</b> 지표는 극한의 바닥이나, 하방 압력(음봉/윗꼬리)이 여전히 거세오! 섣부른 희망 회로를 접고 <b>방어선이 확인될 때까지</b> 즉각 관망 모드로 대기하시게."
                 else:
                     final_code = "EXTREME_BOTTOM_ENTRY"
                     col = "#388E3C"
                     sig = f"🟢 [극한 진바닥 포착] 지표 냉골 동조 및 방어선 구축! 1단계 입질 유효"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 지표 및 방어 확인]</b> RSI({rsi_val:.1f}) 등 바닥 지표와 <b>아래꼬리 양봉 방어가 동시 확인</b>되었소! 비중 10% 수준의 가벼운 1단계 정찰병(입질) 투입으로 기민하게 대응하시게."
+                    
+                    if is_candle_unknown:
+                        _def_txt = "상승(양봉) 전환 방어"
+                    elif is_strong_bull_body and not is_tail_defended:
+                        _def_txt = "시원한 양봉 출현"
+                    else:
+                        _def_txt = "아래꼬리 양봉 방어"
+                        
+                    _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 진바닥 터치 이력"
+                    
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 지표 및 방어 확인]</b> {_bot_txt}과(와) <b>{_def_txt}이(가) 동시 확인</b>되었소! 비중 10% 수준의 가벼운 1단계 정찰병(입질) 투입으로 기민하게 대응하시게."
             # -------------------------------------------------------------
 
             elif is_near_ma5_bottom and (is_bottom_indicator_ok or will_val <= -75) and (p >= today_open) and (p_chg >= -1.5):
@@ -1016,14 +1024,24 @@ if symbol:
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! 리스크 대비 먹을 게 없는 좁은 자리이니 뇌동매매를 금하고 관망하시게."
                 elif not is_defended:
                     final_code = "WAIT_GENERAL"
-                    sig = "🟡 [관망/보류] 1단계 입질 구역이나 방어선(아래꼬리) 미확인"
+                    sig = "🟡 [관망/보류] 1단계 입질 구역이나 방어선 미확인"
                     col = "#F57C00"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥권에 진입했으나 아직 확고한 방어선(아래꼬리 양봉)이 확인되지 않았소! 칼날이 멈출 때까지 대기하시게."
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥권에 진입했으나 아직 확고한 방어선이 확인되지 않았소! 칼날이 멈출 때까지 대기하시게."
                 else:
                     final_code = "BOTTOM_ENTRY"
                     col = "#388E3C"
                     sig = f"🟢 [진바닥 입질] 방어 확인 완료! 1단계 정찰병 유효 ({time_tag_ok})"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[1단계 정찰병 포착]</b> 아래꼬리 양봉 방어 및 진바닥 지표(당일 {bottom_score}점)가 켜졌소! 전면 매수가 아닌 <b>비중 10% 수준의 1단계 정찰병(입질)</b>로 가볍게 담아보시게."
+                    
+                    if is_candle_unknown:
+                        _def_txt = "상승(양봉) 전환 방어"
+                    elif is_strong_bull_body and not is_tail_defended:
+                        _def_txt = "강한 양봉 출현"
+                    else:
+                        _def_txt = "아래꼬리 양봉 방어"
+                        
+                    _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 바닥 터치 이력"
+                    
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[1단계 정찰병 포착]</b> {_def_txt} 및 {_bot_txt}이(가) 확인되었소! 전면 매수가 아닌 <b>비중 10% 수준의 1단계 정찰병(입질)</b>로 가볍게 담아보시게."
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
                 if margin_diff < 4.0: 
                     final_code = "WAIT_NARROW_MARGIN"
