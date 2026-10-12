@@ -924,12 +924,12 @@ if symbol:
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[신고가 5일선 눌림목]</b> 1년 최고점 돌파 후 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency})에 아주 예쁘게 안착했소! 거칠 것이 없는 신고가 하늘이오니 30~50% 비중으로 과감하게 본진을 투입하시게!"
             # ---------------------------------
             
-            elif p >= target_price_100:
+            elif p >= target_price_100 and bandwidth > 12.0:
                 final_code = "BAND_RIDING_HARVEST"
                 sig = "🟣 [상방 확장 중] 목표선 상방 돌파 완료!"
                 col = "#6A1B9A"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[목표선 상방 돌파 완료]</b> 현재가({p:{fmt_p}}{currency})가 최종 수확 목표선({target_price_100:{fmt_p}}{currency})을 돌파하여 안착했소! 저항선을 완전히 짓밟았으니, 이제부터는 밴드가 위로 쫙 벌어지는 대세 상승 랠리를 마음껏 즐기며 잔여 물량을 홀딩하시게."
-            elif p >= (target_price_100 * 0.98):
+            elif p >= (target_price_100 * 0.98) and bandwidth > 12.0:
                 final_code = "RED_SELL_TARGET"
                 sig = "🔴 [1차 선제적 익절] 수확 목표선 코앞 도달! (준비 구간)"
                 col = "#D32F2F"
