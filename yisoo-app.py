@@ -911,7 +911,7 @@ if symbol:
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[고점 윗꼬 폭탄 포착]</b> 수확 목표선 부근에서 윗꼬리를 길게 달고 밀려 내려오고 있소! 세력의 대량 차익 실현이 시작되었으니 보유자는 즉시 전량 익절하시게."
             
             # --- [NEW! 십자형(Doji) 캔들 위치별 예외 처리 (최우선 판독)] ---
-            elif is_doji_candle and p >= target_price_100 * 0.90:
+            elif is_doji_candle and p >= target_price_100 * 0.98:
                 final_code = "DOJI_TOP_WARNING"
                 sig = "🟠 [고점 십자성 경고] 상승 에너지 고갈! 상투 징후"
                 col = "#E65100"
