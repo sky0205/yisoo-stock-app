@@ -200,7 +200,7 @@ def display_global_risk():
     except Exception:
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 무결점 통합본 (캔들 정밀 판독/API 지연 우회)")
+st.title("🧐 이수할아버지의 냉정 진단기 무결점 통합본 (캔들 정밀 판독/API 지연 우회/십자형 대응)")
 display_global_risk()
 st.divider()
 
@@ -416,7 +416,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ==================================================================
-            # ★ [NEW] 1. 캔들 정합성 검열 및 꼬리 정밀 계산 (API 오류 원천 차단)
+            # ★ [NEW] 1. 캔들 정합성 검열 및 꼬리/십자형(Doji) 정밀 계산
             # ==================================================================
             today_open = float(df["Open"].iloc[-1])
             today_high = float(df["High"].iloc[-1])
@@ -435,6 +435,10 @@ if symbol:
             is_candle_bullish = p > today_open
             is_candle_bearish = p < today_open  # 팩트 기반 음봉 판독
 
+            # --- [NEW! 십자형(Doji) 캔들 판독 센서 추가] ---
+            # 시가와 종가 차이가 그날 전체 변동폭의 10% 미만이면서 위아래 꼬리가 달렸을 때 십자형으로 인정
+            is_doji_candle = (body_len <= (day_candle_range * 0.10)) and (day_candle_range > 0.01) and (upper_tail_len > 0) and (lower_tail_len > 0)
+
             # 2. 꼬리 비율을 통한 정밀 형태 판독
             if is_pre_market_mode or is_api_delayed:
                 is_long_upper_tail = False
@@ -442,8 +446,13 @@ if symbol:
                 is_candle_bearish = (p_chg < 0)
                 is_candle_unknown = True
                 is_strong_bull_body = False
+                is_doji_candle = False # API 지연 시 십자형 판독 보류
             else:
-                is_long_upper_tail = (upper_tail_len > lower_tail_len) and (upper_tail_len > body_len) and (upper_tail_len >= day_candle_range * 0.3)
+                # 십자형(Doji)일 때는 단순 윗꼬리로 인한 칼날 경고(is_long_upper_tail) 발동을 억제!
+                if is_doji_candle:
+                    is_long_upper_tail = False
+                else:
+                    is_long_upper_tail = (upper_tail_len > lower_tail_len) and (upper_tail_len > body_len) and (upper_tail_len >= day_candle_range * 0.3)
                 
                 # 💡 [핵심 분리] 꼬리 방어 vs 몸통 팽창
                 is_tail_defended = (lower_tail_len > upper_tail_len)
@@ -459,7 +468,7 @@ if symbol:
             is_valid_bottom_candle = (is_pure_bullish_candle or is_bottom_lower_tail) and (not is_down_trend_v)
             # ==================================================================
             
-            # --- [핵심 추가] 투매(Falling Knife) 감지 센서 ---
+            # --- [투매(Falling Knife) 감지 센서] ---
             is_massive_dump = (vol_strength >= 150 and p_chg <= -2.5) or (vol_strength >= 80 and p_chg <= -4.5)
             # --------------------------------------------------
 
@@ -636,7 +645,7 @@ if symbol:
             else:
                 ob_status_msg = "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 가동합니다.</b> (미입력 시 조건 패스)"
 
-            # --- [NEW! 밴드폭 출력 시 하락/돌파 모순 완벽 해결] ---
+            # --- [밴드폭 출력 시 하락/돌파 모순 완벽 해결] ---
             if bandwidth < 10.0:
                 is_bandwidth_ok = False
                 bw_status_category = "EXTREME_SQUEEZE"
@@ -888,7 +897,7 @@ if symbol:
             # ----------------------------------------------------
 
             # ==================================================================
-            # ★ [신호등 분기 논리: 칼날 이중 잠금장치 반영]
+            # ★ [신호등 분기 논리: 칼날 이중 잠금장치 + 십자형(Doji) 갈라치기]
             # ==================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
@@ -900,6 +909,25 @@ if symbol:
                 sig = "🔴 [고점 윗꼬리 투매] 상단 차익 매물 폭발! 즉시 수확(매도)!"
                 col = "#D32F2F"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[고점 윗꼬 폭탄 포착]</b> 수확 목표선 부근에서 윗꼬리를 길게 달고 밀려 내려오고 있소! 세력의 대량 차익 실현이 시작되었으니 보유자는 즉시 전량 익절하시게."
+            
+            # --- [NEW! 십자형(Doji) 캔들 위치별 예외 처리 (최우선 판독)] ---
+            elif is_doji_candle and p >= target_price_100 * 0.90:
+                final_code = "DOJI_TOP_WARNING"
+                sig = "🟠 [고점 십자성 경고] 상승 에너지 고갈! 상투 징후"
+                col = "#E65100"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[고점 십자 도지(Doji) 포착]</b> 볼린저 상단 부근에서 매수세와 매도세가 팽팽하게 비겼소! 이는 <b>상승 에너지가 고갈된 전형적인 고점 상투 징후</b>이니 섣부른 불타기를 엄금하고 1차 선제적 익절(매도)을 준비하시게."
+            elif is_doji_candle and p <= low_b * 1.05:
+                final_code = "DOJI_BOTTOM_WAIT"
+                sig = "🟡 [바닥 십자성 포착] 하락 투매 방어 확인! (내일 돌파 대기)"
+                col = "#F57C00"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[바닥 십자 도지(Doji) 포착]</b> 지하실을 파고 내려가던 중 누군가 가격을 방어해내며 십자 캔들을 만들었소! 하락 투매가 멈춘 긍정적 징후이나 당일 진입은 도박이니, <b>내일 오늘 십자 캔들의 고가({today_high:{fmt_p}}{currency})를 돌파하면 1단계 정찰병을 투입할 채비</b>를 하시게."
+            elif is_doji_candle:
+                final_code = "DOJI_MID_WAIT"
+                sig = "🟡 [추세 변곡 탐색] 십자형 공방전! 내일 승패를 확인하라"
+                col = "#F57C00"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[중간 지대 십자 도지(Doji) 포착]</b> 현재 매수세와 매도세가 50:50으로 피 터지게 싸우며 십자형을 만들었소. 당일 승패를 예단하는 것은 위험하니, <b>내일 오늘 고가({today_high:{fmt_p}}{currency}) 돌파 시 매수, 저가({today_low:{fmt_p}}{currency}) 이탈 시 철수</b>라는 기준선을 잡고 오늘은 팝콘을 드시며 관망하시게."
+            # -------------------------------------------------------------
+            
             elif (rsi_val >= 60 and rsi_val < rsi_prev) or (will_val >= -20 and will_val < will_prev):
                 final_code = "SELL_PROFIT_TAKE"
                 sig = "🚨 [익절/수확 경보] 고점 과열권 꺾임 (세력 이탈)"
@@ -942,7 +970,7 @@ if symbol:
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가짜 돌파 경계]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위로 올라왔으나 당일 음봉으로 밀리고 있소! 세력의 위꼬리 페이크일 위험이 크니 즉시 비중을 줄이거나 수성(방어) 태세로 전환하시게."
                 else:
                     final_code = "BREAKOUT_ATTACK"
-                    sig = "🟢 [성벽 위 양봉] 기세 유지 랠리 추종"
+                    sig = "🟢 [성벽 위 양봉] 기세 유지 랠 추종"
                     col = "#2E7D32"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[기세 유지 랠리 추종]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 뿜어내고 있소! 5일선을 사수하며 위로 밀어 올리는 세력의 힘을 믿고 상방 목표선까지 추세를 끝까지 발라먹도록 하시게."
             elif (bottom_score >= 1 or pullback_rebound_score >= 1) and has_manual_ob and ob_ratio_val is not None and ob_ratio_val < 0.5 and not is_ma5_safe:
@@ -1126,7 +1154,8 @@ if symbol:
                 "WAIT_GENERAL", "WAIT_INDICATOR", "WAIT_MACD", "WAIT_VOLUME",
                 "WAIT_DOWNTREND_FALL", "WAIT_PULLBACK_CANDLE", "WAIT_PULLBACK",
                 "WAIT_ORDERBOOK", "WAIT_OVER_EXTENDED", "NEW_HIGH_BREAKOUT_WARNING",
-                "YELLOW_CAUTION", "RED_SELL_WARNING", "MA_TANGLED_WARNING", "LONG_TAIL_WARNING", "BEARISH_GUARD", "WAIT_NARROW_MARGIN"
+                "YELLOW_CAUTION", "RED_SELL_WARNING", "MA_TANGLED_WARNING", "LONG_TAIL_WARNING", "BEARISH_GUARD", "WAIT_NARROW_MARGIN",
+                "DOJI_TOP_WARNING", "DOJI_BOTTOM_WAIT", "DOJI_MID_WAIT"
             ]
 
             # ==================================================================
@@ -1145,6 +1174,7 @@ if symbol:
                 elif final_code == "BEARISH_GUARD": _p_action = f"-> <b>[하락 이탈 관망]</b> 지표 점수와 무관하게 추세가 꺾여 매수 보류"
                 elif final_code == "WAIT_NARROW_MARGIN": _p_action = f"-> <b>[수익비 불량 관망]</b> 상승 여력이 좁아 차단됨"
                 elif final_code == "WAIT_ORDERBOOK": _p_action = f"-> <b>[호가창 미달 관망]</b> 허매수/속임수 경계"
+                elif final_code in ["DOJI_TOP_WARNING", "DOJI_BOTTOM_WAIT", "DOJI_MID_WAIT"]: _p_action = f"-> <b>[십자형 변곡 대기]</b> 내일 상하방 이탈 방향을 확인하라"
                 elif p < ma5_val and (p_chg < 0 or is_candle_bearish): _p_action = f"-> <b>[추세 꺾임 관망]</b> 지표는 포착되었으나 5일선 아래 하락 중으로 진입 금지"
                 elif pullback_rebound_score >= 2: _p_action = f"-> <b>[눌림목 공방 유효]</b> 중간지대 조건 충족!"
                 elif pullback_rebound_score == 1: _p_action = f"-> <b>[입질 대기]</b> 눌림목 지표 1개 포착"
@@ -1163,6 +1193,8 @@ if symbol:
             # ==================================================================
             if is_candle_unknown:
                 pass  # API 지연 시 기존 이평선 추세 팩트 유지
+            elif is_doji_candle:
+                trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
             elif is_defended:
                 # 💡 [핵심] 꼬리가 아니라 몸통 상승률로 밀어올린 경우 전용 텍스트 출력!
                 if is_strong_bull_body and not is_tail_defended:
@@ -1215,10 +1247,12 @@ if symbol:
                     holder_guide_msg = f" • <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br> • <b>단기 생명선:</b> 5일선 지지 확인.<br> • <b>최후 방어선:</b> 바닥권 전저점({stop_loss_price:{fmt_p}}{currency}) 이탈 시 미련 없이 전량 칼손절 후퇴."
 
             # ==================================================================
-            # ★ 1. 단기 생명선(5일선) 사수 문구 생성기 (상충 교정 완료)
+            # ★ 1. 단기 생명선(5일선) 사수 문구 생성기 (십자형 예외 추가)
             # ==================================================================
             if is_peak_dumping: 
                 ma5_guide_text = f"🚨 <b>[비상 탈출] 고점 윗꼬리 투매 발생!</b> 상단에서 대량 차익 매물이 쏟아지고 있소. 5일선({ma5_val:{fmt_p}}{currency}) 믿고 버티다간 다 토해내니 <b>즉시 전량 익절</b>하시게!"
+            elif final_code == "DOJI_TOP_WARNING":
+                ma5_guide_text = f"⚠️ <b>[고점 상투 십자성]</b> 상승 에너지가 멈추고 십자성(Doji)이 떴소! 5일선 지지를 맹신하지 말고 언제든 던질 채비를 하시게."
             elif final_code == "LONG_TAIL_WARNING":
                 ma5_guide_text = f"⚠️ <b>[고점 매물 저항]</b> 현재가({p:{fmt_p}}{currency}) 위로 긴 꼬리가 생겼소! 5일선 위에 있더라도 추격 매수는 멈추고 보수적으로 대응하시게."
             elif final_code == "NEW_HIGH_BREAKOUT_WARNING":
@@ -1240,6 +1274,7 @@ if symbol:
             else:
                 if is_pre_market_mode: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있소! 정규장 개장 후 지지 사수를 확인하시게."
                 elif vol_strength < 65: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으나 수급이 마른 상태이오. 추격을 금하고 관망하시게."
+                elif final_code == "DOJI_MID_WAIT": ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, 십자 공방전 중이오. 내일 십자 고가 돌파(안착 확정)를 기다리시게."
                 elif is_down_trend_v or is_candle_bearish: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, 당일 음봉/조정 중이오. 5일선 지지 사수 확인 후 대응하시게."
                 elif final_code == "WAIT_NARROW_MARGIN": ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으나, 상승 여력이 너무 좁아 뇌동매매를 강제 차단 중이오."
                 elif final_code == "WAIT_ORDERBOOK": ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으나, 호가창 매도잔량비가 미달하여 속임수 경계 중이오."
@@ -1258,6 +1293,8 @@ if symbol:
                 def_status = f"🚨 <b>[고점 폭탄 투하]</b> 성벽({defense_line:{fmt_p}}{currency})은 뚫었으나 대량 매도 폭탄이 떨어졌소! 상방 랠리가 취소되었으니 당장 도망치시게."
             elif final_code == "LONG_TAIL_WARNING":
                 def_status = f"⚠️ <b>[성벽 위 가짜 돌파 경계]</b> 성벽({defense_line:{fmt_p}}{currency}) 위에서 긴 윗꼬리가 달렸소. 저항이 거세니 돌파를 맹신하지 마시게."
+            elif final_code == "DOJI_TOP_WARNING":
+                def_status = f"⚠️ <b>[성벽 위 상투 경계]</b> 성벽({defense_line:{fmt_p}}{currency})은 뚫었으나 십자 캔들이 뜨며 진격 에너지가 고갈되었소. 매수 금지!"
             elif final_code == "NEW_HIGH_BREAKOUT_WARNING":
                 def_status = f"🚨 <b>[신고가 성벽 돌파]</b> 1년 최고점({high_250:{fmt_p}}{currency}) 성벽을 뚫어냈으나 과열 상태이오! 흥분하지 말고 차분히 관망하시게."
             elif final_code == "NEW_HIGH_PULLBACK_BUY":
@@ -1284,6 +1321,7 @@ if symbol:
                     def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 타고 <b>상방 랠리 진격 중</b>이네! 방어선을 등지고 추세를 즐기시게."
             else:
                 if is_massive_dump: def_status = f"🚨 성벽({defense_line:{fmt_p}}{currency}) 아래로 <b>대량 투매 폭탄</b>이 떨어지며 붕괴 중이오! 미련을 버리고 대피하시게."
+                elif final_code == "DOJI_BOTTOM_WAIT": def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래 지하실에서 <b>십자 도지 방어선</b>이 쳐졌소! 내일 고가 돌파 시 진격할 채비를 하시게."
                 elif final_code == "WAIT_NARROW_MARGIN": def_status = f"성벽({defense_line:{fmt_p}}{currency}) 공방 중 타점이 나왔으나, <b>상단 목표선까지 먹을 게 {margin_diff:.1f}%뿐이라</b> 진입을 강제 차단했소."
                 elif final_code == "WAIT_ORDERBOOK": def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래에서 호가창 기준 미달(허매수 의심)로 돌파 진입을 강제 보류 중이오."
                 elif final_code == "BREAK_MA20_CONFIRMED": def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래이나 <b>20일선 돌파 안착</b>에 성공하여 기민한 타점을 형성 중이네!"
@@ -1298,8 +1336,8 @@ if symbol:
             elif is_massive_dump: base_macd_desc = "<b>🚨 대량 투매 폭발</b>: 하락 험지 속에서 걷잡을 수 없는 매도 폭탄이 떨어지고 있소!"
             elif is_macd_accelerating:
                 if rsi_val >= 70: base_macd_desc = "<b>🔥 정회전 가속 (과열권)</b>: 추진력은 강력하나 보조지표 초과열권이오."
-                elif vol_strength < 65 or is_candle_bearish:
-                    mac_desc_word = "음봉 조정" if is_candle_bearish else "숨고르기 공방"
+                elif vol_strength < 65 or is_candle_bearish or final_code == "DOJI_MID_WAIT":
+                    mac_desc_word = "십자성 공방" if final_code == "DOJI_MID_WAIT" else ("음봉 조정" if is_candle_bearish else "숨고르기 공방")
                     base_macd_desc = f"<b>⚡ 가속 중이나 거래절벽/{mac_desc_word}</b>: MACD는 가속 중이나 성벽 위에서 {mac_desc_word} 중이오."
                 elif p >= defense_line or final_code == "NEW_HIGH_PULLBACK_BUY" or final_code == "SQUEEZE_BREAKOUT_ATTACK": base_macd_desc = "<b>🔥 정회전 가속 (상승 수성)</b>: 방어선을 사수하며 5일선 타고 상승 탄력 풀가동 중이오."
                 else: base_macd_desc = "<b>🔥 정회전 가속 (돌파 시도)</b>: 상방을 향해 5일선 지지받으며 추진력이 붙고 있소."
@@ -1331,7 +1369,7 @@ if symbol:
             st.divider()
 
             # ==================================================================
-            # ★ 하단 4대 핵심 지표 박스 (투매/칼날 예외 및 방향성 패치 완벽 적용!)
+            # ★ 하단 4대 핵심 지표 박스 (십자형(Doji) 갈라치기 패치 적용)
             # ==================================================================
             i1, i2, i3, i4 = st.columns(4)
             with i1:
@@ -1342,6 +1380,8 @@ if symbol:
                     elif is_kr: bb_time_diag = "14:00 이후 돌파 지지 시 과감하게 30~50% 진격"
                     else: bb_time_diag = "정규장 화력 동반 돌파 시 과감하게 30~50% 진격"
                     bb_diag = f"🔥 <b>[스퀴즈 돌파 본진 진격 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 압력밥솥 폭발 대시세 초입 공략.<br>• <b>진단:</b> 에너지가 꽉 찬 상태에서 20일선 상방 돌파 성공! {bb_time_diag} (윗꼬리 이탈 시 철수)"
+                elif final_code == "DOJI_TOP_WARNING":
+                    bb_diag = f"🔴 <b>[고점 십자성 상투 경고 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상투 방어 및 수익 보전.<br>• <b>진단:</b> 밴드 상단에서 힘이 다하고 십자형이 떴소! 절대 추격하지 말고 익절을 준비하시게."
                 elif final_code == "NEW_HIGH_BREAKOUT_WARNING":
                     bb_diag = f"🔴 <b>[신고가 돌파 추격 금지 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 고점 상투 및 FOMO 뇌동매매 방어.<br>• <b>진단:</b> 신고가 갱신 불기둥이오! 총알의 10% 미만 극소량 정찰병만 허용하며 절대 추격 금지."
                 elif final_code == "NEW_HIGH_PULLBACK_BUY":
@@ -1361,6 +1401,8 @@ if symbol:
                     bb_diag = f"🟡 <b>[상승 여력 부족 / 관망] (여력: +{margin_diff:.1f}%)</b><br>• <b>역할:</b> 수지타산 불량 타점 회피.<br>• <b>진단:</b> 타점 조건은 좋으나 상단 목표선까지 거리가 너무 좁소. 진입을 보류하시게."
                 elif final_code == "WAIT_ORDERBOOK":
                     bb_diag = f"🟡 <b>[호가창/매도벽 미달 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 속임수/허매수 함정 회피.<br>• <b>진단:</b> 매도잔량비 기준 미달! 세력의 위로 살 의지가 약하거나 허매수로 의심되니 진입을 강제 보류."
+                elif final_code == "DOJI_MID_WAIT":
+                    bb_diag = f"🟡 <b>[십자형 휩소 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 십자성 방향성 탐색.<br>• <b>진단:</b> 매수와 매도가 완벽히 비긴 상태요. 내일 십자 고가를 돌파해야만 방아쇠를 당기시게."
                 elif final_code == "WAIT_INDICATOR":
                     if pullback_rebound_score >= 1:
                         bb_diag = f"🟡 <b>[추세/안전마진 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>진단:</b> 점수({pullback_rebound_score}/3점)는 충족했으나 안전마진 부족으로 관망."
@@ -1370,7 +1412,9 @@ if symbol:
                     if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 화력 속 10% 선제 타진 및 종가 사수"
                     elif is_kr: bb_time_diag = "14:00 이후 10% 타진, 저녁 8시 애프터마켓 마감 사수 시 완성"
                     else: bb_time_diag = "정규장(세션) 수급 유입 시 10% 타진, 마감 사수 시 완성"
-                    bb_diag = f"🔴 <b>[1단계 진바닥 입질 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 바닥권 선취매.<br>• <b>진단:</b> 지표 터치 + 양봉 방어 확인! {bb_time_diag} (바닥 이탈 시 철수)"
+                    bb_diag = f"🔴 <b>[1단계 진바닥 입질 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 과매도 바닥권 선취매.<br>• <b>진단:</b> 지표 터치 + 방어력 확인! {bb_time_diag} (바닥 이탈 시 철수)"
+                elif final_code == "DOJI_BOTTOM_WAIT":
+                    bb_diag = f"🔴 <b>[바닥 십자성(Doji) 방어 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 하락 투매 진정 확인.<br>• <b>진단:</b> 지하실에서 십자 방어선이 쳐졌소! 오늘 입질은 참으시고, 내일 십자 고가를 돌파할 때 정찰병을 투입하시게."
                 elif final_code == "ESCAPE_BUY":
                     if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 수급(300점 이상) 속 20~30% 정찰대 증원"
                     elif is_kr: bb_time_diag = "14:00 이후 5일선 안착 시 20~30% 정찰대 증원"
@@ -1404,7 +1448,7 @@ if symbol:
                     if pullback_rebound_score >= 1:
                         bb_diag = f"⚖️ <b>[관망 및 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>진단:</b> 지표 동조({pullback_rebound_score}/3점)는 되었으나 역배열 등 조건 미달로 관망."
                     elif bottom_score >= 1 or rsi_val <= 38:
-                        bb_diag = f"⚖️ <b>[진바닥 지표 관망] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>진단:</b> 바닥 점수({bottom_score}점)가 켜졌으나 거래량 과다 투매 혹은 방어 꼬리 미확인으로 입질 보류 중."
+                        bb_diag = f"⚖️ <b>[진바닥 지표 관망] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>진단:</b> 바닥 점수({bottom_score}점)가 켜졌으나 거래량 과다 투매 혹은 방어선 미확인으로 입질 보류 중."
                     else:
                         bb_diag = f"⚖️ <b>[관망 및 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>진단:</b> 지표 동조 점수 미흡(0/3점)으로 안착 대기 중."
 
