@@ -207,20 +207,24 @@ st.divider()
 # ==============================================================================
 # ★ [상단: 종목 / HTS 전일종가 / 미장 프리시세 / 보유 평단가 / 호가잔량]
 # ==============================================================================
-col_symbol, col_prev, col_pre_us, col_avg, col_ask, col_bid, col_btn = st.columns([1.4, 1.2, 1.2, 1.2, 1.1, 1.1, 0.8])
+col_symbol, col_prev, col_pre_us, col_avg = st.columns(4)
 
 with col_symbol:
     raw_symbol_input = st.text_input("📊 종목번호", "LRCX")
     symbol = raw_symbol_input.strip()
 
 with col_prev:
-    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value="", help="국장/미장 전일 기준가").strip()
+    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value="", help="국장/미장 전일 기준가")
 
 with col_pre_us:
-    manual_pre_price_str = st.text_input("🇺🇸 미장 프리(Pre) 시세", value="", help="미장 프리마켓 실시간 가격 입력 시 수급 페널티 제외 반영").strip()
+    manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value="", help="미장 프리마켓 실시간 기준가")
 
 with col_avg:
-    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 가이드 제공")
+    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 분석을 위한 평단가")
+
+st.write("") # 1층과 2층 사이 숨통 트여주기
+
+col_ask, col_bid, col_btn = st.columns([1, 1, 2])
 
 with col_ask:
     manual_ask = st.number_input("🔴 총매도잔량", min_value=0.0, value=0.0, step=1.0, format="%.2f")
