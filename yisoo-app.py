@@ -925,7 +925,7 @@ if symbol:
                 final_code = "DOJI_MID_WAIT"
                 sig = "🟡 [추세 변곡 탐색] 십자형 공방전! 내일 승패를 확인하라"
                 col = "#F57C00"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[중간 지대 십자 도지(Doji) 포착]</b> 현재 매수세와 매도세가 50:50으로 피 터지게 싸우며 십자형을 만들었소. 당일 승패를 예단하는 것은 위험하니, <b>내일 오늘 고가({today_high:{fmt_p}}{currency}) 돌파 시 매수, 저가({today_low:{fmt_p}}{currency}) 이탈 시 철수</b>라는 기준선을 잡고 오늘은 팝콘을 드시며 관망하시게."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[중간 지대 십자 도지(Doji) 포착]</b> 현재 매수세와 매도세가 50:50으로 피 터지게 싸우며 십자형을 만들었소. 당일 승패를 예단하는 것은 위험하니, <b>내일 오늘 고가({today_high:{fmt_p}}{currency}) 돌파 시 진단기 재확인, 저가({today_low:{fmt_p}}{currency}) 이탈 시 철수</b>라는 기준선을 잡고 오늘은 팝콘을 드시며 관망하시게."
             # -------------------------------------------------------------
             
             elif (rsi_val >= 60 and rsi_val < rsi_prev) or (will_val >= -20 and will_val < will_prev):
