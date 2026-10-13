@@ -1208,7 +1208,7 @@ if symbol:
                 pass  # API 지연 시 기존 이평선 추세 팩트 유지
             elif is_doji_candle:
                 trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
-           elif is_defended:
+            elif is_defended:
                 # 💡 [NEW] 눈에 띄는 유의미한 아래꼬리가 있는지 판별 (몸통의 30% 이상이거나 전체 진폭의 20% 이상일 때만 인정!)
                 has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
 
