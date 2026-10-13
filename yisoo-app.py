@@ -200,7 +200,7 @@ def display_global_risk():
     except Exception:
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 무결점 통합본 (캔들 정밀 판독/API 지연 우회/십자형 대응)")
+st.title("🧐 이수할아버지의 냉정 진단기 무결점 통합본 (완벽 캔들 판독/칼손절 방어망 가동)")
 display_global_risk()
 st.divider()
 
@@ -438,6 +438,7 @@ if symbol:
 
             is_candle_bullish = p > today_open
             is_candle_bearish = p < today_open  # 팩트 기반 음봉 판독
+            
             # ★ [NEW] 캔들 색깔 실시간 감지 센서 (API 지연 시 억지 양봉 오류 차단)
             if p > today_open:
                 candle_color_txt = "양봉"
@@ -1208,14 +1209,12 @@ if symbol:
             elif is_doji_candle:
                 trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
             elif is_defended:
-                # 1. 꼬리 없이 몸통만으로 강하게 상승한 경우 (진짜 불기둥)
+                # 💡 [핵심] 꼬리가 아니라 몸통 상승률로 밀어올린 경우 전용 텍스트 출력!
                 if is_strong_bull_body and not is_tail_defended:
                     trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}(상승률 {p_chg:+.2f}%)을(를) 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
-                
                 # 2. 마이너스(-) 하락 중인데 꼬리만 달고 버티는 경우 (눈물의 수성)
                 elif p_chg < 0:
                     trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 누군가 밑꼬리를 길게 달며 필사적으로 방어선을 치고 있소! 아직 안심하긴 이르나 투매는 멈춘 듯하네."
-                
                 # 3. 플러스(+) 상승 전환하며 꼬리를 단 경우 (정석적인 꼬리 방어)
                 else:
                     trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 긴 {candle_color_txt}이(가) 출현했소! 바닥권에서 누군가 물량을 걷어 올리며 매수 방어선을 쳤으니 반등의 불씨가 살아있네."
@@ -1255,6 +1254,8 @@ if symbol:
                     profit_rate = ((p - user_avg_price) / user_avg_price) * 100
                     holder_guide_msg = f"• <b>[수확 목표선 임박 (수익률: {profit_rate:+.2f}%)]</b><br>• <b>실전 행동:</b> 신규 진입 절대 금지! 욕심을 덜고 1차 분할 수확 준비.<br>• <b>잔여 물량:</b> 성벽({defense_line:{fmt_p}}{currency})이나 5일선 이탈 시 전량 정리."
                 else: holder_guide_msg = "• <b>[수확 목표선 임박 구역]</b><br>• <b>실전 행동:</b> 볼린저 상단 고지가 코앞이니 매수 엄금, 보유자는 1차 선제적 익절(수확) 준비."
+            elif is_stop_loss_triggered:
+                holder_guide_msg = f"🚨 <b style='color:#D32F2F;'>[비상 대피령 (손절선 붕괴)]</b><br>• <b>실전 행동:</b> 바닥권 전저점 방어선({stop_loss_price:{fmt_p}}{currency})이 무참히 뚫렸소!<br>• <b>잔여 물량:</b> 희망 회로를 찢어버리고 즉시 전량 칼손절 후퇴하시게."
             elif user_avg_price <= 0:
                 holder_guide_msg = f"현재 추세 탐색 및 방향 정립 구간이니 성벽({defense_line:{fmt_p}}{currency})이나 5일선 사수 여부를 확인하시게. (★ <b>손절 마지노선: {stop_loss_label}</b>)"
             else:
@@ -1370,7 +1371,7 @@ if symbol:
                 else: base_macd_desc = "<b>🌤 역회전 감소 (반등 시동)</b>: 하락 관성이 둔화되며 바닥 다지기 반등을 모색 중이오."
             else: base_macd_desc = "<b>⚙️ 엔진 역회전 심화</b>: 하락 관성이 지속되며 매도 압력이 깊어지는 중이오."
 
-            if final_code == "SQUEEZE_BREAKOUT_ATTACK": macd_strategy_msg = f"{base_macd_desc}<br>• <b>[스퀴즈 엔진 폭발]:</b> 압축된 에너지가 상방으로 터지며 강력한 랠 엔진이 점화되었소!"
+            if final_code == "SQUEEZE_BREAKOUT_ATTACK": macd_strategy_msg = f"{base_macd_desc}<br>• <b>[스퀴즈 엔진 폭발]:</b> 압축된 에너지가 상방으로 터지며 강력한 랠리 엔진이 점화되었소!"
             elif final_code == "NEW_HIGH_BREAKOUT_WARNING": macd_strategy_msg = f"{base_macd_desc}<br>• <b>[엔진 과열 주의]:</b> 돌파 첫날 엔진 가속이 붙었으나 과열이 심하니 절대 추격 매수 금지!"
             elif final_code == "NEW_HIGH_PULLBACK_BUY": macd_strategy_msg = f"{base_macd_desc}<br>• <b>[신고가 엔진 재가동]:</b> 눌림목에서 다시 강력한 랠리 엔진이 점화되었소!"
             elif p >= target_price_100: macd_strategy_msg = "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b> 상방 대시세 추종.<br>• <b>진단:</b> 엔진 가속과 함께 상단 밴드가 열리고 있소! 추격 매수는 자제하되, 잔여 물량은 5일선 이탈 전까지 강하게 끌고 가시게."
@@ -1391,8 +1392,8 @@ if symbol:
             # ==================================================================
             i1, i2, i3, i4 = st.columns(4)
             with i1:
-                if is_massive_dump:
-                    bb_diag = f"🚨 <b>[대량 투매 붕괴 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 칼날 회피 및 계좌 방어.<br>• <b>진단:</b> 지하실이 뚫리며 대량 매물이 쏟아지고 있소! 절대 입질조차 하지 말고 관망하시게."
+                if final_code == "STOP_LOSS_ALERT" or is_massive_dump:
+                    bb_diag = f"🚨 <b>[방어선 붕괴 / 대투매 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 칼날 회피 및 계좌 방어.<br>• <b>진단:</b> 전저점 지하실이 뚫리며 매물이 쏟아지고 있소! 절대 입질조차 하지 말고 즉각 대피하시게."
                 elif final_code == "SQUEEZE_BREAKOUT_ATTACK":
                     if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 화력 폭발 시 과감하게 30~50% 진격"
                     elif is_kr: bb_time_diag = "14:00 이후 돌파 지지 시 과감하게 30~50% 진격"
@@ -1483,8 +1484,8 @@ if symbol:
                     else:
                         r_status = "<b>👿 불지옥 과열권 (꺾임 📉)</b><br>• <b>역할:</b> 고점 차익 출회 징후.<br>• <b>진단:</b> 과열권에서 드디어 온도가 꺾이기 시작했소! 세력의 차익 실현이 임박했으니 탈출을 준비하시게."
                 elif rsi_val <= 38:
-                    if is_massive_dump:
-                        r_status = "<b>🩸 투매/칼날 추락 중</b><br>• <b>역할:</b> 지하실 붕괴 경보.<br>• <b>진단:</b> 지표는 바닥이나 대량 투매 폭탄이 떨어지고 있소! 절대 칼날을 잡지 말고 관망하시게."
+                    if final_code == "STOP_LOSS_ALERT" or is_massive_dump:
+                        r_status = "<b>🩸 투매/방어선 붕괴 추락 중</b><br>• <b>역할:</b> 지하실 붕괴 경보.<br>• <b>진단:</b> 지표가 고개를 들든 말든 전저점이 붕괴되었소! 지하실 밑에 멘틀이 있으니 절대 줍지 마시게."
                     else:
                         if rsi_is_up:
                             if is_kr and is_morning_breakout_fast: r_time_txt = "오전장 화력 속 즉시 입질 매수 타이밍."
@@ -1501,7 +1502,7 @@ if symbol:
                     else:
                         r_status = "<b>⚖ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> 에너지 충전 중. 보조지표 고개 돌림을 주시하시게."
                         
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (매수 온도)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{rsi_val:.2f} <span style='font-size:22px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>{r_status}</p></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (매 매수 온도)</p><p style='font-size:36px; color:#E65100; margin:10px 0;'>{rsi_val:.2f} <span style='font-size:22px; color:#333333;'>({rsi_trend})</span></p><p class='ind-diag'>{r_status}</p></div>", unsafe_allow_html=True)
 
             with i3:
                 will_is_up = will_val > will_prev
@@ -1514,8 +1515,8 @@ if symbol:
                     else:
                         w_status = "<b>🚀 상방 저항 (천장 맞고 꺾임 📉)</b><br>• <b>역할:</b> 단기 고점 저항 확인.<br>• <b>진단:</b> 천장을 맞고 세력이 힘을 빼고 있소! 추격 매수 엄금 및 선제적 익절(수확)을 집행하시게."
                 elif will_val <= -75:
-                    if is_massive_dump:
-                        w_status = "<b>🩸 투매/칼날 추락 중</b><br>• <b>역할:</b> 지하실 붕괴 경보.<br>• <b>진단:</b> 지표는 항복 구역이나 쏟아지는 칼날이 매섭소! 절대 방아쇠를 당기지 마시게."
+                    if final_code == "STOP_LOSS_ALERT" or is_massive_dump:
+                        w_status = "<b>🩸 투매/방어선 붕괴 추락 중</b><br>• <b>역할:</b> 지하실 붕괴 경보.<br>• <b>진단:</b> 지표는 항복 구역이나 손절선이 뚫려 쏟아지는 칼날이 매섭소! 절대 방아쇠를 당기지 마시게."
                     else:
                         if will_is_up:
                             if is_kr and is_morning_breakout_fast: w_time_txt = "오전장 화력 동조 시 즉시 입질 대기."
@@ -1537,8 +1538,8 @@ if symbol:
             with i4:
                 if is_peak_dumping:
                     m_diag = "<b>🚨 엔진 급제동 (고점 투매)</b><br>• <b>역할:</b> 고점 상투 방어.<br>• <b>진단:</b> 목표선 부근에서 윗꼬리가 생기며 세력의 매도세가 쏟아지고 있소! 즉시 수익을 챙기고 철수하시게."
-                elif is_massive_dump:
-                    m_diag = "<b>🚨 엔진 붕괴 (대량 투매)</b><br>• <b>역할:</b> 하방 가속 경보.<br>• <b>진단:</b> 대량의 매물 폭탄이 떨어지며 엔진이 부서지고 있소! 미련을 버리고 대피하시게."
+                elif final_code == "STOP_LOSS_ALERT" or is_massive_dump:
+                    m_diag = "<b>🚨 엔진 붕괴 (방어선 이탈 / 대투매)</b><br>• <b>역할:</b> 하방 가속 경보.<br>• <b>진단:</b> 지지선이 무너지며 매물 폭탄이 떨어지고 있소! 미련을 버리고 즉시 대피하시게."
                 elif p >= target_price_100:
                     m_diag = "<b>🔥 엔진 풀가동 (대세 추종)</b><br>• <b>역할:</b> 추세 지속력 측정.<br>• <b>진단:</b> 목표선 돌파와 함께 엔진이 힘을 내고 있소! 5일선 사수 기준으로 잔여 물량을 추종하시게."
                 elif p >= (target_price_100 * 0.98):
