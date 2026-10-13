@@ -1201,9 +1201,15 @@ if symbol:
             elif is_doji_candle:
                 trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
             elif is_defended:
-                # 💡 [핵심] 꼬리가 아니라 몸통 상승률로 밀어올린 경우 전용 텍스트 출력!
+                # 1. 꼬리 없이 몸통만으로 강하게 상승한 경우 (진짜 불기둥)
                 if is_strong_bull_body and not is_tail_defended:
                     trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}(상승률 {p_chg:+.2f}%)을(를) 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
+                
+                # 2. 마이너스(-) 하락 중인데 꼬리만 달고 버티는 경우 (눈물의 수성)
+                elif p_chg < 0:
+                    trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 누군가 아래꼬리를 만들며 {candle_color_txt} 형태로 방어선을 치고 있소! 아직 안심하긴 이르나 투매는 멈춘 듯하네."
+                
+                # 3. 플러스(+) 상승 전환하며 꼬리를 단 경우 (정석적인 꼬리 방어)
                 else:
                     trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 긴 {candle_color_txt}이(가) 출현했소! 바닥권에서 누군가 물량을 걷어 올리며 매수 방어선을 쳤으니 반등의 불씨가 살아있네."
             elif is_long_upper_tail:
