@@ -438,7 +438,14 @@ if symbol:
 
             is_candle_bullish = p > today_open
             is_candle_bearish = p < today_open  # 팩트 기반 음봉 판독
-            candle_color_txt = "양봉" if p >= today_open else "음봉" # ★ [NEW] 캔들 색깔 실시간 감지 센서
+            # ★ [NEW] 캔들 색깔 실시간 감지 센서 (API 지연 시 억지 양봉 오류 차단)
+            if p > today_open:
+                candle_color_txt = "양봉"
+            elif p < today_open:
+                candle_color_txt = "음봉"
+            else:
+                # 시가 데이터가 누락되어 현재가와 같아졌을 때, 전일 대비 마이너스면 얄짤없이 음봉 처리!
+                candle_color_txt = "음봉" if p_chg < 0 else "양봉"
 
             # --- [NEW! 십자형(Doji) 캔들 판독 센서 추가] ---
             # 시가와 종가 차이가 그날 전체 변동폭의 10% 미만이면서 위아래 꼬리가 달렸을 때 십자형으로 인정
