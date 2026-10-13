@@ -438,6 +438,7 @@ if symbol:
 
             is_candle_bullish = p > today_open
             is_candle_bearish = p < today_open  # 팩트 기반 음봉 판독
+            candle_color_txt = "양봉" if p >= today_open else "음봉" # ★ [NEW] 캔들 색깔 실시간 감지 센서
 
             # --- [NEW! 십자형(Doji) 캔들 판독 센서 추가] ---
             # 시가와 종가 차이가 그날 전체 변동폭의 10% 미만이면서 위아래 꼬리가 달렸을 때 십자형으로 인정
@@ -974,9 +975,9 @@ if symbol:
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가짜 돌파 경계]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위로 올라왔으나 당일 음봉으로 밀리고 있소! 세력의 위꼬리 페이크일 위험이 크니 즉시 비중을 줄이거나 수성(방어) 태세로 전환하시게."
                 else:
                     final_code = "BREAKOUT_ATTACK"
-                    sig = "🟢 [성벽 위 양봉] 기세 유지 랠 추종"
+                    sig = f"🟢 [성벽 위 {candle_color_txt}] 기세 유지 랠리 추종"
                     col = "#2E7D32"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[기세 유지 랠리 추종]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 뿜어내고 있소! 5일선을 사수하며 위로 밀어 올리는 세력의 힘을 믿고 상방 목표선까지 추세를 끝까지 발라먹도록 하시게."
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[기세 유지 랠리 추종]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 {candle_color_txt} 기세를 뿜어내고 있소! 5일선을 사수하며 위로 밀어 올리는 세력의 힘을 믿고 상방 목표선까지 추세를 끝까지 발라먹도록 하시게."
             elif (bottom_score >= 1 or pullback_rebound_score >= 1) and has_manual_ob and ob_ratio_val is not None and ob_ratio_val < 0.5 and not is_ma5_safe:
                 final_code = "WAIT_ORDERBOOK"
                 sig = "🟡 [관망/보류] 허매수 징후 포착 (폭락 경계)"
@@ -1037,11 +1038,11 @@ if symbol:
                     sig = f"🟢 [극한 진바닥 포착] 지표 냉골 동조 및 방어선 구축! 1단계 입질 유효"
                     
                     if is_candle_unknown:
-                        _def_txt = "상승(양봉) 전환 방어"
+                        _def_txt = f"상승({candle_color_txt}) 전환 방어"
                     elif is_strong_bull_body and not is_tail_defended:
-                        _def_txt = "시원한 양봉 출현"
+                        _def_txt = f"시원한 {candle_color_txt} 출현"
                     else:
-                        _def_txt = "아래꼬리 양봉 방어"
+                        _def_txt = f"아래꼬리 {candle_color_txt} 방어"
                         
                     _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 진바닥 터치 이력"
                     
@@ -1065,11 +1066,11 @@ if symbol:
                     sig = f"🟢 [진바닥 입질] 방어 확인 완료! 1단계 정찰병 유효 ({time_tag_ok})"
                     
                     if is_candle_unknown:
-                        _def_txt = "상승(양봉) 전환 방어"
+                        _def_txt = f"상승({candle_color_txt}) 전환 방어"
                     elif is_strong_bull_body and not is_tail_defended:
-                        _def_txt = "강한 양봉 출현"
+                        _def_txt = f"강한 {candle_color_txt} 출현"
                     else:
-                        _def_txt = "아래꼬리 양봉 방어"
+                        _def_txt = f"아래꼬리 {candle_color_txt} 방어"
                         
                     _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 바닥 터치 이력"
                     
@@ -1202,9 +1203,9 @@ if symbol:
             elif is_defended:
                 # 💡 [핵심] 꼬리가 아니라 몸통 상승률로 밀어올린 경우 전용 텍스트 출력!
                 if is_strong_bull_body and not is_tail_defended:
-                    trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 양봉(상승률 {p_chg:+.2f}%)을 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
+                    trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}(상승률 {p_chg:+.2f}%)을(를) 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
                 else:
-                    trend_status = "📈 <b style='color:#388E3C;'>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 긴 양봉이 출현했소! 바닥권에서 누군가 물량을 걷어 올리며 매수 방어선을 쳤으니 반등의 불씨가 살아있네."
+                    trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 긴 {candle_color_txt}이(가) 출현했소! 바닥권에서 누군가 물량을 걷어 올리며 매수 방어선을 쳤으니 반등의 불씨가 살아있네."
             elif is_long_upper_tail:
                 trend_status = "🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 압력 거셈]</b> 윗꼬리를 길게 달고 하방 압력이 거세어 생명선 회복이 위태롭소. 상승 시도마다 매물 폭탄을 맞고 있으니 즉각 관망 모드로 전환하시게."
             elif final_code in ["RED_SELL_WARNING", "SELL_PROFIT_TAKE", "LONG_TAIL_WARNING", "STOP_LOSS_ALERT"]:
@@ -1322,7 +1323,7 @@ if symbol:
                 elif final_code == "WAIT_NARROW_MARGIN":
                     def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위에서 진격 타점을 잡았으나, <b>상단 목표선까지 먹을 게 {margin_diff:.1f}%밖에 없어</b> 진입을 강제 차단했소."
                 else:
-                    def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 타고 <b>상방 랠리 진격 중</b>이네! 방어선을 등지고 추세를 즐기시게."
+                    def_status = f"성벽({defense_line:{fmt_p}}{currency}) 위에서 {candle_color_txt} 기세를 타고 <b>상방 랠리 진격 중</b>이네! 방어선을 등지고 추세를 즐기시게."
             else:
                 if is_massive_dump: def_status = f"🚨 성벽({defense_line:{fmt_p}}{currency}) 아래로 <b>대량 투매 폭탄</b>이 떨어지며 붕괴 중이오! 미련을 버리고 대피하시게."
                 elif final_code == "DOJI_BOTTOM_WAIT": def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래 지하실에서 <b>십자 도지 방어선</b>이 쳐졌소! 내일 고가 돌파 시 진격할 채비를 하시게."
@@ -1356,7 +1357,7 @@ if symbol:
                 else: base_macd_desc = "<b>🌤 역회전 감소 (반등 시동)</b>: 하락 관성이 둔화되며 바닥 다지기 반등을 모색 중이오."
             else: base_macd_desc = "<b>⚙️ 엔진 역회전 심화</b>: 하락 관성이 지속되며 매도 압력이 깊어지는 중이오."
 
-            if final_code == "SQUEEZE_BREAKOUT_ATTACK": macd_strategy_msg = f"{base_macd_desc}<br>• <b>[스퀴즈 엔진 폭발]:</b> 압축된 에너지가 상방으로 터지며 강력한 랠리 엔진이 점화되었소!"
+            if final_code == "SQUEEZE_BREAKOUT_ATTACK": macd_strategy_msg = f"{base_macd_desc}<br>• <b>[스퀴즈 엔진 폭발]:</b> 압축된 에너지가 상방으로 터지며 강력한 랠 엔진이 점화되었소!"
             elif final_code == "NEW_HIGH_BREAKOUT_WARNING": macd_strategy_msg = f"{base_macd_desc}<br>• <b>[엔진 과열 주의]:</b> 돌파 첫날 엔진 가속이 붙었으나 과열이 심하니 절대 추격 매수 금지!"
             elif final_code == "NEW_HIGH_PULLBACK_BUY": macd_strategy_msg = f"{base_macd_desc}<br>• <b>[신고가 엔진 재가동]:</b> 눌림목에서 다시 강력한 랠리 엔진이 점화되었소!"
             elif p >= target_price_100: macd_strategy_msg = "<b>🔥 엔진 풀가동 + 밴드 라이딩</b><br>• <b>역할:</b> 상방 대시세 추종.<br>• <b>진단:</b> 엔진 가속과 함께 상단 밴드가 열리고 있소! 추격 매수는 자제하되, 잔여 물량은 5일선 이탈 전까지 강하게 끌고 가시게."
