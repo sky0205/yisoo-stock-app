@@ -842,7 +842,7 @@ if symbol:
                     
             else: # 음봉일 때
                 # [핵심] 지하실 냉골 바닥권 판독 (RSI 38 이하 or 윌리엄스 -75 이하)
-                is_basement = (rsi <= 38 or williams <= -75)
+                is_basement = (rsi_val <= 38 or williams_val <= -75)
         
                 if vol_strength >= 300:
                     if is_basement:
