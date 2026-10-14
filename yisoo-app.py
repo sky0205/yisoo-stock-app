@@ -830,41 +830,41 @@ if symbol:
             if is_pre_market_mode:
                 v_status, v_adv = ("프리장 대기", "🇺🇸 <b>[프리마켓 모드]</b> 수동 가격 반영 중이오. 장전 거래량이 희박하니 실시간 수급 차단 로직을 우회하여 타점을 판독하오.")
             # (주의: 830번 줄 if is_pre_market_mode: 와 831번 줄은 그대로 두시고, 그 바로 아래부터 붙여넣으시옵소서)
-    elif is_positive_day:
-        if vol_strength >= 300:
-            v_status, v_adv = ("광기 폭발(오버슈팅)", f"🔥 <b>[화력 폭발/광기]</b> 시간보정 강도 {vol_strength:.1f}점! 매수세가 미친 듯이 폭발 중이오. 윗꼬리(상투) 조심하시게.")
-        elif vol_strength >= 100:
-            v_status, v_adv = ("매집 시작(강세)", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 강하게 차오르며 하락 수압을 밀어 올리고 있소.")
-        elif vol_strength >= 65:
-            v_status, v_adv = ("정상 화력(유입)", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점! 상승 기세가 든든하게 유지되고 있소.")
-        else:
-            v_status, v_adv = ("거래 숨고르기", f"🧊 <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! 1단계 진바닥 입질 및 양봉 지지력 확인 구역이오.")
-            
-    else: # 음봉일 때
-        # [핵심] 지하실 냉골 바닥권 판독 (RSI 38 이하 or 윌리엄스 -75 이하)
-        is_basement = (rsi <= 38 or williams <= -75)
-
-        if vol_strength >= 300:
-            if is_basement:
-                v_status, v_adv = ("투매 절정 / 패닉셀", f"🚨 <b>[투매 절정/바닥 징후]</b> 시간보정 강도 {vol_strength:.1f}점! 지하실에서 개미들의 패닉셀이 폭발했소! 세력의 손바뀜을 노려보시게.")
-            else:
-                v_status, v_adv = ("대량 차익투매", f"🔥 <b>[대량 차익투매 경계]</b> 시간보정 강도 {vol_strength:.1f}점! 쏟아지는 음봉 폭포수이오. 섣부른 줍줍을 금하고 칼질 관망하시게.")
-        elif vol_strength >= 100:
-            if is_basement:
-                v_status, v_adv = ("바닥 물량 매집", f"🟢 <b>[바닥권 매집/손바뀜]</b> 시간보정 강도 {vol_strength:.1f}점! 투매 물량을 세력이 조용히 쓸어 담고 있는 방어선이오.")
-            elif is_down_trend_structural:
-                v_status, v_adv = ("역배열 과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 음봉 거래량이니 속지 마시게.")
-            else:
-                v_status, v_adv = ("차익 매물 출회", f"⚠️ <b>[차익매물출회]</b> 시간보정 강도 {vol_strength:.1f}점! 고점 및 성벽 저항대에서 차익 매물이 쏟아지고 있소.")
-        elif vol_strength >= 65:
-            if is_basement:
-                v_status, v_adv = ("바닥 지지 테스트", f"🛡️ <b>[바닥 지지 공방]</b> 시간보정 강도 {vol_strength:.1f}점! 냉골 구역에서 하락을 멈추려는 방어전이 치열하오.")
-            elif not is_down_trend_v:
-                v_status, v_adv = ("정상 눌림목 조정", f"🛡️ <b>[숨고르기조정]</b> 시간보정 강도 {vol_strength:.1f}점! 정배열 속 정상적인 눌림목 음봉 조정 중이오.")
-            else:
-                v_status, v_adv = ("추세 하락 진행", f"⚠️ <b>[하락 압력]</b> 시간보정 강도 {vol_strength:.1f}점! 음봉 압력이 지속되며 매물대가 무거워지고 있소.")
-        else:
-            v_status, v_adv = ("거래량 미달 / 절벽", f"🟡 <b>[거래량 미달 / 관망]</b> 시간보정 강도 {vol_strength:.1f}점! 수급이 마르고 동력이 없으니 섣부른 뇌동매매를 엄금하네.")
+            elif is_positive_day:
+                if vol_strength >= 300:
+                    v_status, v_adv = ("광기 폭발(오버슈팅)", f"🔥 <b>[화력 폭발/광기]</b> 시간보정 강도 {vol_strength:.1f}점! 매수세가 미친 듯이 폭발 중이오. 윗꼬리(상투) 조심하시게.")
+                elif vol_strength >= 100:
+                    v_status, v_adv = ("매집 시작(강세)", f"🚀 <b>[매집시작]</b> 시간보정 강도 {vol_strength:.1f}점! 화력이 강하게 차오르며 하락 수압을 밀어 올리고 있소.")
+                elif vol_strength >= 65:
+                    v_status, v_adv = ("정상 화력(유입)", f"⚔️ <b>[정상화력]</b> 시간보정 강도 {vol_strength:.1f}점! 상승 기세가 든든하게 유지되고 있소.")
+                else:
+                    v_status, v_adv = ("거래 숨고르기", f"🧊 <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! 1단계 진바닥 입질 및 양봉 지지력 확인 구역이오.")
+                    
+            else: # 음봉일 때
+                # [핵심] 지하실 냉골 바닥권 판독 (RSI 38 이하 or 윌리엄스 -75 이하)
+                is_basement = (rsi <= 38 or williams <= -75)
+        
+                if vol_strength >= 300:
+                    if is_basement:
+                        v_status, v_adv = ("투매 절정 / 패닉셀", f"🚨 <b>[투매 절정/바닥 징후]</b> 시간보정 강도 {vol_strength:.1f}점! 지하실에서 개미들의 패닉셀이 폭발했소! 세력의 손바뀜을 노려보시게.")
+                    else:
+                        v_status, v_adv = ("대량 차익투매", f"🔥 <b>[대량 차익투매 경계]</b> 시간보정 강도 {vol_strength:.1f}점! 쏟아지는 음봉 폭포수이오. 섣부른 줍줍을 금하고 칼질 관망하시게.")
+                elif vol_strength >= 100:
+                    if is_basement:
+                        v_status, v_adv = ("바닥 물량 매집", f"🟢 <b>[바닥권 매집/손바뀜]</b> 시간보정 강도 {vol_strength:.1f}점! 투매 물량을 세력이 조용히 쓸어 담고 있는 방어선이오.")
+                    elif is_down_trend_structural:
+                        v_status, v_adv = ("역배열 과열", f"⚠️ <b>[역배열과열]</b> 시간보정 강도 {vol_strength:.1f}점! 하락 추세 속 속임수 음봉 거래량이니 속지 마시게.")
+                    else:
+                        v_status, v_adv = ("차익 매물 출회", f"⚠️ <b>[차익매물출회]</b> 시간보정 강도 {vol_strength:.1f}점! 고점 및 성벽 저항대에서 차익 매물이 쏟아지고 있소.")
+                elif vol_strength >= 65:
+                    if is_basement:
+                        v_status, v_adv = ("바닥 지지 테스트", f"🛡️ <b>[바닥 지지 공방]</b> 시간보정 강도 {vol_strength:.1f}점! 냉골 구역에서 하락을 멈추려는 방어전이 치열하오.")
+                    elif not is_down_trend_v:
+                        v_status, v_adv = ("정상 눌림목 조정", f"🛡️ <b>[숨고르기조정]</b> 시간보정 강도 {vol_strength:.1f}점! 정배열 속 정상적인 눌림목 음봉 조정 중이오.")
+                    else:
+                        v_status, v_adv = ("추세 하락 진행", f"⚠️ <b>[하락 압력]</b> 시간보정 강도 {vol_strength:.1f}점! 음봉 압력이 지속되며 매물대가 무거워지고 있소.")
+                else:
+                    v_status, v_adv = ("거래량 미달 / 절벽", f"🟡 <b>[거래량 미달 / 관망]</b> 시간보정 강도 {vol_strength:.1f}점! 수급이 마르고 동력이 없으니 섣부른 뇌동매매를 엄금하네.")
             st.markdown(
                 f"<div class='vol-box'><div style='font-size:32px; font-weight:bold; color:#0D47A1; margin-bottom:10px;'>📊 거래량 전환: {v_status} (실시간 {v_ratio:.1f}% / 5일평균대비)</div>"
                 f"<div style='font-size:18px; color:#37474F; background:#FFFFFF; padding:10px; border-radius:8px; border-left:6px solid #1976D2; margin-bottom:10px;'>{v_adv}</div>"
