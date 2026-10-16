@@ -1225,7 +1225,7 @@ if symbol:
                 has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
 
                 # 1. 꼬리 없이 몸통만으로 상승한 경우 (진짜 불기둥/견고한 양봉)
-                if is_strong_bull_body and not has_meaningful_lower_tail:
+                if is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
                     trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}(상승률 {p_chg:+.2f}%)을(를) 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
                 
                 # 2. 마이너스(-) 하락 중인데 버티는 경우
