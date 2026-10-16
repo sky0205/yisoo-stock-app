@@ -992,12 +992,20 @@ if symbol:
                     final_code = "RED_SELL_WARNING"
                     sig = "🔴 [성벽 위 음봉] 가짜 돌파(페이크) 경계 및 리스크 관리"
                     col = "#D32F2F"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가짜 돌파 경계]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위로 올라왔으나 당일 음봉으로 밀리고 있소! 세력의 위꼬리 페이크일 위험이 크니 즉시 비중을 줄이거나 수성(방어) 태세로 전환하시게."
-                else:
+                    # (주의: 아래 final_adv는 명장님의 기존 995번 줄 코드를 그대로 유지하셔도 무방하옵니다)
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가짜 돌파 경계]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 음봉을 띄우며 차익 매물을 쏟아내고 있소! 섣부른 추격 매수를 삼가고 방어선 붕괴 여부를 확인하시게."
+                    
+                elif p >= ma5_val:  # [핵심 수술 부위] 성벽 위이면서 동시에 5일선 위에 있을 때만 랠리 인정!
                     final_code = "BREAKOUT_ATTACK"
                     sig = f"🟢 [성벽 위 {candle_color_txt}] 기세 유지 랠리 추종"
                     col = "#2E7D32"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[기세 유지 랠리 추종]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 {candle_color_txt} 기세를 뿜어내고 있소! 5일선을 사수하며 위로 밀어 올리는 세력의 힘을 믿고 상방 목표선까지 추세를 끝까지 발라먹도록 하시게."
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[기세 유지 랠리 추종]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 뿜어내고 있소! 5일선을 사수하며 위로 밀어 올리는 세력의 힘을 믿고 상방 목표선까지 추세를 끝까지 발라먹도록 하시게."
+            
+                else:  # [신규 추가 방어벽] 성벽 위이긴 하나 5일선 아래로 깨졌을 때 (넷플릭스 사태 방지용)
+                    final_code = "BREAKOUT_WARNING"
+                    sig = "⚠️ [성벽 위 턱걸이] 5일선 이탈 경계"
+                    col = "#F57C00"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[랠리 꺾임 경계]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위이나 단기 생명선(5일선) 아래로 뚫렸소! 진입을 멈추고 5일선 재돌파 전까지 철저히 관망하시게."
             elif (bottom_score >= 1 or pullback_rebound_score >= 1) and has_manual_ob and ob_ratio_val is not None and ob_ratio_val < 0.5 and not is_ma5_safe:
                 final_code = "WAIT_ORDERBOOK"
                 sig = "🟡 [관망/보류] 허매수 징후 포착 (폭락 경계)"
