@@ -1308,7 +1308,7 @@ if symbol:
             elif p >= (target_price_100 * 0.98): 
                 ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있으나 수학 목표선 임박 구간이므로 5일선 -{dynamic_stop_pct:.1f}% 이탈({ma5_dynamic_stop:{fmt_p}}{currency})을 잔여 물량 방어선으로 엄수하시게."
             elif final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
-                ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래에 있으나, 바닥 방어 지표가 확고하여 1단계 입질 타점을 형성 중이오."
+                ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래에 있으나 바닥 방어 지표가 확고하여 1단계 입질 타점을 형성 중이오."
             elif is_massive_dump:
                 ma5_guide_text = f"🚨 <b>[투매/칼날 발생]</b> 현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래로 이탈하며 대량 매물이 쏟아지고 있소! 절대 칼날을 잡지 마시게."
             elif not is_ma5_safe: 
