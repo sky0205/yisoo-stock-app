@@ -1250,7 +1250,10 @@ if symbol:
                     else:
                         trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {candle_color_txt}이(가) 출현했소! 매수세가 든든하게 방어선을 구축하며 반등의 불씨를 살렸네."
             elif is_long_upper_tail:
-                trend_status = "🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 압력 거셈]</b> 윗꼬리를 길게 달고 하방 압력이 거세어 생명선 회복이 위태롭소. 상승 시도마다 매물 폭탄을 맞고 있으니 즉각 관망 모드로 전환하시게."
+                if p >= ma5_val:
+                    trend_status = "⚠️ <b style='color:#F57C00;'>[고점 매물 저항 / 5일선 사수]</b> 윗꼬리를 길게 달았으나 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
+                else:
+                    trend_status = "🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 압력 거셈]</b> 윗꼬리를 길게 달고 하방 압력이 거세어 5일선 생명선 회복이 위태롭소. 상승 시도마다 매물 폭탄을 맞고 있으니 즉각 관망 모드로 전환하시게."
             elif final_code in ["RED_SELL_WARNING", "SELL_PROFIT_TAKE", "LONG_TAIL_WARNING", "STOP_LOSS_ALERT"]:
                 if p < ma5_val:
                     trend_status = (
@@ -1502,6 +1505,8 @@ if symbol:
                     bb_diag = "🟡 <b>[성벽 위 경계 및 추격 차단 구역]</b><br>• <b>역할:</b> 추격 매수 원천 차단.<br>• <b>진단:</b> 성벽 위 공방 중이므로 신규 매수를 금지하고 익절 타이밍을 노림."
                 elif final_code == "WAIT_OVER_EXTENDED":
                     bb_diag = f"🟡 <b>[과다이격 추격 금지 구역] (5일선 이격: +{bias_ma5:.1f}%)</b><br>• <b>역할:</b> 고점 물림 방지.<br>• <b>진단:</b> 5일선 대비 5% 이상 벌어졌으니 숨고르기까지 매수 보류."
+                elif final_code == "BREAKOUT_WARNING":
+                    bb_diag = f"🔴 <b>[성벽 위 생명선 이탈 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 랠리 꺾임 방어.<br>• <b>진단:</b> 성벽 위에는 있으나 단기 생명선(5일선)이 무너졌소! 진격을 멈추고 5일선 재돌파 전까지 철저히 대피하시게."
                 else:
                     if pullback_rebound_score >= 1:
                         bb_diag = f"⚖️ <b>[관망 및 대기 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>진단:</b> 지표 동조({pullback_rebound_score}/3점)는 되었으나 역배열 등 조건 미달로 관망."
