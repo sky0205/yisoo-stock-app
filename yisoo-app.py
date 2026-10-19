@@ -273,6 +273,7 @@ if symbol:
                     pass
 
             kr_fetched = False
+            real_kr_open, real_kr_high, real_kr_low = 0.0, 0.0, 0.0 # [NEW] 실시간 시/고/저가 변수 생성
             try:
                 api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -281,6 +282,9 @@ if symbol:
                     data = res.json()
                     auto_p = float(str(data["closePrice"]).replace(",", ""))
                     v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
+                    real_kr_open = float(str(data["openPrice"]).replace(",", "")) # [NEW] 시가 확보
+                    real_kr_high = float(str(data["highPrice"]).replace(",", "")) # [NEW] 고가 확보
+                    real_kr_low = float(str(data["lowPrice"]).replace(",", ""))   # [NEW] 저가 확보
                     kr_fetched = True
             except Exception:
                 pass
@@ -392,10 +396,18 @@ if symbol:
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
                 df.loc[today_date, "Volume"] = v_curr
-                if p > df.loc[today_date, "High"]: df.loc[today_date, "High"] = p
-                if p < df.loc[today_date, "Low"]: df.loc[today_date, "Low"] = p
+                if is_kr and real_kr_open > 0: # [NEW] 실시간 통신망 데이터가 있다면 덮어쓰기!
+                    df.loc[today_date, "Open"] = real_kr_open
+                    df.loc[today_date, "High"] = max(real_kr_high, p)
+                    df.loc[today_date, "Low"] = min(real_kr_low, p)
+                else:
+                    if p > df.loc[today_date, "High"]: df.loc[today_date, "High"] = p
+                    if p < df.loc[today_date, "Low"]: df.loc[today_date, "Low"] = p
             else:
-                new_row = pd.DataFrame({"Open": [p], "High": [p], "Low": [p], "Close": [p], "Volume": [v_curr]}, index=[today_date])
+                if is_kr and real_kr_open > 0: # [NEW] 장부가 없을 때도 실시간 데이터로 생성!
+                    new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p)], "Close": [p], "Volume": [v_curr]}, index=[today_date])
+                else:
+                    new_row = pd.DataFrame({"Open": [p], "High": [p], "Low": [p], "Close": [p], "Volume": [v_curr]}, index=[today_date])
                 df = pd.concat([df, new_row])
 
             v_avg5 = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
