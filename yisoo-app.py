@@ -1249,11 +1249,17 @@ if symbol:
                         trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt}이(가) 출현했소! 바닥권에서 누군가 물량을 걷어 올리며 매수 방어선을 쳤네."
                     else:
                         trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {candle_color_txt}이(가) 출현했소! 매수세가 든든하게 방어선을 구축하며 반등의 불씨를 살렸네."
-            elif is_long_upper_tail:
-                if p >= ma5_val:
-                    trend_status = "⚠️ <b style='color:#F57C00;'>[고점 매물 저항 / 5일선 사수]</b> 윗꼬리를 길게 달았으나 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
-                else:
-                    trend_status = "🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 압력 거셈]</b> 윗꼬리를 길게 달고 하방 압력이 거세어 5일선 생명선 회복이 위태롭소. 상승 시도마다 매물 폭탄을 맞고 있으니 즉각 관망 모드로 전환하시게."
+           elif is_long_upper_tail:
+                if is_candle_bearish: # [신규 이식] 파란 음봉으로 밀릴 때
+                    if p >= ma5_val:
+                        trend_status = f"⚠️ <b style='color:#F57C00;'>[장중 차익 매물 출회 / 5일선 사수]</b> 시가에서부터 파란 음봉으로 쫙 밀리며 매물이 쏟아지고 있으나, 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
+                    else:
+                        trend_status = f"🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 투매 거셈]</b> 시가에서부터 파란 음봉으로 강하게 밀리며 5일선 생명선마저 위태롭소. 상승 시도마다 매물 폭탄을 맞고 있으니 즉각 관망 모드로 전환하시게."
+                else: # 양봉일 때 (기존 윗꼬리 멘트 유지)
+                    if p >= ma5_val:
+                        trend_status = f"⚠️ <b style='color:#F57C00;'>[고점 매물 저항 / 5일선 사수]</b> 윗꼬리를 길게 달았으나 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
+                    else:
+                        trend_status = f"🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 압력 거셈]</b> 윗꼬리를 길게 달고 하방 압력이 거세어 5일선 생명선 회복이 위태롭소. 즉각 관망 모드로 전환하시게."
             elif final_code in ["RED_SELL_WARNING", "SELL_PROFIT_TAKE", "LONG_TAIL_WARNING", "STOP_LOSS_ALERT"]:
                 if p < ma5_val:
                     trend_status = (
@@ -1327,7 +1333,10 @@ if symbol:
                 else:
                     ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래에 있으나 바닥 방어 지표가 확고하여 1단계 입질 타점을 형성 중이오."
             elif is_massive_dump:
-                ma5_guide_text = f"🚨 <b>[투매/칼날 발생]</b> 현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래로 이탈하며 대량 매물이 쏟아지고 있소! 절대 칼날을 잡지 마시게."
+                if p >= ma5_val:
+                    ma5_guide_text = f"🚨 <b>[대량 투매 발생]</b> 현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에서 아슬아슬하게 버티고 있으나 대량 매물이 쏟아지고 있소! 절대 칼날을 잡지 마시게."
+                else:
+                    ma5_guide_text = f"🚨 <b>[투매/칼날 발생]</b> 현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래로 이탈하며 대량 매물이 쏟아지고 있소! 절대 칼날을 잡지 마시게."
             elif not is_ma5_safe: 
                 ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 아래로 이탈했으니, 돌파 안착 신호가 확인될 때까지 관망하시게."
             else:
