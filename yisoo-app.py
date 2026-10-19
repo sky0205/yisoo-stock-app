@@ -1064,11 +1064,11 @@ if symbol:
                     sig = f"🟢 [극한 진바닥 포착] 신규 1단계 유효 (기 1단계 매수자는 추매 금지)"
                     
                     if is_candle_unknown:
-                        _def_txt = f"상승({candle_color_txt}) 전환 방어"
+                        _def_txt = "하락 진정 및 반등 기세"
                     elif is_strong_bull_body and not is_tail_defended:
-                        _def_txt = f"시원한 {candle_color_txt} 출현"
+                        _def_txt = "강력한 매수세(반등 몸통)"
                     else:
-                        _def_txt = f"아래꼬리 {candle_color_txt} 방어"
+                        _def_txt = "아래꼬리 지지력(투매 방어)"
                         
                     _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 진바닥 터치 이력"
                     
@@ -1092,11 +1092,11 @@ if symbol:
                     sig = f"🟢 [진바닥 입질] 신규 1단계 유효 (기 1단계 매수자는 2단계 대기) ({time_tag_ok})"
                     
                     if is_candle_unknown:
-                        _def_txt = f"상승({candle_color_txt}) 전환 방어"
+                        _def_txt = "하락 진정 및 반등 기세"
                     elif is_strong_bull_body and not is_tail_defended:
-                        _def_txt = f"강한 {candle_color_txt} 출현"
+                        _def_txt = "강력한 매수세(반등 몸통)"
                     else:
-                        _def_txt = f"아래꼬리 {candle_color_txt} 방어"
+                        _def_txt = "아래꼬리 지지력(투매 방어)"
                         
                     _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 바닥 터치 이력"
                     
