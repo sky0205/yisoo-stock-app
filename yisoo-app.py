@@ -1249,7 +1249,7 @@ if symbol:
                         trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt}이(가) 출현했소! 바닥권에서 누군가 물량을 걷어 올리며 매수 방어선을 쳤네."
                     else:
                         trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {candle_color_txt}이(가) 출현했소! 매수세가 든든하게 방어선을 구축하며 반등의 불씨를 살렸네."
-           elif is_long_upper_tail:
+            elif is_long_upper_tail:
                 if is_candle_bearish: # [신규 이식] 파란 음봉으로 밀릴 때
                     if p >= ma5_val:
                         trend_status = f"⚠️ <b style='color:#F57C00;'>[장중 차익 매물 출회 / 5일선 사수]</b> 시가에서부터 파란 음봉으로 쫙 밀리며 매물이 쏟아지고 있으나, 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
