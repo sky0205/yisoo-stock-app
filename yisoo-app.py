@@ -988,16 +988,28 @@ if symbol:
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[신고가 5일선 눌림목]</b> 1년 최고점 돌파 후 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency})에 아주 예쁘게 안착했소! <b>[신규 진입자]</b>는 30~50% 비중으로 과감하게 본진을 투입하시게. 단, <b>[기 진입자]</b>는 무의미한 불타기를 금하고 신고가 하늘이 열린 대시세를 끝까지 발라먹으시게."
             # ---------------------------------
             
-            elif p >= target_price_100 and bandwidth > 12.0:
-                final_code = "BAND_RIDING_HARVEST"
-                sig = "🟣 [상방 확장 중] 목표선 상방 돌파 완료!"
-                col = "#6A1B9A"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[목표선 상방 돌파 완료]</b> 현재가({p:{fmt_p}}{currency})가 최종 수확 목표선({target_price_100:{fmt_p}}{currency})을 돌파하여 안착했소! 저항선을 완전히 짓밟았으니, 이제부터는 밴드가 위로 쫙 벌어지는 대세 상승 랠리를 마음껏 즐기며 잔여 물량을 홀딩하시게."
-            elif p >= (target_price_100 * 0.98) and bandwidth > 12.0:
-                final_code = "RED_SELL_TARGET"
-                sig = "🔴 [1차 선제적 익절] 수확 목표선 코앞 도달! (준비 구간)"
-                col = "#D32F2F"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수확 목표선 임박]</b> 볼린저 상단({target_price_100:{fmt_p}}{currency}) 고지가 눈앞이오! 욕심을 조금 덜어내고 1차 선제적 익절(분할 수확)을 준비하며 수익 일부를 챙길 채비를 하시게."
+            elif p >= target_price_100:
+                if bandwidth <= 12.0:
+                    final_code = "SQUEEZE_BREAKOUT_ATTACK"
+                    sig = "🔥 [스퀴즈 상단 돌파] 볼린저 상단 돌파 대시세! (기 진입자는 추매 금지)"
+                    col = "#D84315"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[압력밥솥 볼린저 상단 폭발]</b> 밴드폭이 {bandwidth:.1f}%로 극한 응축된 상태에서 수확 목표선({target_price_100:{fmt_p}}{currency})마저 시원하게 뚫어버렸소! 드디어 상방으로 밸브가 터지며 대시세가 열렸으니 <b>[신규 진입자]</b>는 과감하게 30~50% 본진을 투입하고, <b>[기 진입자]</b>는 섣부른 불타기를 멈추고 랠리를 편안히 즐기시게."
+                else:
+                    final_code = "BAND_RIDING_HARVEST"
+                    sig = "🟣 [상방 확장 중] 목표선 상방 돌파 완료!"
+                    col = "#6A1B9A"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[목표선 상방 돌파 완료]</b> 현재가({p:{fmt_p}}{currency})가 최종 수확 목표선({target_price_100:{fmt_p}}{currency})을 돌파하여 안착했소! 저항선을 완전히 짓밟았으니, 이제부터는 밴드가 위로 쫙 벌어지는 대세 상승 랠리를 마음껏 즐기며 잔여 물량을 홀딩하시게."
+            elif p >= (target_price_100 * 0.98):
+                if bandwidth <= 12.0:
+                    final_code = "SQUEEZE_BREAKOUT_ATTACK"
+                    sig = "🔥 [스퀴즈 상단 임박] 밸브 폭발 1초 전! (기 진입자는 추매 금지)"
+                    col = "#D84315"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[압력밥솥 상단 돌파 임박]</b> 밴드폭이 {bandwidth:.1f}%로 극한 응축된 상태에서 상단 목표선({target_price_100:{fmt_p}}{currency}) 돌파를 눈앞에 두고 있소! 상방으로 밸브가 터지기 직전이니 <b>[신규 진입자]</b>는 과감하게 본진을 투입하고, <b>[기 진입자]</b>는 무의미한 추매를 멈추고 랠리에 탑승하시게."
+                else:
+                    final_code = "RED_SELL_TARGET"
+                    sig = "🔴 [1차 선제적 익절] 수확 목표선 코앞 도달! (준비 구간)"
+                    col = "#D32F2F"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[수확 목표선 임박]</b> 볼린저 상단({target_price_100:{fmt_p}}{currency}) 고지가 눈앞이오! 욕심을 조금 덜어내고 1차 선제적 익절(분할 수확)을 준비하며 수익 일부를 챙길 채비를 하시게."
             elif p >= defense_line:
                 if is_candle_bearish:
                     final_code = "RED_SELL_WARNING"
