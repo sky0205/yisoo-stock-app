@@ -483,7 +483,7 @@ if symbol:
 
             # --- [NEW! 십자형(Doji) 캔들 판독 센서 추가] ---
             # 시가와 종가 차이가 그날 전체 변동폭의 10% 미만이면서 위아래 꼬리가 달렸을 때 십자형으로 인정
-            is_doji_candle = (body_len <= (day_candle_range * 0.10)) and (day_candle_range > 0.01) and (upper_tail_len > 0) and (lower_tail_len > 0)
+            is_doji_candle = (body_len <= (day_candle_range * 0.03)) and (day_candle_range > 0.01) and (upper_tail_len > 0) and (lower_tail_len > 0) and (upper_tail_len <= lower_tail_len * 1.5) and (lower_tail_len <= upper_tail_len * 1.5)
 
             # 2. 꼬리 비율을 통한 정밀 형태 판독
             if is_pre_market_mode or is_api_delayed:
