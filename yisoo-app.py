@@ -399,7 +399,7 @@ if symbol:
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
                 df.loc[today_date, "Volume"] = v_curr
-                if is_kr and real_kr_open > 0: # [NEW] 실시간 통신망 데이터가 있다면 덮어쓰기!
+                if real_kr_open > 0: # 💡 [수술 핵심] 망할 is_kr 조건 참수!
                     df.loc[today_date, "Open"] = real_kr_open
                     df.loc[today_date, "High"] = max(real_kr_high, p)
                     df.loc[today_date, "Low"] = min(real_kr_low, p)
@@ -407,7 +407,7 @@ if symbol:
                     if p > df.loc[today_date, "High"]: df.loc[today_date, "High"] = p
                     if p < df.loc[today_date, "Low"]: df.loc[today_date, "Low"] = p
             else:
-                if is_kr and real_kr_open > 0: # [NEW] 장부가 없을 때도 실시간 데이터로 생성!
+                if real_kr_open > 0: # 💡 [수술 핵심] 여기도 is_kr 조건 참수!
                     new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p)], "Close": [p], "Volume": [v_curr]}, index=[today_date])
                 else:
                     new_row = pd.DataFrame({"Open": [p], "High": [p], "Low": [p], "Close": [p], "Volume": [v_curr]}, index=[today_date])
