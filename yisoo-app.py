@@ -466,9 +466,8 @@ if symbol:
                 candle_color_txt = "음봉" if p_chg < 0 else "양봉"
 
             # --- [십자형(Doji) 캔들 판독 센서] ---
-            ## 진짜 도지라면 위꼬리와 아래꼬리가 모두 진폭 대비 유의미하게(아래꼬리 최소 10% 이상) 달려 있어야 함! 
-            # 따라서 시가=저가여서 아래꼬리가 없거나 부족한 양봉은 도지 판독에서 무조건 영구 제외!
-            is_doji_candle = (body_len <= (day_candle_range * 0.10)) and (day_candle_range > 0.01) and (upper_tail_len >= day_candle_range * 0.05) and (lower_tail_len >= day_candle_range * 0.10)
+            # 도지는 오직 음봉이거나 시가 아래로 밀렸을 때만 판독하고, 시가 위에서 출발한 양봉은 절대 도지 판독 불가!
+            is_doji_candle = (p <= today_open) and (body_len <= (day_candle_range * 0.10)) and (day_candle_range > 0.01) and (upper_tail_len >= day_candle_range * 0.05) and (lower_tail_len >= day_candle_range * 0.10)
             # 2. 꼬리 비율을 통한 정밀 형태 판독
             if is_pre_market_mode or is_api_delayed:
                 is_long_upper_tail = False
