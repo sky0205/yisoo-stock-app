@@ -395,22 +395,29 @@ if symbol:
             prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
             if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
                 prev_p = float(us_prev_p)
-            if clean_symbol.isdigit() and real_kr_open == 0:
+            # 💡 [가짜 도지 척결: 엉터리 데이터 초기화 및 네이버 시가 무조건 강제 주입]
+            _code = ''.join([c for c in str(symbol) if c.isdigit()])[-6:]
+            if len(_code) == 6:
+                real_kr_open = 0  # 야후가 던져준 쓰레기 시가 데이터 강제 리셋!
+                real_kr_high = 0
+                real_kr_low = 0
                 try:
                     import requests
                     from bs4 import BeautifulSoup
-                    url_ohlc = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
-                    res_ohlc = requests.get(url_ohlc, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
-                    soup_ohlc = BeautifulSoup(res_ohlc.text, "html.parser")
-                    real_kr_open = float(soup_ohlc.select(".no_info .blind")[4].text.replace(",", ""))
-                    real_kr_high = float(soup_ohlc.select(".no_info .blind")[1].text.replace(",", ""))
-                    real_kr_low = float(soup_ohlc.select(".no_info .blind")[5].text.replace(",", ""))
+                    _res = requests.get(f"https://finance.naver.com/item/main.naver?code={_code}", headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+                    _soup = BeautifulSoup(_res.text, "html.parser")
+                    _info = _soup.select(".no_info .blind")
+                    if len(_info) >= 6:
+                        real_kr_open = float(_info[4].text.replace(",", ""))
+                        real_kr_high = float(_info[1].text.replace(",", ""))
+                        real_kr_low = float(_info[5].text.replace(",", ""))
                 except:
                     pass
+
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
                 df.loc[today_date, "Volume"] = v_curr
-                if real_kr_open > 0: # 💡 [수술 핵심] 망할 is_kr 조건 참수!
+                if real_kr_open > 0:
                     df.loc[today_date, "Open"] = real_kr_open
                     df.loc[today_date, "High"] = max(real_kr_high, p)
                     df.loc[today_date, "Low"] = min(real_kr_low, p)
@@ -418,7 +425,7 @@ if symbol:
                     if p > df.loc[today_date, "High"]: df.loc[today_date, "High"] = p
                     if p < df.loc[today_date, "Low"]: df.loc[today_date, "Low"] = p
             else:
-                if real_kr_open > 0: # 💡 [수술 핵심] 여기도 is_kr 조건 참수!
+                if real_kr_open > 0:
                     new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p)], "Close": [p], "Volume": [v_curr]}, index=[today_date])
                 else:
                     new_row = pd.DataFrame({"Open": [p], "High": [p], "Low": [p], "Close": [p], "Volume": [v_curr]}, index=[today_date])
