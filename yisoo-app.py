@@ -491,8 +491,8 @@ if symbol:
             # 2. 꼬리 비율을 통한 정밀 형태 판독
             if is_pre_market_mode or is_api_delayed:
                 is_long_upper_tail = False
-                is_defended = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
+                is_defended = (p >= today_open)      # 💡 [수정 완료] 현재가가 오늘 '시가'보다 높거나 같은가? (양봉 방어)
+                is_candle_bearish = (p < today_open) # 💡 [수정 완료] 현재가가 오늘 '시가' 아래로 뚫렸을 때만 음봉 처리!
                 is_candle_unknown = True
                 is_strong_bull_body = False
                 is_doji_candle = False # API 지연 시 십자형 판독 보류
