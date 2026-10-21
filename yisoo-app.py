@@ -222,7 +222,7 @@ with col_pre_us:
 with col_avg:
     user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 분석을 위한 평단가")
 
-st.write("") # 1층과 2층 사이 숨통 트여주기
+st.write("") 
 
 col_ask, col_bid, col_btn = st.columns([1, 1, 2])
 
@@ -255,7 +255,6 @@ if symbol:
         us_prev_p = None
         start_dt_str = start_date.strftime("%Y-%m-%d") 
 
-        # ★ v36103 기반: 오리지널 실시간 갱신 통신망
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
@@ -273,7 +272,7 @@ if symbol:
                     pass
 
             kr_fetched = False
-            real_kr_open, real_kr_high, real_kr_low = 0.0, 0.0, 0.0 # [NEW] 실시간 시/고/저가 변수 생성
+            real_kr_open, real_kr_high, real_kr_low = 0.0, 0.0, 0.0
             try:
                 api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -282,9 +281,9 @@ if symbol:
                     data = res.json()
                     auto_p = float(str(data["closePrice"]).replace(",", ""))
                     v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
-                    real_kr_open = float(str(data["openPrice"]).replace(",", "")) # [NEW] 시가 확보
-                    real_kr_high = float(str(data["highPrice"]).replace(",", "")) # [NEW] 고가 확보
-                    real_kr_low = float(str(data["lowPrice"]).replace(",", ""))   # [NEW] 저가 확보
+                    real_kr_open = float(str(data["openPrice"]).replace(",", ""))
+                    real_kr_high = float(str(data["highPrice"]).replace(",", ""))
+                    real_kr_low = float(str(data["lowPrice"]).replace(",", ""))
                     kr_fetched = True
             except Exception:
                 pass
@@ -345,7 +344,6 @@ if symbol:
 
         multiplier = 1000.0 if is_kr else 1.0
 
-        # ★★★ [호가창 실전 병법 변수 초기화] ★★★
         is_ob_stage2_safe = True
         is_ob_stage3_safe = True
 
@@ -395,10 +393,10 @@ if symbol:
             prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
             if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
                 prev_p = float(us_prev_p)
-            # 💡 [가짜 도지 척결: 엉터리 데이터 초기화 및 네이버 시가 무조건 강제 주입]
+
             _code = ''.join([c for c in str(symbol) if c.isdigit()])[-6:]
             if len(_code) == 6:
-                real_kr_open = 0  # 야후가 던져준 쓰레기 시가 데이터 강제 리셋!
+                real_kr_open = 0 
                 real_kr_high = 0
                 real_kr_low = 0
                 try:
@@ -407,7 +405,6 @@ if symbol:
                     _res = requests.get(f"https://finance.naver.com/item/main.naver?code={_code}", headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
                     _soup = BeautifulSoup(_res.text, "html.parser")
                     
-                    # 💡 [최종 쐐기] 투명 공백 꼼수 박살! 묻지도 따지지도 않고 글자에서 숫자만 추출!
                     for _dd in _soup.select("dl.blind dd"):
                         if "시가" in _dd.text: real_kr_open = float("".join([c for c in _dd.text if c.isdigit()]))
                         elif "고가" in _dd.text: real_kr_high = float("".join([c for c in _dd.text if c.isdigit()]))
@@ -453,9 +450,6 @@ if symbol:
             else:
                 vol_strength = v_ratio
 
-            # ==================================================================
-            # ★ [NEW] 1. 캔들 정합성 검열 및 꼬리/십자형(Doji) 정밀 계산
-            # ==================================================================
             today_open = float(df["Open"].iloc[-1])
             today_high = float(df["High"].iloc[-1])
             today_low = float(df["Low"].iloc[-1])
@@ -463,63 +457,49 @@ if symbol:
             
             day_candle_range = max(0.01, today_high - today_low)
 
-            # 💡 [데이터 왜곡 방지 센서]: 야후 API가 시가/고가/저가를 제대로 갱신하지 않았는지 탐지
             is_api_delayed = (p > today_high * 1.005) or (p < today_low * 0.995) or (today_high == today_low)
 
             upper_tail_len = today_high - max(today_open, p)
             lower_tail_len = min(today_open, p) - today_low
             body_len = abs(p - today_open)
 
-            # 💡 [NEW] 색맹 치료: 완벽하게 수정된 장부에서 '진짜 시가'를 다시 꺼내옵니다!
             today_open = float(df["Open"].iloc[-1])
             is_candle_bullish = p > today_open
-            is_candle_bearish = p < today_open  # 팩트 기반 음봉 판독
+            is_candle_bearish = p < today_open  
             
-            # ★ [NEW] 캔들 색깔 실시간 감지 센서 (API 지연 시 억지 양봉 오류 차단)
             if p > today_open:
                 candle_color_txt = "양봉"
             elif p < today_open:
                 candle_color_txt = "음봉"
             else:
-                # 시가 데이터가 누락되어 현재가와 같아졌을 때, 전일 대비 마이너스면 얄짤없이 음봉 처리!
                 candle_color_txt = "음봉" if p_chg < 0 else "양봉"
 
-            # --- [NEW! 십자형(Doji) 캔들 판독 센서 추가] ---
-            # 시가와 종가 차이가 그날 전체 변동폭의 10% 미만이면서 위아래 꼬리가 달렸을 때 십자형으로 인정
             is_doji_candle = (body_len <= (day_candle_range * 0.03)) and (day_candle_range > 0.01) and (upper_tail_len > 0) and (lower_tail_len > 0) and (upper_tail_len <= lower_tail_len * 1.5) and (lower_tail_len <= upper_tail_len * 1.5)
 
-            # 2. 꼬리 비율을 통한 정밀 형태 판독
             if is_pre_market_mode or is_api_delayed:
                 is_long_upper_tail = False
-                is_defended = (p >= today_open)      # 💡 [수정 완료] 현재가가 오늘 '시가'보다 높거나 같은가? (양봉 방어)
-                is_candle_bearish = (p < today_open) # 💡 [수정 완료] 현재가가 오늘 '시가' 아래로 뚫렸을 때만 음봉 처리!
+                is_defended = (p >= today_open)      
+                is_candle_bearish = (p < today_open) 
                 is_candle_unknown = True
                 is_strong_bull_body = False
-                is_doji_candle = False # API 지연 시 십자형 판독 보류
+                is_doji_candle = False 
             else:
-                # 십자형(Doji)일 때는 단순 윗꼬리로 인한 칼날 경고(is_long_upper_tail) 발동을 억제!
                 if is_doji_candle:
                     is_long_upper_tail = False
                 else:
                     is_long_upper_tail = (upper_tail_len > lower_tail_len) and (upper_tail_len > body_len) and (upper_tail_len >= day_candle_range * 0.3)
                 
-                # 💡 [핵심 분리] 꼬리 방어 vs 몸통 팽창
                 is_tail_defended = (lower_tail_len > upper_tail_len)
                 is_strong_bull_body = (p_chg >= 2.0) or (body_len > upper_tail_len * 1.5)
                 
-                # 둘 중 하나라도 만족하면 방어 성공 (신호등 초록불 프리패스)
                 is_defended = is_candle_bullish and (is_tail_defended or is_strong_bull_body)
                 is_candle_unknown = False
 
-            # 호환성을 위한 기존 변수 유지
             is_pure_bullish_candle = p >= today_open
             is_bottom_lower_tail = ((lower_tail_len >= day_candle_range * 0.35) or (lower_tail_len >= body_len * 1.0)) and (p_chg >= -1.5)
             is_valid_bottom_candle = (is_pure_bullish_candle or is_bottom_lower_tail) and (not is_down_trend_v)
-            # ==================================================================
             
-            # --- [투매(Falling Knife) 감지 센서] ---
             is_massive_dump = (vol_strength >= 150 and p_chg <= -2.5) or (vol_strength >= 80 and p_chg <= -4.5)
-            # --------------------------------------------------
 
             delta = df["Close"].diff()
             gain = (delta.where(delta > 0, 0)).rolling(14).mean()
@@ -581,16 +561,11 @@ if symbol:
             is_valid_buy_candle = is_pure_bullish_candle or is_trend_lower_tail
             is_bearish_candle = (p < today_open) and (not is_trend_lower_tail)
 
-            # ==================================================================
-            # ★ [신고가 판독 센서 장착] (1년/250일 기준)
-            # ==================================================================
             lookback_days = min(250, len(df) - 1) if len(df) > 1 else 1
             high_250 = float(df["High"].iloc[-lookback_days:-1].max()) if lookback_days > 1 else today_high
             
-            # 돌파 당일 추격 금지 조건 (2% 이상 급등하며 신고가 갱신, 5일선 이격 3% 이상 과열)
             is_new_high_breakout = (p > high_250) and (p_chg >= 2.0) and (bias_ma5 >= 3.0)
             
-            # 신고가 첫 눌림목 과감한 진입 조건 (최근 10일 내 신고가 터치 이력, 현재 5일선에 예쁘게 눌림)
             recent_high_10 = float(df["High"].iloc[-min(10, len(df)):-1].max()) if len(df) > 1 else today_high
             has_recent_new_high = (recent_high_10 >= high_250) and (high_250 > 0)
             is_new_high_pullback = has_recent_new_high and is_ma5_safe and (-1.0 <= bias_ma5 <= 2.5) and not is_candle_bearish and not (ma5_val < mid_line and mid_line < ma60_val)
@@ -694,7 +669,6 @@ if symbol:
             else:
                 ob_status_msg = "💡 <b>HTS 총매도·매수잔량을 입력하면 입력값 기준 호가 분석을 가동합니다.</b> (미입력 시 조건 패스)"
 
-            # --- [밴드폭 출력 시 하락/돌파 모순 완벽 해결] ---
             if bandwidth < 10.0:
                 is_bandwidth_ok = False
                 bw_status_category = "EXTREME_SQUEEZE"
@@ -740,7 +714,6 @@ if symbol:
                     squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 진폭은 트였으나 5일선 돌파 전이오. 안착을 기다리시게."
                 else:
                     squeeze_info_str = f"<br>• 🌊 <b>[밴드폭 넉넉함({bandwidth:.1f}%)]</b> 상하 진폭 활주로는 충분히 트였으나, 위 지표 조건 충족 시에만 진격하시게."
-            # ------------------------------------------------------------------
 
             is_bullish = (ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
             is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
@@ -751,7 +724,6 @@ if symbol:
             ma60_str = f"{ma60_val:{fmt_p}}{currency}"
             ma120_str = f"{ma120_val:{fmt_p}}{currency}"
 
-            # --- [추세 정밀 판독 기본 생성부 (이평선 기준)] ---
             if is_bullish:
                 if p < mid_line: trend_status = "⚠️ <b>[정배열 붕괴 경계]</b> 완벽한 우상향이나 현재가가 20일선 성벽을 깨고 추락 중"
                 elif p < ma5_val: trend_status = "⚠️ <b>[정배열 단기 조정]</b> 우상향 성벽 속 5일선 이탈 숨고르기"
@@ -769,7 +741,6 @@ if symbol:
                 else: trend_status = "📉 <b>[하락 추세 심화]</b> 20일선 아래에서 단기 생명선(5일선)마저 붕괴! 하방 위험 증가"
             else: 
                 trend_status = "⚖️ <b>[추세 혼조]</b> 방향 탐색 중"
-            # -------------------------------------------------------------
 
             def generate_ma_hierarchy(df, current_price):
                 ma_dict = {
@@ -805,10 +776,7 @@ if symbol:
                 f" <span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
             )
             ma_price_summary += generate_ma_hierarchy(df, p)
-            
-            # ==================================================================
-            # ★ 종목명 통합 해독기 호출
-            # ==================================================================
+              
             final_display_name = get_stock_name(symbol, is_kr)
             safe_display_name = html.escape(final_display_name)
 
@@ -875,8 +843,7 @@ if symbol:
                 else:
                     v_status, v_adv = ("거래 숨고르기", f"🧊 <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! 1단계 진바닥 입질 및 양봉 지지력 확인 구역이오.")
                     
-            else: # 음봉일 때
-                # [핵심] 지하실 냉골 바닥권 판독 (RSI 38 이하 or 윌리엄스 -75 이하)
+            else: 
                 is_basement = (rsi_val <= 38 or will_val <= -75)
         
                 if vol_strength >= 300:
@@ -954,11 +921,7 @@ if symbol:
 
             current_chg = float(p_chg)
             margin_diff = ((target_price_100 - p) / p) * 100 if p > 0 else 0
-            # ----------------------------------------------------
 
-            # ==================================================================
-            # ★ [신호등 분기 논리: 칼날 이중 잠금장치 + 십자형(Doji) 갈라치기]
-            # ==================================================================
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
@@ -970,7 +933,6 @@ if symbol:
                 col = "#D32F2F"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[고점 윗꼬 폭탄 포착]</b> 수확 목표선 부근에서 윗꼬리를 길게 달고 밀려 내려오고 있소! 세력의 대량 차익 실현이 시작되었으니 보유자는 즉시 전량 익절하시게."
             
-            # --- [NEW! 십자형(Doji) 캔들 위치별 예외 처리 (최우선 판독)] ---
             elif is_doji_candle and p >= target_price_100 * 0.98:
                 final_code = "DOJI_TOP_WARNING"
                 sig = "🟠 [고점 십자성 경고] 상승 에너지 고갈! 상투 징후"
@@ -986,20 +948,18 @@ if symbol:
                 sig = "🟡 [추세 변곡 탐색] 십자형 공방전! 내일 승패를 확인하라"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[중간 지대 십자 도지(Doji) 포착]</b> 현재 매수세와 매도세가 50:50으로 피 터지게 싸우며 십자형을 만들었소. 당일 승패를 예단하는 것은 위험하니, <b>내일 오늘 고가({today_high:{fmt_p}}{currency}) 돌파 시 진단기 재확인, 저가({today_low:{fmt_p}}{currency}) 이탈 시 철수</b>라는 기준선을 잡고 오늘은 팝콘을 드시며 관망하시게."
-            # -------------------------------------------------------------
             
             elif (rsi_val >= 60 and rsi_val < rsi_prev) or (will_val >= -20 and will_val < will_prev):
                 final_code = "SELL_PROFIT_TAKE"
                 sig = "🚨 [익절/수확 경보] 고점 과열권 꺾임 (세력 이탈)"
                 col = "#D32F2F"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[선제적 익절 구간]</b> RSI나 윌리엄스 지표가 극한의 천장을 찍고 <b>아래로 꺾이고(▼ 하락)</b> 있소! 세력의 고점 차익 실현(매도)이 시작되었으니, <b>보유자는 미련 없이 수익을 챙겨 탈출(수확)</b>하고 신규 진입자는 절대 추격 매수를 금하시게."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[선제적 익절 구간]</b> RSI나 윌리엄스 지표가 극한의 천장을 찍고 <b>아래로 꺾이는(▼ 하락)</b> 중이오! 세력의 고점 차익 실현(매도)이 시작되었으니, <b>보유자는 미련 없이 수익을 챙겨 탈출(수확)</b>하고 신규 진입자는 절대 추격 매수를 금하시게."
             elif is_long_upper_tail and (p >= defense_line or p >= mid_line):
                 final_code = "LONG_TAIL_WARNING"
                 sig = "🟡 [위꼬리 저항 경계] 고점 매물 출회 / 추격 매수 금지"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[긴 위꼬리 저항 포착]</b> 장중 고점 대비 위꼬리가 길게 밀려 내려왔소! 지표상 안착처럼 보여도 위쪽 매물벽 저항이 맵사오니 섣부른 추격매수를 금하고 냉정하게 관망하시게."
             
-            # --- [신고가 레이더 특별 분기] ---
             elif is_new_high_breakout:
                 final_code = "NEW_HIGH_BREAKOUT_WARNING"
                 sig = "🚨 [신고가 돌파 첫날] 불기둥 추격 매수 엄금!"
@@ -1010,7 +970,6 @@ if symbol:
                 sig = "🔵 [신고가 첫 눌림목] 정석 타점 (기 진입자는 추매 금지)"
                 col = "#1E88E5"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[신고가 5일선 눌림목]</b> 1년 최고점 돌파 후 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency})에 아주 예쁘게 안착했소! <b>[신규 진입자]</b>는 30~50% 비중으로 과감하게 본진을 투입하시게. 단, <b>[기 진입자]</b>는 무의미한 불타기를 금하고 신고가 하늘이 열린 대시세를 끝까지 발라먹으시게."
-            # ---------------------------------
             
             elif p >= target_price_100:
                 if bandwidth <= 12.0:
@@ -1041,13 +1000,13 @@ if symbol:
                     col = "#D32F2F"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가짜 돌파 경계]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 음봉을 띄우며 차익 매물을 쏟아내고 있소! 섣부른 추격 매수를 삼가고 방어선 붕괴 여부를 확인하시게."
                     
-                elif p >= ma5_val:  # [핵심 수술 부위] 성벽 위이면서 동시에 5일선 위에 있을 때만 랠리 인정!
+                elif p >= ma5_val:  
                     final_code = "BREAKOUT_ATTACK"
                     sig = f"🟢 [성벽 위 {candle_color_txt}] 기세 유지 랠리 추종"
                     col = "#2E7D32"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[기세 유지 랠리 추종]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 뿜어내고 있소! 5일선을 사수하며 위로 밀어 올리는 세력의 힘을 믿고 상방 목표선까지 추세를 끝까지 발라먹도록 하시게."
             
-                else:  # [신규 추가 방어벽] 성벽 위이긴 하나 5일선 아래로 깨졌을 때 (넷플릭스 사태 방지용)
+                else:  
                     final_code = "BREAKOUT_WARNING"
                     sig = "⚠️ [성벽 위 턱걸이] 5일선 이탈 경계"
                     col = "#F57C00"
@@ -1071,9 +1030,8 @@ if symbol:
                 final_code = "WAIT_INDICATOR_FALLING"
                 sig = "🟡 [관망/대기] 지표 하락 진행 중 (떨어지는 칼날)"
                 col = "#F57C00"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 점수 구간에 진입했으나, RSI와 윌리엄스 지표가 계속 <b>아래로 처박히고(▼ 하락)</b> 있소! 바닥이 어디일지 모르니 섣불리 줍지 말고, <b>다음날 지표가 위로 고개를 드는(▲ 상승) 것을 확인한 뒤에</b> 진입 여부를 결정하시게."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 점수 구간에 진입했으나, RSI와 윌리엄스 지표가 계속 <b>아래로 처박히는(▼ 하락)</b> 중! 바닥이 어디일지 모르니 섣불리 줍지 말고, <b>다음날 지표가 위로 고개를 드는(▲ 상승) 것을 확인한 뒤에</b> 진입 여부를 결정하시게."
             
-            # --- [스퀴즈 폭발 매수 로직 추가] ---
             elif p >= ma20_safe_threshold and bandwidth <= 12.0 and p >= today_open and (vol_strength >= 65 or is_pre_market_mode):
                 if margin_diff < 4.0: 
                     final_code = "WAIT_NARROW_MARGIN"
@@ -1085,11 +1043,7 @@ if symbol:
                     col = "#D84315"
                     sig = "🔥 [스퀴즈 돌파] 압력밥솥 폭발! (기 진입자는 추매 금지)"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[스퀴즈 20일선 돌파]</b> 밴드폭이 {bandwidth:.1f}%로 극한 응축된 상태에서 20일선({ma20_safe_threshold:{fmt_p}}{currency})을 강력하게 뚫어냈소! <b>[신규 진입자]</b>는 망설임 없이 과감하게 30~50% 본진을 투입하고, <b>[기 진입자]</b>는 추가 매수 없이 상방 밸브가 터진 랠리에 편안히 탑승하시게."
-            # --------------------------------------
 
-            # ==================================================================
-            # ★ [NEW! 극한 바닥 예외 허용 로직 (칼날 방어망 2중 추가)]
-            # ==================================================================
             elif (bottom_score >= 2 or rsi_val <= 30):
                 if is_massive_dump:
                     final_code = "BEARISH_GUARD"
@@ -1121,7 +1075,6 @@ if symbol:
                     _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 진바닥 터치 이력"
                     
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 지표 및 방어 확인]</b> {_bot_txt}과(와) <b>{_def_txt}이(가) 동시 확인</b>되었소! <b>[신규 진입자]</b>는 비중 10% 수준의 가벼운 1단계 정찰병을 투입하시게. 단, <b>[기 1단계 매수자]</b>는 섣부른 불타기를 엄금하고 5일선 안착(2단계) 신호를 기다리며 얌전히 관망하시게."
-            # -------------------------------------------------------------
 
             elif is_near_ma5_bottom and (is_bottom_indicator_ok or will_val <= -75) and (p >= today_open) and (p_chg >= -1.5):
                 if margin_diff < 4.0: 
@@ -1237,9 +1190,6 @@ if symbol:
                 "DOJI_TOP_WARNING", "DOJI_BOTTOM_WAIT", "DOJI_MID_WAIT"
             ]
 
-            # ==================================================================
-            # ★ [하단 지표 동조 텍스트 출력부 (상충 완벽 해결!)]
-            # ==================================================================
             if final_code == "SQUEEZE_BREAKOUT_ATTACK": sub_indicator_str = f"   - <b>스퀴즈 돌파 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 상방 폭발 -> <b>[매수 유효]</b> 과감한 본진 타진 진행"
             elif final_code == "NEW_HIGH_PULLBACK_BUY": sub_indicator_str = f"   - <b>신고가 지지 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 과감한 본진 타진 진행"
             elif final_code == "NEW_HIGH_BREAKOUT_WARNING": sub_indicator_str = f"   - <b>신고가 돌파 주의:</b> 5일선 이격 과다(과열) -> <b>[관망]</b> 5일선 눌림목까지 추격 매수 차단"
@@ -1260,7 +1210,6 @@ if symbol:
                 elif bottom_score >= 1: _p_action = f"-> <b>[바닥 포착/대기]</b> 바닥 지표는 켜졌으나 제반 조건 미달"
                 else: _p_action = f"-> <b>[관망]</b> 지표 동조 미충족으로 안착 대기"
 
-                # 0/3점 텍스트 모순 해결부
                 _display_score = pullback_rebound_score if pullback_rebound_score >= 1 else bottom_score
                 _score_name = "눌림목" if pullback_rebound_score >= 1 else ("진바닥" if bottom_score >= 1 else "전환")
                 sub_indicator_str = f" - <b>{_score_name} 동조:</b> {_display_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
@@ -1268,40 +1217,34 @@ if symbol:
             bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1점)"
             
             # ==================================================================
-            # ★ [NEW! 윗꼬리 및 캔들 정밀 판독 결과로 추세 브리핑 덮어쓰기]
+            # ★ [수술 완료]: 3번 구역 앵무새 대본의 썩은 잣대(`p_chg < 0`)를 `p < today_open`으로 완벽 교체!
             # ==================================================================
             if is_candle_unknown:
-                pass  # API 지연 시 기존 이평선 추세 팩트 유지
+                pass  
             elif is_doji_candle:
                 trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
             elif is_defended:
-                # 💡 [NEW] 눈에 띄는 유의미한 아래꼬리가 있는지 판별 (몸통의 30% 이상이거나 전체 진폭의 20% 이상일 때만 인정!)
                 has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
 
-                # 1. 꼬리 없이 몸통만으로 상승한 경우 (진짜 불기둥/견고한 양봉)
                 if is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
                     trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}(상승률 {p_chg:+.2f}%)을(를) 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
-                
-                # 2. 마이너스(-) 하락 중인데 버티는 경우
                 elif p_chg < 0:
                     if has_meaningful_lower_tail:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 길게 달며 필사적으로 방어선을 치고 있소! 아직 안심하긴 이르나 투매는 멈춘 듯하네."
                     else:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 지지 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, {candle_color_txt} 형태로 버티며 추가 하락을 방어하고 있소."
-                
-                # 3. 플러스(+) 상승 전환 (정석 방어 또는 일반 상승)
                 else:
                     if has_meaningful_lower_tail:
                         trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt}이(가) 출현했소! 바닥권에서 누군가 물량을 걷어 올리며 매수 방어선을 쳤네."
                     else:
                         trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {candle_color_txt}이(가) 출현했소! 매수세가 든든하게 방어선을 구축하며 반등의 불씨를 살렸네."
             elif is_long_upper_tail:
-                if is_candle_bearish: # [신규 이식] 파란 음봉으로 밀릴 때
+                if p < today_open: # 💡 [수술 완료] 어제 종가(-1%) 기준이 아니라 진짜 오늘 시가 기준 음봉일 때만 출력!
                     if p >= ma5_val:
                         trend_status = f"⚠️ <b style='color:#F57C00;'>[장중 차익 매물 출회 / 5일선 사수]</b> 시가에서부터 파란 음봉으로 쫙 밀리며 매물이 쏟아지고 있으나, 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
                     else:
                         trend_status = f"🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 투매 거셈]</b> 시가에서부터 파란 음봉으로 강하게 밀리며 5일선 생명선마저 위태롭소. 상승 시도마다 매물 폭탄을 맞고 있으니 즉각 관망 모드로 전환하시게."
-                else: # 양봉일 때 (기존 윗꼬리 멘트 유지)
+                else: # 양봉일 때
                     if p >= ma5_val:
                         trend_status = f"⚠️ <b style='color:#F57C00;'>[고점 매물 저항 / 5일선 사수]</b> 윗꼬리를 길게 달았으나 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
                     else:
@@ -1317,7 +1260,6 @@ if symbol:
                         "🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 5일선 위태]</b> 이평선 배열상으론 반등 초입처럼 보이나, "
                         "당일 하방 압력이 거세져 5일선 생명선이 붕괴될 위기요! 섣부른 희망 회로를 접고 즉각 관망 모드로 전환하시게."
                     )
-            # ------------------------------------------------------------------
 
             indicator_verify_text = (
                 f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b><br> {trend_status}<br>• <b>[지표 검증 연산]</b><br>"
@@ -1351,9 +1293,6 @@ if symbol:
                 else:
                     holder_guide_msg = f" • <b>[손실권 보유자 (평단가: {user_avg_price:{fmt_p}}{currency} / 손실률: {profit_rate:.2f}%)]</b><br> • <b>단기 생명선:</b> 5일선 지지 확인.<br> • <b>최후 방어선:</b> 바닥권 전저점({stop_loss_price:{fmt_p}}{currency}) 이탈 시 미련 없이 전량 칼손절 후퇴."
 
-            # ==================================================================
-            # ★ 1. 단기 생명선(5일선) 사수 문구 생성기 (십자형 예외 추가)
-            # ==================================================================
             if is_peak_dumping: 
                 ma5_guide_text = f"🚨 <b>[비상 탈출] 고점 윗꼬리 투매 발생!</b> 상단에서 대량 차익 매물이 쏟아지고 있소. 5일선({ma5_val:{fmt_p}}{currency}) 믿고 버티다간 다 토해내니 <b>즉시 전량 익절</b>하시게!"
             elif final_code == "DOJI_TOP_WARNING":
@@ -1402,9 +1341,6 @@ if symbol:
                 elif final_code == "BREAK_MA20_CONFIRMED": ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 20일선 및 5일선 위 안착에 성공하며 기민한 돌파 매수 타점을 형성 중이오."
                 else: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착하여 단기 전투선 유지 중이오."
 
-            # ==================================================================
-            # ★ 2. 성벽 사수 및 공방 확인 문구 생성기
-            # ==================================================================
             if is_peak_dumping: 
                 def_status = f"🚨 <b>[고점 폭탄 투하]</b> 성벽({defense_line:{fmt_p}}{currency})은 뚫었으나 대량 매도 폭탄이 떨어졌소! 상방 랠리가 취소되었으니 당장 도망치시게."
             elif final_code == "LONG_TAIL_WARNING":
@@ -1484,9 +1420,6 @@ if symbol:
 
             st.divider()
 
-            # ==================================================================
-            # ★ 하단 4대 핵심 지표 박스 (십자형(Doji) 갈라치기 패치 적용)
-            # ==================================================================
             i1, i2, i3, i4 = st.columns(4)
             with i1:
                 if final_code == "STOP_LOSS_ALERT" or is_massive_dump:
@@ -1597,7 +1530,7 @@ if symbol:
                     if rsi_is_up:
                         r_status = "<b>📈 적정 온도 (온기 유입)</b><br>• <b>역할:</b> 상승 탄력 및 눌림목 반등.<br>• <b>진단:</b> 매수 온도가 따뜻해지며 위로 고개를 틀었소! 긍정적인 방향 전환이 기대되오."
                     elif rsi_is_down:
-                        r_status = "<b>📉 적정 온도 (냉기 유입)</b><br>• <b>역할:</b> 하방 압력 및 추세 이탈 경계.<br>• <b>진단:</b> 매수세가 식어가며 아래로 꺾였소. 지지선을 위협할 수 있으니 섣부른 진입을 삼가시게."
+                        r_status = "<b>📉 적정 온도 (냉기 유입)</b><br>• <b>역할:</b> 하방 압력 및 추세 이탈 경계.<br>• <b>진단:</b> 매수세가 식어가며 아래로 꺾겼소. 지지선을 위협할 수 있으니 섣부른 진입을 삼가시게."
                     else:
                         r_status = "<b>⚖ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> 에너지 충전 중. 보조지표 고개 돌림을 주시하시게."
                         
