@@ -469,6 +469,8 @@ if symbol:
             lower_tail_len = min(today_open, p) - today_low
             body_len = abs(p - today_open)
 
+            # 💡 [NEW] 색맹 치료: 완벽하게 수정된 장부에서 '진짜 시가'를 다시 꺼내옵니다!
+            today_open = float(df["Open"].iloc[-1])
             is_candle_bullish = p > today_open
             is_candle_bearish = p < today_open  # 팩트 기반 음봉 판독
             
