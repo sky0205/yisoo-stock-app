@@ -397,6 +397,8 @@ if symbol:
                 prev_p = float(us_prev_p)
             if clean_symbol.isdigit() and real_kr_open == 0:
                 try:
+                    import requests
+                    from bs4 import BeautifulSoup
                     url_ohlc = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
                     res_ohlc = requests.get(url_ohlc, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
                     soup_ohlc = BeautifulSoup(res_ohlc.text, "html.parser")
