@@ -255,6 +255,9 @@ if symbol:
         us_prev_p = None
         start_dt_str = start_date.strftime("%Y-%m-%d") 
 
+        # 실시간 시/고/저가 안전 변수 사전 초기화 (에러 원천 방지)
+        real_kr_open, real_kr_high, real_kr_low = 0.0, 0.0, 0.0
+
         # ★ v36103 기반: 오리지널 실시간 갱신 통신망
         if is_kr:
             currency, fmt_p = "원", ",.0f"
@@ -273,7 +276,6 @@ if symbol:
                     pass
 
             kr_fetched = False
-            real_kr_open, real_kr_high, real_kr_low = 0.0, 0.0, 0.0 # [NEW] 실시간 시/고/저가 변수 생성
             try:
                 api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -282,9 +284,9 @@ if symbol:
                     data = res.json()
                     auto_p = float(str(data["closePrice"]).replace(",", ""))
                     v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
-                    real_kr_open = float(str(data["openPrice"]).replace(",", "")) # [NEW] 시가 확보
-                    real_kr_high = float(str(data["highPrice"]).replace(",", "")) # [NEW] 고가 확보
-                    real_kr_low = float(str(data["lowPrice"]).replace(",", ""))   # [NEW] 저가 확보
+                    real_kr_open = float(str(data["openPrice"]).replace(",", "")) # 시가 확보
+                    real_kr_high = float(str(data["highPrice"]).replace(",", "")) # 고가 확보
+                    real_kr_low = float(str(data["lowPrice"]).replace(",", ""))   # 저가 확보
                     kr_fetched = True
             except Exception:
                 pass
@@ -296,6 +298,9 @@ if symbol:
                     soup = BeautifulSoup(res.text, "html.parser")
                     auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
                     v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+                    real_kr_open = float(soup.select(".no_info .blind")[4].text.replace(",", ""))
+                    real_kr_high = float(soup.select(".no_info .blind")[1].text.replace(",", ""))
+                    real_kr_low = float(soup.select(".no_info .blind")[5].text.replace(",", ""))
                     if not df.empty:
                         _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
                         if _avg_v > 0 and v_curr > _avg_v * 10:
@@ -396,7 +401,7 @@ if symbol:
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
                 df.loc[today_date, "Volume"] = v_curr
-                if is_kr and real_kr_open > 0: # [NEW] 실시간 통신망 데이터가 있다면 덮어쓰기!
+                if is_kr and real_kr_open > 0:
                     df.loc[today_date, "Open"] = real_kr_open
                     df.loc[today_date, "High"] = max(real_kr_high, p)
                     df.loc[today_date, "Low"] = min(real_kr_low, p)
@@ -404,7 +409,7 @@ if symbol:
                     if p > df.loc[today_date, "High"]: df.loc[today_date, "High"] = p
                     if p < df.loc[today_date, "Low"]: df.loc[today_date, "Low"] = p
             else:
-                if is_kr and real_kr_open > 0: # [NEW] 장부가 없을 때도 실시간 데이터로 생성!
+                if is_kr and real_kr_open > 0:
                     new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p)], "Close": [p], "Volume": [v_curr]}, index=[today_date])
                 else:
                     new_row = pd.DataFrame({"Open": [p], "High": [p], "Low": [p], "Close": [p], "Volume": [v_curr]}, index=[today_date])
@@ -448,46 +453,41 @@ if symbol:
             lower_tail_len = min(today_open, p) - today_low
             body_len = abs(p - today_open)
 
-            is_candle_bullish = p > today_open
-            is_candle_bearish = p < today_open  # 팩트 기반 음봉 판독
+            # 💡 [핵심 수정]: 시가 대비 현재가 비교를 절대 기준(p >= today_open)으로 통일!
+            is_candle_bullish = p >= today_open
+            is_candle_bearish = p < today_open  
             
-            # ★ [NEW] 캔들 색깔 실시간 감지 센서 (API 지연 시 억지 양봉 오류 차단)
+            # ★ 캔들 색깔 판독 센서
             if p > today_open:
                 candle_color_txt = "양봉"
             elif p < today_open:
                 candle_color_txt = "음봉"
             else:
-                # 시가 데이터가 누락되어 현재가와 같아졌을 때, 전일 대비 마이너스면 얄짤없이 음봉 처리!
                 candle_color_txt = "음봉" if p_chg < 0 else "양봉"
 
-            # --- [NEW! 십자형(Doji) 캔들 판독 센서 추가] ---
-            # 시가와 종가 차이가 그날 전체 변동폭의 10% 미만이면서 위아래 꼬리가 달렸을 때 십자형으로 인정
+            # --- [십자형(Doji) 캔들 판독 센서] ---
             is_doji_candle = (body_len <= (day_candle_range * 0.10)) and (day_candle_range > 0.01) and (upper_tail_len > 0) and (lower_tail_len > 0)
 
             # 2. 꼬리 비율을 통한 정밀 형태 판독
             if is_pre_market_mode or is_api_delayed:
                 is_long_upper_tail = False
-                is_defended = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
+                is_defended = (p >= today_open)      
+                is_candle_bearish = (p < today_open) 
                 is_candle_unknown = True
                 is_strong_bull_body = False
-                is_doji_candle = False # API 지연 시 십자형 판독 보류
+                is_doji_candle = False 
             else:
-                # 십자형(Doji)일 때는 단순 윗꼬리로 인한 칼날 경고(is_long_upper_tail) 발동을 억제!
                 if is_doji_candle:
                     is_long_upper_tail = False
                 else:
                     is_long_upper_tail = (upper_tail_len > lower_tail_len) and (upper_tail_len > body_len) and (upper_tail_len >= day_candle_range * 0.3)
                 
-                # 💡 [핵심 분리] 꼬리 방어 vs 몸통 팽창
                 is_tail_defended = (lower_tail_len > upper_tail_len)
                 is_strong_bull_body = (p_chg >= 2.0) or (body_len > upper_tail_len * 1.5)
                 
-                # 둘 중 하나라도 만족하면 방어 성공 (신호등 초록불 프리패스)
                 is_defended = is_candle_bullish and (is_tail_defended or is_strong_bull_body)
                 is_candle_unknown = False
 
-            # 호환성을 위한 기존 변수 유지
             is_pure_bullish_candle = p >= today_open
             is_bottom_lower_tail = ((lower_tail_len >= day_candle_range * 0.35) or (lower_tail_len >= body_len * 1.0)) and (p_chg >= -1.5)
             is_valid_bottom_candle = (is_pure_bullish_candle or is_bottom_lower_tail) and (not is_down_trend_v)
@@ -563,10 +563,8 @@ if symbol:
             lookback_days = min(250, len(df) - 1) if len(df) > 1 else 1
             high_250 = float(df["High"].iloc[-lookback_days:-1].max()) if lookback_days > 1 else today_high
             
-            # 돌파 당일 추격 금지 조건 (2% 이상 급등하며 신고가 갱신, 5일선 이격 3% 이상 과열)
             is_new_high_breakout = (p > high_250) and (p_chg >= 2.0) and (bias_ma5 >= 3.0)
             
-            # 신고가 첫 눌림목 과감한 진입 조건 (최근 10일 내 신고가 터치 이력, 현재 5일선에 예쁘게 눌림)
             recent_high_10 = float(df["High"].iloc[-min(10, len(df)):-1].max()) if len(df) > 1 else today_high
             has_recent_new_high = (recent_high_10 >= high_250) and (high_250 > 0)
             is_new_high_pullback = has_recent_new_high and is_ma5_safe and (-1.0 <= bias_ma5 <= 2.5) and not is_candle_bearish and not (ma5_val < mid_line and mid_line < ma60_val)
@@ -781,7 +779,7 @@ if symbol:
                 f" <span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
             )
             ma_price_summary += generate_ma_hierarchy(df, p)
-            
+              
             # ==================================================================
             # ★ 종목명 통합 해독기 호출
             # ==================================================================
@@ -1015,15 +1013,15 @@ if symbol:
                     final_code = "RED_SELL_WARNING"
                     sig = "🔴 [성벽 위 음봉] 가짜 돌파(페이크) 경계 및 리스크 관리"
                     col = "#D32F2F"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가짜 돌파 경계]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 음봉을 띄우며 차익 매물을 쏟아내고 있소! 섣부른 추격 매수를 삼가고 방어선 붕괴 여부를 확인하시게."
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가짜 돌파 경계]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 음봉을 띄우며 차익 매물을 쏟아지고 있소! 섣부른 추격 매수를 삼가고 방어선 붕괴 여부를 확인하시게."
                     
-                elif p >= ma5_val:  # [핵심 수술 부위] 성벽 위이면서 동시에 5일선 위에 있을 때만 랠리 인정!
+                elif p >= ma5_val:  
                     final_code = "BREAKOUT_ATTACK"
                     sig = f"🟢 [성벽 위 {candle_color_txt}] 기세 유지 랠리 추종"
                     col = "#2E7D32"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[기세 유지 랠리 추종]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 뿜어내고 있소! 5일선을 사수하며 위로 밀어 올리는 세력의 힘을 믿고 상방 목표선까지 추세를 끝까지 발라먹도록 하시게."
             
-                else:  # [신규 추가 방어벽] 성벽 위이긴 하나 5일선 아래로 깨졌을 때 (넷플릭스 사태 방지용)
+                else:  
                     final_code = "BREAKOUT_WARNING"
                     sig = "⚠️ [성벽 위 턱걸이] 5일선 이탈 경계"
                     col = "#F57C00"
@@ -1244,42 +1242,37 @@ if symbol:
             bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1점)"
             
             # ==================================================================
-            # ★ [NEW! 윗꼬리 및 캔들 정밀 판독 결과로 추세 브리핑 덮어쓰기]
+            # ★ [수정 완료]: 양봉/음봉 조건과 시가 비교를 원본 구조 그대로 방어
             # ==================================================================
             if is_candle_unknown:
                 pass  # API 지연 시 기존 이평선 추세 팩트 유지
             elif is_doji_candle:
                 trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
             elif is_defended:
-                # 💡 [NEW] 눈에 띄는 유의미한 아래꼬리가 있는지 판별 (몸통의 30% 이상이거나 전체 진폭의 20% 이상일 때만 인정!)
                 has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
 
-                # 1. 꼬리 없이 몸통만으로 상승한 경우 (진짜 불기둥/견고한 양봉)
                 if is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
                     trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}(상승률 {p_chg:+.2f}%)을(를) 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
-                
-                # 2. 마이너스(-) 하락 중인데 버티는 경우
                 elif p_chg < 0:
                     if has_meaningful_lower_tail:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 길게 달며 필사적으로 방어선을 치고 있소! 아직 안심하긴 이르나 투매는 멈춘 듯하네."
                     else:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 지지 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, {candle_color_txt} 형태로 버티며 추가 하락을 방어하고 있소."
-                
-                # 3. 플러스(+) 상승 전환 (정석 방어 또는 일반 상승)
                 else:
                     if has_meaningful_lower_tail:
                         trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt}이(가) 출현했소! 바닥권에서 누군가 물량을 걷어 올리며 매수 방어선을 쳤네."
                     else:
                         trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {candle_color_txt}이(가) 출현했소! 매수세가 든든하게 방어선을 구축하며 반등의 불씨를 살렸네."
             elif is_long_upper_tail:
-                if is_candle_bearish: # [신규 이식] 파란 음봉으로 밀릴 때
+                # 💡 [핵심 교체]: 현재가가 시가보다 낮을 때(진짜 음봉)만 음봉 멘트 출력! 양봉일 때는 절대 음봉 타령 금지!
+                if is_candle_bearish: 
                     if p >= ma5_val:
                         trend_status = f"⚠️ <b style='color:#F57C00;'>[장중 차익 매물 출회 / 5일선 사수]</b> 시가에서부터 파란 음봉으로 쫙 밀리며 매물이 쏟아지고 있으나, 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
                     else:
                         trend_status = f"🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 투매 거셈]</b> 시가에서부터 파란 음봉으로 강하게 밀리며 5일선 생명선마저 위태롭소. 상승 시도마다 매물 폭탄을 맞고 있으니 즉각 관망 모드로 전환하시게."
-                else: # 양봉일 때 (기존 윗꼬리 멘트 유지)
+                else: # 양봉일 때
                     if p >= ma5_val:
-                        trend_status = f"⚠️ <b style='color:#F57C00;'>[고점 매물 저항 / 5일선 사수]</b> 윗꼬리를 길게 달았으나 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
+                        trend_status = f"⚠️ <b style='color:#F57C00;'>[고점 매물 저항 / 5일선 사수]</b> 윗꼬리를 길게 달았으나 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 보수적으로 대응하시게."
                     else:
                         trend_status = f"🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 압력 거셈]</b> 윗꼬리를 길게 달고 하방 압력이 거세어 5일선 생명선 회복이 위태롭소. 즉각 관망 모드로 전환하시게."
             elif final_code in ["RED_SELL_WARNING", "SELL_PROFIT_TAKE", "LONG_TAIL_WARNING", "STOP_LOSS_ALERT"]:
