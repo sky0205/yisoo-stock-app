@@ -467,7 +467,8 @@ if symbol:
 
             # --- [십자형(Doji) 캔들 판독 센서] ---
             # 아래꼬리가 전체 진폭의 3% 이상은 되어야 진짜 도지로 인정! (시가=저가인 노하단 꼬리 양봉 완벽 차단)
-            is_doji_candle = (body_len <= (day_candle_range * 0.10)) and (day_candle_range > 0.01) and (upper_tail_len > day_candle_range * 0.03) and (lower_tail_len > day_candle_range * 0.03)
+            # 위아래 꼬리가 모두 진폭의 5% 이상으로 넉넉하게 달려야만 진짜 십자형(Doji)으로 인정하고, 아래꼬리가 없는 시가 출발 양봉은 도지에서 완벽 제외!
+is_doji_candle = (body_len <= (day_candle_range * 0.10)) and (day_candle_range > 0.01) and (upper_tail_len >= day_candle_range * 0.05) and (lower_tail_len >= day_candle_range * 0.05)
             # 2. 꼬리 비율을 통한 정밀 형태 판독
             if is_pre_market_mode or is_api_delayed:
                 is_long_upper_tail = False
