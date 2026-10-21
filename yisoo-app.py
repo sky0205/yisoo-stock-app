@@ -406,11 +406,12 @@ if symbol:
                     from bs4 import BeautifulSoup
                     _res = requests.get(f"https://finance.naver.com/item/main.naver?code={_code}", headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
                     _soup = BeautifulSoup(_res.text, "html.parser")
-                    _info = _soup.select(".no_info .blind")
-                    if len(_info) >= 6:
-                        real_kr_open = float(_info[4].text.replace(",", ""))
-                        real_kr_high = float(_info[1].text.replace(",", ""))
-                        real_kr_low = float(_info[5].text.replace(",", ""))
+                    
+                    # 💡 [수술 핵심] 칸 순서 꼼수를 박살내는 무적의 텍스트 추적기!
+                    for _dd in _soup.select("dl.blind dd"):
+                        if _dd.text.startswith("시가 "): real_kr_open = float(_dd.text.split(" ")[1].replace(",", ""))
+                        elif _dd.text.startswith("고가 "): real_kr_high = float(_dd.text.split(" ")[1].replace(",", ""))
+                        elif _dd.text.startswith("저가 "): real_kr_low = float(_dd.text.split(" ")[1].replace(",", ""))
                 except:
                     pass
 
