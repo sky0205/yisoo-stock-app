@@ -407,11 +407,11 @@ if symbol:
                     _res = requests.get(f"https://finance.naver.com/item/main.naver?code={_code}", headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
                     _soup = BeautifulSoup(_res.text, "html.parser")
                     
-                    # 💡 [수술 핵심] 칸 순서 꼼수를 박살내는 무적의 텍스트 추적기!
+                    # 💡 [최종 쐐기] 투명 공백 꼼수 박살! 묻지도 따지지도 않고 글자에서 숫자만 추출!
                     for _dd in _soup.select("dl.blind dd"):
-                        if _dd.text.startswith("시가 "): real_kr_open = float(_dd.text.split(" ")[1].replace(",", ""))
-                        elif _dd.text.startswith("고가 "): real_kr_high = float(_dd.text.split(" ")[1].replace(",", ""))
-                        elif _dd.text.startswith("저가 "): real_kr_low = float(_dd.text.split(" ")[1].replace(",", ""))
+                        if "시가" in _dd.text: real_kr_open = float("".join([c for c in _dd.text if c.isdigit()]))
+                        elif "고가" in _dd.text: real_kr_high = float("".join([c for c in _dd.text if c.isdigit()]))
+                        elif "저가" in _dd.text: real_kr_low = float("".join([c for c in _dd.text if c.isdigit()]))
                 except:
                     pass
 
