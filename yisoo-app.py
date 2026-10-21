@@ -395,7 +395,16 @@ if symbol:
             prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
             if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
                 prev_p = float(us_prev_p)
-
+            if clean_symbol.isdigit() and real_kr_open == 0:
+                try:
+                    url_ohlc = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
+                    res_ohlc = requests.get(url_ohlc, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
+                    soup_ohlc = BeautifulSoup(res_ohlc.text, "html.parser")
+                    real_kr_open = float(soup_ohlc.select(".no_info .blind")[4].text.replace(",", ""))
+                    real_kr_high = float(soup_ohlc.select(".no_info .blind")[1].text.replace(",", ""))
+                    real_kr_low = float(soup_ohlc.select(".no_info .blind")[5].text.replace(",", ""))
+                except:
+                    pass
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
                 df.loc[today_date, "Volume"] = v_curr
