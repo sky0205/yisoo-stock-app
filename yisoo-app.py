@@ -1358,7 +1358,7 @@ if symbol:
                 if is_pre_market_mode: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 있소! 정규장 개장 후 지지 사수를 확인하시게."
                 elif vol_strength < 65: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으나 수급이 마른 상태이오. 추격을 금하고 관망하시게."
                 elif final_code == "DOJI_MID_WAIT": ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, 십자 공방전 중이오. 내일 십자 고가 돌파(안착 확정)를 기다리시게."
-                elif is_candle_bearish: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, 당일 파란 음봉으로 밀리며 조정 중이오. 5일선 지지 사수 확인 후 대응하시게."
+                elif p < today_open: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, 시가 대비 파란 음봉으로 밀리며 조정 중이오. 5일선 지지 사수 확인 후 대응하시게."
                 elif p_chg < 0: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 있으나, 전일 대비 하락 속 붉은 양봉 형태로 방어하고 있소. 5일선 지지 사수 확인 후 대응하시게."
                 elif is_down_trend_v: ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착해 상승 중이나, 단기 추세가 하방 압력을 받으며 조정 중이오. 5일선 지지 사수 확인 후 대응하시게."
                 elif final_code == "WAIT_NARROW_MARGIN": ma5_guide_text = f"현재가({p:{fmt_p}}{currency})가 5일선({ma5_val:{fmt_p}}{currency}) 위에 안착했으나, 상승 여력이 너무 좁아 뇌동매매를 강제 차단 중이오."
