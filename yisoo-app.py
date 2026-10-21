@@ -998,7 +998,7 @@ if symbol:
                     final_code = "RED_SELL_WARNING"
                     sig = "🔴 [성벽 위 음봉] 가짜 돌파(페이크) 경계 및 리스크 관리"
                     col = "#D32F2F"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가짜 돌파 경계]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 음봉을 띄우며 차익 매물을 쏟아내고 있소! 섣부른 추격 매수를 삼가고 방어선 붕괴 여부를 확인하시게."
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가짜 돌파 경계]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 음봉을 띄우며 차익 매물을 쏟아지고 있소! 섣부른 추격 매수를 삼가고 방어선 붕괴 여부를 확인하시게."
                     
                 elif p >= ma5_val:  
                     final_code = "BREAKOUT_ATTACK"
@@ -1214,11 +1214,8 @@ if symbol:
                 _score_name = "눌림목" if pullback_rebound_score >= 1 else ("진바닥" if bottom_score >= 1 else "전환")
                 sub_indicator_str = f" - <b>{_score_name} 동조:</b> {_display_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
 
-            bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1점)"
-            
-            # ==================================================================
-            # ★ [수술 완료]: 3번 구역 앵무새 대본의 썩은 잣대(`p_chg < 0`)를 `p < today_open`으로 완벽 교체!
-            # ==================================================================
+            bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1.0점)"
+
             if is_candle_unknown:
                 pass  
             elif is_doji_candle:
@@ -1239,12 +1236,12 @@ if symbol:
                     else:
                         trend_status = f"📈 <b style='color:#388E3C;'>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {candle_color_txt}이(가) 출현했소! 매수세가 든든하게 방어선을 구축하며 반등의 불씨를 살렸네."
             elif is_long_upper_tail:
-                if p < today_open: # 💡 [수술 완료] 어제 종가(-1%) 기준이 아니라 진짜 오늘 시가 기준 음봉일 때만 출력!
+                if p < today_open: 
                     if p >= ma5_val:
                         trend_status = f"⚠️ <b style='color:#F57C00;'>[장중 차익 매물 출회 / 5일선 사수]</b> 시가에서부터 파란 음봉으로 쫙 밀리며 매물이 쏟아지고 있으나, 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
                     else:
                         trend_status = f"🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 투매 거셈]</b> 시가에서부터 파란 음봉으로 강하게 밀리며 5일선 생명선마저 위태롭소. 상승 시도마다 매물 폭탄을 맞고 있으니 즉각 관망 모드로 전환하시게."
-                else: # 양봉일 때
+                else: 
                     if p >= ma5_val:
                         trend_status = f"⚠️ <b style='color:#F57C00;'>[고점 매물 저항 / 5일선 사수]</b> 윗꼬리를 길게 달았으나 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
                     else:
@@ -1530,7 +1527,7 @@ if symbol:
                     if rsi_is_up:
                         r_status = "<b>📈 적정 온도 (온기 유입)</b><br>• <b>역할:</b> 상승 탄력 및 눌림목 반등.<br>• <b>진단:</b> 매수 온도가 따뜻해지며 위로 고개를 틀었소! 긍정적인 방향 전환이 기대되오."
                     elif rsi_is_down:
-                        r_status = "<b>📉 적정 온도 (냉기 유입)</b><br>• <b>역할:</b> 하방 압력 및 추세 이탈 경계.<br>• <b>진단:</b> 매수세가 식어가며 아래로 꺾겼소. 지지선을 위협할 수 있으니 섣부른 진입을 삼가시게."
+                        r_status = "<b>📉 적정 온도 (냉기 유입)</b><br>• <b>역할:</b> 하방 압력 및 추세 이탈 경계.<br>• <b>진단:</b> 매수세가 식어가며 아래로 꺾였소. 지지선을 위협할 수 있으니 섣부른 진입을 삼가시게."
                     else:
                         r_status = "<b>⚖ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> 에너지 충전 중. 보조지표 고개 돌림을 주시하시게."
                         
