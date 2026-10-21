@@ -466,8 +466,14 @@ if symbol:
                 candle_color_txt = "음봉" if p_chg < 0 else "양봉"
 
             # --- [십자형(Doji) 캔들 판독 센서] ---
-            # 도지는 오직 음봉이거나 시가 아래로 밀렸을 때만 판독하고, 시가 위에서 출발한 양봉은 절대 도지 판독 불가!
-            is_doji_candle = (p <= today_open) and (body_len <= (day_candle_range * 0.10)) and (day_candle_range > 0.01) and (upper_tail_len >= day_candle_range * 0.05) and (lower_tail_len >= day_candle_range * 0.10)
+            # 💡 [정확한 변수명 반영]: 당일 저가("Low")가 시가(today_open)보다 확실히 낮아서 아래꼬리가 형성된 경우에만 도지 검사 허용! (시가=저가면 도지 영구 차단)
+            is_doji_candle = (
+                (body_len <= (day_candle_range * 0.10)) and 
+                (day_candle_range > 0.01) and 
+                (upper_tail_len >= day_candle_range * 0.05) and 
+                (lower_tail_len >= day_candle_range * 0.10) and 
+                (today_open < df.loc[today_date, "Low"])  # 핵심: 시가보다 저가가 낮아야만 아래꼬리가 있는 진짜 공방으로 인정!
+            )
             # 2. 꼬리 비율을 통한 정밀 형태 판독
             if is_pre_market_mode or is_api_delayed:
                 is_long_upper_tail = False
