@@ -1335,9 +1335,12 @@ if symbol:
                 ma5_guide_text = f"⚠️ <b>[고점 상투 십자성]</b> 상승 에너지가 멈추고 십자성(Doji)이 떴소! 5일선 지지를 맹신하지 말고 언제든 던질 채비를 하시게."
             elif final_code == "LONG_TAIL_WARNING":
                 if p >= ma5_val:
-                    ma5_guide_text = f"⚠️ <b>[고점 매물 저항]</b> 현재가({p:{fmt_p}}{currency}) 위로 긴 꼬리가 생겼소! 5일선({ma5_val:{fmt_p}}{currency}) 위를 간신히 지키고 있으나 위쪽 매물이 맵사오니 추격 매수를 멈추고 보수적으로 대응하시게."
+                    ma5_guide_text = f"⚠️ <b>[고점 매물 저항]</b> 현재가({p:{fmt_p}}{currency}) 위로 긴 꼬리가 생겼소! 5일선({ma5_val:{fmt_p}}{currency}) 위를 간신히 지키고 있으나 위꼬리 매물이 무거우니 주의하시게."
+                elif p >= today_open:
+                    # 💡 [핵심 방어]: 5일선 아래에 있더라도 시가보다 높은 양봉이라면 파란 음봉/폭탄 타령 금지하고 정중한 저항 멘트로 갈음!
+                    ma5_guide_text = f"⚠️ <b>[고점 매물 저항]</b> 현재가({p:{fmt_p}}{currency})가 5일선 아래에 있으나 시가 대비 양봉으로 버티고 있소. 5일선 탈환 여부를 주시하시게."
                 else:
-                    ma5_guide_text = f"🚨 <b>[생명선 이탈/매물 폭탄]</b> 현재가({p:{fmt_p}}{currency}) 위로 긴 꼬리가 생기며 5일선({ma5_val:{fmt_p}}{currency}) 아래로 완전히 뚫려버렸소! 즉각 관망 모드로 전환하고 방어에 집중하시게."
+                    ma5_guide_text = f"🚨 <b>[생명선 이탈/매물 폭탄]</b> 현재가({p:{fmt_p}}{currency}) 위로 긴 꼬리가 생기며 5일선({ma5_val:{fmt_p}}{currency}) 아래로 완전히 미끄러졌소. 비중을 줄이고 리스크를 관리하시게."
             elif final_code == "NEW_HIGH_BREAKOUT_WARNING":
                 ma5_guide_text = f"🚨 <b>[신고가 불기둥 뇌동매매 차단]</b> 현재가({p:{fmt_p}}{currency})가 1년 최고점을 뚫었으나 5일선과의 이격이 과도하오! 추격을 멈추고 관망하시게."
             elif final_code == "NEW_HIGH_PULLBACK_BUY":
