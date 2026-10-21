@@ -296,6 +296,9 @@ if symbol:
                     soup = BeautifulSoup(res.text, "html.parser")
                     auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
                     v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+                    real_kr_open = float(soup.select(".no_info .blind")[4].text.replace(",", ""))
+                    real_kr_high = float(soup.select(".no_info .blind")[1].text.replace(",", ""))
+                    real_kr_low = float(soup.select(".no_info .blind")[5].text.replace(",", ""))
                     if not df.empty:
                         _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
                         if _avg_v > 0 and v_curr > _avg_v * 10:
