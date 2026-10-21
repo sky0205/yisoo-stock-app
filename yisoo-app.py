@@ -472,7 +472,7 @@ if symbol:
                 (day_candle_range > 0.01) and 
                 (upper_tail_len >= day_candle_range * 0.05) and 
                 (lower_tail_len >= day_candle_range * 0.10) and 
-                (today_open < df.loc[today_date, "Low"])  # 핵심: 시가보다 저가가 낮아야만 아래꼬리가 있는 진짜 공방으로 인정!
+                (today_open > df.loc[today_date, "Low"])  # 핵심: 시가보다 저가가 낮아야만 아래꼬리가 있는 진짜 공방으로 인정!
             )
             # 2. 꼬리 비율을 통한 정밀 형태 판독
             if is_pre_market_mode or is_api_delayed:
