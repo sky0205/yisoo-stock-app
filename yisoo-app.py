@@ -464,7 +464,11 @@ if symbol:
             body_len = abs(p - today_open)
 
             today_open = float(df["Open"].iloc[-1])
-            is_candle_bullish = p > today_open
+            
+            # ==================================================================
+            # ★ [수정 완료]: 음봉/양봉 판단의 절대 공식 단순화 및 완벽 고정
+            # ==================================================================
+            is_candle_bullish = p >= today_open
             is_candle_bearish = p < today_open  
             
             if p > today_open:
@@ -472,6 +476,7 @@ if symbol:
             elif p < today_open:
                 candle_color_txt = "음봉"
             else:
+                # 시가와 현재가가 완전히 같을 때만 전일 대비 등락으로 판단
                 candle_color_txt = "음봉" if p_chg < 0 else "양봉"
 
             is_doji_candle = (body_len <= (day_candle_range * 0.03)) and (day_candle_range > 0.01) and (upper_tail_len > 0) and (lower_tail_len > 0) and (upper_tail_len <= lower_tail_len * 1.5) and (lower_tail_len <= upper_tail_len * 1.5)
@@ -1214,7 +1219,7 @@ if symbol:
                 _score_name = "눌림목" if pullback_rebound_score >= 1 else ("진바닥" if bottom_score >= 1 else "전환")
                 sub_indicator_str = f" - <b>{_score_name} 동조:</b> {_display_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
 
-            bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1.0점)"
+            bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1점)"
 
             if is_candle_unknown:
                 pass  
