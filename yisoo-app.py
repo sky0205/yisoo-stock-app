@@ -179,8 +179,17 @@ def display_global_risk():
         else: market_mood = "미 3대 지수 혼조세 속 숨고르기 진행!"
 
         macro_alerts = []
-        if tnx_val >= 4.5: macro_alerts.append(f"🚨 [금리 발작] 국채 금리 {tnx_val:.3f}% 돌파!")
-        elif tnx_val <= 3.8: macro_alerts.append(f"🌱 [금리 안정] 국채 금리 {tnx_val:.3f}% 안정권 진입")
+        
+        # 💡 [핵심 수정]: 4.5% 이상 고금리 기준은 유지하되, 전일 대비 등락(tnx_chg)을 결합하여 입체적으로 판독!
+        if tnx_val >= 5.0: 
+            macro_alerts.append(f"🚨 [초고금리 발작] 국채 금리 {tnx_val:.3f}%! 5% 재돌파 초위험 구간!")
+        elif tnx_val >= 4.5:
+            if tnx_chg < 0:
+                macro_alerts.append(f"⛅ [고금리 진정] 국채 금리 {tnx_val:.3f}%. 4.5% 이상 고금리나 전일 대비 하락하며 한숨 돌림")
+            else:
+                macro_alerts.append(f"⚠️ [고금리 경계] 국채 금리 {tnx_val:.3f}%. 4.5% 이상 유지되며 상방 압력 지속!")
+        elif tnx_val <= 3.8: 
+            macro_alerts.append(f"🌱 [금리 안정] 국채 금리 {tnx_val:.3f}% 안정권 진입")
 
         if u_val >= 1450: macro_alerts.append(f"🚨 [환율 격랑] 원/달러 {u_val:,.2f}원! 초위험 고환율 비상!")
         elif u_val >= 1400: macro_alerts.append(f"⚠️ [환율 경계] 원/달러 {u_val:,.2f}원 1,400원대 고착화 압박!")
@@ -190,9 +199,18 @@ def display_global_risk():
         if u_chg > 0.3: macro_alerts.append(f"📈 오늘 환율 {u_chg:+.2f}% 치솟는 중!")
         elif u_chg < -0.3: macro_alerts.append(f"📉 오늘 환율 {u_chg:+.2f}% 진정세")
 
-        if tnx_val >= 4.5 or u_val >= 1380: strategy = "외인 수급 이탈 우려로 상단 저항이 강하니 추격매수 금지, 5일선 및 방어선 위주로 보수적 대응하시게."
-        elif avg_us_chg > 0.5 and tnx_val < 4.2 and u_val < 1350: strategy = "매크로 환경이 우호적이니 거래량 실린 정석 눌림목 주도주 위주로 적극 공략하시게."
-        else: strategy = "장 초반 뇌동매매를 삼가고 지표 동조와 5일선 안착 여부를 확인하며 기민하게 대응하시게."
+        # 💡 [전략 수정]: 고금리(4.5% 이상) 상황에서도 하락 중(진정세)인지 상승 중인지에 따라 가이드를 다르게 제시
+        if tnx_val >= 5.0 or u_val >= 1400: 
+            strategy = "초고금리와 환율 발작으로 외인 수급 이탈 우려가 큽니다. 추격매수를 멈추고 철저히 관망하시게."
+        elif tnx_val >= 4.5 or u_val >= 1380: 
+            if tnx_chg < 0:
+                strategy = "매크로 고점(금리 4.5%↑)이나 단기 하락 진정세가 나타나고 있소. 5일선 지지 확인 후 선별적으로 타진하시게."
+            else:
+                strategy = "매크로 상단 저항(고금리 4.5%↑)이 여전히 강하니 방어선 위주로 보수적 대응하시게."
+        elif avg_us_chg > 0.5 and tnx_val < 4.2 and u_val < 1350: 
+            strategy = "매크로 환경이 우호적이니 거래량 실린 정석 눌림목 주도주 위주로 적극 공략하시게."
+        else: 
+            strategy = "장 초반 뇌동매매를 삼가고 지표 동조와 5일선 안착 여부를 확인하며 기민하게 대응하시게."
 
         macro_text = " | ".join(macro_alerts) if macro_alerts else "매크로 특이 동향 없음"
         st.info(f"🧐 **이수 할배의 글로벌 판독:** {market_mood}!\n\n- {macro_text}\n- 💡 **[대응 전략]** {strategy}")
