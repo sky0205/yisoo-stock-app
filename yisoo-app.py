@@ -485,14 +485,26 @@ if symbol:
             else:
                 candle_color_txt = "음봉" if p_chg < 0 else "양봉"
 
-            # --- [십자형(Doji) 캔들 판독 센서] ---
-            # 💡 [핵심 수정]: 당일 저가("Low")가 시가(today_open)보다 확실히 낮아서 아래꼬리가 형성된 경우에만 도지 검사 허용! (부등호 방향 정상화)
+            # --- [십자형 (Doji) 캔들 판독 센서 종결 수술] ---
+            # 💡 [강제 해부 패치]: 오염된 기존 변수 무시! 콤마 완벽 제거 후 실시간 캔들 크기 강제 재계산
+            _doji_p = float(str(p).replace(',', ''))
+            _doji_o = float(str(today_open).replace(',', ''))
+            _doji_h = float(str(df.loc[today_date, "High"]).replace(',', ''))
+            _doji_l = float(str(df.loc[today_date, "Low"]).replace(',', ''))
+            
+            # 몸통과 진폭, 상하 꼬리 길이 절대값 계산
+            _doji_body = abs(_doji_p - _doji_o)
+            _doji_range = _doji_h - _doji_l
+            _doji_ut = _doji_h - max(_doji_p, _doji_o)
+            _doji_dt = min(_doji_p, _doji_o) - _doji_l
+
+            # 완벽한 십자형 판독 로직 가동
             is_doji_candle = (
-                (body_len <= (day_candle_range * 0.10)) and 
-                (day_candle_range > 0.01) and 
-                (upper_tail_len >= day_candle_range * 0.05) and 
-                (lower_tail_len >= day_candle_range * 0.10) and 
-                (today_open > df.loc[today_date, "Low"])  # 👈 [핵심 수정] 시가가 저가보다 커야(>) 아래꼬리가 있는 진짜 공방으로 인정!
+                (_doji_range > 0.01) and
+                (_doji_body <= (_doji_range * 0.10)) and  # 몸통이 전체 진폭의 10% 이하일 때만 도지로 인정
+                (_doji_ut >= (_doji_range * 0.05)) and
+                (_doji_dt >= (_doji_range * 0.10)) and
+                (_doji_o > _doji_l)
             )
             
             # 2. 꼬리 비율을 통한 정밀 형태 판독
