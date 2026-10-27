@@ -297,16 +297,20 @@ if symbol:
 
             kr_fetched = False
             try:
+                # 💡 [엔진 수술 1]: 네이버 모바일 API 봇 차단 회피용 헤더(User-Agent, Referer) 강력 위장!
                 api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
-                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Referer": "https://m.stock.naver.com/"
+                }
                 res = requests.get(api_url, headers=headers, timeout=3)
                 if res.status_code == 200:
                     data = res.json()
                     auto_p = float(str(data["closePrice"]).replace(",", ""))
                     v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
-                    real_kr_open = float(str(data["openPrice"]).replace(",", "")) # 시가 확보
-                    real_kr_high = float(str(data["highPrice"]).replace(",", "")) # 고가 확보
-                    real_kr_low = float(str(data["lowPrice"]).replace(",", ""))   # 저가 확보
+                    real_kr_open = float(str(data["openPrice"]).replace(",", ""))
+                    real_kr_high = float(str(data["highPrice"]).replace(",", ""))
+                    real_kr_low = float(str(data["lowPrice"]).replace(",", ""))
                     kr_fetched = True
             except Exception:
                 pass
@@ -314,21 +318,29 @@ if symbol:
             if not kr_fetched:
                 try:
                     url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
-                    res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
+                    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+                    res = requests.get(url, headers=headers, timeout=3)
                     soup = BeautifulSoup(res.text, "html.parser")
+                    
                     auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
                     v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
                     real_kr_open = float(soup.select(".no_info .blind")[4].text.replace(",", ""))
                     real_kr_high = float(soup.select(".no_info .blind")[1].text.replace(",", ""))
-                    real_kr_low = float(soup.select(".no_info .blind")[5].text.replace(",", ""))
+                    # 💡 [엔진 수술 2]: 인덱스 [5]는 하한가입니다! 저가가 위치한 [8]로 수정하여 에러 원천 차단
+                    real_kr_low = float(soup.select(".no_info .blind")[8].text.replace(",", "")) 
+                    
                     if not df.empty:
                         _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
                         if _avg_v > 0 and v_curr > _avg_v * 10:
                             v_curr = float(df["Volume"].iloc[-1])
                 except Exception:
+                    # 💡 [핵심 방어선]: 네이버가 꽉 막혀도 시가/고가/저가가 0이 되는 참사를 막고 야후(기본 장부)에서 강제 수혈!
                     if not df.empty:
                         auto_p = float(df["Close"].iloc[-1])
                         v_curr = float(df["Volume"].iloc[-1])
+                        real_kr_open = float(df["Open"].iloc[-1])
+                        real_kr_high = float(df["High"].iloc[-1])
+                        real_kr_low = float(df["Low"].iloc[-1])
         else:
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
