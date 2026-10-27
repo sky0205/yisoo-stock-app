@@ -1342,21 +1342,21 @@ if symbol:
                     else:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 지지 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, {candle_color_txt} 형태로 버티며 추가 하락을 방어하고 있소."
                 else:
-                    # 💡 [프로 모드 쐐기 패치]: 기존 변수 무시! 실시간 시가/저가 강제 추출 및 즉시 비교
-                    real_time_open = float(df["Open"].iloc[-1])
-                    real_time_low = float(df["Low"].iloc[-1])
+                    # 💡 [종결 패치]: 콤마(,) 찌꺼기 완벽 제거 후 실수(float)로 강제 변환하여 숫자 오류 원천 차단!
+                    current_p = float(str(p).replace(',', ''))
+                    current_open = float(str(today_open).replace(',', ''))
                     
-                    # 당일 시가보다 현재가(p)가 낮으면 무조건 '음봉', 아니면 '양봉'으로 절대 규칙 적용
-                    if p < real_time_open:
-                        real_txt = "음봉"
+                    # 칼같은 크기 비교
+                    if current_p < current_open:
+                        real_txt = "파란색 음봉"
                     else:
-                        real_txt = "양봉"
+                        real_txt = "빨간색 양봉"
     
-                    # 아래꼬리 조건 확인 및 문구 출력
-                    if has_meaningful_lower_tail and (real_time_open > real_time_low):
-                        trend_status = f"<b>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 달린 {real_txt}이(가) 출현했소!"
+                    # 💡 [추적 마커 적용]: 화면이 제대로 바뀌는지 확인하기 위해 문구를 '꼬리 지지 확인'으로 변경!
+                    if has_meaningful_lower_tail and (current_open > float(str(df.loc[today_date, "Low"]).replace(',', ''))):
+                        trend_status = f"<b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {real_txt} 출현!"
                     else:
-                        trend_status = f"<b>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {real_txt}이(가) 출현했소!"
+                        trend_status = f"<b>[방어선 구축 / 상승 전개]</b> 견고한 {real_txt} 출현!"
             elif is_long_upper_tail:
                 # 💡 [핵심 교체]: 현재가가 시가보다 낮을 때(진짜 음봉)만 음봉 멘트 출력! 양봉일 때는 절대 음봉 타령 금지!
                 if is_candle_bearish: 
