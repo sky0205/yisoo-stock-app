@@ -1342,11 +1342,14 @@ if symbol:
                     else:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 지지 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, {candle_color_txt} 형태로 버티며 추가 하락을 방어하고 있소."
                 else:
+                    # 💡 [핵심 패치]: 캔들이 양봉인지 음봉인지 실시간으로 정확히 판독
+                    candle_color_txt = "양봉" if p >= today_open else "음봉"
+    
                     # 💡 [핵심 방어]: 아래꼬리가 실제로 존재하고(시가 > 저가) 의미 있는 길이일 때만 아래꼬리 멘트 허용!
                     if has_meaningful_lower_tail and (today_open > df.loc[today_date, "Low"]):
-                        trend_status = f"📉 <b>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt}이(가) 출현했소! ..."
+                        trend_status = f"<b>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt}이(가) 출연했소!"
                     else:
-                        trend_status = f"📈 <b>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {candle_color_txt}이(가) 출현했소! ..."
+                        trend_status = f"<b>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {candle_color_txt}이(가) 출연했소!"
             elif is_long_upper_tail:
                 # 💡 [핵심 교체]: 현재가가 시가보다 낮을 때(진짜 음봉)만 음봉 멘트 출력! 양봉일 때는 절대 음봉 타령 금지!
                 if is_candle_bearish: 
