@@ -1342,14 +1342,21 @@ if symbol:
                     else:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 지지 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, {candle_color_txt} 형태로 버티며 추가 하락을 방어하고 있소."
                 else:
-                    # 💡 [정밀 쐐기 패치]: 변수에 의존하지 않고 실시간 장부(df)에서 시가를 강제로 뽑아와 직접 비교!
+                    # 💡 [프로 모드 쐐기 패치]: 기존 변수 무시! 실시간 시가/저가 강제 추출 및 즉시 비교
                     real_time_open = float(df["Open"].iloc[-1])
-                    real_txt = "음봉" if p < real_time_open else "양봉"
-    
-                    if has_meaningful_lower_tail and (real_time_open > float(df["Low"].iloc[-1])):
-                        trend_status = f"<b>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 달린 {real_txt}이(가) 출연했소!"
+                    real_time_low = float(df["Low"].iloc[-1])
+                    
+                    # 당일 시가보다 현재가(p)가 낮으면 무조건 '음봉', 아니면 '양봉'으로 절대 규칙 적용
+                    if p < real_time_open:
+                        real_txt = "음봉"
                     else:
-                        trend_status = f"<b>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {real_txt}이(가) 출연했소!"
+                        real_txt = "양봉"
+    
+                    # 아래꼬리 조건 확인 및 문구 출력
+                    if has_meaningful_lower_tail and (real_time_open > real_time_low):
+                        trend_status = f"<b>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 달린 {real_txt}이(가) 출현했소!"
+                    else:
+                        trend_status = f"<b>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {real_txt}이(가) 출현했소!"
             elif is_long_upper_tail:
                 # 💡 [핵심 교체]: 현재가가 시가보다 낮을 때(진짜 음봉)만 음봉 멘트 출력! 양봉일 때는 절대 음봉 타령 금지!
                 if is_candle_bearish: 
