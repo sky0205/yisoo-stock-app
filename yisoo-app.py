@@ -471,9 +471,11 @@ if symbol:
             # ==================================================================
             # ★ [NEW] 1. 캔들 정합성 검열 및 꼬리/십자형(Doji) 정밀 계산
             # ==================================================================
-            today_open = float(df["Open"].iloc[-1])
-            today_high = float(df["High"].iloc[-1])
-            today_low = float(df["Low"].iloc[-1])
+            # 💡 [뇌혈관 개통 패치]: 장부(df)에 적힌 진짜 실시간 데이터를 콤마 제거 후 판독기 변수에 강제로 덮어씌우기!
+            today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
+            today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
+            today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
+            p = float(str(df["Close"].iloc[-1]).replace(',', ''))
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
             
             day_candle_range = max(0.01, today_high - today_low)
