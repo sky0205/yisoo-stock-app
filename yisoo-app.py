@@ -1038,21 +1038,26 @@ if symbol:
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[고점 윗꼬 폭탄 포착]</b> 수확 목표선 부근에서 윗꼬리를 길게 달고 밀려 내려오고 있소! 세력의 대량 차익 실현이 시작되었으니 보유자는 즉시 전량 익절하시게."
             
             # --- [NEW! 십자형(Doji) 캔들 위치별 예외 처리 (최우선 판독)] ---
-            elif is_doji_candle and p >= target_price_100 * 0.98:
+            # 💡 [최종 이중 검문소]: 위에서 넘어온 도지(십자형) 신호가 가짜인지, 실시간 캔들 몸통 크기로 여기서 마지막으로 멱살을 잡고 검열합니다!
+            _real_body = abs(p - today_open)
+            _real_range = max(0.01, today_high - today_low)
+            strict_doji_check = is_doji_candle and (_real_body <= _real_range * 0.10) # 몸통이 전체 진폭의 10% 이하로 아주 얇을 때만 스피커 작동 허용!
+
+            elif strict_doji_check and p >= target_price_100 * 0.98:
                 final_code = "DOJI_TOP_WARNING"
                 sig = "🟠 [고점 십자성 경고] 상승 에너지 고갈! 상투 징후"
                 col = "#E65100"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[고점 십자 도지(Doji) 포착]</b> 볼린저 상단 부근에서 매수세와 매도세가 팽팽하게 비겼소! 이는 <b>상승 에너지가 고갈된 전형적인 고점 상투 징후</b>이니 섣부른 불타기를 엄금하고 1차 선제적 익절(매도)을 준비하시게."
-            elif is_doji_candle and p <= low_b * 1.05:
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[고점 십자 도지(Doji) 포착]</b> 볼린져 상단 부근에서 매수세와 매도세가 팽팽하게 비겼소!"
+            elif strict_doji_check and p <= low_b * 1.05:
                 final_code = "DOJI_BOTTOM_WAIT"
                 sig = "🟡 [바닥 십자성 포착] 하락 투매 방어 확인! (내일 돌파 대기)"
                 col = "#F57C00"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[바닥 십자 도지(Doji) 포착]</b> 지하실을 파고 내려가던 중 누군가 가격을 방어해내며 십자 캔트를 만들었소! 하락 투매가 멈춘 긍정적 징후이나 당일 진입은 도박이니, <b>내일 오늘 십자 캔들의 고가({today_high:{fmt_p}}{currency})를 돌파하면 1단계 정찰병을 투입할 채비</b>를 하시게."
-            elif is_doji_candle:
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[바닥 십자 도지(Doji) 포착]</b> 지하실을 파고 내려가던 중 누군가 가격을 방어해내며 십자형을 만들었소."
+            elif strict_doji_check:
                 final_code = "DOJI_MID_WAIT"
                 sig = "🟡 [추세 변곡 탐색] 십자형 공방전! 내일 승패를 확인하라"
                 col = "#F57C00"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[중간 지대 십자 도지(Doji) 포착]</b> 현재 매수세와 매도세가 50:50으로 피 터지게 싸우며 십자형을 만들었소. 당일 승패를 예단하는 것은 위험하니, <b>내일 오늘 고가({today_high:{fmt_p}}{currency}) 돌파 시 진단기 재확인, 저가({today_low:{fmt_p}}{currency}) 이탈 시 철수</b>라는 기준선을 잡고 오늘은 팝콘을 드시며 관망하시게."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[중간 지대 십자 도지(Doji) 포착]</b> 현재 매수세와 매도세가 50:50으로 피 터지게 싸우며 십자형을 만들었소. 당일 승패를 예단하는 것은 위험하니 관망하시게."
             # -------------------------------------------------------------
             
             elif (rsi_val >= 60 and rsi_val < rsi_prev) or (will_val >= -20 and will_val < will_prev):
