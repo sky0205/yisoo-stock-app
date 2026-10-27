@@ -508,12 +508,13 @@ if symbol:
             elif p < today_open: candle_color_txt = "음봉"
             else: candle_color_txt = "음봉" if p_chg < 0 else "양봉"
 
-            # 완벽한 십자형 판독 로직 가동
+            # 💡 [십자형(Doji) 판독 센서 철통 방어막 - 완벽 갈라치기 패치]
             is_doji_candle = (
                 (day_candle_range > 0.01) and
-                (body_len <= (day_candle_range * 0.10)) and  # 몸통이 전체 진폭의 10% 이하일 때만 도지로 인정
+                (body_len <= (day_candle_range * 0.03)) and  # 몸통이 전체 진폭의 3% 이하일 때만 진정한 도지로 인정
+                (p < today_open * 1.002) and                  # 붉은 양봉으로 확실히 올라간 캔들은 도지 판독에서 원천 제외!
                 (upper_tail_len >= (day_candle_range * 0.05)) and
-                (lower_tail_len >= (day_candle_range * 0.10)) and
+                (lower_tail_len >= (day_candle_range * 0.05)) and
                 (today_open > today_low)
             )
             
