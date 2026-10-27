@@ -978,6 +978,9 @@ if symbol:
             # ==================================================================
             # ★ [신호등 분기 논리: 칼날 이중 잠금장치 + 십자형(Doji) 갈라치기]
             # ==================================================================
+            # 💡 [NEW] 쿨타임 무력화용 강력 반등 센서 (양봉 & +2% 이상 상승 & 거래량 강도 100 이상)
+            is_strong_rebound = (p_chg >= 2.0) and (vol_strength >= 100) and (p >= today_open)
+            
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
@@ -999,7 +1002,7 @@ if symbol:
                 final_code = "DOJI_BOTTOM_WAIT"
                 sig = "🟡 [바닥 십자성 포착] 하락 투매 방어 확인! (내일 돌파 대기)"
                 col = "#F57C00"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[바닥 십자 도지(Doji) 포착]</b> 지하실을 파고 내려가던 중 누군가 가격을 방어해내며 십자 캔들을 만들었소! 하락 투매가 멈춘 긍정적 징후이나 당일 진입은 도박이니, <b>내일 오늘 십자 캔들의 고가({today_high:{fmt_p}}{currency})를 돌파하면 1단계 정찰병을 투입할 채비</b>를 하시게."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[바닥 십자 도지(Doji) 포착]</b> 지하실을 파고 내려가던 중 누군가 가격을 방어해내며 십자 캔트를 만들었소! 하락 투매가 멈춘 긍정적 징후이나 당일 진입은 도박이니, <b>내일 오늘 십자 캔들의 고가({today_high:{fmt_p}}{currency})를 돌파하면 1단계 정찰병을 투입할 채비</b>를 하시게."
             elif is_doji_candle:
                 final_code = "DOJI_MID_WAIT"
                 sig = "🟡 [추세 변곡 탐색] 십자형 공방전! 내일 승패를 확인하라"
@@ -1135,12 +1138,12 @@ if symbol:
                     col = "#D32F2F"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[떨어지는 칼날 경고]</b> 지표는 극한의 바닥이나, 하방 압력(음봉/윗꼬리)이 여전히 거세오! 섣부른 희망 회로를 접고 <b>방어선이 확인될 때까지</b> 즉각 관망 모드로 대기하시게."
                 else:
-                    # 💡 [핵심] 최근 3일 내 신호 발생 시 쿨타임 발동!
-                    if recent_bottom_entry_flag:
+                    # 💡 [핵심] 쿨타임 무력화 적용 (강한 반등 시 쿨타임 무시하고 진입 허용)
+                    if recent_bottom_entry_flag and not is_strong_rebound:
                         final_code = "WAIT_COOL_TIME"
                         col = "#F57C00"
                         sig = "🟡 [관망/보류] 1단계 진입 쿨타임 가동 중 (중복 노이즈 차단)"
-                        final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 극한 진바닥 지표가 떴으나, <b>최근 3일 내에 이미 1차 진입 신호가 나간 이력</b>이 있소! 횡보장 노이즈일 확률이 높으니 섣부른 중복 입질을 엄금하고 5일선 돌파 전까지 관망하시게."
+                        final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 극한 진바닥 지표가 떴으나, <b>최근 3일 내에 이미 1차 진입 신호가 나간 이력</b>이 있소! 잔노이즈일 확률이 높으니 섣부른 중복 입질을 엄금하고 관망하시게."
                     else:
                         final_code = "EXTREME_BOTTOM_ENTRY"
                         col = "#388E3C"
@@ -1153,13 +1156,13 @@ if symbol:
                         else:
                             _def_txt = "아래꼬리 지지력(투매 방어)"
                             
-                        _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 진바닥 터치 이력"
+                        _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 진바닥 터치 후 강력 반등"
                         
-                        final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 지표 및 방어 확인]</b> {_bot_txt}과(와) <b>{_def_txt}이(가) 동시 확인</b>되었소! <b>[신규 진입자]</b>는 비중 10% 수준의 가벼운 1단계 정찰병을 투입하시게. 단, <b>[기 1단계 매수자]</b>는 섣부른 불타기를 엄금하고 5일선 안착(2단계) 신호를 기다리며 얌전히 관망하시게."
+                        final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 지표 및 강력 방어 확인]</b> {_bot_txt}과(와) <b>{_def_txt}이(가) 동시 확인</b>되었소! <b>[신규 진입자]</b>는 비중 10% 수준의 가벼운 1단계 정찰병을 투입하시게. 단, <b>[기 1단계 매수자]</b>는 섣부른 불타기를 엄금하고 5일선 안착(2단계) 신호를 기다리며 얌전히 관망하시게."
             # -------------------------------------------------------------
 
             # ==================================================================
-            # ★ [일반 1차 바닥 로직 (여기도 쿨타임 동일 적용!)]
+            # ★ [일반 1차 바닥 로직 (여기도 쿨타임 무력화 연동!)]
             # ==================================================================
             elif is_near_ma5_bottom and (is_bottom_indicator_ok or will_val <= -75) and (p >= today_open) and (p_chg >= -1.5):
                 if margin_diff < 4.0: 
@@ -1173,11 +1176,12 @@ if symbol:
                     col = "#F57C00"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 바닥권에 진입했으나 아직 확고한 방어선이 확인되지 않았소! 칼날이 멈출 때까지 대기하시게."
                 else:
-                    if recent_bottom_entry_flag:
+                    # 💡 [핵심] 쿨타임 무력화 적용
+                    if recent_bottom_entry_flag and not is_strong_rebound:
                         final_code = "WAIT_COOL_TIME"
                         col = "#F57C00"
                         sig = "🟡 [관망/보류] 1단계 진입 쿨타임 가동 중 (중복 노이즈 차단)"
-                        final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 1단계 바닥 지표가 켜졌으나, <b>최근 3일 내에 이미 1차 진입 이력</b>이 있소! 섣부른 중복 입질을 멈추고 5일선 안착 전까지 관망하시게."
+                        final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 1단계 바닥 지표가 켜졌으나, <b>최근 3일 내에 이미 1차 진입 이력</b>이 있소! 잔노이즈일 확률이 높으니 섣부른 중복 입질을 멈추고 관망하시게."
                     else:
                         final_code = "BOTTOM_ENTRY"
                         col = "#388E3C"
@@ -1190,7 +1194,7 @@ if symbol:
                         else:
                             _def_txt = "아래꼬리 지지력(투매 방어)"
                             
-                        _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 바닥 터치 이력"
+                        _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 바닥 터치 후 강력 반등"
                         
                         final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[1단계 정찰병 포착]</b> {_def_txt} 및 {_bot_txt}이(가) 확인되었소! <b>[신규 진입자]</b>라면 비중 10% 수준의 1단계 정찰병(입질) 투입이 유효하오. 단, <b>[기 1단계 매수자]</b>는 추가 매수를 멈추고 5일선 위로 올라타는 2단계 진격 신호 전까지 철저히 관망하시게."
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
