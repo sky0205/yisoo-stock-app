@@ -663,14 +663,20 @@ if symbol:
             dynamic_stop_pct = dynamic_stop_rate * 100
             dynamic_stop_price = ma5_val * (1 - dynamic_stop_rate)
 
-            prev_low = float(df["Low"].iloc[-61:-1].min()) if len(df) > 60 else float(df["Low"].min())
-            
+            # ==================================================================
+            # ★ [NEW 패치] 변동성 종목 맞춤형 손절선: 최근 20일 저점 -3% 완충지대 적용
+            # ==================================================================
+            lookback_window = min(20, len(df) - 1) if len(df) > 1 else 1
+            raw_prev_low = float(df["Low"].iloc[-lookback_window-1:-1].min()) if lookback_window > 1 else float(df["Low"].min())
+            prev_low = raw_prev_low * 0.97  # 전저점 대비 -3% 완충지대(숨구멍)를 파두어 세력의 휩소 회피
+            # ==================================================================
+
             if not (p < ma5_val):
                 stop_loss_price = dynamic_stop_price
                 stop_loss_label = f"🛡 단기 추세 체크포인트: 5일선 -{dynamic_stop_pct:.1f}% 이탈 시 비중 조절 및 관망({stop_loss_price:{fmt_p}}{currency})"
             else:
                 stop_loss_price = prev_low
-                stop_loss_label = f"🚨 칼손절 경보: 바닥권 전저점 이탈 마지노선({stop_loss_price:{fmt_p}}{currency})"
+                stop_loss_label = f"🚨 칼손절 경보: 최근 20일 저점 -3% 마지노선({stop_loss_price:{fmt_p}}{currency})"
 
             defense_link_idx = min(21, len(df))
             raw_defense = float(df["High"].iloc[-defense_link_idx:-1].max()) * 0.93 if len(df) > 1 else p * 0.93
