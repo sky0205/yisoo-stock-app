@@ -299,17 +299,13 @@ if symbol:
                     res = requests.get(url, headers=headers, timeout=3)
                     if res.status_code == 200:
                         soup = BeautifulSoup(res.text, "html.parser")
-                        dl_blind = soup.select_one("dl.blind")
-                        if dl_blind:
-                            for dd in dl_blind.select("dd"):
-                                text = dd.text
-                                if text.startswith("현재가 "): auto_p = float(text.split(" ")[1].replace(",", ""))
-                                elif text.startswith("시가 "): real_kr_open = float(text.split(" ")[1].replace(",", ""))
-                                elif text.startswith("고가 "): real_kr_high = float(text.split(" ")[1].replace(",", ""))
-                                elif text.startswith("저가 "): real_kr_low = float(text.split(" ")[1].replace(",", ""))
-                                elif text.startswith("거래량 "): v_curr = float(text.split(" ")[1].replace(",", ""))
-                            if auto_p > 0 and real_kr_open > 0:
-                                kr_fetched = True
+                        auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                        v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+                        real_kr_open = float(soup.select(".no_info .blind")[4].text.replace(",", ""))
+                        real_kr_high = float(soup.select(".no_info .blind")[1].text.replace(",", ""))
+                        real_kr_low = float(soup.select(".no_info .blind")[8].text.replace(",", ""))
+                        if auto_p > 0 and real_kr_open > 0:
+                            kr_fetched = True
                 except Exception:
                     pass
 
