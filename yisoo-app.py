@@ -296,9 +296,12 @@ if symbol:
                     pass
 
             kr_fetched = False
+            # 💡 [신의 한 수]: 코드가 '5930'으로 훼손되어도 억지로 '005930' 6자리로 완벽 복원하여 네이버 프리패스!
+            _code = str(clean_symbol).zfill(6)
+            
             try:
-                # 💡 [엔진 수술 1]: 네이버 모바일 API 봇 차단 회피용 헤더(User-Agent, Referer) 강력 위장!
-                api_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
+                # 💡 [엔진 수술 1]: 네이버 모바일 API 봇 차단 회피용 헤더 강력 위장!
+                api_url = f"https://m.stock.naver.com/api/stock/{_code}/basic"
                 headers = {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                     "Referer": "https://m.stock.naver.com/"
@@ -317,7 +320,8 @@ if symbol:
 
             if not kr_fetched:
                 try:
-                    url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
+                    # 모바일이 막히면 PC 웹으로 침투
+                    url = f"https://finance.naver.com/item/main.naver?code={_code}"
                     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
                     res = requests.get(url, headers=headers, timeout=3)
                     soup = BeautifulSoup(res.text, "html.parser")
@@ -333,6 +337,14 @@ if symbol:
                         _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
                         if _avg_v > 0 and v_curr > _avg_v * 10:
                             v_curr = float(df["Volume"].iloc[-1])
+                except Exception:
+                    # 네이버가 완전히 뻗었을 때 최후의 보루 (야후 데이터 강제 수혈)
+                    if not df.empty:
+                        auto_p = float(df["Close"].iloc[-1])
+                        v_curr = float(df["Volume"].iloc[-1])
+                        real_kr_open = float(df["Open"].iloc[-1])
+                        real_kr_high = float(df["High"].iloc[-1])
+                        real_kr_low = float(df["Low"].iloc[-1])
                 except Exception:
                     # 💡 [핵심 방어선]: 네이버가 꽉 막혀도 시가/고가/저가가 0이 되는 참사를 막고 야후(기본 장부)에서 강제 수혈!
                     if not df.empty:
