@@ -1037,12 +1037,26 @@ if symbol:
                 col = "#D32F2F"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[고점 윗꼬 폭탄 포착]</b> 수확 목표선 부근에서 윗꼬리를 길게 달고 밀려 내려오고 있소! 세력의 대량 차익 실현이 시작되었으니 보유자는 즉시 전량 익절하시게."
             
-            # --- [NEW! 십자형(Doji) 캔들 위치별 예외 처리 (최우선 판독)] ---
-            # 💡 [최종 이중 검문소]: 위에서 넘어온 도지(십자형) 신호가 가짜인지, 실시간 캔들 몸통 크기로 여기서 마지막으로 멱살을 잡고 검열합니다!
+            # 💡 [NEW] 쿨타임 무력화용 강력 반등 센서 (양봉 & +2% 이상 상승 & 거래량 강도 100 이상)
+            is_strong_rebound = (p_chg >= 2.0) and (vol_strength >= 100) and (p >= today_open)
+
+            # 💡 [최종 이중 검문소 계산]: if~elif 기차가 시작되기 전에 미리 계산해 둡니다!
             _real_body = abs(p - today_open)
             _real_range = max(0.01, today_high - today_low)
-            strict_doji_check = is_doji_candle and (_real_body <= _real_range * 0.10) # 몸통이 전체 진폭의 10% 이하로 아주 얇을 때만 스피커 작동 허용!
+            strict_doji_check = is_doji_candle and (_real_body <= _real_range * 0.10)
 
+            if is_stop_loss_triggered:
+                final_code = "STOP_LOSS_ALERT"
+                sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
+                col = "#D32F2F"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[바닥권 전저점 방어선 붕괴]</b> 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
+            elif is_peak_dumping:
+                final_code = "RED_SELL_WARNING"
+                sig = "🔴 [고점 윗꼬리 투매] 상단 차익 매물 폭발! 즉시 수확(매도)!"
+                col = "#D32F2F"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[고점 윗꼬리 폭탄 포착]</b> 수확 목표선 부근에서 윗꼬리를 길게 달고 밀려 내려오고 있소!"
+
+            # --- [NEW! 십자형(Doji) 캔들 위치별 예외 처리 (최우선 판독)] ---
             elif strict_doji_check and p >= target_price_100 * 0.98:
                 final_code = "DOJI_TOP_WARNING"
                 sig = "🟠 [고점 십자성 경고] 상승 에너지 고갈! 상투 징후"
