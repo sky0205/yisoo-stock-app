@@ -1342,11 +1342,11 @@ if symbol:
                     else:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 지지 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, {candle_color_txt} 형태로 버티며 추가 하락을 방어하고 있소."
                 else:
-                    ## 💡 [정밀 패치]: 당일 시가와 현재가를 엄격히 비교하여 양봉/음봉 판독
-                    current_open = float(df["Open"].iloc[-1])
-                    real_txt = "양봉" if p >= current_open else "음봉"
-        
-                    if has_meaningful_lower_tail and (current_open > float(df["Low"].iloc[-1])):
+                    # 💡 [정밀 쐐기 패치]: 변수에 의존하지 않고 실시간 장부(df)에서 시가를 강제로 뽑아와 직접 비교!
+                    real_time_open = float(df["Open"].iloc[-1])
+                    real_txt = "음봉" if p < real_time_open else "양봉"
+    
+                    if has_meaningful_lower_tail and (real_time_open > float(df["Low"].iloc[-1])):
                         trend_status = f"<b>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 달린 {real_txt}이(가) 출연했소!"
                     else:
                         trend_status = f"<b>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {real_txt}이(가) 출연했소!"
