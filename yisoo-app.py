@@ -296,11 +296,11 @@ if symbol:
                     pass
 
             kr_fetched = False
-            # 💡 [신의 한 수]: 코드가 '5930'으로 훼손되어도 억지로 '005930' 6자리로 완벽 복원하여 네이버 프리패스!
-            _code = str(clean_symbol).zfill(6)
+            # 💡 [신의 한 수 1]: 코드 뒤에 '.KS' 같은 꼬리표가 있으면 떼어내고, 무조건 6자리 숫자로 강제 복원!
+            _code = str(clean_symbol).split('.')[0].zfill(6)
             
             try:
-                # 💡 [엔진 수술 1]: 네이버 모바일 API 봇 차단 회피용 헤더 강력 위장!
+                # 네이버 모바일 API 봇 차단 회피용 헤더 강력 위장!
                 api_url = f"https://m.stock.naver.com/api/stock/{_code}/basic"
                 headers = {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -330,13 +330,29 @@ if symbol:
                     v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
                     real_kr_open = float(soup.select(".no_info .blind")[4].text.replace(",", ""))
                     real_kr_high = float(soup.select(".no_info .blind")[1].text.replace(",", ""))
-                    # 💡 [엔진 수술 2]: 인덱스 [5]는 하한가입니다! 저가가 위치한 [8]로 수정하여 에러 원천 차단
                     real_kr_low = float(soup.select(".no_info .blind")[8].text.replace(",", "")) 
+                    kr_fetched = True
+                except Exception:
+                    pass
+            
+            # 네이버가 완전히 뻗었을 때 최후의 보루 (야후 데이터 강제 수혈)
+            if not kr_fetched and not df.empty:
+                auto_p = float(df["Close"].iloc[-1])
+                v_curr = float(df["Volume"].iloc[-1])
+                real_kr_open = float(df["Open"].iloc[-1])
+                real_kr_high = float(df["High"].iloc[-1])
+                real_kr_low = float(df["Low"].iloc[-1])
+                        
+            # 거래량 폭증 오류 보정
+            if not df.empty and kr_fetched:
+                _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
+                if _avg_v > 0 and v_curr > _avg_v * 10:
+                    v_curr = float(df["Volume"].iloc[-1])
                     
-                    if not df.empty:
-                        _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
-                        if _avg_v > 0 and v_curr > _avg_v * 10:
-                            v_curr = float(df["Volume"].iloc[-1])
+            # 🚨 [신의 한 수 2 - 가장 치명적인 누락 패치]: 
+            # 네이버에서 가져온 진짜 현재가(auto_p)를 메인 변수(p)에 강제로 덮어씌우기!
+            if auto_p > 0:
+                p = auto_p
                 except Exception:
                     # 네이버가 완전히 뻗었을 때 최후의 보루 (야후 데이터 강제 수혈)
                     if not df.empty:
