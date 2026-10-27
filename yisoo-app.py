@@ -296,46 +296,41 @@ if symbol:
                     pass
 
             kr_fetched = False
-            # 💡 [신의 한 수 1]: 코드 뒤에 '.KS' 같은 꼬리표가 있으면 떼어내고, 무조건 6자리 숫자로 강제 복원!
             _code = str(clean_symbol).split('.')[0].zfill(6)
             
             try:
-                # 네이버 모바일 API 봇 차단 회피용 헤더 강력 위장!
-                api_url = f"https://m.stock.naver.com/api/stock/{_code}/basic"
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                    "Referer": "https://m.stock.naver.com/"
-                }
-                res = requests.get(api_url, headers=headers, timeout=3)
+                # 💡 [절대 무적 엔진 1]: 네이버 서버 차단(403)을 완벽하게 우회하는 숨겨진 백도어 API (Polling)
+                api_url = f"https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:{_code}"
+                res = requests.get(api_url, timeout=3)
                 if res.status_code == 200:
-                    data = res.json()
-                    auto_p = float(str(data["closePrice"]).replace(",", ""))
-                    v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
-                    real_kr_open = float(str(data["openPrice"]).replace(",", ""))
-                    real_kr_high = float(str(data["highPrice"]).replace(",", ""))
-                    real_kr_low = float(str(data["lowPrice"]).replace(",", ""))
+                    _d = res.json()["result"]["areas"][0]["datas"][0]
+                    auto_p = float(_d["nv"])          # 진짜 현재가
+                    real_kr_open = float(_d["ov"])    # 진짜 시가
+                    real_kr_high = float(_d["hv"])    # 진짜 고가
+                    real_kr_low = float(_d["lv"])     # 진짜 저가
+                    v_curr = float(_d["aq"])
                     kr_fetched = True
             except Exception:
                 pass
 
             if not kr_fetched:
                 try:
-                    # 모바일이 막히면 PC 웹으로 침투
-                    url = f"https://finance.naver.com/item/main.naver?code={_code}"
-                    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-                    res = requests.get(url, headers=headers, timeout=3)
-                    soup = BeautifulSoup(res.text, "html.parser")
-                    
-                    auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-                    v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
-                    real_kr_open = float(soup.select(".no_info .blind")[4].text.replace(",", ""))
-                    real_kr_high = float(soup.select(".no_info .blind")[1].text.replace(",", ""))
-                    real_kr_low = float(soup.select(".no_info .blind")[8].text.replace(",", "")) 
-                    kr_fetched = True
+                    # 💡 [엔진 2]: 백도어가 막히면 모바일 공식 API로 침투
+                    api_url = f"https://m.stock.naver.com/api/stock/{_code}/basic"
+                    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+                    res = requests.get(api_url, headers=headers, timeout=3)
+                    if res.status_code == 200:
+                        data = res.json()
+                        auto_p = float(str(data["closePrice"]).replace(",", ""))
+                        v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
+                        real_kr_open = float(str(data["openPrice"]).replace(",", ""))
+                        real_kr_high = float(str(data["highPrice"]).replace(",", ""))
+                        real_kr_low = float(str(data["lowPrice"]).replace(",", ""))
+                        kr_fetched = True
                 except Exception:
                     pass
-            
-            # 네이버가 완전히 뻗었을 때 최후의 보루 (야후 데이터 강제 수혈)
+
+            # 네이버가 완전히 뻗었을 때만 야후(Yahoo) 데이터 수혈
             if not kr_fetched and not df.empty:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
@@ -349,11 +344,9 @@ if symbol:
                 if _avg_v > 0 and v_curr > _avg_v * 10:
                     v_curr = float(df["Volume"].iloc[-1])
                     
-            # 🚨 [신의 한 수 2 - 가장 치명적인 누락 패치]:
-            # 네이버에서 가져온 진짜 현재가(auto_p)를 메인 변수(p)에 강제로 덮어씌우기!
+            # 🚨 [가장 중요한 데이터 덮어쓰기]: 네이버 진짜 데이터를 메인 변수에 장착!
             if auto_p > 0:
                 p = auto_p
-
         else:
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
