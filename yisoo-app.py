@@ -512,7 +512,7 @@ if symbol:
             elif p < today_open: candle_color_txt = "음봉"
             else: candle_color_txt = "음봉" if p_chg < 0 else "양봉"
 
-            # 💡 [십자형(Doji) 판독 센서 철통 방어막]
+            # 완벽한 십자형 판독 로직 가동
             is_doji_candle = (
                 (day_candle_range > 0.01) and
                 (body_len <= (day_candle_range * 0.10)) and  # 몸통이 전체 진폭의 10% 이하일 때만 도지로 인정
@@ -520,6 +520,10 @@ if symbol:
                 (lower_tail_len >= (day_candle_range * 0.10)) and
                 (today_open > today_low)
             )
+            
+            # 🚨 [도지 귀신 영구 박멸 킬스위치]: 야후 금융 가짜 데이터 유입 시 도지 센서 강제 차단!
+            if is_kr and not kr_fetched:
+                is_doji_candle = False
             # 확실한 십자형만 통과시킴
             strict_doji_check = is_doji_candle and (body_len <= day_candle_range * 0.10)
             
