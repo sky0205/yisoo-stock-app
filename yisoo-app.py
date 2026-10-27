@@ -174,7 +174,7 @@ def display_global_risk():
         pos_cnt = sum([n_chg > 0, s_chg > 0, d_chg > 0])
         neg_cnt = sum([n_chg < 0, s_chg < 0, d_chg < 0])
 
-        if pos_cnt == 3: market_mood = "미 3대 지수 일제히 상승 마감!!" if avg_us_chg >= 1.0 else "미 3대 지수 일제히 상승 마감!"
+        if pos_cnt == 3: market_mood = "미 3대 지수 동반 훈풍 속 안도 랠리!" if avg_us_chg >= 1.0 else "미 3대 지수 일제히 상승 마감!"
         elif neg_cnt == 3: market_mood = "미 3대 지수 동반 급락으로 투심 냉각!" if avg_us_chg <= -1.0 else "미 3대 지수 일제히 하락 (전면 약세 국면)!"
         else: market_mood = "미 3대 지수 혼조세 속 숨고르기 진행!"
 
@@ -224,7 +224,7 @@ st.divider()
 # ==============================================================================
 # ★ [상단: 종목 / HTS 전일종가 / 미장 프리시세 / 보유 평단가 / 직전 1차 매수가]
 # ==============================================================================
-col_symbol, col_prev, col_pre_us, col_avg, col_last_1st = st.columns(5) # 5칸으로 확장
+col_symbol, col_prev, col_pre_us, col_avg, col_last_1st = st.columns(5) # 👈 핵심 수정: 5칸으로 확장
 
 with col_symbol:
     raw_symbol_input = st.text_input("📊 종목번호", "LRCX")
@@ -239,7 +239,7 @@ with col_pre_us:
 with col_avg:
     user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 분석을 위한 평단가")
 
-with col_last_1st: 
+with col_last_1st: # 👈 핵심 수정: 직전 1차 매수가 입력칸 추가
     user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=0.0, step=100.0, help="낙폭 과대(물타기) 하이패스 연산용")
 
 st.write("") # 1층과 2층 사이 숨통 트여주기
@@ -473,6 +473,7 @@ if symbol:
             lower_tail_len = min(today_open, p) - today_low
             body_len = abs(p - today_open)
 
+            # 💡 [핵심 수정]: 시가 대비 현재가 비교를 절대 기준(p >= today_open)으로 통일!
             is_candle_bullish = p >= today_open
             is_candle_bearish = p < today_open  
             
@@ -485,12 +486,13 @@ if symbol:
                 candle_color_txt = "음봉" if p_chg < 0 else "양봉"
 
             # --- [십자형(Doji) 캔들 판독 센서] ---
+            # 💡 [핵심 수정]: 당일 저가("Low")가 시가(today_open)보다 확실히 낮아서 아래꼬리가 형성된 경우에만 도지 검사 허용! (부등호 방향 정상화)
             is_doji_candle = (
                 (body_len <= (day_candle_range * 0.10)) and 
                 (day_candle_range > 0.01) and 
                 (upper_tail_len >= day_candle_range * 0.05) and 
                 (lower_tail_len >= day_candle_range * 0.10) and 
-                (today_open > df.loc[today_date, "Low"]) 
+                (today_open > df.loc[today_date, "Low"])  # 👈 [핵심 수정] 시가가 저가보다 커야(>) 아래꼬리가 있는 진짜 공방으로 인정!
             )
             
             # 2. 꼬리 비율을 통한 정밀 형태 판독
@@ -637,6 +639,7 @@ if symbol:
             will_bot_series = (will_series <= -75).astype(int)
             bottom_score_series = bb_bot_series + rsi_bot_series + will_bot_series
             
+            # 💡 [핵심 추가] 최근 3일간(오늘 제외) 바닥 터치 이력 검사 (중복 진입 쿨타임용)
             recent_bottom_entry_flag = (bottom_score_series.iloc[-4:-1].max() >= 1) if len(bottom_score_series) >= 4 else False
             recent_bottom_memory = bottom_score_series.iloc[-3:].max() >= 1  
 
@@ -986,7 +989,7 @@ if symbol:
                 col = "#D32F2F"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[고점 윗꼬 폭탄 포착]</b> 수확 목표선 부근에서 윗꼬리를 길게 달고 밀려 내려오고 있소! 세력의 대량 차익 실현이 시작되었으니 보유자는 즉시 전량 익절하시게."
             
-            # --- [십자형(Doji) 캔들 위치별 예외 처리 (최우선 판독)] ---
+            # --- [NEW! 십자형(Doji) 캔들 위치별 예외 처리 (최우선 판독)] ---
             elif is_doji_candle and p >= target_price_100 * 0.98:
                 final_code = "DOJI_TOP_WARNING"
                 sig = "🟠 [고점 십자성 경고] 상승 에너지 고갈! 상투 징후"
@@ -1304,6 +1307,7 @@ if symbol:
                 elif bottom_score >= 1: _p_action = f"-> <b>[바닥 포착/대기]</b> 바닥 지표는 켜졌으나 제반 조건 미달"
                 else: _p_action = f"-> <b>[관망]</b> 지표 동조 미충족으로 안착 대기"
 
+                # 0/3점 텍스트 모순 해결부
                 _display_score = pullback_rebound_score if pullback_rebound_score >= 1 else bottom_score
                 _score_name = "눌림목" if pullback_rebound_score >= 1 else ("진바닥" if bottom_score >= 1 else "전환")
                 sub_indicator_str = f" - <b>{_score_name} 동조:</b> {_display_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
@@ -1314,7 +1318,7 @@ if symbol:
             # ★ [수정 완료]: 양봉/음봉 조건과 시가 비교를 원본 구조 그대로 방어
             # ==================================================================
             if is_candle_unknown:
-                pass  
+                pass  # API 지연 시 기존 이평선 추세 팩트 유지
             elif is_doji_candle:
                 trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
             elif is_defended:
@@ -1328,17 +1332,19 @@ if symbol:
                     else:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 지지 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, {candle_color_txt} 형태로 버티며 추가 하락을 방어하고 있소."
                 else:
+                    # 💡 [핵심 방어]: 아래꼬리가 실제로 존재하고(시가 > 저가) 의미 있는 길이일 때만 아래꼬리 멘트 허용!
                     if has_meaningful_lower_tail and (today_open > df.loc[today_date, "Low"]):
                         trend_status = f"📉 <b>[방어선 구축 / 지지 시도]</b> 단기 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt}이(가) 출현했소! ..."
                     else:
                         trend_status = f"📈 <b>[방어선 구축 / 상승 전개]</b> 단기 하락 수압을 이겨내고 견고한 {candle_color_txt}이(가) 출현했소! ..."
             elif is_long_upper_tail:
+                # 💡 [핵심 교체]: 현재가가 시가보다 낮을 때(진짜 음봉)만 음봉 멘트 출력! 양봉일 때는 절대 음봉 타령 금지!
                 if is_candle_bearish: 
                     if p >= ma5_val:
                         trend_status = f"⚠️ <b style='color:#F57C00;'>[장중 차익 매물 출회 / 5일선 사수]</b> 시가에서부터 파란 음봉으로 쫙 밀리며 매물이 쏟아지고 있으나, 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
                     else:
                         trend_status = f"🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 투매 거셈]</b> 시가에서부터 파란 음봉으로 강하게 밀리며 5일선 생명선마저 위태롭소. 상승 시도마다 매물 폭탄을 맞고 있으니 즉각 관망 모드로 전환하시게."
-                else: 
+                else: # 양봉일 때
                     if p >= ma5_val:
                         trend_status = f"⚠️ <b style='color:#F57C00;'>[고점 매물 저항 / 5일선 사수]</b> 윗꼬리를 길게 달았으나 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 보수적으로 대응하시게."
                     else:
