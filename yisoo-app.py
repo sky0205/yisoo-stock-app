@@ -349,26 +349,11 @@ if symbol:
                 if _avg_v > 0 and v_curr > _avg_v * 10:
                     v_curr = float(df["Volume"].iloc[-1])
                     
-            # 🚨 [신의 한 수 2 - 가장 치명적인 누락 패치]: 
+            # 🚨 [신의 한 수 2 - 가장 치명적인 누락 패치]:
             # 네이버에서 가져온 진짜 현재가(auto_p)를 메인 변수(p)에 강제로 덮어씌우기!
             if auto_p > 0:
                 p = auto_p
-                except Exception:
-                    # 네이버가 완전히 뻗었을 때 최후의 보루 (야후 데이터 강제 수혈)
-                    if not df.empty:
-                        auto_p = float(df["Close"].iloc[-1])
-                        v_curr = float(df["Volume"].iloc[-1])
-                        real_kr_open = float(df["Open"].iloc[-1])
-                        real_kr_high = float(df["High"].iloc[-1])
-                        real_kr_low = float(df["Low"].iloc[-1])
-                except Exception:
-                    # 💡 [핵심 방어선]: 네이버가 꽉 막혀도 시가/고가/저가가 0이 되는 참사를 막고 야후(기본 장부)에서 강제 수혈!
-                    if not df.empty:
-                        auto_p = float(df["Close"].iloc[-1])
-                        v_curr = float(df["Volume"].iloc[-1])
-                        real_kr_open = float(df["Open"].iloc[-1])
-                        real_kr_high = float(df["High"].iloc[-1])
-                        real_kr_low = float(df["Low"].iloc[-1])
+
         else:
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
