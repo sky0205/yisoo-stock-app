@@ -486,14 +486,14 @@ if symbol:
                 vol_strength = v_ratio
 
             # ==================================================================
-            # ★ 캔들 정합성 검열 및 꼬리/십자형(Doji) 정밀 계산
+            # ★ [PRO 버전] 캔들 정합성 검열 및 십자형(Doji) 정밀 연산
             # ==================================================================
             today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
             today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
-            is_down_trend_v = (p < prev_p) and (p_chg < 0)
             
+            is_down_trend_v = (p < prev_p) and (p_chg < 0)
             day_candle_range = max(0.01, today_high - today_low)
             is_api_delayed = (p > today_high * 1.005) or (p < today_low * 0.995) or (today_high == today_low)
 
@@ -501,33 +501,38 @@ if symbol:
             lower_tail_len = min(today_open, p) - today_low
             body_len = abs(p - today_open)
 
-            is_candle_bullish = p >= today_open
-            is_candle_bearish = p < today_open  
-            
-            if p > today_open: candle_color_txt = "양봉"
-            elif p < today_open: candle_color_txt = "음봉"
-            else: candle_color_txt = "음봉" if p_chg < 0 else "양봉"
+            # 💡 [PRO 패치 1] 양봉/음봉 완벽 분리 (시가=종가일 때는 전일 대비 등락으로 색상 결정)
+            if p > today_open:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < today_open:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "빨간색 양봉" if p_chg >= 0 else "파란색 음봉"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
 
-            # 💡 [십자형(Doji) 판독 센서 철통 방어막 - 완벽 갈라치기 패치]
+            # 💡 [PRO 패치 2] 억지 조건 삭제! 수학적으로 완벽한 십자형(Doji) 판독
+            # 1) 진폭이 있어야 하고 2) 몸통이 3% 이하로 얇아야 하며 3) 위아래 꼬리가 모두 있어야 함
             is_doji_candle = (
                 (day_candle_range > 0.01) and
-                (body_len <= (day_candle_range * 0.03)) and  # 몸통이 전체 진폭의 3% 이하일 때만 진정한 도지로 인정
-                (p < today_open * 1.002) and                  # 붉은 양봉으로 확실히 올라간 캔들은 도지 판독에서 원천 제외!
+                (body_len <= (day_candle_range * 0.03)) and
                 (upper_tail_len >= (day_candle_range * 0.05)) and
-                (lower_tail_len >= (day_candle_range * 0.05)) and
-                (today_open > today_low)
+                (lower_tail_len >= (day_candle_range * 0.05))
             )
             
-            # 🚨 [도지 귀신 영구 박멸 킬스위치]: 야후 금융 가짜 데이터 유입 시 도지 센서 강제 차단!
+            # 🚨 [킬스위치 유지] 가짜 데이터(야후 등) 유입 시 도지 센서 차단
             if is_kr and not kr_fetched:
                 is_doji_candle = False
-            # 확실한 십자형만 통과시킴
-            strict_doji_check = is_doji_candle and (body_len <= day_candle_range * 0.10)
+                
+            strict_doji_check = is_doji_candle
             
             if is_pre_market_mode or is_api_delayed:
                 is_long_upper_tail = False
-                is_defended = (p >= today_open)      
-                is_candle_bearish = (p < today_open) 
+                is_defended = is_candle_bullish      
                 is_candle_unknown = True
                 is_strong_bull_body = False
                 strict_doji_check = False 
@@ -538,7 +543,7 @@ if symbol:
                     is_long_upper_tail = (upper_tail_len > lower_tail_len) and (upper_tail_len > body_len) and (upper_tail_len >= day_candle_range * 0.3)
                 
                 is_tail_defended = (lower_tail_len > upper_tail_len)
-                is_strong_bull_body = (p_chg >= 2.0) or (body_len > upper_tail_len * 1.5)
+                is_strong_bull_body = is_candle_bullish and ((p_chg >= 2.0) or (body_len > upper_tail_len * 1.5))
                 is_defended = is_candle_bullish and (is_tail_defended or is_strong_bull_body)
                 is_candle_unknown = False
 
