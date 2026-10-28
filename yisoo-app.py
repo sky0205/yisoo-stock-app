@@ -1305,7 +1305,7 @@ if symbol:
             if is_candle_unknown:
                 pass  
             elif strict_doji_check:
-                trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
+                trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 거의 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
             elif is_defended:
                 has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
 
@@ -1317,18 +1317,10 @@ if symbol:
                     else:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 지지 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, {candle_color_txt} 형태로 버티며 추가 하락을 방어하고 있소."
                 else:
-                    current_p = float(str(p).replace(',', ''))
-                    current_open = float(str(today_open).replace(',', ''))
-                    
-                    if current_p < current_open:
-                        real_txt = "파란색 음봉"
+                    if has_meaningful_lower_tail and (today_open > today_low):
+                        trend_status = f"<b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt} 출현!"
                     else:
-                        real_txt = "빨간색 양봉"
-    
-                    if has_meaningful_lower_tail and (current_open > float(str(df.loc[today_date, "Low"]).replace(',', ''))):
-                        trend_status = f"<b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {real_txt} 출현!"
-                    else:
-                        trend_status = f"<b>[방어선 구축 / 상승 전개]</b> 견고한 {real_txt} 출현!"
+                        trend_status = f"<b>[방어선 구축 / 상승 전개]</b> 견고한 {candle_color_txt} 출현!"
             elif is_long_upper_tail:
                 if is_candle_bearish: 
                     if p >= ma5_val:
