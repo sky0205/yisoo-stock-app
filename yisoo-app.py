@@ -541,7 +541,7 @@ if symbol:
                 is_defended = is_candle_bullish      
                 is_candle_unknown = True
                 is_strong_bull_body = False
-                strict_doji_check = False 
+                
             else:
                 if strict_doji_check:
                     is_long_upper_tail = False
@@ -1240,7 +1240,7 @@ if symbol:
                 sig = "🟡 [이평선 꼬임 혼조세] 방향성 상실로 인한 관망"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[이평선 꼬임 혼조세]</b> 방향성을 상실했으니 뇌동매매를 금하고 냉정하게 관망하시게."
-            elif current_chg < 0.0 and bias_ma5 < 0.0:
+            elif current_chg < 0.0 and bias_ma5 < 0.0 and not strict_doji_check:
                 final_code = "BEARISH_GUARD"
                 sig = f"🟡 [하락/조정] 음봉 압력 속 추세 이탈 경계 "
                 col = "#F57C00"
