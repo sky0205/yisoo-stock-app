@@ -524,11 +524,12 @@ if symbol:
                 (lower_tail_len >= (day_candle_range * 0.05))
             )
             
-            # 🚨 [킬스위치 유지] 가짜 데이터(야후 등) 유입 시 도지 센서 차단
-            if is_kr and not kr_fetched:
-                is_doji_candle = False
-                
-            strict_doji_check = is_doji_candle
+            # 💡 [PRO 4차 패치] 십자형(Doji) 킬스위치 완전 해제 및 정밀 수학 센서 가동!
+            if day_candle_range > 0:
+                # 몸통이 전체 진폭의 5% 이내이거나, 시가/종가 차이가 현재가의 0.2% 이내로 찰싹 붙어있을 때 도지로 탕탕 판정!
+                strict_doji_check = (body_len <= day_candle_range * 0.05) or (body_len <= (p * 0.002))
+            else:
+                strict_doji_check = (body_len == 0)
             
             if is_pre_market_mode or is_api_delayed:
                 is_long_upper_tail = False
