@@ -515,14 +515,13 @@ if symbol:
                 is_candle_bullish = (p_chg >= 0)
                 is_candle_bearish = (p_chg < 0)
 
-            # 💡 [PRO 패치 2] 억지 조건 삭제! 수학적으로 완벽한 십자형(Doji) 판독
-            # 1) 진폭이 있어야 하고 2) 몸통이 3% 이하로 얇아야 하며 3) 위아래 꼬리가 모두 있어야 함
-            is_doji_candle = (
-                (day_candle_range > 0.01) and
-                (body_len <= (day_candle_range * 0.03)) and
-                (upper_tail_len >= (day_candle_range * 0.05)) and
-                (lower_tail_len >= (day_candle_range * 0.05))
-            )
+            # 💡 [PRO 5차 파이널] 꼬리 억지 조건 완전 삭제! 순수 몸통 두께로만 십자형(Doji) 판독!
+            if day_candle_range > 0:
+                is_doji_candle = (body_len <= day_candle_range * 0.05) or (body_len <= (p * 0.002))
+            else:
+                is_doji_candle = (body_len == 0)
+            
+            strict_doji_check = is_doji_candle
             
             # 💡 [PRO 4차 패치] 십자형(Doji) 킬스위치 완전 해제 및 정밀 수학 센서 가동!
             if day_candle_range > 0:
