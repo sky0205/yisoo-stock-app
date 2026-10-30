@@ -542,9 +542,11 @@ if symbol:
                 else:
                     is_long_upper_tail = (upper_tail_len > lower_tail_len) and (upper_tail_len > body_len) and (upper_tail_len >= day_candle_range * 0.3)
                 
-                is_tail_defended = (lower_tail_len > upper_tail_len)
-                is_strong_bull_body = is_candle_bullish and ((p_chg >= 2.0) or (body_len > upper_tail_len * 1.5))
-                is_defended = is_candle_bullish and (is_tail_defended or is_strong_bull_body)
+                # 💡 [PRO 3차 패치] '가짜 칼날' 박멸! (상승했거나 양봉이면 무조건 방어 성공으로 인정)
+                is_tail_defended = (lower_tail_len > upper_tail_len) or (lower_tail_len >= day_candle_range * 0.25)
+                is_strong_bull_body = is_candle_bullish and ((p_chg >= 1.0) or (body_len >= upper_tail_len))
+                
+                is_defended = (p_chg > 0) or is_candle_bullish or is_tail_defended or is_strong_bull_body
                 is_candle_unknown = False
 
             is_pure_bullish_candle = p >= today_open
