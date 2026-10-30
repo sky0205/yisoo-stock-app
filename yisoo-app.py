@@ -517,7 +517,7 @@ if symbol:
 
             # 💡 [PRO 5차 파이널] 꼬리 억지 조건 완전 삭제! 순수 몸통 두께로만 십자형(Doji) 판독!
             if day_candle_range > 0:
-                is_doji_candle = (body_len <= day_candle_range * 0.05) or (body_len <= (p * 0.002))
+                is_doji_candle = (body_len <= day_candle_range * 0.05) or (body_len <= (p * 0.005))
             else:
                 is_doji_candle = (body_len == 0)
             
