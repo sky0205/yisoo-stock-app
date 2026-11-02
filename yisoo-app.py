@@ -1274,7 +1274,10 @@ if symbol:
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
             if is_memory_ignored and final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
                 final_adv = "<br><br>💡 <b style='color:#1565C0;'>[이수할아버지의 안내]</b> 기계의 기억상 최근 3일 내 바닥 신호가 있었소. 만약 당시 <b>이미 매수하셨다면</b> 상단 <b>[직전 1차 매수가]</b> 칸에 금액을 입력하시게! 그래야 중복 매수를 차단하거나 물타기 계산을 가동할 수 있소이다."
-
+            if user_last_1st_price > 0 and final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
+                col = "#F57C00"
+                sig = "🟡 [관망/보류] 기 매수자 추가 진입 금지 (대세 하락 방어 가동)"
+                final_adv = "• <b>[최종 결론]</b> 당일 강력한 반등 기세가 보이나, 대세 하락장 역배열 방어 로직이 작동 중이오! 이미 물량을 보유한 [기 1단계 매수자]는 섣부른 물타기(추매)를 엄금하고, 5일선 완벽 안착 신호를 기다리며 얌전히 관망하시게."
             st.markdown(
                 f"<div class='signal-box' style='background-color: {col};'>"
                 f"<div class='signal-text'>{sig}</div>"
