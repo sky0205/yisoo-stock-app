@@ -1089,6 +1089,14 @@ if symbol:
                 sig = "🟡 [관망/보류] 매도잔량비 실전 기준 미달 (속임수 윗꼬 경계)"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[호가창 기준 미달]</b> 타점 지표는 충족했으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 실전 투입 기준에 미달하오. 세력이 윗꼬리로 밀어버릴 속임수일 확률이 높으니 방아쇠를 잠그고 관망하시게."
+            # 💡 [PRO 6차 패치] 거래량 300점 이상 폭발 + 양봉 시 과다이격 무시하고 불기둥 하이패스 가동!
+            elif is_over_extended_5 and (vol_strength >= 300) and (p >= today_open) and (not is_long_upper_tail):
+                final_code = "SQUEEZE_BREAKOUT_ATTACK"
+                sig = f"🔥 [불기둥 하이패스] 대량 거래 폭발! 과다이격({bias_ma5:+.1f}%) 면제"
+                col = "#D84315"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상한가/대시세 추종]</b> 5일선 이격이 +{bias_ma5:.1f}%로 벌어졌으나, 폭발적인 거래량(300점 이상)을 동반한 강력한 양봉 불기둥이오! 세력의 상방 드라이브가 확인되었으니 <b>과다이격 경계를 강제 해제</b>하고 돌파 랠리에 기민하게 동참하시게. 단, 윗꼬리 발생 시 즉각 대피할 수 있도록 비중은 30% 이하로 통제하시게."
+
+            # 위 불기둥 조건에 해당하지 않는 가짜 펌핑은 기존처럼 철통 방어!
             elif is_over_extended_5:
                 final_code = "WAIT_OVER_EXTENDED"
                 sig = f"🟡 [관망/보류] 5일선 과다이격 (+{bias_ma5:.1f}%) / 추격 매수 금지"
