@@ -1345,7 +1345,7 @@ if symbol:
                     if has_meaningful_lower_tail:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 길게 달며 필사적으로 방어선을 치고 있소! 아직 안심하긴 이르나 투매는 멈춘 듯하네."
                     else:
-                        trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 지지 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, {candle_color_txt} 형태로 버티며 추가 하락을 방어하고 있소."
+                        trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 밑꼬리조차 없는 {candle_color_txt}으로 매도세에 짓눌려 속절없이 추락 중이오! 절대 칼날을 잡지 마시게."
                 else:
                     if has_meaningful_lower_tail and (today_open > today_low):
                         trend_status = f"<b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt} 출현!"
