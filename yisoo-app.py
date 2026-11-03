@@ -1015,6 +1015,11 @@ if symbol:
                 sig = "🟡 [바닥 십자성 포착] 하락 투매 방어 확인! (내일 돌파 대기)"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[바닥 십자 도지(Doji) 포착]</b> 지하실을 파고 내려가던 중 누군가 가격을 방어해내며 십자형을 만들었소."
+            elif strict_doji_check and (today_high == today_open):
+                final_code = "DOJI_DRAGONFLY"
+                sig = "🟢 [강력한 하방 경직] 잠자리형 도지 포착! (매수세 방어 완승)"
+                col = "#2E7D32"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 윗꼬리가 전혀 없는 <b>[잠자리형 도지(Dragonfly)]</b>가 떴소! 장중 투매를 매수세가 바닥에서 싹쓸이하여 시가(최고가)로 마감시킨 '강력한 방어 성공' 신호이니, 내일 긍정적인 반등을 기대해 볼 만하오."
             elif strict_doji_check:
                 final_code = "DOJI_MID_WAIT"
                 sig = "🟡 [추세 변곡 탐색] 십자형 공방전! 내일 승패를 확인하라"
