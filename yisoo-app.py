@@ -513,8 +513,13 @@ if symbol:
             cur_open_price = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else today_open
             
             # 💡 [철벽 방어]: 실시간 시가와 현재가를 엄격히 대조하여 양봉/음봉 진실 확정
-            base_open = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else (cur_open_price if 'cur_open_price' in locals() else p)
-            
+            if 'real_kr_open' in locals() and real_kr_open > 0:
+                base_open = real_kr_open
+            elif 'cur_open_price' in locals() and cur_open_price > 0:
+                base_open = cur_open_price
+            else:
+                base_open = p
+
             if p > base_open:
                 candle_color_txt = "빨간색 양봉"
                 is_candle_bullish = True
