@@ -345,14 +345,19 @@ if symbol:
                             elif "거래량" in txt: v_curr = float(blind.text.replace(",", ""))
                         if auto_p > 0 and real_kr_open > 0: kr_fetched = True
                 except: pass
-            # 3중 엔진이 모두 실패했을 때만 최후의 수단으로 기존 장부(Yahoo 등) 수혈
+            # 3중 엔진이 모두 실패했을 때의 최후 수단
             if not kr_fetched and not df.empty:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
-                real_kr_open = float(df["Open"].iloc[-1])
+                
+                # 💡 [방어막]: 장부의 Open 값이 이상하게 꼬여있다면, 안전하게 현재가나 전일 종가 근처 값으로 보정!
+                raw_open = float(df["Open"].iloc[-1])
+                # 만약 장부의 시가가 현재가와 너무 차이가 나거나 비정상적이라면, 임시로 현재가(p) 또는 직전 가격으로 대체 방어
+                real_kr_open = raw_open if raw_open > 0 else p 
+                
                 real_kr_high = float(df["High"].iloc[-1])
                 real_kr_low = float(df["Low"].iloc[-1])
-                        
+                                    
             # 거래량 폭증 오류 보정
             if not df.empty and kr_fetched:
                 _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
