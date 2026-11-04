@@ -637,7 +637,7 @@ if symbol:
             is_ma5_safe = p >= ma5_val
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
-            is_over_extended_5 = bias_ma5 >= 5.0
+            is_over_extended_5 = bias_ma5 >= 8.0
 
             is_trend_lower_tail = (((lower_tail_len >= day_candle_range * 0.35) or (lower_tail_len >= body_len * 1.0)) and (p >= ma5_val * 0.99) and (p_chg >= -2.5))
             is_valid_buy_candle = is_pure_bullish_candle or is_trend_lower_tail
@@ -1663,7 +1663,7 @@ if symbol:
                 elif final_code == "YELLOW_CAUTION":
                     bb_diag = "🟡 <b>[성벽 위 경계 및 추격 차단 구역]</b><br>• <b>역할:</b> 추격 매수 원천 차단.<br>• <b>진단:</b> 성벽 위 공방 중이므로 신규 매수를 금지하고 익절 타이밍을 노림."
                 elif final_code == "WAIT_OVER_EXTENDED":
-                    bb_diag = f"🟡 <b>[과다이격 추격 금지 구역] (5일선 이격: +{bias_ma5:.1f}%)</b><br>• <b>역할:</b> 고점 물림 방지.<br>• <b>진단:</b> 5일선 대비 5% 이상 벌어졌으니 숨고르기까지 매수 보류."
+                    bb_diag = f"🟡 <b>[과다이격 추격 금지 구역] (5일선 이격: +{bias_ma5:.1f}%)</b><br>• <b>역할:</b> 고점 물림 방지.<br>• <b>진단:</b> 5일선 대비 8% 이상 벌어졌으니 숨고르기까지 매수 보류."
                 elif final_code == "BREAKOUT_WARNING":
                     bb_diag = f"🔴 <b>[성벽 위 생명선 이탈 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 랠리 꺾임 방어.<br>• <b>진단:</b> 성벽 위에는 있으나 단기 생명선(5일선)이 무너졌소! 진격을 멈추고 5일선 재돌파 전까지 철저히 대피하시게."
                 else:
