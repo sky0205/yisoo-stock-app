@@ -1447,7 +1447,30 @@ if symbol:
                 is_candle_bullish = (p >= today_open)
                 candle_color_txt = "빨간색 양봉" if is_candle_bullish else "파란색 음봉"
                 trend_status = f"🌱 <b>[방어선 구축 / 추세 진행]</b> 매수/매도 공방 속 {candle_color_txt} 출현!"
-
+            # ==================================================================
+            # 💡 [최종 심판]: 기계의 모든 오판을 묵살하고 출력 직전에 시가/현재가로 완벽 강제 교정!
+            # ==================================================================
+            actual_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
+            is_candle_bearish = (p < actual_open)
+            is_candle_bullish = (p > actual_open)
+            
+            if is_candle_bearish:
+                if abs(p - actual_open) <= 30:
+                    candle_color_txt = "십자형 음도지(Doji)"
+                    trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 시가({actual_open:,.0f}원)를 깨고 소폭 밀린 {candle_color_txt} 출현!"
+                else:
+                    candle_color_txt = "파란색 음봉"
+                    trend_status = f"💧 <b>[방어선 구축 / 눌림목 공방]</b> 시가({actual_open:,.0f}원)를 깨고 밀려난 {candle_color_txt} 출현!"
+            elif is_candle_bullish:
+                if abs(p - actual_open) <= 30:
+                    candle_color_txt = "십자형 양도지(Doji)"
+                    trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 시가({actual_open:,.0f}원)를 소폭 돌파한 {candle_color_txt} 출현!"
+                else:
+                    candle_color_txt = "빨간색 양봉"
+                    trend_status = f"🌱 <b>[방어선 구축 / 상승 전개]</b> 시가({actual_open:,.0f}원)를 뚫고 뻗어가는 {candle_color_txt} 출현!"
+            else:
+                candle_color_txt = "십자형 도지(Doji)"
+                trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 시가({actual_open:,.0f}원)와 완벽히 일치하는 {candle_color_txt} 출현!"
             indicator_verify_text = (
                 f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b><br> {trend_status}<br>• <b>[지표 검증 연산]</b><br>"
                 f"<div style='padding-left: 20px;'>"
