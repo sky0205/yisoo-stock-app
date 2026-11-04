@@ -1361,8 +1361,12 @@ if symbol:
                     elif is_long_upper_tail and is_candle_bearish:
                         # 추가: 윗꼬리가 긴 파란색 음봉일 때의 정확한 팩트 폭격 멘트
                         trend_status = f"🚨 <b>[상승 기세 꺾임 / 매물 압박]</b> 윗꼬리를 길게 달고 밀려 내려온 {candle_color_txt} 출현! 상단 저항이 거세오."
+                    elif is_candle_bearish:
+                        # 추가: 파란색 음봉일 때의 정확한 팩트 멘트
+                        trend_status = f"📉 <b>[단기 하락 / 매도 우위]</b> 매물 압박을 받으며 밀려 내려온 {candle_color_txt} 출현!"
                     else:
-                        trend_status = f"🌱 <b>[방어선 구축 / 상승 전개]</b> 견고한 {candle_color_txt} 출현!"
+                        # 빨간색 양봉일 때만 '견고하다'는 표현 사용
+                        trend_status = f"🌱 <b>[방어선 구축 / 상승 전개]</b> 매수세가 유입되며 견고한 {candle_color_txt} 출현!"
             elif is_long_upper_tail:
                 if is_candle_bearish: 
                     if p >= ma5_val:
@@ -1523,7 +1527,9 @@ if symbol:
                 if rsi_val >= 70: base_macd_desc = "<b>🔥 정회전 가속 (과열권)</b>: 추진력은 강력하나 보조지표 초과열권이오."
                 elif vol_strength < 65 or is_candle_bearish or final_code == "DOJI_MID_WAIT":
                     mac_desc_word = "십자성 공방" if final_code == "DOJI_MID_WAIT" else ("음봉 조정" if is_candle_bearish else "숨고르기 공방")
-                    base_macd_desc = f"<b>⚡ 가속 중이나 거래절벽/{mac_desc_word}</b>: MACD는 가속 중이나 성벽 위에서 {mac_desc_word} 중이오."
+                    # 수정: 기계가 현재 위치를 파악하여 '성벽 위'인지 '성벽 아래'인지 자동 변경
+                    wall_pos = "성벽 위에서" if p >= defense_line else "성벽 아래에서"
+                    base_macd_desc = f"<b>⚡ 가속 중이나 거래절벽/{mac_desc_word}</b>: MACD는 가속 중이나 {wall_pos} {mac_desc_word} 중이오."
                 elif p >= defense_line or final_code == "NEW_HIGH_PULLBACK_BUY" or final_code == "SQUEEZE_BREAKOUT_ATTACK": base_macd_desc = "<b>🔥 정회전 가속 (상승 수성)</b>: 방어선을 사수하며 5일선 타고 상승 탄력 풀가동 중이오."
                 else: base_macd_desc = "<b>🔥 정회전 가속 (돌파 시도)</b>: 상방을 향해 5일선 지지받으며 추진력이 붙고 있소."
             elif is_macd_decelerating:
