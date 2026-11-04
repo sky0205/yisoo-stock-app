@@ -484,7 +484,20 @@ if symbol:
 
             p_diff = p - prev_p
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
-
+            # 💡 [근본 원천 봉쇄]: 장부 세팅과 등락률 계산이 끝난 직후, 실시간 시가와 현재가를 비교하여 양봉/음봉 변수 완벽 고정!
+            if 'real_kr_open' in locals() and real_kr_open and real_kr_open > 0:
+                if p > real_kr_open:
+                    candle_color_txt = "빨간색 양봉"
+                    is_candle_bullish = True
+                    is_candle_bearish = False
+                elif p < real_kr_open:
+                    candle_color_txt = "파란색 음봉"
+                    is_candle_bullish = False
+                    is_candle_bearish = True
+                else:
+                    candle_color_txt = "빨간색 양봉" if p >= real_kr_open else "파란색 음봉"
+                    is_candle_bullish = (p >= real_kr_open)
+                    is_candle_bearish = (p < real_kr_open)
             if is_kr:
                 m_start = now_local.replace(hour=9, minute=0, second=0, microsecond=0)
                 m_end = now_local.replace(hour=20, minute=0, second=0, microsecond=0)
