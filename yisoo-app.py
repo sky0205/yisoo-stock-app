@@ -509,12 +509,14 @@ if symbol:
             lower_tail_len = min(today_open, p) - today_low
             body_len = abs(p - today_open)
 
-            # 💡 [PRO 패치 1] 양봉/음봉 완벽 분리 (시가=종가일 때는 전일 대비 등락으로 색상 결정)
-            if p > today_open:
+            # 💡 [철벽 방어]: 네이버 실시간 시가와 현재가를 직관적으로 비교하여 양봉/음봉 완벽 확정!
+            cur_open_price = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else today_open
+            
+            if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
                 is_candle_bullish = True
                 is_candle_bearish = False
-            elif p < today_open:
+            elif p < cur_open_price:
                 candle_color_txt = "파란색 음봉"
                 is_candle_bullish = False
                 is_candle_bearish = True
