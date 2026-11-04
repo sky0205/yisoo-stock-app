@@ -352,8 +352,12 @@ if symbol:
                 
                 # 💡 [방어막]: 장부의 Open 값이 이상하게 꼬여있다면, 안전하게 현재가나 전일 종가 근처 값으로 보정!
                 raw_open = float(df["Open"].iloc[-1])
-                # 만약 장부의 시가가 현재가와 너무 차이가 나거나 비정상적이라면, 임시로 현재가(p) 또는 직전 가격으로 대체 방어
-                real_kr_open = raw_open if raw_open > 0 else p 
+                # 💡 [철벽 방어]: 장부의 Open 값이 0보다 크더라도, 현재가(p)와 가격 차이가 너무 크게 벌어져 있거나 
+                # 비정상적인 낡은 값이라면 현재가(p)로 강제 대체하여 가짜 양봉 판독 원천 차단!
+                if raw_open > 0 and abs(raw_open - p) < 500: 
+                    real_kr_open = raw_open
+                else:
+                    real_kr_open = p
                 
                 real_kr_high = float(df["High"].iloc[-1])
                 real_kr_low = float(df["Low"].iloc[-1])
