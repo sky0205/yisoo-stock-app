@@ -460,14 +460,19 @@ if symbol:
                     df.loc[today_date, "High"] = max(real_kr_high, p)
                     df.loc[today_date, "Low"] = min(real_kr_low, p)
                 else:
+                    fallback_open = prev_p if prev_p > 0 else p
+                    if pd.isna(df.loc[today_date, "Open"]) or df.loc[today_date, "Open"] == 0:
+                        df.loc[today_date, "Open"] = fallback_open
                     if p > df.loc[today_date, "High"]: df.loc[today_date, "High"] = p
                     if p < df.loc[today_date, "Low"]: df.loc[today_date, "Low"] = p
             else:
                 if is_kr and real_kr_open > 0:
                     new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p)], "Close": [p], "Volume": [v_curr]}, index=[today_date])
                 else:
-                    new_row = pd.DataFrame({"Open": [p], "High": [p], "Low": [p], "Close": [p], "Volume": [v_curr]}, index=[today_date])
+                    fallback_open = prev_p if prev_p > 0 else p
+                    new_row = pd.DataFrame({"Open": [fallback_open], "High": [max(p, fallback_open)], "Low": [min(p, fallback_open)], "Close": [p], "Volume": [v_curr]}, index=[today_date])
                 df = pd.concat([df, new_row])
+                            
 
             v_avg5 = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
