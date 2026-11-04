@@ -308,7 +308,11 @@ if symbol:
                             kr_fetched = True
                             # 💡 [추가]: 네이버 API가 가져온 진짜 시가를 오늘 장부의 Open 값에 강제 고정!
                             if not df.empty:
-                                df.loc[today_date, "Open"] = real_kr_open
+                                today_open = real_kr_open  # 💡 추가: 전체 연산용 today_open 변수도 진짜 시가로 동기화!
+                                if today_date in df.index:
+                                    df.loc[today_date, "Open"] = real_kr_open
+                                else:
+                                    df.loc[today_date, "Open"] = real_kr_open
                 except Exception:
                     pass
 
