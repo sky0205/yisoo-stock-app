@@ -1321,7 +1321,7 @@ if symbol:
                 elif final_code == "WAIT_COOL_TIME": _p_action = f"-> <b>[중복 노이즈 관망]</b> 쿨타임 가동으로 중복 매수 차단"
                 elif final_code in ["DOJI_TOP_WARNING", "DOJI_BOTTOM_WAIT", "DOJI_MID_WAIT"]: _p_action = f"-> <b>[십자형 변곡 대기]</b> 내일 상하방 이탈 방향을 확인하라"
                 # 1. 5일선 아래에 있지만 전일 대비 붉은 상승장(p_chg > 0)일 때: 진격 멘트!
-                elif p < ma5_val and p_chg > 0:
+                elif p < ma5_val and p_chg > 0 and not is_candle_bearish:
                     _p_action = f"-> <b>[5일선 탈환 시도]</b> 지표는 포착되었으며 5일선 고지를 향해 맹렬히 진격 중! (돌파/안착 대기)"
                     
                 # 2. 5일선 아래에 있고 실제로 파랗게 하락 중일 때: 기존의 깐깐한 관망 멘트
