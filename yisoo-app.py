@@ -1355,10 +1355,14 @@ if symbol:
                 else:
                     if today_open == today_low:
                         trend_status = f"🔥 <b style='color:#D84315;'>[강한 매수 맹공]</b> 장 시작부터 단 한 번도 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
-                    elif has_meaningful_lower_tail and (today_open > today_low):
-                        trend_status = f"<b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt} 출현!"
+                    # 수정: 아래꼬리가 윗꼬리보다 확실히 길거나, 전체 캔들에서 아래꼬리 비중이 클 때만 인정!
+                    elif has_meaningful_lower_tail and (lower_tail_len > upper_tail_len) and (today_open > today_low):
+                        trend_status = f"🛡️ <b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt} 출현!"
+                    elif is_long_upper_tail and is_candle_bearish:
+                        # 추가: 윗꼬리가 긴 파란색 음봉일 때의 정확한 팩트 폭격 멘트
+                        trend_status = f"🚨 <b>[상승 기세 꺾임 / 매물 압박]</b> 윗꼬리를 길게 달고 밀려 내려온 {candle_color_txt} 출현! 상단 저항이 거세오."
                     else:
-                        trend_status = f"<b>[방어선 구축 / 상승 전개]</b> 견고한 {candle_color_txt} 출현!"
+                        trend_status = f"🌱 <b>[방어선 구축 / 상승 전개]</b> 견고한 {candle_color_txt} 출현!"
             elif is_long_upper_tail:
                 if is_candle_bearish: 
                     if p >= ma5_val:
