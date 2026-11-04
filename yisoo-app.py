@@ -518,29 +518,29 @@ if symbol:
 
             # 💡 [철벽 방어]: 네이버 실시간 시가와 현재가를 직관적으로 비교하여 양봉/음봉 완벽 확정!
             cur_open_price = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else today_open
-            # 💡 [최종 격전지 방어]: real_kr_open이 존재하면 base_open을 무조건 1순위로 강제 고정!
+            # 💡 [최종 단일화 판정]: 네이버 API 시가가 있으면 무조건 그것과 현재가(p)만 비교하여 색상을 결정!
             if 'real_kr_open' in locals() and real_kr_open > 0:
-                base_open = real_kr_open
-            # 💡 [철벽 방어]: 실시간 시가와 현재가를 엄격히 대조하여 양봉/음봉 진실 확정
-            if 'real_kr_open' in locals() and real_kr_open > 0:
-                base_open = real_kr_open
-            elif 'cur_open_price' in locals() and cur_open_price > 0:
-                base_open = cur_open_price
+                if p > real_kr_open:
+                    candle_color_txt = "빨간색 양봉"
+                    is_candle_bullish = True
+                    is_candle_bearish = False
+                elif p < real_kr_open:
+                    candle_color_txt = "파란색 음봉"
+                    is_candle_bullish = False
+                    is_candle_bearish = True
+                else:
+                    candle_color_txt = "빨간색 양봉" if p >= real_kr_open else "파란색 음봉"
+                    is_candle_bullish = (p >= real_kr_open)
+                    is_candle_bearish = (p < real_kr_open)
             else:
-                base_open = p
-
-            if p > base_open:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < base_open:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "빨간색 양봉" if p >= base_open else "파란색 음봉"
-                is_candle_bullish = (p >= base_open)
-                is_candle_bearish = (p < base_open)
+                if p > prev_p:
+                    candle_color_txt = "빨간색 양봉"
+                    is_candle_bullish = True
+                    is_candle_bearish = False
+                else:
+                    candle_color_txt = "파란색 음봉"
+                    is_candle_bullish = False
+                    is_candle_bearish = True
 
             # 💡 [철벽 방어]: 몸통이 조금이라도 벌어져 있으면 무조건 도지 판독을 강제 압살!
             if day_candle_range > 0:
