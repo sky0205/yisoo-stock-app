@@ -523,13 +523,17 @@ if symbol:
                 is_candle_bullish = (p_chg >= 0)
                 is_candle_bearish = (p_chg < 0)
 
-            # 💡 [도지 판독 기준 대폭 강화]: 몸통이 명백히 존재하는 얇은 음봉/양봉은 도지에서 제외!
+            # 💡 [철벽 방어]: 몸통이 조금이라도 벌어져 있으면 무조건 도지 판독을 강제 압살!
             if day_candle_range > 0:
-                # 수정: 몸통 비율을 1.5% 이하로 대폭 조이고, 틱 차이가 1~2원 내외일 때만 진짜 도지로 인정
-                is_doji_candle = (body_len <= day_candle_range * 0.015) or (body_len <= 1.0)
+                # 수정: 몸통 크기가 전체 캔들 폭의 0.5%를 넘거나, 가격 차이가 5원 이상 나면 절대 도지로 인정하지 않음!
+                is_doji_candle = (body_len <= day_candle_range * 0.005) and (body_len <= 5.0)
             else:
                 is_doji_candle = (body_len == 0)
             
+            # 최종 안전장치: 실제 몸통이 눈에 보일 정도로 길면 도지 자격을 강제로 박탈!
+            if abs(p - real_kr_open) > 10:
+                is_doji_candle = False
+                
             strict_doji_check = is_doji_candle
             
             # 👇👇 [바로 여기에 아래의 4줄을 추가해 주시옵소서!] 👇👇
