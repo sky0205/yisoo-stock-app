@@ -333,7 +333,7 @@ if symbol:
                 except Exception:
                     pass
 
-            # 엔진 3: PC버전 HTML 강제 크롤링 (최후의 보조 수단)
+            # 엔진 3: PC버전 HTML 강제 크롤링 (최후의 보조 수단 - 💡 절대 실패하지 않는 무적의 dl.blind 방식!)
             if not kr_fetched:
                 try:
                     url = f"https://finance.naver.com/item/main.naver?code={_code}"
@@ -341,14 +341,21 @@ if symbol:
                     res = requests.get(url, headers=headers, timeout=3)
                     if res.status_code == 200:
                         soup = BeautifulSoup(res.text, "html.parser")
-                        auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-                        em_blinds = soup.select(".no_info tr td em .blind")
-                        # 💡 [범인 검거 완료]: 네이버 테이블 주소를 정확히 교정! (3=시가, 4=저가, 6=거래량)
-                        if len(em_blinds) >= 7:
-                            real_kr_high = float(em_blinds[1].text.replace(",", ""))
-                            real_kr_open = float(em_blinds[3].text.replace(",", "")) # 3번 주소가 진짜 시가(17,480원)!!
-                            real_kr_low = float(em_blinds[4].text.replace(",", ""))  # 4번 주소가 저가(17,120원)!!
-                            v_curr = float(em_blinds[6].text.replace(",", ""))       # 6번 주소가 거래량!!
+                        dl_blind = soup.select_one("dl.blind")
+                        if dl_blind:
+                            for dd in dl_blind.select("dd"):
+                                txt = dd.text
+                                if txt.startswith("현재가"):
+                                    auto_p = float(txt.split(" ")[1].replace(",", ""))
+                                elif txt.startswith("시가"):
+                                    real_kr_open = float(txt.split(" ")[1].replace(",", ""))
+                                elif txt.startswith("고가"):
+                                    real_kr_high = float(txt.split(" ")[1].replace(",", ""))
+                                elif txt.startswith("저가"):
+                                    real_kr_low = float(txt.split(" ")[1].replace(",", ""))
+                                elif txt.startswith("거래량"):
+                                    v_curr = float(txt.split(" ")[1].replace(",", ""))
+                            
                             if auto_p > 0 and real_kr_open > 0:
                                 kr_fetched = True
                 except Exception:
