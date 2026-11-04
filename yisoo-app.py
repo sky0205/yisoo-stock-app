@@ -308,10 +308,12 @@ if symbol:
                         real_kr_low = float(_d["lv"])
                         v_curr = float(_d["aq"])
                         if auto_p > 0 and real_kr_open > 0: 
-                            kr_fetched = True
-                            # 💡 [마스터 키]: 장부(df) 자체에 박힌 가짜 시가를 진짜 시가로 원천 교정!
-                            if not df.empty:
-                                df.iloc[-1, df.columns.get_loc("Open")] = real_kr_open
+                            # 만약 시가가 저가와 완벽히 똑같거나 이상하면 가짜 데이터로 간주하고 패스!
+                            if real_kr_open != real_kr_low:
+                                kr_fetched = True
+                                # 장부(df) 자체에 박힌 가짜 시가를 진짜 시가로 원천 교정!
+                                if not df.empty:
+                                    df.iloc[-1, df.columns.get_loc("Open")] = real_kr_open
                 except: pass
 
             # 엔진 2: 네이버 모바일 API
