@@ -695,7 +695,7 @@ if symbol:
             drop_ratio = 0.0
             if user_last_1st_price > 0:
                 drop_ratio = ((user_last_1st_price - p) / user_last_1st_price) * 100
-                if drop_ratio >= 5.0 and (bottom_score >= 1 or will_val <= -75) and is_defended and not is_down_trend_structural:
+                if drop_ratio >= 5.0 and (bottom_score >= 1 or will_val <= -75):
                     is_deep_discount_buy = True
 
             tr1 = df["High"] - df["Low"]
