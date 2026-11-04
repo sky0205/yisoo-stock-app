@@ -343,11 +343,12 @@ if symbol:
                         soup = BeautifulSoup(res.text, "html.parser")
                         auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
                         em_blinds = soup.select(".no_info tr td em .blind")
-                        if len(em_blinds) >= 6:
+                        # 💡 [범인 검거 완료]: 네이버 테이블 주소를 정확히 교정! (3=시가, 4=저가, 6=거래량)
+                        if len(em_blinds) >= 7:
                             real_kr_high = float(em_blinds[1].text.replace(",", ""))
-                            v_curr = float(em_blinds[3].text.replace(",", ""))
-                            real_kr_open = float(em_blinds[4].text.replace(",", ""))
-                            real_kr_low = float(em_blinds[5].text.replace(",", ""))
+                            real_kr_open = float(em_blinds[3].text.replace(",", "")) # 3번 주소가 진짜 시가(17,480원)!!
+                            real_kr_low = float(em_blinds[4].text.replace(",", ""))  # 4번 주소가 저가(17,120원)!!
+                            v_curr = float(em_blinds[6].text.replace(",", ""))       # 6번 주소가 거래량!!
                             if auto_p > 0 and real_kr_open > 0:
                                 kr_fetched = True
                 except Exception:
