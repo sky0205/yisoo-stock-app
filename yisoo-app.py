@@ -291,12 +291,12 @@ if symbol:
             kr_fetched = False
             _code = clean_symbol
             
-            # 엔진 1: 네이버 모바일 API (가장 빠르고 정확하며 HTML 변동에 끄떡없음)
+            # 엔진 1: 네이버 모바일 API (가장 빠름 - 간혹 서버 환경에 따라 막힐 수 있음)
             if not kr_fetched:
                 try:
                     api_url = f"https://m.stock.naver.com/api/stock/{_code}/basic"
-                    headers = {"User-Agent": "Mozilla/5.0"}
-                    res = requests.get(api_url, headers=headers, timeout=3)
+                    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+                    res = requests.get(api_url, headers=headers, timeout=5)
                     if res.status_code == 200:
                         data = res.json()
                         auto_p = float(str(data["closePrice"]).replace(",", ""))
@@ -306,58 +306,34 @@ if symbol:
                         real_kr_low = float(str(data["lowPrice"]).replace(",", ""))
                         if auto_p > 0 and real_kr_open > 0:
                             kr_fetched = True
-                            # 💡 [추가]: 네이버 API가 가져온 진짜 시가를 오늘 장부의 Open 값에 강제 고정!
-                            if not df.empty:
-                                today_open = real_kr_open  # 💡 추가: 전체 연산용 today_open 변수도 진짜 시가로 동기화!
-                                if today_date in df.index:
-                                    df.loc[today_date, "Open"] = real_kr_open
-                                else:
-                                    df.loc[today_date, "Open"] = real_kr_open
                 except Exception:
                     pass
 
-            # 엔진 2: 네이버 폴링 백도어 API
-            if not kr_fetched:
-                try:
-                    api_url = f"https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:{_code}"
-                    res = requests.get(api_url, timeout=3)
-                    if res.status_code == 200:
-                        _d = res.json()["result"]["areas"][0]["datas"][0]
-                        auto_p = float(_d["nv"])          
-                        real_kr_open = float(_d["ov"])    
-                        real_kr_high = float(_d["hv"])    
-                        real_kr_low = float(_d["lv"])     
-                        v_curr = float(_d["aq"])
-                        if auto_p > 0 and real_kr_open > 0:
-                            kr_fetched = True
-                except Exception:
-                    pass
-
-            # 엔진 3: PC버전 HTML 강제 크롤링 (최후의 보조 수단 - 💡 절대 실패하지 않는 무적의 dl.blind 방식!)
+            # 엔진 2: PC버전 핀셋 크롤링 (클래스 이름으로 정확히 추적하여 절대 오차가 없음!)
             if not kr_fetched:
                 try:
                     url = f"https://finance.naver.com/item/main.naver?code={_code}"
                     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-                    res = requests.get(url, headers=headers, timeout=3)
+                    res = requests.get(url, headers=headers, timeout=5)
                     if res.status_code == 200:
                         soup = BeautifulSoup(res.text, "html.parser")
-                        dl_blind = soup.select_one("dl.blind")
-                        if dl_blind:
-                            for dd in dl_blind.select("dd"):
-                                txt = dd.text
-                                if txt.startswith("현재가"):
-                                    auto_p = float(txt.split(" ")[1].replace(",", ""))
-                                elif txt.startswith("시가"):
-                                    real_kr_open = float(txt.split(" ")[1].replace(",", ""))
-                                elif txt.startswith("고가"):
-                                    real_kr_high = float(txt.split(" ")[1].replace(",", ""))
-                                elif txt.startswith("저가"):
-                                    real_kr_low = float(txt.split(" ")[1].replace(",", ""))
-                                elif txt.startswith("거래량"):
-                                    v_curr = float(txt.split(" ")[1].replace(",", ""))
-                            
-                            if auto_p > 0 and real_kr_open > 0:
-                                kr_fetched = True
+                        auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                        
+                        # 💡 핵심: 표의 순서나 모양이 바뀌어도 무조건 '시가' 명찰을 찾아 뽑아내는 핀셋 추출!
+                        open_td = soup.select_one(".sp_txt3").find_parent("td")
+                        real_kr_open = float(open_td.select_one(".blind").text.replace(",", ""))
+                        
+                        high_td = soup.select_one(".sp_txt4").find_parent("td")
+                        real_kr_high = float(high_td.select_one(".blind").text.replace(",", ""))
+                        
+                        low_td = soup.select_one(".sp_txt5").find_parent("td")
+                        real_kr_low = float(low_td.select_one(".blind").text.replace(",", ""))
+                        
+                        v_td = soup.select_one(".sp_txt9").find_parent("td")
+                        v_curr = float(v_td.select_one(".blind").text.replace(",", ""))
+                        
+                        if auto_p > 0 and real_kr_open > 0:
+                            kr_fetched = True
                 except Exception:
                     pass
             # 3중 엔진이 모두 실패했을 때만 최후의 수단으로 기존 장부(Yahoo 등) 수혈
