@@ -1353,7 +1353,9 @@ if symbol:
                     else:
                         trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 밑꼬리조차 없는 {candle_color_txt}으로 매도세에 짓눌려 속절없이 추락 중이오! 절대 칼날을 잡지 마시게."
                 else:
-                    if has_meaningful_lower_tail and (today_open > today_low):
+                    if today_open == today_low:
+                        trend_status = f"🔥 <b style='color:#D84315;'>[강한 매수 맹공]</b> 장 시작부터 단 한 번도 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
+                    elif has_meaningful_lower_tail and (today_open > today_low):
                         trend_status = f"<b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt} 출현!"
                     else:
                         trend_status = f"<b>[방어선 구축 / 상승 전개]</b> 견고한 {candle_color_txt} 출현!"
