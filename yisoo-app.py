@@ -259,7 +259,6 @@ if symbol:
         except Exception:
             start_date = datetime.now(ZoneInfo("UTC")) - timedelta(days=500)
 
-        # --- [👇 여기서부터 복사하여 덮어씌워 주시옵소서 (262번 줄 부근)] ---
         is_kr = symbol.isdigit()
         kst_tz = ZoneInfo("Asia/Seoul")
         ny_tz = ZoneInfo("America/New_York")
@@ -276,19 +275,55 @@ if symbol:
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
+            yf_sym = f"{clean_symbol}.KS"
             try: df = fdr.DataReader(clean_symbol, start=start_dt_str)
             except: pass
-
-            if df.empty:
-                try:
-                    df = yf.Ticker(f"{clean_symbol}.KS").history(start=start_dt_str)
-                    if df.empty: df = yf.Ticker(f"{clean_symbol}.KQ").history(start=start_dt_str)
-                except: pass
-
-            _h = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
             
-            # 🚀 1. 다이렉트 통신 (로컬 PC에서 실행할 때 작동)
+            if df.empty:
+                try: df = yf.Ticker(yf_sym).history(start=start_dt_str)
+                except: pass
+                if df.empty:
+                    yf_sym = f"{clean_symbol}.KQ"
+                    try: df = yf.Ticker(yf_sym).history(start=start_dt_str)
+                    except: pass
+        else:
+            currency, fmt_p = "$", ",.2f"
+            yf_sym = symbol.upper()
+            try: df = yf.Ticker(yf_sym).history(start=start_dt_str)
+            except: df = yf.Ticker(yf_sym).history(period="1y")
+
+        # 🚀 [클라우드 무적 통합 엔진] 야후 1분봉 정밀 타격!
+        # 야후 '일봉' 장부의 시가는 17,120원 찌꺼기가 남지만, '1분봉(1m)'의 첫 시가는 100% 진짜(17,480원) 시가입니다!
+        try:
+            tk = yf.Ticker(yf_sym)
+            # 1순위: 1분봉 데이터의 첫 번째 시가 (가장 정확한 핀셋 추출)
+            _min_df = tk.history(period="1d", interval="1m")
+            if not _min_df.empty:
+                _o = float(_min_df["Open"].iloc[0])
+                _c = float(tk.fast_info.last_price)
+                if _o > 0 and _c > 0:
+                    real_kr_open, auto_p = _o, _c
+                    real_kr_high = float(_min_df["High"].max())
+                    real_kr_low = float(_min_df["Low"].min())
+                    v_curr = float(tk.fast_info.last_volume)
+                    kr_fetched = True
+                    
+            # 2순위: fast_info 속성 직접 참조
+            if not kr_fetched:
+                _o = float(tk.fast_info.open)
+                _c = float(tk.fast_info.last_price)
+                if _o > 0 and _c > 0:
+                    real_kr_open, auto_p = _o, _c
+                    real_kr_high = float(tk.fast_info.day_high)
+                    real_kr_low = float(tk.fast_info.day_low)
+                    v_curr = float(tk.fast_info.last_volume)
+                    kr_fetched = True
+        except: pass
+
+        # 3순위: 네이버 모바일 API (로컬 구동 시 백업용)
+        if not kr_fetched and is_kr:
             try:
+                _h = {"User-Agent": "Mozilla/5.0"}
                 res = requests.get(f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic", headers=_h, timeout=3)
                 if res.status_code == 200:
                     _d = res.json()
@@ -302,75 +337,11 @@ if symbol:
                         kr_fetched = True
             except: pass
 
-            # 🚀 2. 클라우드 방화벽 1차 우회망 (AllOrigins RAW 프록시 - 포장지 없이 즉시 데이터 반환)
-            if not kr_fetched:
-                try:
-                    proxy_url = f"https://api.allorigins.win/raw?url=https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
-                    res = requests.get(proxy_url, headers=_h, timeout=4)
-                    if res.status_code == 200:
-                        _d = res.json()
-                        _o = float(str(_d.get("openPrice", "0")).replace(",", ""))
-                        _c = float(str(_d.get("closePrice", "0")).replace(",", ""))
-                        if _o > 0 and _c > 0:
-                            real_kr_open, auto_p = _o, _c
-                            real_kr_high = float(str(_d.get("highPrice", "0")).replace(",", ""))
-                            real_kr_low = float(str(_d.get("lowPrice", "0")).replace(",", ""))
-                            v_curr = float(str(_d.get("accumulatedTradingVolume", "0")).replace(",", ""))
-                            kr_fetched = True
-                except: pass
-                
-            # 🚀 3. 클라우드 방화벽 2차 우회망 (CorsProxy)
-            if not kr_fetched:
-                try:
-                    proxy_url2 = f"https://corsproxy.io/?https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
-                    res = requests.get(proxy_url2, headers=_h, timeout=4)
-                    if res.status_code == 200:
-                        _d = res.json()
-                        _o = float(str(_d.get("openPrice", "0")).replace(",", ""))
-                        _c = float(str(_d.get("closePrice", "0")).replace(",", ""))
-                        if _o > 0 and _c > 0:
-                            real_kr_open, auto_p = _o, _c
-                            real_kr_high = float(str(_d.get("highPrice", "0")).replace(",", ""))
-                            real_kr_low = float(str(_d.get("lowPrice", "0")).replace(",", ""))
-                            v_curr = float(str(_d.get("accumulatedTradingVolume", "0")).replace(",", ""))
-                            kr_fetched = True
-                except: pass
-        else:
-            # 💡 [미장 수집 로직]
-            currency, fmt_p = "$", ",.2f"
-            tk_upper = symbol.upper()
-            ticker = yf.Ticker(tk_upper)
-
-            try: df = ticker.history(start=start_dt_str)
-            except: df = ticker.history(period="1y")
-
-            try:
-                _min_df = ticker.history(period="1d", interval="1m")
-                if not _min_df.empty:
-                    _o = float(_min_df["Open"].iloc[0])
-                    _c = float(ticker.fast_info.last_price)
-                    if _o > 0 and _c > 0:
-                        real_kr_open, auto_p = _o, _c
-                        real_kr_high = float(_min_df["High"].max())
-                        real_kr_low = float(_min_df["Low"].min())
-                        v_curr = float(ticker.fast_info.last_volume)
-                        us_prev_p = float(ticker.fast_info.previous_close)
-                        kr_fetched = True
+        if not is_kr:
+            try: us_prev_p = float(yf.Ticker(yf_sym).fast_info.previous_close)
             except: pass
-            
-            if not kr_fetched:
-                try:
-                    f_info = ticker.fast_info
-                    o, c = float(f_info.open), float(f_info.last_price)
-                    if o > 0 and c > 0:
-                        real_kr_open, auto_p = o, c
-                        real_kr_high, real_kr_low = float(f_info.day_high), float(f_info.day_low)
-                        v_curr = float(f_info.last_volume)
-                        us_prev_p = float(f_info.previous_close)
-                        kr_fetched = True
-                except: pass
 
-        # 🛑 [장부 강제 세탁] 억지 가짜 도지 생성 로직 삭제 및 순수 장부 세팅
+        # 🛑 [장부 강제 세탁소 - 도지 에러 완전 박멸]
         today_date = now_local.date()
         if kr_fetched and auto_p > 0 and real_kr_open > 0:
             p = auto_p
@@ -387,6 +358,7 @@ if symbol:
             if not df.empty:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
+                # 통신 실패 시, 억지로 가짜 도지를 만들지 않고 원본 시가를 그대로 넘겨줍니다!
                 real_kr_open = float(df["Open"].iloc[-1])
                 real_kr_high = float(df["High"].iloc[-1])
                 real_kr_low = float(df["Low"].iloc[-1])
@@ -424,13 +396,14 @@ if symbol:
 
         p = override_pre_p if is_pre_market_mode else auto_p
 
+        # 💡 [치명적 시간대 충돌 에러 완전 해결]: utc=True 로 서머타임 꼬임 현상 원천 방어!
         if df.empty:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인해 주시게.")
         else:
             df = df.ffill().dropna()
             df.index = pd.to_datetime(df.index, utc=True).date
             today_date = now_local.date()
-        # --- [👆 여기까지 복사하여 덮어씌워 주시옵소서 (414번 줄 부근)] ---
+
             override_prev_p = 0.0
             if manual_prev_price_str:
                 try:
@@ -487,7 +460,7 @@ if symbol:
             lower_tail_len = max(0, min(actual_open, p) - today_low)
             body_len = abs(p - actual_open)
 
-            # 💡 [정밀 도지(Doji) 판독]: 절대값이 아닌 비율(0.5%)로 판별하여 미장에서도 완벽 작동!
+            # 💡 [정밀 도지(Doji) 판독]: 절대값이 아닌 비율(0.5%)로 판별하여 미장/국장 완벽 호환!
             if day_candle_range > 0:
                 is_doji_candle = (body_len <= day_candle_range * 0.05) or (body_len <= (actual_open * 0.002))
             else:
@@ -1134,7 +1107,7 @@ if symbol:
                         sig = f"🟢 [극한 진바닥 포착] 신규 1단계 유효 (기 1단계 매수자는 추매 금지)"
                         _def_txt = "아래꼬리 지지력(투매 방어)"
                         if is_candle_unknown: _def_txt = "하락 진정 및 반등 기세"
-                        elif is_strong_bull_body and not is_tail_defended: _def_txt = "강력한 매수세(반등 몸통)"
+                        elif is_strong_bull_body and not is_tail_defended: _def_txt = "강력 매수세(반등 몸통)"
                         _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 진바닥 터치 후 강력 반등"
                         final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 지표 및 강력 방어 확인]</b> {_bot_txt}과(와) <b>{_def_txt} 동시 확인</b>! 가벼운 1단계 정찰병을 투입하시게."
                         if is_memory_ignored:
@@ -1162,7 +1135,7 @@ if symbol:
                         sig = f"🟢 [진바닥 입질] 신규 1단계 유효 (기 1단계 매수자는 2단계 대기) ({time_tag_ok})"
                         _def_txt = "아래꼬리 지지력(투매 방어)"
                         if is_candle_unknown: _def_txt = "하락 진정 및 반등 기세"
-                        elif is_strong_bull_body and not is_tail_defended: _def_txt = "강력한 매수세(반등 몸통)"
+                        elif is_strong_bull_body and not is_tail_defended: _def_txt = "강력 매수세(반등 몸통)"
                         _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 바닥 터치 후 강력 반등"
                         final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[1단계 정찰병 포착]</b> {_def_txt} 및 {_bot_txt} 확인되었소! 정찰병(입질) 투입이 유효하오."
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
@@ -1266,7 +1239,7 @@ if symbol:
 
             if final_code == "SQUEEZE_BREAKOUT_ATTACK": sub_indicator_str = f"   - <b>스퀴즈 돌파 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 상방 폭발 -> <b>[매수 유효]</b> 과감한 본진 타진 진행"
             elif final_code == "NEW_HIGH_PULLBACK_BUY": sub_indicator_str = f"   - <b>신고가 지지 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 과감한 본진 타진 진행"
-            elif final_code == "NEW_HIGH_BREAKOUT_WARNING": sub_indicator_str = f"   - <b>신고가 돌파 주의:</b> 5일선 이격 과다(과열) -> <b>[관망]</b> 5일선 눌림목까지 추격 매수 차단"
+            elif final_code == "NEW_HIGH_BREAKOUT_WARNING": sub_indicator_str = f"   - <b>신고가 돌파 주의:</b> 5일선 이격 과다(과열) -> <b>[관망]</b> 5일선 눌림목까지 추격 매 소 차단"
             elif final_code == "BREAK_MA20_CONFIRMED": sub_indicator_str = f"   - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 기민한 분할 타진 진행"
             elif final_code == "ESCAPE_BUY": sub_indicator_str = f"   - <b>진바닥 탈출 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 유지 -> <b>[매수 유효]</b> 2단계 분할 진격 타점 가동"
             elif final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]: 
