@@ -523,9 +523,10 @@ if symbol:
                 is_candle_bullish = (p_chg >= 0)
                 is_candle_bearish = (p_chg < 0)
 
-            # 💡 [PRO 5차 파이널] 꼬리 억지 조건 완전 삭제! 순수 몸통 두께로만 십자형(Doji) 판독!
+            # 💡 [도지 판독 기준 대폭 강화]: 몸통이 명백히 존재하는 얇은 음봉/양봉은 도지에서 제외!
             if day_candle_range > 0:
-                is_doji_candle = (body_len <= day_candle_range * 0.05) or (body_len <= (p * 0.005))
+                # 수정: 몸통 비율을 1.5% 이하로 대폭 조이고, 틱 차이가 1~2원 내외일 때만 진짜 도지로 인정
+                is_doji_candle = (body_len <= day_candle_range * 0.015) or (body_len <= 1.0)
             else:
                 is_doji_candle = (body_len == 0)
             
