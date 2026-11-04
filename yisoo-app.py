@@ -512,18 +512,21 @@ if symbol:
             # 💡 [철벽 방어]: 네이버 실시간 시가와 현재가를 직관적으로 비교하여 양봉/음봉 완벽 확정!
             cur_open_price = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else today_open
             
-            if p > cur_open_price:
+            # 💡 [철벽 방어]: 실시간 시가와 현재가를 엄격히 대조하여 양봉/음봉 진실 확정
+            base_open = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else (cur_open_price if 'cur_open_price' in locals() else p)
+            
+            if p > base_open:
                 candle_color_txt = "빨간색 양봉"
                 is_candle_bullish = True
                 is_candle_bearish = False
-            elif p < cur_open_price:
+            elif p < base_open:
                 candle_color_txt = "파란색 음봉"
                 is_candle_bullish = False
                 is_candle_bearish = True
             else:
-                candle_color_txt = "빨간색 양봉" if p_chg >= 0 else "파란색 음봉"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
+                candle_color_txt = "빨간색 양봉" if p >= base_open else "파란색 음봉"
+                is_candle_bullish = (p >= base_open)
+                is_candle_bearish = (p < base_open)
 
             # 💡 [철벽 방어]: 몸통이 조금이라도 벌어져 있으면 무조건 도지 판독을 강제 압살!
             if day_candle_range > 0:
