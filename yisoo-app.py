@@ -1394,11 +1394,11 @@ if symbol:
                         # 추가: 윗꼬리가 긴 파란색 음봉일 때의 정확한 팩트 폭격 멘트
                         trend_status = f"🚨 <b>[상승 기세 꺾임 / 매물 압박]</b> 윗꼬리를 길게 달고 밀려 내려온 {candle_color_txt} 출현! 상단 저항이 거세오."
                     elif is_candle_bearish:
-                        # 추가: 파란색 음봉일 때의 정확한 팩트 멘트
-                        trend_status = f"📉 <b>[단기 하락 / 매도 우위]</b> 매물 압박을 받으며 밀려 내려온 {candle_color_txt} 출현!"
+                        # 파란색 음봉일 때의 명확한 문구
+                        trend_status = f"💧 <b>[방어선 구축 / 눌림목 공방]</b> 매도세가 우위이며 {candle_color_txt} 출현!"
                     else:
                         # 빨간색 양봉일 때만 '견고하다'는 표현 사용
-                        trend_status = f"🌱 <b>[방어선 구축 / 상승 전개]</b> 매수세가 유입되며 견고한 {candle_color_txt} 출현!"
+                        trend_status = f"🌱 <b>[방어선 구축 / 상승 전개]</b> 매수세가 유입되며 {candle_color_txt} 출현!"
             elif is_long_upper_tail:
                 if is_candle_bearish: 
                     if p >= ma5_val:
