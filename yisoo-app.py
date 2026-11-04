@@ -518,7 +518,9 @@ if symbol:
 
             # 💡 [철벽 방어]: 네이버 실시간 시가와 현재가를 직관적으로 비교하여 양봉/음봉 완벽 확정!
             cur_open_price = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else today_open
-            
+            # 💡 [최종 격전지 방어]: real_kr_open이 존재하면 base_open을 무조건 1순위로 강제 고정!
+            if 'real_kr_open' in locals() and real_kr_open > 0:
+                base_open = real_kr_open
             # 💡 [철벽 방어]: 실시간 시가와 현재가를 엄격히 대조하여 양봉/음봉 진실 확정
             if 'real_kr_open' in locals() and real_kr_open > 0:
                 base_open = real_kr_open
