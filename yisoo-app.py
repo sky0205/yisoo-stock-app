@@ -300,12 +300,17 @@ if symbol:
                     if res.status_code == 200:
                         soup = BeautifulSoup(res.text, "html.parser")
                         auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-                        v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
-                        real_kr_open = float(soup.select(".no_info .blind")[4].text.replace(",", ""))
-                        real_kr_high = float(soup.select(".no_info .blind")[1].text.replace(",", ""))
-                        real_kr_low = float(soup.select(".no_info .blind")[8].text.replace(",", ""))
-                        if auto_p > 0 and real_kr_open > 0:
-                            kr_fetched = True
+                        
+                        # 수정: 안전한 파싱을 위해 리스트 길이 체크 및 [8]을 [5]로 정상화!
+                        blinds = soup.select(".no_info .blind")
+                        if len(blinds) >= 6:
+                            v_curr = float(blinds[3].text.replace(",", ""))
+                            real_kr_open = float(blinds[4].text.replace(",", ""))
+                            real_kr_high = float(blinds[1].text.replace(",", ""))
+                            real_kr_low = float(blinds[5].text.replace(",", "")) # 💡 에러의 원흉을 [5]로 교체!
+                            
+                            if auto_p > 0 and real_kr_open > 0:
+                                kr_fetched = True
                 except Exception:
                     pass
 
