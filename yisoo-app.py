@@ -285,10 +285,11 @@ if symbol:
                     if df.empty: df = yf.Ticker(f"{clean_symbol}.KQ").history(start=start_dt_str)
                 except: pass
 
-            # 🚀 [무결점 1순위 엔진]: 네이버 모바일 API
+            _h = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+            
+            # 🚀 1. 다이렉트 통신 (로컬 PC에서 실행할 때 작동)
             try:
-                _h = {"User-Agent": "Mozilla/5.0"}
-                res = requests.get(f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic", headers=_h, timeout=4)
+                res = requests.get(f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic", headers=_h, timeout=3)
                 if res.status_code == 200:
                     _d = res.json()
                     _o = float(str(_d.get("openPrice", "0")).replace(",", ""))
@@ -301,40 +302,39 @@ if symbol:
                         kr_fetched = True
             except: pass
 
-            # 🚀 [무결점 2순위 엔진]: 야후 1분봉 정밀 타격 (클라우드 IP 차단 무적)
-            # 야후의 일봉(Daily) 시가는 버그가 잦지만, 1분봉(1m)의 첫 시가는 100% 정확합니다!
+            # 🚀 2. 클라우드 방화벽 1차 우회망 (AllOrigins RAW 프록시 - 포장지 없이 즉시 데이터 반환)
             if not kr_fetched:
-                for suffix in [".KS", ".KQ"]:
-                    try:
-                        tk = yf.Ticker(f"{clean_symbol}{suffix}")
-                        _min_df = tk.history(period="1d", interval="1m")
-                        if not _min_df.empty:
-                            _o = float(_min_df["Open"].iloc[0]) # 당일 아침 9시의 완벽한 진짜 시가
-                            _c = float(tk.fast_info.last_price)
-                            if _o > 0 and _c > 0:
-                                real_kr_open, auto_p = _o, _c
-                                real_kr_high = float(_min_df["High"].max())
-                                real_kr_low = float(_min_df["Low"].min())
-                                v_curr = float(tk.fast_info.last_volume)
-                                kr_fetched = True
-                                break
-                    except: pass
-                    
-            # 🚀 [무결점 3순위 엔진]: 야후 fast_info
-            if not kr_fetched:
-                for suffix in [".KS", ".KQ"]:
-                    try:
-                        tk = yf.Ticker(f"{clean_symbol}{suffix}")
-                        _o = float(tk.fast_info.open)
-                        _c = float(tk.fast_info.last_price)
+                try:
+                    proxy_url = f"https://api.allorigins.win/raw?url=https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
+                    res = requests.get(proxy_url, headers=_h, timeout=4)
+                    if res.status_code == 200:
+                        _d = res.json()
+                        _o = float(str(_d.get("openPrice", "0")).replace(",", ""))
+                        _c = float(str(_d.get("closePrice", "0")).replace(",", ""))
                         if _o > 0 and _c > 0:
                             real_kr_open, auto_p = _o, _c
-                            real_kr_high = float(tk.fast_info.day_high)
-                            real_kr_low = float(tk.fast_info.day_low)
-                            v_curr = float(tk.fast_info.last_volume)
+                            real_kr_high = float(str(_d.get("highPrice", "0")).replace(",", ""))
+                            real_kr_low = float(str(_d.get("lowPrice", "0")).replace(",", ""))
+                            v_curr = float(str(_d.get("accumulatedTradingVolume", "0")).replace(",", ""))
                             kr_fetched = True
-                            break
-                    except: pass
+                except: pass
+                
+            # 🚀 3. 클라우드 방화벽 2차 우회망 (CorsProxy)
+            if not kr_fetched:
+                try:
+                    proxy_url2 = f"https://corsproxy.io/?https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
+                    res = requests.get(proxy_url2, headers=_h, timeout=4)
+                    if res.status_code == 200:
+                        _d = res.json()
+                        _o = float(str(_d.get("openPrice", "0")).replace(",", ""))
+                        _c = float(str(_d.get("closePrice", "0")).replace(",", ""))
+                        if _o > 0 and _c > 0:
+                            real_kr_open, auto_p = _o, _c
+                            real_kr_high = float(str(_d.get("highPrice", "0")).replace(",", ""))
+                            real_kr_low = float(str(_d.get("lowPrice", "0")).replace(",", ""))
+                            v_curr = float(str(_d.get("accumulatedTradingVolume", "0")).replace(",", ""))
+                            kr_fetched = True
+                except: pass
         else:
             # 💡 [미장 수집 로직]
             currency, fmt_p = "$", ",.2f"
@@ -344,7 +344,6 @@ if symbol:
             try: df = ticker.history(start=start_dt_str)
             except: df = ticker.history(period="1y")
 
-            # 미장도 1분봉 우선 추출 적용!
             try:
                 _min_df = ticker.history(period="1d", interval="1m")
                 if not _min_df.empty:
@@ -371,7 +370,7 @@ if symbol:
                         kr_fetched = True
                 except: pass
 
-        # 🛑 [장부 강제 세탁] 억지 가짜 도지 생성(Open=Close) 로직 완전 폐기!
+        # 🛑 [장부 강제 세탁] 억지 가짜 도지 생성 로직 삭제 및 순수 장부 세팅
         today_date = now_local.date()
         if kr_fetched and auto_p > 0 and real_kr_open > 0:
             p = auto_p
@@ -388,8 +387,7 @@ if symbol:
             if not df.empty:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
-                # 엔진이 다 실패했을 때는 억지로 현재가를 시가에 덮어씌우지 않고 야후 원본을 그대로 씁니다!
-                real_kr_open = float(df["Open"].iloc[-1]) 
+                real_kr_open = float(df["Open"].iloc[-1])
                 real_kr_high = float(df["High"].iloc[-1])
                 real_kr_low = float(df["Low"].iloc[-1])
                 kr_fetched = True
@@ -433,7 +431,6 @@ if symbol:
             df.index = pd.to_datetime(df.index, utc=True).date
             today_date = now_local.date()
         # --- [👆 여기까지 복사하여 덮어씌워 주시옵소서 (414번 줄 부근)] ---
-
             override_prev_p = 0.0
             if manual_prev_price_str:
                 try:
