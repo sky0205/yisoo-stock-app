@@ -287,30 +287,25 @@ if symbol:
                 except Exception:
                     pass
 
-            # 💡 [엔진 전면 교체: 무적의 네이버 3중 크롤링/API 시스템]
+            # 💡 [무적의 자동 엔진 교체] 네이버 모바일 API를 최우선으로 가동하여 시가·고가·저가·현재가 완벽 자동 획득!
             kr_fetched = False
             _code = clean_symbol
             
-            # 엔진 1: PC버전 HTML 강제 크롤링 (가장 차단 안 됨, 가장 정확함)
+            # 엔진 1: 네이버 모바일 API (가장 빠르고 정확하며 HTML 변동에 끄떡없음)
             if not kr_fetched:
                 try:
-                    url = f"https://finance.naver.com/item/main.naver?code={_code}"
-                    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-                    res = requests.get(url, headers=headers, timeout=3)
+                    api_url = f"https://m.stock.naver.com/api/stock/{_code}/basic"
+                    headers = {"User-Agent": "Mozilla/5.0"}
+                    res = requests.get(api_url, headers=headers, timeout=3)
                     if res.status_code == 200:
-                        soup = BeautifulSoup(res.text, "html.parser")
-                        auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-                        
-                        # [핵심 수술] 글자 빼고 '숫자'만 핀셋으로 정확하게 뽑아오도록 타겟팅 완벽 수정!
-                        em_blinds = soup.select(".no_info tr td em .blind")
-                        if len(em_blinds) >= 6:
-                            real_kr_high = float(em_blinds[1].text.replace(",", "")) # 고가
-                            v_curr = float(em_blinds[3].text.replace(",", ""))       # 거래량
-                            real_kr_open = float(em_blinds[4].text.replace(",", "")) # 시가
-                            real_kr_low = float(em_blinds[5].text.replace(",", ""))  # 저가
-                            
-                            if auto_p > 0 and real_kr_open > 0:
-                                kr_fetched = True
+                        data = res.json()
+                        auto_p = float(str(data["closePrice"]).replace(",", ""))
+                        v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
+                        real_kr_open = float(str(data["openPrice"]).replace(",", ""))
+                        real_kr_high = float(str(data["highPrice"]).replace(",", ""))
+                        real_kr_low = float(str(data["lowPrice"]).replace(",", ""))
+                        if auto_p > 0 and real_kr_open > 0:
+                            kr_fetched = True
                 except Exception:
                     pass
 
@@ -326,27 +321,30 @@ if symbol:
                         real_kr_high = float(_d["hv"])    
                         real_kr_low = float(_d["lv"])     
                         v_curr = float(_d["aq"])
-                        kr_fetched = True
+                        if auto_p > 0 and real_kr_open > 0:
+                            kr_fetched = True
                 except Exception:
                     pass
 
-            # 엔진 3: 네이버 모바일 API
+            # 엔진 3: PC버전 HTML 강제 크롤링 (최후의 보조 수단)
             if not kr_fetched:
                 try:
-                    api_url = f"https://m.stock.naver.com/api/stock/{_code}/basic"
-                    headers = {"User-Agent": "Mozilla/5.0"}
-                    res = requests.get(api_url, headers=headers, timeout=3)
+                    url = f"https://finance.naver.com/item/main.naver?code={_code}"
+                    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+                    res = requests.get(url, headers=headers, timeout=3)
                     if res.status_code == 200:
-                        data = res.json()
-                        auto_p = float(str(data["closePrice"]).replace(",", ""))
-                        v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
-                        real_kr_open = float(str(data["openPrice"]).replace(",", ""))
-                        real_kr_high = float(str(data["highPrice"]).replace(",", ""))
-                        real_kr_low = float(str(data["lowPrice"]).replace(",", ""))
-                        kr_fetched = True
+                        soup = BeautifulSoup(res.text, "html.parser")
+                        auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                        em_blinds = soup.select(".no_info tr td em .blind")
+                        if len(em_blinds) >= 6:
+                            real_kr_high = float(em_blinds[1].text.replace(",", ""))
+                            v_curr = float(em_blinds[3].text.replace(",", ""))
+                            real_kr_open = float(em_blinds[4].text.replace(",", ""))
+                            real_kr_low = float(em_blinds[5].text.replace(",", ""))
+                            if auto_p > 0 and real_kr_open > 0:
+                                kr_fetched = True
                 except Exception:
                     pass
-
             # 3중 엔진이 모두 실패했을 때만 최후의 수단으로 기존 장부(Yahoo 등) 수혈
             if not kr_fetched and not df.empty:
                 auto_p = float(df["Close"].iloc[-1])
