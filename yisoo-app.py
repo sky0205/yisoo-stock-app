@@ -272,7 +272,7 @@ if symbol:
         real_kr_open, real_kr_high, real_kr_low = 0.0, 0.0, 0.0
         kr_fetched = False
 
-        if is_kr:
+        iif is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
             try:
@@ -288,16 +288,38 @@ if symbol:
                 except Exception:
                     pass
 
-            # 💡 [정예 수집 엔진]: 낡은 네이버 크롤링 삭제하고 강력한 Daum & fchart 투톱으로 교체
+            # 💡 [입구 완벽 복구]: 헤더 누락으로 막혔던 통신망 전면 뚫기!
+            kr_fetched = False
             pure_code = clean_symbol
             
-            # 엔진 1: Daum 금융 API (방화벽 우회, 100% 정확한 시가)
+            # 🔥 (핵심) 네이버와 다음이 봇(Bot)으로 차단하지 못하도록 완벽한 PC 브라우저 위장 헤더 장착!
+            _headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Referer": "https://finance.naver.com/",
+                "Accept-Language": "ko-KR,ko;q=0.9"
+            }
+            daum_headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Referer": "https://finance.daum.net/"
+            }
+
+            # 엔진 1: 네이버 모바일 API (가장 응답이 빠르고 차단율이 낮음)
             if not kr_fetched:
                 try:
-                    daum_headers = {
-                        "User-Agent": "Mozilla/5.0",
-                        "Referer": "https://finance.daum.net/"
-                    }
+                    res = requests.get(f"https://m.stock.naver.com/api/stock/{pure_code}/basic", headers=_headers, timeout=3)
+                    if res.status_code == 200:
+                        _d = res.json()
+                        real_kr_open = float(str(_d.get("openPrice", "0")).replace(",", ""))
+                        real_kr_high = float(str(_d.get("highPrice", "0")).replace(",", ""))
+                        real_kr_low = float(str(_d.get("lowPrice", "0")).replace(",", ""))
+                        auto_p = float(str(_d.get("closePrice", "0")).replace(",", ""))
+                        v_curr = float(str(_d.get("accumulatedTradingVolume", "0")).replace(",", ""))
+                        if auto_p > 0 and real_kr_open > 0: kr_fetched = True
+                except: pass
+
+            # 엔진 2: 다음(Daum) 금융 API (완벽한 백업)
+            if not kr_fetched:
+                try:
                     res = requests.get(f"https://finance.daum.net/api/quotes/A{pure_code}", headers=daum_headers, timeout=3)
                     if res.status_code == 200:
                         d = res.json()
@@ -306,16 +328,14 @@ if symbol:
                         real_kr_low = float(d.get('lowPrice', 0))
                         auto_p = float(d.get('tradePrice', 0))
                         v_curr = float(d.get('accumulatedTradingVolume', 0))
-                        if auto_p > 0 and real_kr_open > 0:
-                            kr_fetched = True
-                except:
-                    pass
+                        if auto_p > 0 and real_kr_open > 0: kr_fetched = True
+                except: pass
 
-            # 엔진 2: 네이버 fchart (차트 원본 데이터)
+            # 엔진 3: 네이버 fchart (차트 원본 데이터 강제 추출 - 헤더 필수!)
             if not kr_fetched:
                 try:
                     chart_url = f"https://fchart.stock.naver.com/sise.nhn?symbol={pure_code}&timeframe=day&count=1&requestType=0"
-                    res = requests.get(chart_url, timeout=3)
+                    res = requests.get(chart_url, headers=_headers, timeout=3)
                     if res.status_code == 200 and 'data="' in res.text:
                         raw_data = res.text.split('data="')[1].split('"')[0]
                         ohlcv = raw_data.split('|')
@@ -325,18 +345,31 @@ if symbol:
                             real_kr_low = float(ohlcv[3])
                             auto_p = float(ohlcv[4])
                             v_curr = float(ohlcv[5])
-                            if auto_p > 0 and real_kr_open > 0:
-                                kr_fetched = True
-                except:
-                    pass
-            
-            # 최후 수단 방어막: 엔진이 모두 뚫렸을 때 17,120원 같은 찌꺼기 방어
+                            if auto_p > 0 and real_kr_open > 0: kr_fetched = True
+                except: pass
+                
+            # 엔진 4: 네이버 PC HTML 크롤링 (최후의 보루)
+            if not kr_fetched:
+                try:
+                    res = requests.get(f"https://finance.naver.com/item/main.naver?code={pure_code}", headers=_headers, timeout=3)
+                    if res.status_code == 200:
+                        soup = BeautifulSoup(res.text, "html.parser")
+                        auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                        for blind in soup.select(".no_info .blind"):
+                            txt = blind.parent.parent.text
+                            if "시가" in txt: real_kr_open = float(blind.text.replace(",", ""))
+                            elif "고가" in txt: real_kr_high = float(blind.text.replace(",", ""))
+                            elif "저가" in txt: real_kr_low = float(blind.text.replace(",", ""))
+                            elif "거래량" in txt: v_curr = float(blind.text.replace(",", ""))
+                        if auto_p > 0 and real_kr_open > 0: kr_fetched = True
+                except: pass
+
+            # 최후 수단 방어막: 엔진이 모두 뚫렸을 때 찌꺼기 방어
             if not kr_fetched and not df.empty:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
                 raw_open = float(df["Open"].iloc[-1])
                 
-                # 야후 장부의 Open 값이 현재가(p)와 15% 이상 터무니없이 차이나면 찌꺼기로 간주하고 보정
                 if raw_open > 0 and abs(raw_open - auto_p) / auto_p < 0.15:
                     real_kr_open = raw_open
                 else:
