@@ -259,10 +259,19 @@ if symbol:
         except Exception:
             start_date = datetime.now(ZoneInfo("UTC")) - timedelta(days=500)
 
+        # --- [여기서부터 복사하여 덮어씌워 주시옵소서] ---
         is_kr = symbol.isdigit()
         kst_tz = ZoneInfo("Asia/Seoul")
         ny_tz = ZoneInfo("America/New_York")
         now_local = datetime.now(kst_tz) if is_kr else datetime.now(ny_tz)
+
+        # 💡 [명장님 통찰 적용]: 장 시작 시간(미장 서머타임 자동 적용)을 명확히 규정!
+        if is_kr:
+            market_start = now_local.replace(hour=9, minute=0, second=0, microsecond=0)
+        else:
+            market_start = now_local.replace(hour=9, minute=30, second=0, microsecond=0)
+            
+        is_market_open = (now_local >= market_start) and (now_local.weekday() < 5)
 
         df = pd.DataFrame()
         auto_p, v_curr = 0.0, 0.0
@@ -272,73 +281,37 @@ if symbol:
         real_kr_open, real_kr_high, real_kr_low = 0.0, 0.0, 0.0
         kr_fetched = False
 
+        # 💡 방화벽에 막히는 엔진 전면 폐기!
+        # 대신, 야후의 '1분봉(interval=1m)' 데이터를 뜯어와서 오늘 아침 첫 시가를 100% 핀셋 추출합니다.
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
             try: df = fdr.DataReader(clean_symbol, start=start_dt_str)
             except: pass
 
+            yf_sym = f"{clean_symbol}.KS"
             if df.empty:
                 try:
-                    df = yf.Ticker(f"{clean_symbol}.KS").history(start=start_dt_str)
-                    if df.empty: df = yf.Ticker(f"{clean_symbol}.KQ").history(start=start_dt_str)
+                    df = yf.Ticker(yf_sym).history(start=start_dt_str)
+                    if df.empty: 
+                        yf_sym = f"{clean_symbol}.KQ"
+                        df = yf.Ticker(yf_sym).history(start=start_dt_str)
                 except: pass
-                
-            # 💡 [국장 무적 방어벽 우회 엔진] 네이버/다음이 클라우드를 차단하지 못하도록 완벽한 PC 헤더 적용
-            _h = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-                "Referer": "https://finance.naver.com/",
-                "Accept-Language": "ko-KR,ko;q=0.9"
-            }
-            daum_h = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-                "Referer": "https://finance.daum.net/"
-            }
-            
-            # 엔진 1: 다음(Daum) API (가장 방화벽이 약함, 실시간 시가 완벽 추출)
-            try:
-                res = requests.get(f"https://finance.daum.net/api/quotes/A{clean_symbol}", headers=daum_h, timeout=4)
-                if res.status_code == 200:
-                    d = res.json()
-                    real_kr_open = float(d.get('openingPrice', 0))
-                    auto_p = float(d.get('tradePrice', 0))
-                    if auto_p > 0 and real_kr_open > 0:
-                        real_kr_high = float(d.get('highPrice', 0))
-                        real_kr_low = float(d.get('lowPrice', 0))
-                        v_curr = float(d.get('accumulatedTradingVolume', 0))
-                        kr_fetched = True
-            except: pass
 
-            # 엔진 2: 네이버 fchart (차트 전용 숨은 API, 방화벽 회피 헤더 적용)
-            if not kr_fetched:
+            if is_market_open:
                 try:
-                    res = requests.get(f"https://fchart.stock.naver.com/sise.nhn?symbol={clean_symbol}&timeframe=day&count=1&requestType=0", headers=_h, timeout=4)
-                    if res.status_code == 200 and 'data="' in res.text:
-                        ohlcv = res.text.split('data="')[1].split('"')[0].split('|')
-                        if len(ohlcv) == 6:
-                            real_kr_open, auto_p = float(ohlcv[1]), float(ohlcv[4])
-                            if auto_p > 0 and real_kr_open > 0:
-                                real_kr_high, real_kr_low, v_curr = float(ohlcv[2]), float(ohlcv[3]), float(ohlcv[5])
-                                kr_fetched = True
+                    tk_yf = yf.Ticker(yf_sym)
+                    # 🎯 핵심: 야후 '일봉'은 시가가 고장나도, '1분봉'의 첫 시가는 무조건 정확합니다!
+                    min_df = tk_yf.history(period="1d", interval="1m")
+                    if not min_df.empty:
+                        real_kr_open = float(min_df["Open"].iloc[0]) # 오늘 9시 정각의 진짜 시가!
+                        real_kr_high = float(min_df["High"].max())
+                        real_kr_low = float(min_df["Low"].min())
+                        auto_p = float(tk_yf.fast_info.last_price)
+                        v_curr = float(tk_yf.fast_info.last_volume)
+                        if auto_p > 0 and real_kr_open > 0: kr_fetched = True
                 except: pass
-            
-            # 엔진 3: 네이버 모바일 API
-            if not kr_fetched:
-                try:
-                    res = requests.get(f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic", headers=_h, timeout=4)
-                    if res.status_code == 200:
-                        _d = res.json()
-                        real_kr_open = float(str(_d.get("openPrice", "0")).replace(",", ""))
-                        auto_p = float(str(_d.get("closePrice", "0")).replace(",", ""))
-                        if auto_p > 0 and real_kr_open > 0:
-                            real_kr_high = float(str(_d.get("highPrice", "0")).replace(",", ""))
-                            real_kr_low = float(str(_d.get("lowPrice", "0")).replace(",", ""))
-                            v_curr = float(str(_d.get("accumulatedTradingVolume", "0")).replace(",", ""))
-                            kr_fetched = True
-                except: pass
-                    
         else:
-            # 💡 [미장 수집 로직]: 미장 역시 야후 df의 엉터리 시가를 무시하고 FastInfo에서 실시간 시가를 직접 뜯어온다!
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
             ticker = yf.Ticker(tk_upper)
@@ -346,32 +319,31 @@ if symbol:
             try: df = ticker.history(start=start_dt_str)
             except: df = ticker.history(period="1y")
 
-            try:
-                f_info = ticker.fast_info
-                o, c = float(f_info.open), float(f_info.last_price)
-                if o > 0 and c > 0:
-                    real_kr_open, auto_p = o, c
-                    real_kr_high, real_kr_low = float(f_info.day_high), float(f_info.day_low)
-                    v_curr = float(f_info.last_volume)
-                    us_prev_p = float(f_info.previous_close)
-                    kr_fetched = True
-            except: pass
+            if is_market_open:
+                try:
+                    min_df = ticker.history(period="1d", interval="1m")
+                    if not min_df.empty:
+                        real_kr_open = float(min_df["Open"].iloc[0]) # 미장 9시 30분의 진짜 시가!
+                        real_kr_high = float(min_df["High"].max())
+                        real_kr_low = float(min_df["Low"].min())
+                        f_info = ticker.fast_info
+                        auto_p = float(f_info.last_price)
+                        v_curr = float(f_info.last_volume)
+                        us_prev_p = float(f_info.previous_close)
+                        if auto_p > 0 and real_kr_open > 0: kr_fetched = True
+                except: pass
             
             if not kr_fetched:
                 try:
-                    inf = ticker.info
-                    o, c = float(inf.get("regularMarketOpen", 0)), float(inf.get("currentPrice", inf.get("regularMarketPrice", 0)))
-                    if o > 0 and c > 0:
-                        real_kr_open, auto_p = o, c
-                        real_kr_high, real_kr_low = float(inf.get("dayHigh", o)), float(inf.get("dayLow", o))
-                        v_curr = float(inf.get("regularMarketVolume", 0))
-                        us_prev_p = float(inf.get("previousClose", 0))
-                        kr_fetched = True
+                    f_info = ticker.fast_info
+                    auto_p = float(f_info.last_price)
+                    v_curr = float(f_info.last_volume)
+                    us_prev_p = float(f_info.previous_close)
                 except: pass
 
-        # 🛑 [국장/미장 공통]: 수집된 '진짜 시가(real_kr_open)'로 야후 장부(df)를 무자비하게 강제 세탁!
+        # 🛑 [장부 강제 세탁소]: 17,120원 등 가짜 시가 완벽 멸균
         today_date = now_local.date()
-        if kr_fetched and auto_p > 0:
+        if kr_fetched and auto_p > 0 and real_kr_open > 0:
             p = auto_p
             if not df.empty and today_date in df.index:
                 df.loc[today_date, "Open"] = real_kr_open
@@ -383,19 +355,18 @@ if symbol:
                 new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p) if real_kr_low > 0 else p], "Close": [p], "Volume": [v_curr]}, index=[today_date])
                 df = pd.concat([df, new_row])
         else:
-            # 모든 우회망이 실패했을 때: 야후 장부에 어제 종가(17120원 등)가 오늘 시가로 위조 복사된 버그 감지 및 삭제
             if not df.empty:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
                 raw_open = float(df["Open"].iloc[-1])
-                prev_c = float(df["Close"].iloc[-2]) if len(df) > 1 else 0.0
                 
-                # 💡 야후 버그: 오늘 시가가 어제 종가와 똑같거나 비정상적 차이가 나면 가짜로 판정하고 현재가로 임시 교정!
-                if raw_open == 0 or raw_open == prev_c or abs(raw_open - auto_p)/auto_p > 0.15:
-                    df.iloc[-1, df.columns.get_loc("Open")] = auto_p
+                # 💡 장 시작 전이거나 통신에 실패했을 땐, 야후의 엉터리 시가(raw_open)를 강제로 현재가로 덮어버림!
+                if not is_market_open or abs(raw_open - auto_p)/auto_p > 0.1:
                     real_kr_open = auto_p
+                    df.iloc[-1, df.columns.get_loc("Open")] = auto_p
                 else:
                     real_kr_open = raw_open
+                
                 real_kr_high = max(float(df["High"].iloc[-1]), auto_p)
                 real_kr_low = min(float(df["Low"].iloc[-1]), auto_p)
                 kr_fetched = True
@@ -431,6 +402,7 @@ if symbol:
                 pass
 
         p = override_pre_p if is_pre_market_mode else auto_p
+        # --- [여기까지 복사하여 덮어씌워 주시옵소서] ---
 
         if df.empty:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인해 주시게.")
