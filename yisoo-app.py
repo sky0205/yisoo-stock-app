@@ -352,6 +352,32 @@ if symbol:
                             elif "거래량" in txt: v_curr = float(blind.text.replace(",", ""))
                         if auto_p > 0 and real_kr_open > 0: kr_fetched = True
                 except: pass
+            # 💡 [핵심 조치]: 종목코드에 '.KS' 등 불순물이 섞여 통신이 실패하는 현상 원천 차단!
+            pure_code = ''.join(filter(str.isdigit, str(_code)))[-6:]
+    
+            # 엔진 4: 다음(Daum) 금융 API (네이버 방화벽 전면 차단 시 완벽 우회 백도어)
+            if not kr_fetched:
+                try:
+                    daum_headers = {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                        "Referer": "https://finance.daum.net/"  # 다음 API는 이 Referer가 없으면 거절합니다
+                    }
+                    res = requests.get(f"https://finance.daum.net/api/quotes/A{pure_code}", headers=daum_headers, timeout=4)
+                    
+                    if res.status_code == 200:
+                        d = res.json()
+                        real_kr_open = float(d.get('openingPrice', 0))  # 완벽한 오늘 시가
+                        real_kr_high = float(d.get('highPrice', 0))
+                        real_kr_low = float(d.get('lowPrice', 0))
+                        auto_p = float(d.get('tradePrice', 0))          # 현재가
+                        
+                        if auto_p > 0 and real_kr_open > 0:
+                            kr_fetched = True
+                            # 💡 야후 장부에 박힌 17,120원을 찾아내 진짜 시가로 강제 덮어쓰기!
+                            if not df.empty:
+                                df.iloc[-1, df.columns.get_loc("Open")] = real_kr_open
+                except:
+                    pass
             # 3중 엔진이 모두 실패했을 때의 최후 수단
             if not kr_fetched and not df.empty:
                 auto_p = float(df["Close"].iloc[-1])
