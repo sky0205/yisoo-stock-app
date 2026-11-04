@@ -275,71 +275,151 @@ if symbol:
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
-            try:
-                df = fdr.DataReader(clean_symbol, start=start_dt_str)
-            except Exception:
-                pass
+            try: df = fdr.DataReader(clean_symbol, start=start_dt_str)
+            except: pass
 
-            kr_fetched = False
-            pure_code = clean_symbol
+            if df.empty:
+                try:
+                    df = yf.Ticker(f"{clean_symbol}.KS").history(start=start_dt_str)
+                    if df.empty: df = yf.Ticker(f"{clean_symbol}.KQ").history(start=start_dt_str)
+                except: pass
+                
+            _h = {"User-Agent": "Mozilla/5.0"}
             
-            # 💡 [무적 엔진 1]: 네이버 IP 차단을 뚫기 위해 야후 금융(KOSPI, KOSDAQ 모두) 1순위 적용!
-            for suffix in [".KS", ".KQ"]:
-                if not kr_fetched:
-                    try:
-                        tk_yf = yf.Ticker(f"{pure_code}{suffix}")
-                        _open = float(tk_yf.fast_info.open)
-                        _last = float(tk_yf.fast_info.last_price)
-                        if _open > 0 and _last > 0:
-                            real_kr_open = _open
-                            real_kr_high = float(tk_yf.fast_info.day_high)
-                            real_kr_low = float(tk_yf.fast_info.day_low)
-                            auto_p = _last
-                            v_curr = float(tk_yf.fast_info.last_volume)
-                            kr_fetched = True
-                    except:
-                        pass
-            
-            # 💡 [무적 엔진 2]: 야후가 실패할 경우를 대비한 차트 원본 데이터 (로봇 차단 회피용 헤더 강화)
+            # 💡 [국장 엔진 1]: 다음(Daum) API (실시간 시가 100% 뚫림)
+            try:
+                res = requests.get(f"https://finance.daum.net/api/quotes/A{clean_symbol}", headers={"User-Agent":"Mozilla/5.0", "Referer":"https://finance.daum.net/"}, timeout=3)
+                if res.status_code == 200:
+                    d = res.json()
+                    real_kr_open = float(d.get('openingPrice', 0))
+                    auto_p = float(d.get('tradePrice', 0))
+                    if auto_p > 0 and real_kr_open > 0:
+                        real_kr_high = float(d.get('highPrice', 0))
+                        real_kr_low = float(d.get('lowPrice', 0))
+                        v_curr = float(d.get('accumulatedTradingVolume', 0))
+                        kr_fetched = True
+            except: pass
+
+            # 💡 [국장 엔진 2]: 네이버 fchart (차트 원본 데이터)
             if not kr_fetched:
                 try:
-                    _h = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
-                    res = requests.get(f"https://fchart.stock.naver.com/sise.nhn?symbol={pure_code}&timeframe=day&count=1&requestType=0", headers=_h, timeout=3)
+                    res = requests.get(f"https://fchart.stock.naver.com/sise.nhn?symbol={clean_symbol}&timeframe=day&count=1&requestType=0", headers=_h, timeout=3)
                     if res.status_code == 200 and 'data="' in res.text:
                         ohlcv = res.text.split('data="')[1].split('"')[0].split('|')
                         if len(ohlcv) == 6:
-                            real_kr_open = float(ohlcv[1])
-                            real_kr_high = float(ohlcv[2])
-                            real_kr_low = float(ohlcv[3])
-                            auto_p = float(ohlcv[4])
-                            v_curr = float(ohlcv[5])
-                            if auto_p > 0 and real_kr_open > 0: kr_fetched = True
+                            real_kr_open, auto_p = float(ohlcv[1]), float(ohlcv[4])
+                            if auto_p > 0 and real_kr_open > 0:
+                                real_kr_high, real_kr_low, v_curr = float(ohlcv[2]), float(ohlcv[3]), float(ohlcv[5])
+                                kr_fetched = True
+                except: pass
+            
+            # 💡 [국장 엔진 3]: 야후 실시간 FastInfo 백업
+            if not kr_fetched:
+                for suffix in [".KS", ".KQ"]:
+                    try:
+                        tk = yf.Ticker(f"{clean_symbol}{suffix}")
+                        o, c = float(tk.fast_info.open), float(tk.fast_info.last_price)
+                        if o > 0 and c > 0:
+                            real_kr_open, auto_p = o, c
+                            real_kr_high, real_kr_low = float(tk.fast_info.day_high), float(tk.fast_info.day_low)
+                            v_curr = float(tk.fast_info.last_volume)
+                            kr_fetched = True; break
+                    except: pass
+                    
+        else:
+            # 💡 [미장 수집 로직]: 미장 역시 야후 history(df)의 엉터리 시가를 무시하고 FastInfo에서 실시간 시가를 직접 뜯어온다!
+            currency, fmt_p = "$", ",.2f"
+            tk_upper = symbol.upper()
+            ticker = yf.Ticker(tk_upper)
+
+            try: df = ticker.history(start=start_dt_str)
+            except: df = ticker.history(period="1y")
+
+            try:
+                f_info = ticker.fast_info
+                o, c = float(f_info.open), float(f_info.last_price)
+                if o > 0 and c > 0:
+                    real_kr_open, auto_p = o, c
+                    real_kr_high, real_kr_low = float(f_info.day_high), float(f_info.day_low)
+                    v_curr = float(f_info.last_volume)
+                    us_prev_p = float(f_info.previous_close)
+                    kr_fetched = True
+            except: pass
+            
+            if not kr_fetched:
+                try:
+                    inf = ticker.info
+                    o, c = float(inf.get("regularMarketOpen", 0)), float(inf.get("currentPrice", inf.get("regularMarketPrice", 0)))
+                    if o > 0 and c > 0:
+                        real_kr_open, auto_p = o, c
+                        real_kr_high, real_kr_low = float(inf.get("dayHigh", o)), float(inf.get("dayLow", o))
+                        v_curr = float(inf.get("regularMarketVolume", 0))
+                        us_prev_p = float(inf.get("previousClose", 0))
+                        kr_fetched = True
                 except: pass
 
-            # 🛑 [최후 방어막]: 그래도 엔진이 죽어서 과거 장부를 쓸 때, '전일 종가(17,120원)'가 시가로 둔갑하는 버그 원천 차단!
-            if not kr_fetched and not df.empty:
+        # 🛑 [국장/미장 공통]: 수집된 '진짜 시가(real_kr_open)'로 야후 장부(df)를 무자비하게 강제 세탁!
+        today_date = now_local.date()
+        if kr_fetched and auto_p > 0:
+            p = auto_p
+            if not df.empty and today_date in df.index:
+                df.loc[today_date, "Open"] = real_kr_open
+                df.loc[today_date, "High"] = max(real_kr_high, p, real_kr_open)
+                df.loc[today_date, "Low"] = min(real_kr_low, p, real_kr_open) if real_kr_low > 0 else min(p, real_kr_open)
+                df.loc[today_date, "Close"] = p
+                df.loc[today_date, "Volume"] = max(v_curr, float(df.loc[today_date, "Volume"]))
+            else:
+                new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p) if real_kr_low > 0 else p], "Close": [p], "Volume": [v_curr]}, index=[today_date])
+                df = pd.concat([df, new_row])
+        else:
+            # 통신 100% 실패 시: 야후 장부에 어제 종가가 오늘 시가로 위조 복사된 버그 감지 및 삭제
+            if not df.empty:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
                 raw_open = float(df["Open"].iloc[-1])
-                prev_c = float(df["Close"].iloc[-2]) if len(df) > 1 else 0
+                prev_c = float(df["Close"].iloc[-2]) if len(df) > 1 else 0.0
                 
-                # 시가가 전일 종가와 완전히 똑같거나 0이면, 찌꺼기(버그)로 간주하고 현재가를 임시 시가로 강제!
+                # 💡 야후 버그: 오늘 시가가 어제 종가와 똑같으면 가짜로 판정하고 현재가로 임시 교정!
                 if raw_open == 0 or raw_open == prev_c:
-                    real_kr_open = auto_p  
+                    df.iloc[-1, df.columns.get_loc("Open")] = auto_p
+                    real_kr_open = auto_p
                 else:
                     real_kr_open = raw_open
-                
                 real_kr_high = max(float(df["High"].iloc[-1]), auto_p)
                 real_kr_low = min(float(df["Low"].iloc[-1]), auto_p)
-                kr_fetched = True # 하단 출력부에서 에러 나지 않도록 강제 성공 처리
+                kr_fetched = True
+            p = auto_p
 
-            if not df.empty and kr_fetched:
-                _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
-                if _avg_v > 0 and v_curr > _avg_v * 10:
-                    v_curr = float(df["Volume"].iloc[-1])
-                    
-            if auto_p > 0:
-                p = auto_p
+        if not df.empty and kr_fetched:
+            _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
+            if _avg_v > 0 and v_curr > _avg_v * 10:
+                v_curr = float(df["Volume"].iloc[-1])
+
+        multiplier = 1000.0 if is_kr else 1.0
+
+        is_ob_stage2_safe = True
+        is_ob_stage3_safe = True
+
+        if manual_ask > 0 and manual_bid > 0:
+            calc_ratio = round(manual_ask / manual_bid, 2)
+            display_ask = manual_ask * multiplier
+            display_bid = manual_bid * multiplier
+            ob_data = {"ask": display_ask, "bid": display_bid, "ratio": calc_ratio, "ok": True, "msg": "HTS 직접입력"}
+        elif manual_ask > 0 or manual_bid > 0:
+            ob_data = {"ask": manual_ask * multiplier, "bid": manual_bid * multiplier, "ratio": None, "ok": False, "msg": "HTS 매도·매수잔량을 모두 입력해야 분석 가능"}
+        else:
+            ob_data = {"ask": 0.0, "bid": 0.0, "ratio": None, "ok": False, "msg": "실시간 호가 API 미연결"}
+
+        override_pre_p = 0.0
+        is_pre_market_mode = False
+        if not is_kr and manual_pre_price_str:
+            try:
+                override_pre_p = float(manual_pre_price_str.replace(",", "").replace("$", ""))
+                if override_pre_p > 0: is_pre_market_mode = True
+            except ValueError:
+                pass
+
+        p = override_pre_p if is_pre_market_mode else auto_p
         else:
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
