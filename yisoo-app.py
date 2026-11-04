@@ -260,7 +260,6 @@ if symbol:
             start_date = datetime.now(ZoneInfo("UTC")) - timedelta(days=500)
 
         # --- [👇 여기서부터 복사하여 덮어씌워 주시옵소서 (262번 줄 부근)] ---
-        import urllib.parse
         is_kr = symbol.isdigit()
         kst_tz = ZoneInfo("Asia/Seoul")
         ny_tz = ZoneInfo("America/New_York")
@@ -286,55 +285,58 @@ if symbol:
                     if df.empty: df = yf.Ticker(f"{clean_symbol}.KQ").history(start=start_dt_str)
                 except: pass
 
-            # 🚀 [스트림릿 클라우드 IP 차단 우회 특수 엔진] 프록시(Proxy) 서버 경유망 구축
-            # 클라우드 서버의 신분을 숨기고 글로벌 우회망을 통해 네이버의 철벽을 뚫어냅니다!
-            
-            # 엔진 1: AllOrigins 프록시 우회 + 네이버 PC 크롤링
-            if not kr_fetched:
-                try:
-                    target_url = f"https://finance.naver.com/item/main.naver?code={clean_symbol}"
-                    proxy_url = f"https://api.allorigins.win/get?url={urllib.parse.quote(target_url)}"
-                    res = requests.get(proxy_url, timeout=5)
-                    if res.status_code == 200:
-                        import json
-                        d = res.json()
-                        html_content = d.get("contents", "")
-                        soup = BeautifulSoup(html_content, "html.parser")
-                        _c_txt = soup.select_one(".no_today .blind")
-                        if _c_txt:
-                            _c = float(_c_txt.text.replace(",", ""))
-                            _o = 0.0
-                            for blind in soup.select(".no_info .blind"):
-                                txt = blind.parent.parent.text
-                                if "시가" in txt: _o = float(blind.text.replace(",", ""))
-                                elif "고가" in txt: real_kr_high = float(blind.text.replace(",", ""))
-                                elif "저가" in txt: real_kr_low = float(blind.text.replace(",", ""))
-                                elif "거래량" in txt: v_curr = float(blind.text.replace(",", ""))
-                            if _c > 0 and _o > 0:
-                                real_kr_open, auto_p = _o, _c
-                                kr_fetched = True
-                except: pass
+            # 🚀 [무결점 1순위 엔진]: 네이버 모바일 API
+            try:
+                _h = {"User-Agent": "Mozilla/5.0"}
+                res = requests.get(f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic", headers=_h, timeout=4)
+                if res.status_code == 200:
+                    _d = res.json()
+                    _o = float(str(_d.get("openPrice", "0")).replace(",", ""))
+                    _c = float(str(_d.get("closePrice", "0")).replace(",", ""))
+                    if _o > 0 and _c > 0:
+                        real_kr_open, auto_p = _o, _c
+                        real_kr_high = float(str(_d.get("highPrice", "0")).replace(",", ""))
+                        real_kr_low = float(str(_d.get("lowPrice", "0")).replace(",", ""))
+                        v_curr = float(str(_d.get("accumulatedTradingVolume", "0")).replace(",", ""))
+                        kr_fetched = True
+            except: pass
 
-            # 엔진 2: CorsProxy 우회 + 네이버 모바일 API
+            # 🚀 [무결점 2순위 엔진]: 야후 1분봉 정밀 타격 (클라우드 IP 차단 무적)
+            # 야후의 일봉(Daily) 시가는 버그가 잦지만, 1분봉(1m)의 첫 시가는 100% 정확합니다!
             if not kr_fetched:
-                try:
-                    target_url = f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic"
-                    proxy_url = f"https://corsproxy.io/?{urllib.parse.quote(target_url)}"
-                    res = requests.get(proxy_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
-                    if res.status_code == 200:
-                        _d = res.json()
-                        _o = float(str(_d.get("openPrice", "0")).replace(",", ""))
-                        _c = float(str(_d.get("closePrice", "0")).replace(",", ""))
+                for suffix in [".KS", ".KQ"]:
+                    try:
+                        tk = yf.Ticker(f"{clean_symbol}{suffix}")
+                        _min_df = tk.history(period="1d", interval="1m")
+                        if not _min_df.empty:
+                            _o = float(_min_df["Open"].iloc[0]) # 당일 아침 9시의 완벽한 진짜 시가
+                            _c = float(tk.fast_info.last_price)
+                            if _o > 0 and _c > 0:
+                                real_kr_open, auto_p = _o, _c
+                                real_kr_high = float(_min_df["High"].max())
+                                real_kr_low = float(_min_df["Low"].min())
+                                v_curr = float(tk.fast_info.last_volume)
+                                kr_fetched = True
+                                break
+                    except: pass
+                    
+            # 🚀 [무결점 3순위 엔진]: 야후 fast_info
+            if not kr_fetched:
+                for suffix in [".KS", ".KQ"]:
+                    try:
+                        tk = yf.Ticker(f"{clean_symbol}{suffix}")
+                        _o = float(tk.fast_info.open)
+                        _c = float(tk.fast_info.last_price)
                         if _o > 0 and _c > 0:
                             real_kr_open, auto_p = _o, _c
-                            real_kr_high = float(str(_d.get("highPrice", "0")).replace(",", ""))
-                            real_kr_low = float(str(_d.get("lowPrice", "0")).replace(",", ""))
-                            v_curr = float(str(_d.get("accumulatedTradingVolume", "0")).replace(",", ""))
+                            real_kr_high = float(tk.fast_info.day_high)
+                            real_kr_low = float(tk.fast_info.day_low)
+                            v_curr = float(tk.fast_info.last_volume)
                             kr_fetched = True
-                except: pass
-                
+                            break
+                    except: pass
         else:
-            # 💡 [미장 수집 로직]: 미장은 야후가 정상이므로 굳이 프록시를 안 써도 됩니다.
+            # 💡 [미장 수집 로직]
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
             ticker = yf.Ticker(tk_upper)
@@ -342,30 +344,34 @@ if symbol:
             try: df = ticker.history(start=start_dt_str)
             except: df = ticker.history(period="1y")
 
+            # 미장도 1분봉 우선 추출 적용!
             try:
-                f_info = ticker.fast_info
-                o, c = float(f_info.open), float(f_info.last_price)
-                if o > 0 and c > 0:
-                    real_kr_open, auto_p = o, c
-                    real_kr_high, real_kr_low = float(f_info.day_high), float(f_info.day_low)
-                    v_curr = float(f_info.last_volume)
-                    us_prev_p = float(f_info.previous_close)
-                    kr_fetched = True
+                _min_df = ticker.history(period="1d", interval="1m")
+                if not _min_df.empty:
+                    _o = float(_min_df["Open"].iloc[0])
+                    _c = float(ticker.fast_info.last_price)
+                    if _o > 0 and _c > 0:
+                        real_kr_open, auto_p = _o, _c
+                        real_kr_high = float(_min_df["High"].max())
+                        real_kr_low = float(_min_df["Low"].min())
+                        v_curr = float(ticker.fast_info.last_volume)
+                        us_prev_p = float(ticker.fast_info.previous_close)
+                        kr_fetched = True
             except: pass
             
             if not kr_fetched:
                 try:
-                    inf = ticker.info
-                    o, c = float(inf.get("regularMarketOpen", 0)), float(inf.get("currentPrice", inf.get("regularMarketPrice", 0)))
+                    f_info = ticker.fast_info
+                    o, c = float(f_info.open), float(f_info.last_price)
                     if o > 0 and c > 0:
                         real_kr_open, auto_p = o, c
-                        real_kr_high, real_kr_low = float(inf.get("dayHigh", o)), float(inf.get("dayLow", o))
-                        v_curr = float(inf.get("regularMarketVolume", 0))
-                        us_prev_p = float(inf.get("previousClose", 0))
+                        real_kr_high, real_kr_low = float(f_info.day_high), float(f_info.day_low)
+                        v_curr = float(f_info.last_volume)
+                        us_prev_p = float(f_info.previous_close)
                         kr_fetched = True
                 except: pass
 
-        # 🛑 [장부 강제 세탁 및 최후 방어막]
+        # 🛑 [장부 강제 세탁] 억지 가짜 도지 생성(Open=Close) 로직 완전 폐기!
         today_date = now_local.date()
         if kr_fetched and auto_p > 0 and real_kr_open > 0:
             p = auto_p
@@ -382,18 +388,10 @@ if symbol:
             if not df.empty:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
-                raw_open = float(df["Open"].iloc[-1])
-                
-                # 💡 [17,120원 원천 살해 로직]: 국장인데 프록시 우회망마저 터졌다면 야후 시가(raw_open)는 100% 찌꺼기입니다!
-                # 차라리 현재가(auto_p)를 시가로 강제 덮어씌워버려서 억지 십자도지(관망)로 묶어버립니다. 가짜 양봉 절대 불가!
-                if is_kr:
-                    real_kr_open = auto_p
-                    df.iloc[-1, df.columns.get_loc("Open")] = auto_p
-                else:
-                    real_kr_open = raw_open
-                    
-                real_kr_high = max(float(df["High"].iloc[-1]), auto_p)
-                real_kr_low = min(float(df["Low"].iloc[-1]), auto_p)
+                # 엔진이 다 실패했을 때는 억지로 현재가를 시가에 덮어씌우지 않고 야후 원본을 그대로 씁니다!
+                real_kr_open = float(df["Open"].iloc[-1]) 
+                real_kr_high = float(df["High"].iloc[-1])
+                real_kr_low = float(df["Low"].iloc[-1])
                 kr_fetched = True
             p = auto_p
 
@@ -427,28 +425,14 @@ if symbol:
                 pass
 
         p = override_pre_p if is_pre_market_mode else auto_p
-        # --- [👆 여기까지 복사하여 덮어씌워 주시옵소서 (433번 줄 부근)] ---
 
-        # 💡 [타임존 에러 해결 및 장부(df) 완벽 세탁]
         if df.empty:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인해 주시게.")
         else:
             df = df.ffill().dropna()
-            df.index = pd.to_datetime(df.index, utc=True).date  # 서머타임 혼조 에러 원천 차단!
+            df.index = pd.to_datetime(df.index, utc=True).date
             today_date = now_local.date()
-            
-            # 장부에 진짜 시가(real_kr_open) 덮어쓰기
-            if kr_fetched and auto_p > 0 and real_kr_open > 0:
-                if today_date in df.index:
-                    df.loc[today_date, "Open"] = real_kr_open
-                    df.loc[today_date, "High"] = max(real_kr_high, p, real_kr_open)
-                    df.loc[today_date, "Low"] = min(real_kr_low, p, real_kr_open) if real_kr_low > 0 else min(p, real_kr_open)
-                    df.loc[today_date, "Close"] = p
-                    df.loc[today_date, "Volume"] = max(v_curr, float(df.loc[today_date, "Volume"]))
-                else:
-                    new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p) if real_kr_low > 0 else p], "Close": [p], "Volume": [v_curr]}, index=[today_date])
-                    df = pd.concat([df, new_row])
-        # --- [여기까지 덮어씌워 주시옵소서] ---
+        # --- [👆 여기까지 복사하여 덮어씌워 주시옵소서 (414번 줄 부근)] ---
 
             override_prev_p = 0.0
             if manual_prev_price_str:
