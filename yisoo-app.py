@@ -301,13 +301,13 @@ if symbol:
                         soup = BeautifulSoup(res.text, "html.parser")
                         auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
                         
-                        # 수정: 안전한 파싱을 위해 리스트 길이 체크 및 [8]을 [5]로 정상화!
-                        blinds = soup.select(".no_info .blind")
-                        if len(blinds) >= 6:
-                            v_curr = float(blinds[3].text.replace(",", ""))
-                            real_kr_open = float(blinds[4].text.replace(",", ""))
-                            real_kr_high = float(blinds[1].text.replace(",", ""))
-                            real_kr_low = float(blinds[5].text.replace(",", "")) # 💡 에러의 원흉을 [5]로 교체!
+                        # [핵심 수술] 글자 빼고 '숫자'만 핀셋으로 정확하게 뽑아오도록 타겟팅 완벽 수정!
+                        em_blinds = soup.select(".no_info tr td em .blind")
+                        if len(em_blinds) >= 6:
+                            real_kr_high = float(em_blinds[1].text.replace(",", "")) # 고가
+                            v_curr = float(em_blinds[3].text.replace(",", ""))       # 거래량
+                            real_kr_open = float(em_blinds[4].text.replace(",", "")) # 시가
+                            real_kr_low = float(em_blinds[5].text.replace(",", ""))  # 저가
                             
                             if auto_p > 0 and real_kr_open > 0:
                                 kr_fetched = True
