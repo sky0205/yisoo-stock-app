@@ -1,4 +1,6 @@
 import html
+import json
+import urllib.parse
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
@@ -254,189 +256,167 @@ with col_btn:
 
 if symbol:
     try:
-        # 거래소 현지 날짜/시간을 기준으로 모든 일봉 인덱스를 통일
+        try:
+            start_date = datetime.now() - timedelta(days=500)
+        except Exception:
+            start_date = datetime.now(ZoneInfo("UTC")) - timedelta(days=500)
+
         is_kr = symbol.isdigit()
-        exchange_tz = ZoneInfo("Asia/Seoul") if is_kr else ZoneInfo("America/New_York")
-        now_local = datetime.now(exchange_tz)
-        start_date = now_local - timedelta(days=500)
-        start_dt_str = start_date.strftime("%Y-%m-%d")
-        today_date = now_local.date()
+        kst_tz = ZoneInfo("Asia/Seoul")
+        ny_tz = ZoneInfo("America/New_York")
+        now_local = datetime.now(kst_tz) if is_kr else datetime.now(ny_tz)
 
         df = pd.DataFrame()
         auto_p, v_curr = 0.0, 0.0
         us_prev_p = None
+        start_dt_str = start_date.strftime("%Y-%m-%d")
+
         real_kr_open, real_kr_high, real_kr_low = 0.0, 0.0, 0.0
         kr_fetched = False
 
         if is_kr:
             currency, fmt_p = "원", ",.0f"
             clean_symbol = symbol.zfill(6)
-            try:
-                df = fdr.DataReader(clean_symbol, start=start_dt_str)
-            except Exception:
-                df = pd.DataFrame()
-
+            yf_sym = f"{clean_symbol}.KS"
+            try: df = fdr.DataReader(clean_symbol, start=start_dt_str)
+            except: pass
+            
             if df.empty:
+                try: df = yf.Ticker(yf_sym).history(start=start_dt_str)
+                except: pass
+                if df.empty:
+                    yf_sym = f"{clean_symbol}.KQ"
+                    try: df = yf.Ticker(yf_sym).history(start=start_dt_str)
+                    except: pass
+
+            # 🚀 [엔진 1]: 트레이딩뷰(TradingView) 글로벌 스캐너 API (클라우드 차단 절대 불가)
+            try:
+                tv_url = "https://scanner.tradingview.com/korea/scan"
+                tv_payload = {
+                    "symbols": {"tickers": [f"KRX:{clean_symbol}", f"KOSDAQ:{clean_symbol}"]},
+                    "columns": ["open", "high", "low", "close", "volume"]
+                }
+                res = requests.post(tv_url, json=tv_payload, timeout=3)
+                if res.status_code == 200:
+                    tv_data = res.json()
+                    if "data" in tv_data and len(tv_data["data"]) > 0:
+                        _prices = tv_data["data"][0]["d"]
+                        if len(_prices) >= 5 and _prices[0] > 0 and _prices[3] > 0:
+                            real_kr_open = float(_prices[0])
+                            real_kr_high = float(_prices[1])
+                            real_kr_low = float(_prices[2])
+                            auto_p = float(_prices[3])
+                            v_curr = float(_prices[4])
+                            kr_fetched = True
+            except: pass
+
+            # 🚀 [엔진 2]: 네이버 모바일 API 다이렉트 (로컬 구동용)
+            if not kr_fetched:
                 try:
-                    df = yf.Ticker(f"{clean_symbol}.KS").history(
-                        start=start_dt_str, auto_adjust=False
-                    )
-                    if df.empty:
-                        df = yf.Ticker(f"{clean_symbol}.KQ").history(
-                            start=start_dt_str, auto_adjust=False
-                        )
-                except Exception:
-                    df = pd.DataFrame()
+                    res = requests.get(f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic", headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
+                    if res.status_code == 200:
+                        _d = res.json()
+                        _o, _c = float(str(_d.get("openPrice", "0")).replace(",", "")), float(str(_d.get("closePrice", "0")).replace(",", ""))
+                        if _o > 0 and _c > 0:
+                            real_kr_open, auto_p = _o, _c
+                            real_kr_high, real_kr_low = float(str(_d.get("highPrice", "0")).replace(",", "")), float(str(_d.get("lowPrice", "0")).replace(",", ""))
+                            v_curr = float(str(_d.get("accumulatedTradingVolume", "0")).replace(",", ""))
+                            kr_fetched = True
+                except: pass
 
-            # 네이버 현재가 API. 프록시를 쓰더라도 동일한 필드/검증 절차를 적용
-            headers = {"User-Agent": "Mozilla/5.0"}
-            quote_urls = [
-                f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic",
-                f"https://api.allorigins.win/raw?url=https://m.stock.naver.com/api/stock/{clean_symbol}/basic",
-                f"https://corsproxy.io/?https://m.stock.naver.com/api/stock/{clean_symbol}/basic",
-            ]
-
-            for quote_url in quote_urls:
+            # 🚀 [엔진 3]: AllOrigins 프록시 우회망 (포장지 해체 방식)
+            if not kr_fetched:
                 try:
-                    response = requests.get(quote_url, headers=headers, timeout=4)
-                    response.raise_for_status()
-                    quote = response.json()
-
-                    def _to_number(value):
-                        try:
-                            return float(str(value).replace(",", "").replace("%", "").strip())
-                        except (TypeError, ValueError):
-                            return 0.0
-
-                    quote_open = _to_number(quote.get("openPrice"))
-                    quote_price = _to_number(quote.get("closePrice"))
-                    quote_high = _to_number(quote.get("highPrice"))
-                    quote_low = _to_number(quote.get("lowPrice"))
-                    quote_volume = _to_number(quote.get("accumulatedTradingVolume"))
-
-                    # API가 기준일을 제공하면 오늘 데이터인지 확인한다.
-                    quote_date_value = quote.get("localTradedAt") or quote.get("tradeDate")
-                    quote_date_ok = True
-                    if quote_date_value:
-                        parsed_quote_date = pd.to_datetime(
-                            str(quote_date_value), errors="coerce"
-                        )
-                        if pd.notna(parsed_quote_date):
-                            quote_date_ok = parsed_quote_date.date() == today_date
-
-                    if quote_date_ok and quote_open > 0 and quote_price > 0:
-                        real_kr_open = quote_open
-                        auto_p = quote_price
-                        real_kr_high = max(quote_high, quote_open, quote_price)
-                        real_kr_low = min(
-                            x for x in (quote_low, quote_open, quote_price) if x > 0
-                        )
-                        v_curr = quote_volume
-                        kr_fetched = True
-                        break
-                except Exception:
-                    continue
-
+                    encoded_url = urllib.parse.quote(f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic")
+                    res = requests.get(f"https://api.allorigins.win/get?url={encoded_url}", timeout=4)
+                    if res.status_code == 200:
+                        _wrapper = res.json()
+                        _d = json.loads(_wrapper["contents"])
+                        _o, _c = float(str(_d.get("openPrice", "0")).replace(",", "")), float(str(_d.get("closePrice", "0")).replace(",", ""))
+                        if _o > 0 and _c > 0:
+                            real_kr_open, auto_p = _o, _c
+                            real_kr_high, real_kr_low = float(str(_d.get("highPrice", "0")).replace(",", "")), float(str(_d.get("lowPrice", "0")).replace(",", ""))
+                            v_curr = float(str(_d.get("accumulatedTradingVolume", "0")).replace(",", ""))
+                            kr_fetched = True
+                except: pass
+            
+            # 🚀 [엔진 4]: 야후 1분봉 데이터 (최후의 보루)
+            if not kr_fetched:
+                try:
+                    tk = yf.Ticker(yf_sym)
+                    _min_df = tk.history(period="1d", interval="1m")
+                    if not _min_df.empty:
+                        _o = float(_min_df["Open"].iloc[0])
+                        _c = float(tk.fast_info.last_price)
+                        if _o > 0 and _c > 0:
+                            real_kr_open, auto_p = _o, _c
+                            real_kr_high, real_kr_low = float(_min_df["High"].max()), float(_min_df["Low"].min())
+                            v_curr = float(tk.fast_info.last_volume)
+                            kr_fetched = True
+                except: pass
         else:
+            # 💡 [미장 수집 로직]
             currency, fmt_p = "$", ",.2f"
-            ticker = yf.Ticker(symbol.upper())
+            yf_sym = symbol.upper()
+            try: df = yf.Ticker(yf_sym).history(start=start_dt_str)
+            except: df = yf.Ticker(yf_sym).history(period="1y")
 
             try:
-                df = ticker.history(start=start_dt_str, auto_adjust=False)
-            except Exception:
+                tk = yf.Ticker(yf_sym)
+                _min_df = tk.history(period="1d", interval="1m")
+                if not _min_df.empty:
+                    _o = float(_min_df["Open"].iloc[0])
+                    _c = float(tk.fast_info.last_price)
+                    if _o > 0 and _c > 0:
+                        real_kr_open, auto_p = _o, _c
+                        real_kr_high = float(_min_df["High"].max())
+                        real_kr_low = float(_min_df["Low"].min())
+                        v_curr = float(tk.fast_info.last_volume)
+                        us_prev_p = float(tk.fast_info.previous_close)
+                        kr_fetched = True
+            except: pass
+            
+            if not kr_fetched:
                 try:
-                    df = ticker.history(period="1y", auto_adjust=False)
-                except Exception:
-                    df = pd.DataFrame()
+                    f_info = yf.Ticker(yf_sym).fast_info
+                    o, c = float(f_info.open), float(f_info.last_price)
+                    if o > 0 and c > 0:
+                        real_kr_open, auto_p = o, c
+                        real_kr_high, real_kr_low = float(f_info.day_high), float(f_info.day_low)
+                        v_curr = float(f_info.last_volume)
+                        us_prev_p = float(f_info.previous_close)
+                        kr_fetched = True
+                except: pass
 
-            # 미국 정규장 첫 1분봉을 시가로 사용한다.
-            # 1분봉 전체의 첫 행을 무조건 쓰면 날짜/세션이 다른 봉을 잡을 수 있어
-            # 뉴욕 현지 날짜와 09:30~16:00 정규장 구간을 반드시 확인한다.
-            try:
-                minute_df = ticker.history(
-                    period="1d", interval="1m", prepost=False, auto_adjust=False
-                )
-                if not minute_df.empty:
-                    minute_index = pd.DatetimeIndex(pd.to_datetime(minute_df.index))
-                    if minute_index.tz is None:
-                        minute_index = minute_index.tz_localize(exchange_tz)
-                    else:
-                        minute_index = minute_index.tz_convert(exchange_tz)
-
-                    session_mask = (
-                        (minute_index.date == today_date)
-                        & (minute_index.time >= datetime.strptime("09:30", "%H:%M").time())
-                        & (minute_index.time <= datetime.strptime("16:00", "%H:%M").time())
-                    )
-                    session_df = minute_df.loc[session_mask].copy()
-
-                    if not session_df.empty:
-                        real_kr_open = float(session_df["Open"].iloc[0])
-                        auto_p = float(session_df["Close"].iloc[-1])
-                        real_kr_high = float(session_df["High"].max())
-                        real_kr_low = float(session_df["Low"].min())
-                        v_curr = float(session_df["Volume"].fillna(0).sum())
-                        try:
-                            us_prev_p = float(ticker.fast_info.previous_close)
-                        except Exception:
-                            us_prev_p = None
-                        kr_fetched = (
-                            real_kr_open > 0
-                            and auto_p > 0
-                            and real_kr_high > 0
-                            and real_kr_low > 0
-                        )
-            except Exception:
-                pass
-
-            # 실시간 분봉이 없으면 fast_info.open을 오늘 시가라고 간주하지 않는다.
-            # 장 마감 후/휴장일에는 아래의 최신 일봉 OHLC를 사용한다.
-
-        # 인덱스를 거래소 현지 날짜(date)로 먼저 통일해야 오늘 행 비교가 정확하다.
-        if not df.empty:
-            try:
-                daily_index = pd.DatetimeIndex(pd.to_datetime(df.index))
-                if daily_index.tz is not None:
-                    daily_index = daily_index.tz_convert(exchange_tz).tz_localize(None)
-                df.index = daily_index.date
-                df = df.sort_index()
-            except Exception:
-                df = pd.DataFrame()
-
+        # 🛑 [장부 강제 세탁 및 순정화] 억지 가짜 도지 생성 로직 완전 삭제!
+        today_date = now_local.date()
         if kr_fetched and auto_p > 0 and real_kr_open > 0:
-            # 오늘 실시간 OHLC를 일봉에 반영. 기존 날짜 인덱스와 정확히 일치시킨다.
-            today_row = {
-                "Open": real_kr_open,
-                "High": max(real_kr_high, auto_p, real_kr_open),
-                "Low": min(
-                    x for x in (real_kr_low, auto_p, real_kr_open) if x > 0
-                ),
-                "Close": auto_p,
-                "Volume": v_curr,
-            }
-            if df.empty or today_date not in df.index:
-                df.loc[today_date, list(today_row.keys())] = list(today_row.values())
-            else:
-                df.loc[today_date, list(today_row.keys())] = list(today_row.values())
             p = auto_p
-        else:
-            # 실시간 수집 실패 시 가장 최근 거래일의 일봉을 사용한다.
-            # 이전 거래일의 시가를 '오늘 시가'라고 오인하지 않도록 최신 행의 날짜도 보존한다.
-            if not df.empty:
-                latest_row = df.iloc[-1]
-                auto_p = float(latest_row["Close"])
-                v_curr = float(latest_row["Volume"])
-                real_kr_open = float(latest_row["Open"])
-                real_kr_high = float(latest_row["High"])
-                real_kr_low = float(latest_row["Low"])
-                p = auto_p
+            if not df.empty and today_date in df.index:
+                df.loc[today_date, "Open"] = real_kr_open
+                df.loc[today_date, "High"] = max(real_kr_high, p, real_kr_open)
+                df.loc[today_date, "Low"] = min(real_kr_low, p, real_kr_open) if real_kr_low > 0 else min(p, real_kr_open)
+                df.loc[today_date, "Close"] = p
+                df.loc[today_date, "Volume"] = max(v_curr, float(df.loc[today_date, "Volume"]))
             else:
-                p = 0.0
+                new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p) if real_kr_low > 0 else p], "Close": [p], "Volume": [v_curr]}, index=[today_date])
+                df = pd.concat([df, new_row])
+        else:
+            if not df.empty:
+                auto_p = float(df["Close"].iloc[-1])
+                v_curr = float(df["Volume"].iloc[-1])
+                # 엔진이 다 실패했을 때는 억지로 현재가를 시가에 덮어씌우지 않고, 원본 데이터를 그대로 넘겨줍니다!
+                real_kr_open = float(df["Open"].iloc[-1]) 
+                real_kr_high = float(df["High"].iloc[-1])
+                real_kr_low = float(df["Low"].iloc[-1])
+                kr_fetched = True
+            p = auto_p
 
-        if not df.empty:
-            df = df.sort_index().ffill().dropna()
-            # 모든 이후 분석에서 .iloc[-1]이 가장 최근 거래일을 가리키게 한다.
-            df.index = pd.Index(df.index)
+        if not df.empty and kr_fetched:
+            _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
+            if _avg_v > 0 and v_curr > _avg_v * 10:
+                v_curr = float(df["Volume"].iloc[-1])
+
         multiplier = 1000.0 if is_kr else 1.0
 
         is_ob_stage2_safe = True
@@ -466,9 +446,10 @@ if symbol:
         if df.empty:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인해 주시게.")
         else:
-            df = df.sort_index().ffill().dropna()
+            df = df.ffill().dropna()
+            df.index = pd.to_datetime(df.index, utc=True).date
             today_date = now_local.date()
-        # --- [👆 여기까지 복사하여 덮어씌워 주시옵소서 (414번 줄 부근)] ---
+
             override_prev_p = 0.0
             if manual_prev_price_str:
                 try:
@@ -525,7 +506,7 @@ if symbol:
             lower_tail_len = max(0, min(actual_open, p) - today_low)
             body_len = abs(p - actual_open)
 
-            # 💡 [정밀 도지(Doji) 판독]: 절대값이 아닌 비율(0.5%)로 판별하여 미장에서도 완벽 작동!
+            # 💡 [정밀 도지(Doji) 판독]: 절대값이 아닌 비율(0.5%)로 판별하여 미장/국장 완벽 호환!
             if day_candle_range > 0:
                 is_doji_candle = (body_len <= day_candle_range * 0.05) or (body_len <= (actual_open * 0.002))
             else:
@@ -1051,7 +1032,7 @@ if symbol:
             # --- [신고가 레이더 특별 분기] ---
             elif is_new_high_breakout:
                 final_code = "NEW_HIGH_BREAKOUT_WARNING"
-                sig = "🚨 [신고가 돌파 첫날] 불기둥 추격 매수 엄금!"
+                sig = "🚨 [신고가 돌파 첫날] 불기둥 추격 매 소 엄금!"
                 col = "#D32F2F"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[역사적 신고가 돌파]</b> 1년 최고점({high_250:{fmt_p}}{currency})을 뚫는 강력한 불기둥이 솟구쳤소! 섣불리 불을 잡지 말고, 단기 5일선 눌림목 안착 때까지 방아쇠를 굳게 잠그시게."
             elif is_new_high_pullback:
@@ -1172,7 +1153,7 @@ if symbol:
                         sig = f"🟢 [극한 진바닥 포착] 신규 1단계 유효 (기 1단계 매수자는 추매 금지)"
                         _def_txt = "아래꼬리 지지력(투매 방어)"
                         if is_candle_unknown: _def_txt = "하락 진정 및 반등 기세"
-                        elif is_strong_bull_body and not is_tail_defended: _def_txt = "강력한 매수세(반등 몸통)"
+                        elif is_strong_bull_body and not is_tail_defended: _def_txt = "강력 매수세(반등 몸통)"
                         _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 진바닥 터치 후 강력 반등"
                         final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 지표 및 강력 방어 확인]</b> {_bot_txt}과(와) <b>{_def_txt} 동시 확인</b>! 가벼운 1단계 정찰병을 투입하시게."
                         if is_memory_ignored:
@@ -1200,7 +1181,7 @@ if symbol:
                         sig = f"🟢 [진바닥 입질] 신규 1단계 유효 (기 1단계 매수자는 2단계 대기) ({time_tag_ok})"
                         _def_txt = "아래꼬리 지지력(투매 방어)"
                         if is_candle_unknown: _def_txt = "하락 진정 및 반등 기세"
-                        elif is_strong_bull_body and not is_tail_defended: _def_txt = "강력한 매수세(반등 몸통)"
+                        elif is_strong_bull_body and not is_tail_defended: _def_txt = "강력 매수세(반등 몸통)"
                         _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 바닥 터치 후 강력 반등"
                         final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[1단계 정찰병 포착]</b> {_def_txt} 및 {_bot_txt} 확인되었소! 정찰병(입질) 투입이 유효하오."
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
@@ -1538,7 +1519,7 @@ if symbol:
                     if is_kr and is_morning_breakout_fast: bb_time_diag = "오전장 화력 폭발 시 과감하게 30~50% 진격"
                     elif is_kr: bb_time_diag = "14:00 이후 돌파 지지 시 과감하게 30~50% 진격"
                     else: bb_time_diag = "정규장 화력 동반 돌파 시 과감하게 30~50% 진격"
-                    bb_diag = f"🔥 <b>[스퀴즈 돌파 본진 진격 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 압력밥솥 폭발 대시세 초입 공략.<br>• <b>진단:</b> 에너지가 꽉 찬 상태에서 20일선 상방 돌파 성공! {bb_time_diag} (윗꼬리 이탈 시 철수)"
+                    bb_diag = f"🔥 <b>[스퀴즈 돌파 본진 진격 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 압력밥솥 폭발 대시세 초 초입 공략.<br>• <b>진단:</b> 에너지가 꽉 찬 상태에서 20일선 상방 돌파 성공! {bb_time_diag} (윗꼬리 이탈 시 철수)"
                 elif final_code == "DOJI_TOP_WARNING":
                     bb_diag = f"🔴 <b>[고점 십자성 상투 경고 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 상투 방어 및 수익 보전.<br>• <b>진단:</b> 밴드 상단에서 힘이 다하고 십자형이 떴소! 절대 추격하지 말고 익절을 준비하시게."
                 elif final_code == "NEW_HIGH_BREAKOUT_WARNING":
