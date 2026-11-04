@@ -1374,87 +1374,79 @@ if symbol:
                 sub_indicator_str = f" - <b>{_score_name} 동조:</b> {_display_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
 
             bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1점)"
-            # 💡 [최종 도지 & 음봉 통합 강제 스위치]: 시가와 현재가를 엄격히 대조하여 도지와 음봉/양봉 완벽 확정!
+            # ==================================================================
+            # 💡 [최종 단일화 판정 및 문구 렌더링]: 모든 군더더기를 없애고 팩트만 남김!
+            # ==================================================================
             if 'real_kr_open' in locals() and real_kr_open > 0:
                 body_len_check = abs(p - real_kr_open)
-                # 가격 차이가 30원 이내이거나 캔들 폭의 0.5% 미만이면 도지로 인정!
+                
+                # 1. 도지(Doji) 판정 (몸통이 30원 이하이거나 초미세할 때)
                 if body_len_check <= 30:
-                    is_doji_candle = True
                     strict_doji_check = True
+                    is_doji_candle = True
+                    is_candle_bullish = False
+                    is_candle_bearish = False
+                    
                     if p < real_kr_open:
-                        is_candle_bearish = True
-                        is_candle_bullish = False
                         candle_color_txt = "십자형 음도지(Doji)"
                     elif p > real_kr_open:
-                        is_candle_bearish = False
-                        is_candle_bullish = True
                         candle_color_txt = "십자형 양도지(Doji)"
                     else:
-                        is_candle_bearish = (p_chg < 0)
-                        is_candle_bullish = (p_chg >= 0)
                         candle_color_txt = "십자형 도지(Doji)"
+                        
+                    trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 거의 같은 {candle_color_txt}를 만들었소! 내일 방향이 결정될 때까지 관망하시게."
+
+                # 2. 일반 양봉/음봉 판정
                 else:
-                    is_doji_candle = False
                     strict_doji_check = False
+                    is_doji_candle = False
+                    
+                    # 💡 여기가 핵심: 네이버 시가보다 현재가가 무조건 낮으면 음봉 확정!
                     if p < real_kr_open:
                         is_candle_bearish = True
                         is_candle_bullish = False
                         candle_color_txt = "파란색 음봉"
+                        
+                        has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
+                        
+                        # 음봉일 때의 상황별 디테일 문구 강제 배정
+                        if is_long_upper_tail:
+                            trend_status = f"🚨 <b>[상승 기세 꺾임 / 매물 압박]</b> 윗꼬리를 길게 달고 밀려 내려온 {candle_color_txt} 출현! 상단 저항이 거세오."
+                        elif has_meaningful_lower_tail and p_chg < 0:
+                            trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락 중이나, 밑꼬리를 달며 방어 중인 {candle_color_txt} 출현!"
+                        elif p_chg < 0:
+                            trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 밑꼬리조차 없는 {candle_color_txt}으로 매도세에 짓눌려 추락 중이오!"
+                        else:
+                            trend_status = f"💧 <b>[방어선 구축 / 눌림목 공방]</b> 매도세가 우위이며 {candle_color_txt} 출현!"
+                            
+                    # 시가보다 높으면 양봉 확정!
                     elif p > real_kr_open:
                         is_candle_bearish = False
                         is_candle_bullish = True
                         candle_color_txt = "빨간색 양봉"
-            if is_candle_unknown:
-                pass  
-            elif strict_doji_check:
-                trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 거의 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
-            elif is_defended:
-                has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
-
-                if is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
-                    trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}(상승률 {p_chg:+.2f}%)을(를) 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
-                elif p_chg < 0:
-                    if has_meaningful_lower_tail:
-                        trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 길게 달며 필사적으로 방어선을 치고 있소! 아직 안심하긴 이르나 투매는 멈춘 듯하네."
+                        
+                        # 양봉일 때의 상황별 디테일 문구 강제 배정
+                        if today_open == today_low:
+                            trend_status = f"🔥 <b style='color:#D84315;'>[강한 매수 맹공]</b> 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
+                        elif p_chg > 0:
+                            trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}을 뽑아내며 상승 중이오!"
+                        else:
+                            trend_status = f"🌱 <b>[방어선 구축 / 상승 전개]</b> 매수세가 유입되며 {candle_color_txt} 출현!"
+                        
+                    # 시가와 현재가가 완전히 같을 때 (도지 판정 기준을 벗어난 예외 상황)
                     else:
-                        trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 밑꼬리조차 없는 {candle_color_txt}으로 매도세에 짓눌려 속절없이 추락 중이오! 절대 칼날을 잡지 마시게."
-                else:
-                    if today_open == today_low:
-                        trend_status = f"🔥 <b style='color:#D84315;'>[강한 매수 맹공]</b> 장 시작부터 단 한 번도 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
-                    # 수정: 아래꼬리가 윗꼬리보다 확실히 길거나, 전체 캔들에서 아래꼬리 비중이 클 때만 인정!
-                    elif has_meaningful_lower_tail and (lower_tail_len > upper_tail_len) and (today_open > today_low):
-                        trend_status = f"🛡️ <b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt} 출현!"
-                    elif is_long_upper_tail and is_candle_bearish:
-                        # 추가: 윗꼬리가 긴 파란색 음봉일 때의 정확한 팩트 폭격 멘트
-                        trend_status = f"🚨 <b>[상승 기세 꺾임 / 매물 압박]</b> 윗꼬리를 길게 달고 밀려 내려온 {candle_color_txt} 출현! 상단 저항이 거세오."
-                    elif is_candle_bearish:
-                        # 파란색 음봉일 때의 명확한 문구
-                        trend_status = f"💧 <b>[방어선 구축 / 눌림목 공방]</b> 매도세가 우위이며 {candle_color_txt} 출현!"
-                    else:
-                        # 빨간색 양봉일 때만 '견고하다'는 표현 사용
-                        trend_status = f"🌱 <b>[방어선 구축 / 상승 전개]</b> 매수세가 유입되며 {candle_color_txt} 출현!"
-            elif is_long_upper_tail:
-                if is_candle_bearish: 
-                    if p >= ma5_val:
-                        trend_status = f"⚠️ <b style='color:#F57C00;'>[장중 차익 매물 출회 / 5일선 사수]</b> 시가에서부터 파란 음봉으로 쫙 밀리며 매물이 쏟아지고 있으나, 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
-                    else:
-                        trend_status = f"🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 투매 거셈]</b> 시가에서부터 파란 음봉으로 강하게 밀리며 5일선 생명선마저 위태롭소. 상승 시도마다 매물 폭탄을 맞고 있으니 즉각 관망 모드로 전환하시게."
-                else: 
-                    if p >= ma5_val:
-                        trend_status = f"⚠️ <b style='color:#F57C00;'>[고점 매물 저항 / 5일선 사수]</b> 윗꼬리를 길게 달았으나 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 보수적으로 대응하시게."
-                    else:
-                        trend_status = f"🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 압력 거셈]</b> 윗꼬리를 길게 달고 하방 압력이 거세어 5일선 생명선 회복이 위태롭소. 즉각 관망 모드로 전환하시게."
-            elif final_code in ["RED_SELL_WARNING", "SELL_PROFIT_TAKE", "LONG_TAIL_WARNING", "STOP_LOSS_ALERT"]:
-                if p < ma5_val:
-                    trend_status = (
-                        "🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 5일선 붕괴]</b> 이평선 배열상으론 반등 초입처럼 보이나, "
-                        "이미 매물 폭탄을 맞고 5일선 생명선 밑으로 완전히 처박혔네! 섣부른 희망 회로를 당장 찢어버리고 미련 없이 탈출하시게."
-                    )
-                else:
-                    trend_status = (
-                        "🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 5일선 위태]</b> 이평선 배열상으론 반등 초입처럼 보이나, "
-                        "당일 하방 압력이 거세져 5일선 생명선이 붕괴될 위기요! 섣부른 희망 회로를 접고 즉각 관망 모드로 전환하시게."
-                    )
+                        is_candle_bearish = (p_chg < 0)
+                        is_candle_bullish = (p_chg >= 0)
+                        candle_color_txt = "빨간색 양봉" if p_chg >= 0 else "파란색 음봉"
+                        trend_status = f"🌱 <b>[방어선 구축 / 팽팽한 공방]</b> 장중 매수/매도세가 맞서며 {candle_color_txt} 출현!"
+                        
+            # 네이버 실시간 시가를 못 가져왔을 때의 차선책 (기존 방식 유지)
+            else:
+                strict_doji_check = False
+                is_candle_bearish = (p < today_open)
+                is_candle_bullish = (p >= today_open)
+                candle_color_txt = "빨간색 양봉" if is_candle_bullish else "파란색 음봉"
+                trend_status = f"🌱 <b>[방어선 구축 / 추세 진행]</b> 매수/매도 공방 속 {candle_color_txt} 출현!"
 
             indicator_verify_text = (
                 f"{ma_price_summary}<br>• <b>[추세 정밀 판독]:</b><br> {trend_status}<br>• <b>[지표 검증 연산]</b><br>"
