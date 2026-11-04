@@ -306,6 +306,9 @@ if symbol:
                         real_kr_low = float(str(data["lowPrice"]).replace(",", ""))
                         if auto_p > 0 and real_kr_open > 0:
                             kr_fetched = True
+                            # 💡 [추가]: 네이버 API가 가져온 진짜 시가를 오늘 장부의 Open 값에 강제 고정!
+                            if not df.empty:
+                                df.loc[today_date, "Open"] = real_kr_open
                 except Exception:
                     pass
 
