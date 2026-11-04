@@ -352,6 +352,18 @@ if symbol:
                 real_kr_open = float(df["Open"].iloc[-1])
                 real_kr_high = float(df["High"].iloc[-1])
                 real_kr_low = float(df["Low"].iloc[-1])
+                
+                # 💡 [17,120원 찌꺼기 완벽 박멸]: 클라우드에서 네이버가 막혔을 때, 야후의 '1분봉' 첫 시가를 정밀 타격해 가져옵니다!
+                try:
+                    _tk = yf.Ticker(f"{clean_symbol}.KS")
+                    _min_df = _tk.history(period="1d", interval="1m")
+                    if _min_df.empty:
+                        _tk = yf.Ticker(f"{clean_symbol}.KQ")
+                        _min_df = _tk.history(period="1d", interval="1m")
+                    if not _min_df.empty:
+                        real_kr_open = float(_min_df["Open"].iloc[0]) # 아침 9시 정각의 100% 진짜 시가!
+                except Exception:
+                    pass
                         
             # 거래량 폭증 오류 보정
             if not df.empty and kr_fetched:
@@ -427,7 +439,8 @@ if symbol:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인해 주시게.")
         else:
             df = df.ffill().dropna()
-            df.index = pd.to_datetime(df.index).date
+            # 💡 [서머타임 시간대 충돌 에러 완벽 해결]: utc=True 추가!
+            df.index = pd.to_datetime(df.index, utc=True).date
             today_date = now_local.date()
 
             override_prev_p = 0.0
