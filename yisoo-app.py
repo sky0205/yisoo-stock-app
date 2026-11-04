@@ -286,7 +286,7 @@ if symbol:
                 
             _h = {"User-Agent": "Mozilla/5.0"}
             
-            # 💡 [국장 엔진 1]: 다음(Daum) API (실시간 시가 100% 뚫림)
+            # 💡 [국장 엔진 1]: 다음(Daum) API
             try:
                 res = requests.get(f"https://finance.daum.net/api/quotes/A{clean_symbol}", headers={"User-Agent":"Mozilla/5.0", "Referer":"https://finance.daum.net/"}, timeout=3)
                 if res.status_code == 200:
@@ -300,7 +300,7 @@ if symbol:
                         kr_fetched = True
             except: pass
 
-            # 💡 [국장 엔진 2]: 네이버 fchart (차트 원본 데이터)
+            # 💡 [국장 엔진 2]: 네이버 fchart
             if not kr_fetched:
                 try:
                     res = requests.get(f"https://fchart.stock.naver.com/sise.nhn?symbol={clean_symbol}&timeframe=day&count=1&requestType=0", headers=_h, timeout=3)
@@ -327,7 +327,7 @@ if symbol:
                     except: pass
                     
         else:
-            # 💡 [미장 수집 로직]: 미장 역시 야후 history(df)의 엉터리 시가를 무시하고 FastInfo에서 실시간 시가를 직접 뜯어온다!
+            # 💡 [미장 수집 로직]
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
             ticker = yf.Ticker(tk_upper)
@@ -358,7 +358,7 @@ if symbol:
                         kr_fetched = True
                 except: pass
 
-        # 🛑 [국장/미장 공통]: 수집된 '진짜 시가(real_kr_open)'로 야후 장부(df)를 무자비하게 강제 세탁!
+        # 🛑 [국장/미장 공통]: 수집된 '진짜 시가(real_kr_open)'로 야후 장부(df) 세탁
         today_date = now_local.date()
         if kr_fetched and auto_p > 0:
             p = auto_p
@@ -372,14 +372,12 @@ if symbol:
                 new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p) if real_kr_low > 0 else p], "Close": [p], "Volume": [v_curr]}, index=[today_date])
                 df = pd.concat([df, new_row])
         else:
-            # 통신 100% 실패 시: 야후 장부에 어제 종가가 오늘 시가로 위조 복사된 버그 감지 및 삭제
             if not df.empty:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
                 raw_open = float(df["Open"].iloc[-1])
                 prev_c = float(df["Close"].iloc[-2]) if len(df) > 1 else 0.0
                 
-                # 💡 야후 버그: 오늘 시가가 어제 종가와 똑같으면 가짜로 판정하고 현재가로 임시 교정!
                 if raw_open == 0 or raw_open == prev_c:
                     df.iloc[-1, df.columns.get_loc("Open")] = auto_p
                     real_kr_open = auto_p
@@ -394,67 +392,6 @@ if symbol:
             _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
             if _avg_v > 0 and v_curr > _avg_v * 10:
                 v_curr = float(df["Volume"].iloc[-1])
-
-        multiplier = 1000.0 if is_kr else 1.0
-
-        is_ob_stage2_safe = True
-        is_ob_stage3_safe = True
-
-        if manual_ask > 0 and manual_bid > 0:
-            calc_ratio = round(manual_ask / manual_bid, 2)
-            display_ask = manual_ask * multiplier
-            display_bid = manual_bid * multiplier
-            ob_data = {"ask": display_ask, "bid": display_bid, "ratio": calc_ratio, "ok": True, "msg": "HTS 직접입력"}
-        elif manual_ask > 0 or manual_bid > 0:
-            ob_data = {"ask": manual_ask * multiplier, "bid": manual_bid * multiplier, "ratio": None, "ok": False, "msg": "HTS 매도·매수잔량을 모두 입력해야 분석 가능"}
-        else:
-            ob_data = {"ask": 0.0, "bid": 0.0, "ratio": None, "ok": False, "msg": "실시간 호가 API 미연결"}
-
-        override_pre_p = 0.0
-        is_pre_market_mode = False
-        if not is_kr and manual_pre_price_str:
-            try:
-                override_pre_p = float(manual_pre_price_str.replace(",", "").replace("$", ""))
-                if override_pre_p > 0: is_pre_market_mode = True
-            except ValueError:
-                pass
-
-        p = override_pre_p if is_pre_market_mode else auto_p
-        else:
-            currency, fmt_p = "$", ",.2f"
-            tk_upper = symbol.upper()
-            ticker = yf.Ticker(tk_upper)
-
-            try:
-                df = ticker.history(start=start_dt_str)
-            except Exception:
-                df = ticker.history(period="1y")
-
-            try:
-                fast_inf = ticker.fast_info
-                auto_p = getattr(fast_inf, "last_price", 0.0)
-                v_curr = getattr(fast_inf, "last_volume", 0.0)
-                us_prev_p = getattr(fast_inf, "previous_close", None)
-            except Exception:
-                auto_p, v_curr, us_prev_p = 0.0, 0.0, None
-
-            if auto_p == 0.0 or pd.isna(auto_p):
-                try:
-                    inf_dict = ticker.info
-                    auto_p = inf_dict.get("regularMarketPrice", inf_dict.get("currentPrice", 0.0))
-                    if auto_p == 0.0 or pd.isna(auto_p):
-                        auto_p = float(df["Close"].iloc[-1])
-                except Exception:
-                    if not df.empty:
-                        auto_p = float(df["Close"].iloc[-1])
-
-            if v_curr == 0.0 or pd.isna(v_curr):
-                if not df.empty: v_curr = float(df["Volume"].iloc[-1])
-
-            if not df.empty:
-                _us_avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
-                if _us_avg_v > 0 and v_curr > _us_avg_v * 10:
-                    v_curr = float(df["Volume"].iloc[-1])
 
         multiplier = 1000.0 if is_kr else 1.0
 
@@ -507,28 +444,6 @@ if symbol:
             prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
             if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
                 prev_p = float(us_prev_p)
-
-            # 💡 [정예 장부 덮어쓰기]: 완벽한 방어와 교정
-            if today_date in df.index:
-                df.loc[today_date, "Close"] = p
-                df.loc[today_date, "Volume"] = v_curr
-                if is_kr and real_kr_open > 0:
-                    df.loc[today_date, "Open"] = real_kr_open
-                    df.loc[today_date, "High"] = max(real_kr_high, p)
-                    df.loc[today_date, "Low"] = min(real_kr_low, p)
-                else:
-                    fallback_open = prev_p if prev_p > 0 else p
-                    if pd.isna(df.loc[today_date, "Open"]) or df.loc[today_date, "Open"] == 0:
-                        df.loc[today_date, "Open"] = fallback_open
-                    if p > df.loc[today_date, "High"]: df.loc[today_date, "High"] = p
-                    if p < df.loc[today_date, "Low"]: df.loc[today_date, "Low"] = p
-            else:
-                if is_kr and real_kr_open > 0:
-                    new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p)], "Close": [p], "Volume": [v_curr]}, index=[today_date])
-                else:
-                    fallback_open = prev_p if prev_p > 0 else p
-                    new_row = pd.DataFrame({"Open": [fallback_open], "High": [max(p, fallback_open)], "Low": [min(p, fallback_open)], "Close": [p], "Volume": [v_curr]}, index=[today_date])
-                df = pd.concat([df, new_row])
                             
             v_avg5 = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
@@ -551,14 +466,13 @@ if symbol:
                 vol_strength = v_ratio
 
             # ==================================================================
-            # ★ [최종 단일화 시가 추출]: 미장/국장 가리지 않고 찌꺼기를 원천 차단
+            # ★ [최종 단일화 시가 추출]
             # ==================================================================
             today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
             today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             
-            # 최종 판독에 사용할 진짜 시가 (국장은 real_kr_open 우선, 미장은 장부 값 우선)
-            actual_open = real_kr_open if (is_kr and kr_fetched and real_kr_open > 0) else today_open
+            actual_open = real_kr_open if (kr_fetched and real_kr_open > 0) else today_open
             
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
             day_candle_range = max(0.001, today_high - today_low)
@@ -568,7 +482,6 @@ if symbol:
             lower_tail_len = max(0, min(actual_open, p) - today_low)
             body_len = abs(p - actual_open)
 
-            # 💡 [철벽 방어]: 십자형(Doji) 판독 기준을 퍼센트로 변경하여 국장/미장 완벽 호환!
             if day_candle_range > 0:
                 is_doji_candle = (body_len <= day_candle_range * 0.05) or (body_len <= (actual_open * 0.002))
             else:
@@ -576,7 +489,6 @@ if symbol:
             
             strict_doji_check = is_doji_candle
 
-            # 양봉/음봉 확정
             if p > actual_open:
                 is_candle_bullish = True
                 is_candle_bearish = False
@@ -1377,7 +1289,7 @@ if symbol:
             bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1점)"
             
             # ==================================================================
-            # 💡 [최종 심판 렌더링]: 미장(달러, 소수점) / 국장(원, 정수) 텍스트 완벽 교정!
+            # 💡 [최종 심판 렌더링]
             # ==================================================================
             if is_candle_bearish:
                 if strict_doji_check:
@@ -1397,7 +1309,6 @@ if symbol:
                 candle_color_txt = "십자형 도지(Doji)"
                 trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 시가({actual_open:{fmt_p}}{currency})와 완벽히 일치하는 {candle_color_txt} 출현!"
             
-            # 윗꼬리나 밑꼬리 상세 판독 덧붙이기
             if is_long_upper_tail and is_candle_bearish:
                 trend_status = f"🚨 <b>[상승 기세 꺾임 / 매물 압박]</b> 윗꼬리를 길게 달고 밀려 내려온 {candle_color_txt} 출현! 상단 저항이 거세오."
             elif is_candle_bearish and not strict_doji_check and p_chg < 0 and ((lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)):
