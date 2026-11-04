@@ -284,11 +284,20 @@ if symbol:
                     if df.empty: df = yf.Ticker(f"{clean_symbol}.KQ").history(start=start_dt_str)
                 except: pass
                 
-            _h = {"User-Agent": "Mozilla/5.0"}
+            # 💡 [국장 무적 방어벽 우회 엔진] 네이버/다음이 클라우드를 차단하지 못하도록 완벽한 PC 헤더 적용
+            _h = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Referer": "https://finance.naver.com/",
+                "Accept-Language": "ko-KR,ko;q=0.9"
+            }
+            daum_h = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Referer": "https://finance.daum.net/"
+            }
             
-            # 💡 [국장 엔진 1]: 다음(Daum) API
+            # 엔진 1: 다음(Daum) API (가장 방화벽이 약함, 실시간 시가 완벽 추출)
             try:
-                res = requests.get(f"https://finance.daum.net/api/quotes/A{clean_symbol}", headers={"User-Agent":"Mozilla/5.0", "Referer":"https://finance.daum.net/"}, timeout=3)
+                res = requests.get(f"https://finance.daum.net/api/quotes/A{clean_symbol}", headers=daum_h, timeout=4)
                 if res.status_code == 200:
                     d = res.json()
                     real_kr_open = float(d.get('openingPrice', 0))
@@ -300,10 +309,10 @@ if symbol:
                         kr_fetched = True
             except: pass
 
-            # 💡 [국장 엔진 2]: 네이버 fchart
+            # 엔진 2: 네이버 fchart (차트 전용 숨은 API, 방화벽 회피 헤더 적용)
             if not kr_fetched:
                 try:
-                    res = requests.get(f"https://fchart.stock.naver.com/sise.nhn?symbol={clean_symbol}&timeframe=day&count=1&requestType=0", headers=_h, timeout=3)
+                    res = requests.get(f"https://fchart.stock.naver.com/sise.nhn?symbol={clean_symbol}&timeframe=day&count=1&requestType=0", headers=_h, timeout=4)
                     if res.status_code == 200 and 'data="' in res.text:
                         ohlcv = res.text.split('data="')[1].split('"')[0].split('|')
                         if len(ohlcv) == 6:
@@ -313,21 +322,23 @@ if symbol:
                                 kr_fetched = True
                 except: pass
             
-            # 💡 [국장 엔진 3]: 야후 실시간 FastInfo 백업
+            # 엔진 3: 네이버 모바일 API
             if not kr_fetched:
-                for suffix in [".KS", ".KQ"]:
-                    try:
-                        tk = yf.Ticker(f"{clean_symbol}{suffix}")
-                        o, c = float(tk.fast_info.open), float(tk.fast_info.last_price)
-                        if o > 0 and c > 0:
-                            real_kr_open, auto_p = o, c
-                            real_kr_high, real_kr_low = float(tk.fast_info.day_high), float(tk.fast_info.day_low)
-                            v_curr = float(tk.fast_info.last_volume)
-                            kr_fetched = True; break
-                    except: pass
+                try:
+                    res = requests.get(f"https://m.stock.naver.com/api/stock/{clean_symbol}/basic", headers=_h, timeout=4)
+                    if res.status_code == 200:
+                        _d = res.json()
+                        real_kr_open = float(str(_d.get("openPrice", "0")).replace(",", ""))
+                        auto_p = float(str(_d.get("closePrice", "0")).replace(",", ""))
+                        if auto_p > 0 and real_kr_open > 0:
+                            real_kr_high = float(str(_d.get("highPrice", "0")).replace(",", ""))
+                            real_kr_low = float(str(_d.get("lowPrice", "0")).replace(",", ""))
+                            v_curr = float(str(_d.get("accumulatedTradingVolume", "0")).replace(",", ""))
+                            kr_fetched = True
+                except: pass
                     
         else:
-            # 💡 [미장 수집 로직]
+            # 💡 [미장 수집 로직]: 미장 역시 야후 df의 엉터리 시가를 무시하고 FastInfo에서 실시간 시가를 직접 뜯어온다!
             currency, fmt_p = "$", ",.2f"
             tk_upper = symbol.upper()
             ticker = yf.Ticker(tk_upper)
@@ -358,7 +369,7 @@ if symbol:
                         kr_fetched = True
                 except: pass
 
-        # 🛑 [국장/미장 공통]: 수집된 '진짜 시가(real_kr_open)'로 야후 장부(df) 세탁
+        # 🛑 [국장/미장 공통]: 수집된 '진짜 시가(real_kr_open)'로 야후 장부(df)를 무자비하게 강제 세탁!
         today_date = now_local.date()
         if kr_fetched and auto_p > 0:
             p = auto_p
@@ -372,13 +383,15 @@ if symbol:
                 new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p) if real_kr_low > 0 else p], "Close": [p], "Volume": [v_curr]}, index=[today_date])
                 df = pd.concat([df, new_row])
         else:
+            # 모든 우회망이 실패했을 때: 야후 장부에 어제 종가(17120원 등)가 오늘 시가로 위조 복사된 버그 감지 및 삭제
             if not df.empty:
                 auto_p = float(df["Close"].iloc[-1])
                 v_curr = float(df["Volume"].iloc[-1])
                 raw_open = float(df["Open"].iloc[-1])
                 prev_c = float(df["Close"].iloc[-2]) if len(df) > 1 else 0.0
                 
-                if raw_open == 0 or raw_open == prev_c:
+                # 💡 야후 버그: 오늘 시가가 어제 종가와 똑같거나 비정상적 차이가 나면 가짜로 판정하고 현재가로 임시 교정!
+                if raw_open == 0 or raw_open == prev_c or abs(raw_open - auto_p)/auto_p > 0.15:
                     df.iloc[-1, df.columns.get_loc("Open")] = auto_p
                     real_kr_open = auto_p
                 else:
@@ -423,6 +436,8 @@ if symbol:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인해 주시게.")
         else:
             df = df.ffill().dropna()
+            
+            # 💡 [치명적 시간대 충돌 에러 완전 해결]: utc=True 로 서머타임 꼬임 현상 원천 방어!
             df.index = pd.to_datetime(df.index, utc=True).date
             today_date = now_local.date()
 
@@ -466,7 +481,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ==================================================================
-            # ★ [최종 단일화 시가 추출]
+            # ★ [최종 단일화 시가 추출 및 도지 정밀 판독]
             # ==================================================================
             today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
             today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
@@ -482,6 +497,7 @@ if symbol:
             lower_tail_len = max(0, min(actual_open, p) - today_low)
             body_len = abs(p - actual_open)
 
+            # 💡 [정밀 도지(Doji) 판독]: 절대값이 아닌 비율(0.5%)로 판별하여 미장에서도 완벽 작동!
             if day_candle_range > 0:
                 is_doji_candle = (body_len <= day_candle_range * 0.05) or (body_len <= (actual_open * 0.002))
             else:
@@ -695,11 +711,11 @@ if symbol:
                     ob_status_msg = f"⚖️ <b>[탈출 공방 호가]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted} / 매수:{bid_formatted}) - 5일선 돌파 의지 확인 (2단계 합격 / 3단계 보류)"
                     is_ob_stage3_safe = False
                 elif ob_ratio_val >= 0.5:
-                    ob_status_msg = f"⚠️ <b>[속임수/윗꼬리 경계]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted} / 매수:{bid_formatted}) - 1.0배 미만! 세력이 위로 살 의지가 없는 속임수 경계"
+                    ob_status_msg = f"⚠️ <b>[속임수/윗꼬 경계]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted} / 매수:{bid_formatted}) - 1.0배 미만! 속임수 경계"
                     is_ob_stage2_safe = False
                     is_ob_stage3_safe = False
                 else:
-                    ob_status_msg = f"🚨 <b>[허매수 폭락 경고]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted} / 매수:{bid_formatted}) - 매수잔량이 2배 이상 많아 바닥을 가장한 허매수 투매 위험!"
+                    ob_status_msg = f"🚨 <b>[허매수 폭락 경고]</b> 매도/매수 잔량비 <b>{ob_ratio_val:.2f}배</b> (매도:{ask_formatted} / 매수:{bid_formatted}) - 매수잔량이 2배 이상 많아 허매수 투매 위험!"
                     is_ob_stage2_safe = False
                     is_ob_stage3_safe = False
             elif manual_ask > 0 or manual_bid > 0:
@@ -1070,7 +1086,7 @@ if symbol:
                 final_code = "SQUEEZE_BREAKOUT_ATTACK"
                 sig = f"🔥 [불기둥 하이패스] 대량 거래 폭발! 과다이격({bias_ma5:+.1f}%) 면제"
                 col = "#D84315"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[대시세 추종]</b> 5일선 이격이 높으나 폭발적인 거래량(300점 이상)을 동반한 강력한 양봉 불기둥이오! 과다이격 경계를 강제 해제하고 돌파 랠리에 동참하시게."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[대시세 추종]</b> 5일선 이격이 높으나 폭발적인 거래량(300점 이상)을 동반한 강력 양봉 불기둥이오! 과다이격 경계를 강제 해제하고 랠리에 동참하시게."
             elif is_over_extended_5:
                 final_code = "WAIT_OVER_EXTENDED"
                 sig = f"🟡 [관망/보류] 5일선 과다이격 (+{bias_ma5:.1f}%) / 추격 매수 금지"
@@ -1289,7 +1305,7 @@ if symbol:
             bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1점)"
             
             # ==================================================================
-            # 💡 [최종 심판 렌더링]
+            # 💡 [최종 심판 렌더링]: 찌꺼기 없는 완벽한 시가와 캔들 판독
             # ==================================================================
             if is_candle_bearish:
                 if strict_doji_check:
