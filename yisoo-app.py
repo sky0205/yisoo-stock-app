@@ -1442,7 +1442,9 @@ if symbol:
             # 💡 [최종 심판]: 기계의 모든 오판을 묵살하고 출력 1초 전에 진짜 시가 강제 추출!
             # ==================================================================
             # 💡 [최종 확정]: 위에서 가져온 진짜 시가(real_kr_open)를 1순위로 강제 고정!
-            actual_open = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else 17480.0
+            # 💡 [범용 정석]: 어떤 종목이든 위에서 정확히 수집한 real_kr_open을 우선하되, 
+            # 값이 없거나 비정상일 때만 해당 종목의 장부 Open 데이터를 동적으로 참조!
+            actual_open = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0 and real_kr_open != real_kr_low) else float(str(df["Open"].iloc[-1]).replace(',', ''))
             
             is_candle_bearish = (p < actual_open)
             is_candle_bullish = (p > actual_open)
