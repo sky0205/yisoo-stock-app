@@ -423,7 +423,7 @@ if symbol:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인해 주시게.")
         else:
             df = df.ffill().dropna()
-            df.index = pd.to_datetime(df.index).date
+            df.index = pd.to_datetime(df.index, utc=True).date
             today_date = now_local.date()
 
             override_prev_p = 0.0
