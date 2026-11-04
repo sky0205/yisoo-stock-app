@@ -296,25 +296,32 @@ if symbol:
                 "Accept-Language": "ko-KR,ko;q=0.9"
             }
 
-            # 엔진 1: 네이버 폴링 API (가장 강력한 우회 백도어)
+            # 엔진 1: 네이버 차트 전용 API (시가, 고가, 저가, 종가 100% 정확하게 강제 추출)
             if not kr_fetched:
                 try:
-                    res = requests.get(f"https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:{_code}", headers=_headers, timeout=4)
-                    if res.status_code == 200:
-                        _d = res.json()["result"]["areas"][0]["datas"][0]
-                        auto_p = float(_d["nv"])
-                        real_kr_open = float(_d["ov"])
-                        real_kr_high = float(_d["hv"])
-                        real_kr_low = float(_d["lv"])
-                        v_curr = float(_d["aq"])
-                        if auto_p > 0 and real_kr_open > 0: 
-                            # 만약 시가가 저가와 완벽히 똑같거나 이상하면 가짜 데이터로 간주하고 패스!
-                            if real_kr_open != real_kr_low:
+                    # 💡 방화벽 차단율이 극히 낮고 차트 원본 데이터를 제공하는 숨은 경로
+                    chart_url = f"https://fchart.stock.naver.com/sise.nhn?symbol={_code}&timeframe=day&count=1&requestType=0"
+                    res = requests.get(chart_url, headers=_headers, timeout=4)
+                    
+                    if res.status_code == 200 and 'data="' in res.text:
+                        # 💡 응답 데이터 포맷: <item data="날짜|시가|고가|저가|종가|거래량" />
+                        raw_data = res.text.split('data="')[1].split('"')[0]
+                        ohlcv = raw_data.split('|')
+                        
+                        if len(ohlcv) == 6:
+                            real_kr_open = float(ohlcv[1])  # 🎯 절대 흔들리지 않는 진짜 오늘 시가!
+                            real_kr_high = float(ohlcv[2])
+                            real_kr_low = float(ohlcv[3])
+                            auto_p = float(ohlcv[4])        # 종가(현재가)
+                            v_curr = float(ohlcv[5])
+                            
+                            if auto_p > 0 and real_kr_open > 0:
                                 kr_fetched = True
-                                # 장부(df) 자체에 박힌 가짜 시가를 진짜 시가로 원천 교정!
+                                # 💡 장부(df) 자체에 박혀 있던 야후의 가짜 시가(17,120원 등)를 진짜 시가로 원천 교정!
                                 if not df.empty:
                                     df.iloc[-1, df.columns.get_loc("Open")] = real_kr_open
-                except: pass
+                except:
+                    pass
 
             # 엔진 2: 네이버 모바일 API
             if not kr_fetched:
