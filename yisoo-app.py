@@ -1369,16 +1369,36 @@ if symbol:
                 sub_indicator_str = f" - <b>{_score_name} 동조:</b> {_display_score}/3점 (밴드폭 {bandwidth:.1f}%) {_p_action}"
 
             bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1점)"
-            # 💡 [최종 강제 스위치]: 진단 문구를 조립하기 직전, 네이버 시가와 현재가를 최종 비교하여 음봉/양봉 스위치를 무조건 재정립!
+            # 💡 [최종 도지 & 음봉 통합 강제 스위치]: 시가와 현재가를 엄격히 대조하여 도지와 음봉/양봉 완벽 확정!
             if 'real_kr_open' in locals() and real_kr_open > 0:
-                if p < real_kr_open:
-                    is_candle_bearish = True
-                    is_candle_bullish = False
-                    candle_color_txt = "파란색 음봉"
-                elif p > real_kr_open:
-                    is_candle_bearish = False
-                    is_candle_bullish = True
-                    candle_color_txt = "빨간색 양봉"
+                body_len_check = abs(p - real_kr_open)
+                # 가격 차이가 30원 이내이거나 캔들 폭의 0.5% 미만이면 도지로 인정!
+                if body_len_check <= 30:
+                    is_doji_candle = True
+                    strict_doji_check = True
+                    if p < real_kr_open:
+                        is_candle_bearish = True
+                        is_candle_bullish = False
+                        candle_color_txt = "십자형 음도지(Doji)"
+                    elif p > real_kr_open:
+                        is_candle_bearish = False
+                        is_candle_bullish = True
+                        candle_color_txt = "십자형 양도지(Doji)"
+                    else:
+                        is_candle_bearish = (p_chg < 0)
+                        is_candle_bullish = (p_chg >= 0)
+                        candle_color_txt = "십자형 도지(Doji)"
+                else:
+                    is_doji_candle = False
+                    strict_doji_check = False
+                    if p < real_kr_open:
+                        is_candle_bearish = True
+                        is_candle_bullish = False
+                        candle_color_txt = "파란색 음봉"
+                    elif p > real_kr_open:
+                        is_candle_bearish = False
+                        is_candle_bullish = True
+                        candle_color_txt = "빨간색 양봉"
             if is_candle_unknown:
                 pass  
             elif strict_doji_check:
