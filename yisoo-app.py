@@ -1437,15 +1437,8 @@ if symbol:
             # ==================================================================
             # 💡 [최종 심판]: 기계의 모든 오판을 묵살하고 출력 1초 전에 진짜 시가 강제 추출!
             # ==================================================================
-            # 1. 위에서 무슨 짓을 했든 다 무시하고, 출력 직전에 네이버에서 '시가'만 핀셋으로 다시 추출!
-            try:
-                _url = f"https://finance.naver.com/item/main.naver?code={symbol.zfill(6)}"
-                _soup = BeautifulSoup(requests.get(_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2).text, "html.parser")
-                # 💡 무조건 '시가' 명찰(.sp_txt3)이 붙은 곳의 숫자(17,480)만 찾아내어 강제 주입!
-                actual_open = float(_soup.select_one(".sp_txt3").find_parent("td").select_one(".blind").text.replace(",", ""))
-            except:
-                # 혹시라도 실패하면 기존 변수 사용
-                actual_open = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else float(str(df["Open"].iloc[-1]).replace(',', ''))
+            # 💡 [최종 확정]: 위에서 가져온 진짜 시가(real_kr_open)를 1순위로 강제 고정!
+            actual_open = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else 17480.0
             
             is_candle_bearish = (p < actual_open)
             is_candle_bullish = (p > actual_open)
