@@ -597,11 +597,29 @@ if symbol:
                 else:
                     is_long_upper_tail = (upper_tail_len > lower_tail_len) and (upper_tail_len > body_len) and (upper_tail_len >= day_candle_range * 0.3)
                 
-                # 💡 [PRO 3차 패치] '가짜 칼날' 박멸! (상승했거나 양봉이면 무조건 방어 성공으로 인정)
-                is_tail_defended = (lower_tail_len > upper_tail_len) or (lower_tail_len >= day_candle_range * 0.25)
-                is_strong_bull_body = is_candle_bullish and ((p_chg >= 1.0) or (body_len >= upper_tail_len))
-                
-                is_defended = (p_chg > 0) or is_candle_bullish or is_tail_defended or is_strong_bull_body
+                # [엄격한 밑꼬리 판정]
+                # 꼬리 길이가 캔들 전체 범위의 30% 이상이고, 몸통의 50% 이상이며,
+                # 윗꼬리보다 실제로 길 때만 '유의미한 밑꼬리'로 인정합니다.
+                has_meaningful_lower_tail = (
+                    lower_tail_len > 0
+                    and lower_tail_len >= day_candle_range * 0.30
+                    and lower_tail_len >= body_len * 0.50
+                    and lower_tail_len > upper_tail_len
+                )
+                is_tail_defended = has_meaningful_lower_tail
+                is_strong_bull_body = (
+                    is_candle_bullish
+                    and p_chg > 0
+                    and ((p_chg >= 1.0) or (body_len >= upper_tail_len))
+                )
+
+                # 전일 대비 상승만으로 방어 성공 처리하지 않습니다.
+                # 양봉이면서 실제 상승했거나, 엄격한 밑꼬리가 확인된 경우만 방어로 분류합니다.
+                is_defended = (
+                    (p_chg > 0 and is_candle_bullish)
+                    or is_tail_defended
+                    or is_strong_bull_body
+                )
                 is_candle_unknown = False
 
             is_pure_bullish_candle = p >= today_open
@@ -1396,31 +1414,26 @@ if symbol:
                 pass  
             elif strict_doji_check:
                 trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 거의 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
+            elif p_chg < 0:
+                # 하락 중에는 is_defended 값과 관계없이 실제 밑꼬리 검증 결과로만 문구를 결정합니다.
+                if has_meaningful_lower_tail:
+                    trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어 시도 / 반등 미확인]</b> 전일 대비 {p_chg:.2f}% 하락했으나 엄격한 기준의 밑꼬리가 확인됩니다. 방어 시도일 뿐 매도 압력이 해소된 것은 아니므로 관망하시게."
+                else:
+                    trend_status = f"🚨 <b style='color:#D32F2F;'>[하방 압력 지속 / 밑꼬리 방어 미확인]</b> 전일 대비 {p_chg:.2f}% 하락 중이며 유의미한 밑꼬리가 확인되지 않습니다. 매도 우위로 판단하며 섣부른 진입을 금하시게."
             elif is_defended:
-                has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
-
                 if is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
-                    trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}(상승률 {p_chg:+.2f}%)을(를) 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
-                elif p_chg < 0:
-                    if has_meaningful_lower_tail:
-                        trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 길게 달며 필사적으로 방어선을 치고 있소! 아직 안심하긴 이르나 투매는 멈춘 듯하네."
-                    else:
-                        trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 밑꼬리조차 없는 {candle_color_txt}으로 매도세에 짓눌려 속절없이 추락 중이오! 절대 칼날을 잡지 마시게."
+                    trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 확인]</b> {candle_color_txt}(상승률 {p_chg:+.2f}%)이 확인됩니다. 다만 추세 전환은 후속 거래일 확인이 필요하오."
                 else:
                     if today_open == today_low:
-                        trend_status = f"🔥 <b style='color:#D84315;'>[강한 매수 맹공]</b> 장 시작부터 단 한 번도 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
-                    # 수정: 아래꼬리가 윗꼬리보다 확실히 길거나, 전체 캔들에서 아래꼬리 비중이 클 때만 인정!
-                    elif has_meaningful_lower_tail and (lower_tail_len > upper_tail_len) and (today_open > today_low):
-                        trend_status = f"🛡️ <b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt} 출현!"
+                        trend_status = f"🔥 <b style='color:#D84315;'>[시가 저점 / 상승 우위]</b> 시가가 당일 저점이며 현재 양봉 흐름입니다."
+                    elif has_meaningful_lower_tail and (today_open > today_low):
+                        trend_status = f"🛡️ <b>[밑꼬리 지지 흔적 확인]</b> 엄격한 기준의 밑꼬리가 확인됩니다. 다만 이것만으로 추세 전환을 확정할 수는 없소."
                     elif is_long_upper_tail and is_candle_bearish:
-                        # 추가: 윗꼬리가 긴 파란색 음봉일 때의 정확한 팩트 폭격 멘트
-                        trend_status = f"🚨 <b>[상승 기세 꺾임 / 매물 압박]</b> 윗꼬리를 길게 달고 밀려 내려온 {candle_color_txt} 출현! 상단 저항이 거세오."
+                        trend_status = f"🚨 <b style='color:#F57C00;'>[상승 기세 꺾임 / 매물 압박]</b> 윗꼬리를 길게 달고 밀려 내려온 {candle_color_txt} 출현! 상단 저항이 거세오."
                     elif is_candle_bearish:
-                        # 추가: 파란색 음봉일 때의 정확한 팩트 멘트
                         trend_status = f"📉 <b>[단기 하락 / 매도 우위]</b> 매물 압박을 받으며 밀려 내려온 {candle_color_txt} 출현!"
                     else:
-                        # 빨간색 양봉일 때만 '견고하다'는 표현 사용
-                        trend_status = f"🌱 <b>[방어선 구축 / 상승 전개]</b> 매수세가 유입되며 견고한 {candle_color_txt} 출현!"
+                        trend_status = f"🌱 <b>[상승 전개]</b> 매수세가 유입되며 {candle_color_txt} 출현!"
             elif is_long_upper_tail:
                 if is_candle_bearish: 
                     if p >= ma5_val:
