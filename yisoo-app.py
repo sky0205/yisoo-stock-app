@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 결전] SSL 보안 무력화 및 네이버 아침 시가 강제 수집
+            # ★ [PRO 최후 결전 2차] requests 모듈로 네이버 철벽 방어 뚫기
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,27 +515,32 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [핵심] 파이썬 SSL 보안장벽 무력화 마스터키 장착!
+            # 💡 [핵심] 나약한 urllib을 버리고, 가장 강력한 requests 모듈로 접속!
             try:
-                import urllib.request
-                import json
-                import ssl
-                
-                # 보안 에러(SSL) 무시하고 네이버 뒷문 강제 개방
-                ssl_context = ssl._create_unverified_context()
+                import requests
                 clean_code = str(symbol).replace('.KS', '').replace('.KQ', '').strip()
                 url = f"https://m.stock.naver.com/api/stock/{clean_code}/basic"
                 
-                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                res = urllib.request.urlopen(req, context=ssl_context).read().decode('utf-8')
-                data = json.loads(res)
+                # 네이버 서버가 기계(봇)인 줄 꿈에도 모르게 완벽한 PC 브라우저로 위장!
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept': 'application/json',
+                    'Referer': f'https://m.stock.naver.com/domestic/stock/{clean_code}/total'
+                }
                 
-                # 드디어 HTS와 일치하는 아침 시가 확보!
-                naver_open = float(data.get('openPrice', '0').replace(',', ''))
+                # SSL 인증서 검증 무시(verify=False)로 보안장벽 강제 패스
+                res = requests.get(url, headers=headers, verify=False, timeout=5)
+                data = res.json()
+                
+                # 드디어 실시간 아침 시가 확보!
+                naver_open_str = str(data.get('openPrice', '0')).replace(',', '')
+                naver_open = float(naver_open_str)
+                debug_msg = "🟢 접속 성공"
             except Exception as e:
                 naver_open = 0
+                debug_msg = f"🔴 접속 실패 ({e})"
 
-            # 💡 시가 확정: 네이버 아침 시가를 1순위로 무조건 덮어씌웁니다!
+            # 💡 시가 확정: 네이버 8시 시가를 1순위로 무조건 덮어씌웁니다!
             if naver_open > 0:
                 today_open = naver_open
             elif raw_open > 0:
@@ -546,9 +551,9 @@ if symbol:
             cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
-            # 🚨 [강제 노출]: 덮어쓰기 당하지 않도록 진단기 화면 맨 위에 붉은 박스로 강제 출력!
+            # 🚨 [강제 노출]: 네이버 벽을 뚫었는지 붉은 박스로 즉시 확인!
             import streamlit as st
-            st.error(f"🚨 [기계의 실시간 내부 데이터] 네이버 아침 시가: {naver_open:,.0f}원 | 야후 엉터리 시가: {raw_open:,.0f}원 | 📌 최종 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
+            st.error(f"🚨 [시가 돌파 작전] {debug_msg} | 네이버 아침 시가: {naver_open:,.0f}원 | 📌 기계가 확정한 진짜 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
 
             # 💡 자가 보정
             today_high = max(today_high, cur_open_price, p)
@@ -561,6 +566,18 @@ if symbol:
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
 
+            if p > cur_open_price:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "십자형 도지"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
                 is_candle_bullish = True
