@@ -238,16 +238,12 @@ with col1:
     symbol = raw_symbol_input.strip()
 with col2:
     from datetime import date
-    
-    # 💡 오늘 날짜와 종목번호를 조합하여 당일 전용 기억 키를 생성합니다.
     today_str = date.today().strftime("%Y-%m-%d")
     cache_key = f"open_price_{symbol}_{today_str}"
     
-    # 만약 오늘 이 종목에 대해 저장된 값이 없다면 0.0으로 초기화합니다.
     if cache_key not in st.session_state:
         st.session_state[cache_key] = 0.0
 
-    # 📌 당일 종목별로 자동 기억되는 HTS 호가창 시가 입력칸
     manual_open = st.number_input(
         "📌 HTS 호가창 시가 (0=자동)", 
         value=st.session_state[cache_key], 
@@ -267,8 +263,12 @@ with col6:
     user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=0.0, step=100.0, help="낙폭 과대 판독용")
 
 st.write("")
-# 👇 이 코드로 덮어씌워 주시면 manual_ask 에러가 단번에 사라지옵니다!
-manual_open = st.session_state.get("manual_open", 0.0)
+# 💡 종목별·날짜별로 입력된 수동 시가를 확실하게 불러옵니다.
+from datetime import date
+today_str = date.today().strftime("%Y-%m-%d")
+cache_key = f"open_price_{symbol}_{today_str}"
+manual_open = st.session_state.get(cache_key, 0.0)
+
 manual_prev_price = manual_prev_price_str.strip()
 manual_pre_price = manual_pre_price_str.strip()
 manual_ask = 0.0
