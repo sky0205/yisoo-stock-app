@@ -563,11 +563,13 @@ if symbol:
 
             if manual_open > 0:
                 today_open = manual_open
-                # 📌 '원' 고정 텍스트를 지우고 자동 화폐 단위 {currency}와 소수점 {fmt_p} 적용
                 debug_msg = f"🟢 [수동 룰 작동] 명장님의 하명({manual_open:{fmt_p}}{currency}) 완벽 적용!"
             else:
                 today_open = raw_open_val
                 debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({raw_open_val:{fmt_p}}{currency}) 적용 중"
+
+            # 📌 깔끔한 상단 알림 노출
+            st.markdown(f"🚨 **[시가 수동 통제]** {debug_msg} | 📌 **최종 확정 시가:** {today_open:{fmt_p}}{currency}")
 
             # 📌 상단 알림에도 자동 화폐 단위 적용
             st.markdown(f"🚨 **[시가 수동 통제]** {debug_msg} | 📌 **최종 확정 시가:** {today_open:{fmt_p}}{currency}")
