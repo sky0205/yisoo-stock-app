@@ -290,15 +290,19 @@ manual_prev_price = str(manual_prev_price_str_val).strip()
 manual_ask = 0.0
 manual_bid = 0.0
 manual_pre_price = ""
-# 📌 [핵심] 명장님께서 0보다 큰 수동 시가를 입력하셨다면 무조건 1순위로 확정 시가를 덮어씁니다!
+
+# 📌 [수정된 안전 판독 로직] raw_open이 아직 없을 때를 대비한 안전 장치 적용
 if manual_open > 0:
     today_open = manual_open
     debug_msg = f"🟢 [수동 룰 작동] 명장님의 하명({manual_open:,.0f}원) 완벽 적용!"
 else:
-    today_open = raw_open
-    debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({raw_open:,.0f}원) 적용 중"
+    # raw_open 변수가 없으면 일단 0.0으로 안전하게 처리합니다.
+    safe_raw_open = raw_open if 'raw_open' in locals() else 0.0
+    today_open = safe_raw_open
+    debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({safe_raw_open:,.0f}원) 적용 중"
 # 💡 당일 기억된 수동 시가 및 전일종가 적용 상태 최종 출력 (이 한 줄만 남겨두시옵소서)
 st.markdown(f"🚨 **[시가 수동 통제]** {debug_msg} | 📌 **최종 확정 시가:** {today_open:,.0f}원")
+
 if symbol:
     try:
         try:
