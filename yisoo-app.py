@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 결전 4차] HTML 태그(dt/dd) 오타 완벽 수정본
+            # ★ [PRO 최후 결전 5차] 명장님의 V3.1 오리지널 정규식 복원!
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,7 +515,8 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [핵심] 네이버 PC웹의 <dt>시가</dt><dd>가격</dd> 구조를 정확히 찌릅니다!
+            # 💡 [정답은 명장님께 있었습니다!] 복잡한 태그 다 버리고, 
+            # 예전 V3.1에서 완벽하게 작동했던 오리지널 정규식으로 회귀합니다!
             try:
                 import requests
                 import re
@@ -526,20 +527,20 @@ if symbol:
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
                 res = requests.get(url, headers=headers, timeout=5)
                 
-                # 💡 [치명적 오류 수정]: <dd>시가 가 아니라 <dt>시가</dt><dd>가격</dd> 입니다!
-                match = re.search(r'<dt>시가</dt>\s*<dd>([0-9,]+)</dd>', res.text)
+                # 명장님의 오리지널 정밀 타격 정규식 복구! ('시가' 글자 뒤의 숫자만 무식하게 뽑아냅니다)
+                match = re.search(r'시가\s+([0-9,]+)', res.text)
                 
                 if match:
                     naver_open = float(match.group(1).replace(',', ''))
-                    debug_msg = "🟢 PC웹 시가 정밀 타격 완벽 성공!"
+                    debug_msg = "🟢 오리지널 정규식 시가 타격 성공!"
                 else:
                     naver_open = 0
-                    debug_msg = "🔴 HTML 시가 탐색 실패 (태그 불일치)"
+                    debug_msg = "🔴 HTML 시가 탐색 실패 (오리지널 정규식 매칭 실패)"
             except Exception as e:
                 naver_open = 0
                 debug_msg = f"🔴 통신 장애 ({e})"
 
-            # 💡 시가 확정: 네이버 PC웹 시가를 1순위로 무조건 덮어씌웁니다!
+            # 💡 시가 확정: 네이버 8시 시가를 1순위로 무조건 덮어씌웁니다!
             if naver_open > 0:
                 today_open = naver_open
             elif raw_open > 0:
@@ -552,7 +553,7 @@ if symbol:
 
             # 🚨 [강제 노출]: 붉은 박스로 PC웹 시가 획득 여부 출력
             import streamlit as st
-            st.error(f"🚨 [시가 돌파 작전] {debug_msg} | 네이버 아침 시가: {naver_open:,.0f}원 | 📌 기계가 확정한 진짜 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
+            st.error(f"🚨 [시가 돌파 작전] {debug_msg} | 네이버 아침 시가: {naver_open:,.0f}원 | 📌 기계 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
 
             # 💡 자가 보정
             today_high = max(today_high, cur_open_price, p)
@@ -565,6 +566,19 @@ if symbol:
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
 
+            # 💡 양봉/음봉 판독
+            if p > cur_open_price:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "십자형 도지"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
             # 💡 양봉/음봉 판독
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
