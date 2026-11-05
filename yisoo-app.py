@@ -507,26 +507,41 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최종 철갑 버전] 변수 누락 완벽 해결 및 정밀 연산
+            # ★ [PRO 최종 연동] 네이버 API 실시간 아침 시가 강제 획득 로직
             # ========================================================
-            
-            raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
+            try:
+                import urllib.request
+                import json
+                
+                clean_code = str(symbol).replace('.KS', '').replace('.KQ', '') 
+                url = f"https://m.stock.naver.com/api/stock/{clean_code}/basic"
+                
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 11)'})
+                response = urllib.request.urlopen(req).read().decode('utf-8')
+                data = json.loads(response)
+                
+                # HTS 호가창의 '시'와 정확히 일치하는 실시간 아침 시가 추출
+                open_str = data.get('openPrice', '0').replace(',', '')
+                real_open = float(open_str)
+                
+                if real_open > 0:
+                    today_open = real_open
+                else:
+                    today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
+            except Exception as e:
+                # 통신 장애 발생 시 야후 표준 데이터로 자동 백업
+                today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
+
             today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
 
-            # 💡 [핵심 방어]: 야후가 시가(Open)를 제대로 못 가져와서 0이 되거나 비어있으면 강제 방어!
-            if raw_open <= 0:
-                today_open = float(str(df["Close"].iloc[-2]).replace(',', '')) if len(df) > 1 else p
-            else:
-                today_open = raw_open
-
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
             
-            # 💡 공식 시가 확정
+            # 💡 [핵심 확정]: HTS와 똑같은 아침 시가를 공식 시가(cur_open_price)로 철저히 고정!
             cur_open_price = today_open
 
-            # 💡 [철벽 자가 보정]: 고가/저가 범위 재확인 및 지연 감지 변수(is_api_delayed) 선언 부활!
+            # 💡 [철벽 자가 보정]: 고가/저가 범위 재확인 및 지연 감지 변수
             today_high = max(today_high, cur_open_price, p)
             today_low = min(today_low, cur_open_price, p)
             day_candle_range = max(0.01, today_high - today_low)
