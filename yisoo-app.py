@@ -218,10 +218,10 @@ st.title("🧐 이수할아버지의 냉정 진단기 무결점 통합본 (도�
 display_global_risk()
 st.divider()
 
-# 💡 핵심 입력칸들을 강조하기 위한 맞춤형 디자인 CSS를 먼저 주입합니다.
+# 💡 입력칸 강조 및 3열 정렬을 위한 맞춤형 디자인 CSS
 st.markdown("""
     <style>
-        /* 종목번호와 HTS 호가창 시가 입력칸의 박스 테두리와 배경을 강조합니다 */
+        /* 종목번호와 HTS 호가창 시가 입력칸 박스 배경과 테두리 강조 */
         div[data-baseweb="input"]:has(input[aria-label*="종목번호"]),
         div[data-baseweb="input"]:has(input[aria-label*="HTS 호가창 시가"]) {
             background-color: #fff8e1 !important;
@@ -231,38 +231,26 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 5개의 칸을 종목번호, HTS 호가창 시가, 전일종가, 프리시세, 평단가 순으로 재배치합니다!
-col_symbol, col_open, col_prev, col_pre_us, col_avg = st.columns(5)
-
-with col_symbol:
-    raw_symbol_input = st.text_input("📊 종목번호", value="LRCX")
+# 📌 첫 번째 줄 (3개 칸: 종목번호, HTS 호가창 시가, HTS 전일종가)
+col1, col2, col3 = st.columns(3)
+with col1:
+    raw_symbol_input = st.text_input("📊 종목번호", value="257720")
     symbol = raw_symbol_input.strip()
-
-with col_open:
-    # 👇 종목번호 바로 옆 프리미엄 자리에 위치한 HTS 호가창 시가 입력칸!
+with col2:
     st.number_input("📌 HTS 호가창 시가 (0=자동)", value=0.0, step=10.0, key="manual_open")
-
-with col_prev:
+with col3:
     manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value="", help="국장/미장 전일 기준가")
 
-with col_pre_us:
+# 📌 두 번째 줄 (3개 칸: 미장 프리시세, 보유 평단가, 직전 1차 매수가)
+col4, col5, col6 = st.columns(3)
+with col4:
     manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value="", help="미장 프리마켓 실시간 기준가")
-
-with col_avg:
+with col5:
     user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 분석을 위한")
+with col6:
+    user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=0.0, step=100.0, help="낙폭 과대 판독용")
+
 st.write("")
-
-col_ask, col_bid, col_btn = st.columns([1, 1, 2])
-
-with col_ask:
-    manual_ask = st.number_input("🔴 총매도잔량", min_value=0.0, value=0.0, step=1.0, format="%.2f")
-
-with col_bid:
-    manual_bid = st.number_input("🔵 총매수잔량", min_value=0.0, value=0.0, step=1.0, format="%.2f")
-
-with col_btn:
-    st.write("")
-    st.write("")
     # 👇 이 코드로 덮어씌워 주시옵소서!
     # 💡 종목번호 입력 바로 다음에 HTS 호가창 시가 입력칸을 나란히 배치합니다!
     st.number_input("📌 HTS 호가창 시가 (수동입력, 0=자동)", value=0.0, step=10.0, key="manual_open")
