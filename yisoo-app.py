@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 완결판 5차] 네이버 포기 -> 다음(Daum) 실시간 API 전격 우회!
+            # ★ [PRO 최후 완결판 - 시봉 연동] 60분봉 첫 캔들 시가 강제 획득!
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,38 +515,31 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [발상의 전환]: 네이버가 엉터리 데이터를 주거나 차단한다면, 
-            # 가장 깔끔하고 빠르기로 소문난 '다음(Daum) 증권 API'로 우회 타격합니다!
+            # 💡 [시봉 연동 수술]: 일봉(Daily) 지표는 살려두고, 
+            # 캔들 판독을 위한 시가만 '60분봉(1시간봉)의 오늘 첫 시가'로 정밀 타격하여 덮어씌웁니다!
             try:
-                import requests
+                import yfinance as yf
+                import datetime
                 
-                clean_code = str(symbol).replace('.KS', '').replace('.KQ', '').strip()
-                # 다음(Daum) 금융 API (종목코드 앞에 'A'를 붙이는 것이 규칙입니다)
-                url = f"https://finance.daum.net/api/quotes/A{clean_code}"
+                # yfinance로 해당 종목의 최근 2일치 60분봉 데이터를 몰래 가져옵니다.
+                df_60m = yf.download(symbol, period="2d", interval="60m", progress=False)
                 
-                # 다음(Daum) 서버는 Referer(어디서 접속했는지)를 반드시 확인하므로 위장 신분증 완벽 세팅
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Referer': 'https://finance.daum.net/'
-                }
+                # 낡은 데이터에 속지 않도록, 가장 마지막 날짜(오늘)의 첫 번째 데이터만 멱살을 잡습니다.
+                latest_date = df_60m.index[-1].date()
+                df_latest_day = df_60m[df_60m.index.date == latest_date]
                 
-                res = requests.get(url, headers=headers, timeout=5)
-                data = res.json()
-                
-                # openingPrice 가 정확한 오늘(아침) 시가입니다!
-                daum_open = float(data.get('openingPrice', 0))
-                
-                if daum_open > 0:
-                    real_open = daum_open
-                    debug_msg = "🟢 [완벽] 다음(Daum) 증권 실시간 시가 획득 성공!"
+                if not df_latest_day.empty:
+                    # 오늘 장 시작(첫 60분봉)의 시가
+                    real_open = float(df_latest_day['Open'].iloc[0])
+                    debug_msg = f"🟢 [시봉 연동] 60분봉 첫 시가 완벽 타격 성공!"
                 else:
                     real_open = 0
-                    debug_msg = "🔴 다음 증권 API 시가 0원 반환"
+                    debug_msg = "🔴 60분봉 데이터 탐색 실패"
             except Exception as e:
                 real_open = 0
-                debug_msg = f"🔴 통신 장애 ({e})"
+                debug_msg = f"🔴 60분봉 통신 장애 ({e})"
 
-            # 💡 시가 확정: 다음(Daum)에서 뜯어온 '오늘 진짜 시가'를 1순위로 덮어씌웁니다!
+            # 💡 시가 확정: 60분봉에서 뜯어온 '진짜 아침 시작가'를 1순위로 덮어씌웁니다!
             if real_open > 0:
                 today_open = real_open
             elif raw_open > 0:
@@ -557,9 +550,9 @@ if symbol:
             cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
-            # 🚨 [강제 노출]: 붉은 박스로 Daum API 획득 결과 즉시 확인
+            # 🚨 [강제 노출]: 붉은 박스로 시봉 획득 결과 즉시 확인
             import streamlit as st
-            st.error(f"🚨 [진범 검거 완료!] {debug_msg} | 진짜 아침 시가: {real_open:,.0f}원 | 📌 최종 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
+            st.error(f"🚨 [진범 검거 - 시봉 수술] {debug_msg} | 📌 60분봉 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
 
             # 💡 자가 보정
             today_high = max(today_high, cur_open_price, p)
@@ -571,6 +564,20 @@ if symbol:
             upper_tail_len = today_high - max(cur_open_price, p)
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
+
+            # 💡 양봉/음봉 판독 (드디어 HTS 시봉 차트와 100% 일치!)
+            if p > cur_open_price:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "십자형 도지"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
 
             # 💡 양봉/음봉 판독 (드디어 100% 정상 판독)
             if p > cur_open_price:
