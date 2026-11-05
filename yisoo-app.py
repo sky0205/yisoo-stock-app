@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 결전 2차] requests 모듈로 네이버 철벽 방어 뚫기
+            # ★ [PRO 최후 결전 3차] PC웹 시가 직접 추출 (API 변덕 원천 차단)
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,32 +515,31 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [핵심] 나약한 urllib을 버리고, 가장 강력한 requests 모듈로 접속!
+            # 💡 [핵심] JSON API 구조가 숨겨졌으므로, 가장 확실한 PC웹 HTML 텍스트를 직접 뜯어냅니다!
             try:
                 import requests
+                import re
+                
                 clean_code = str(symbol).replace('.KS', '').replace('.KQ', '').strip()
-                url = f"https://m.stock.naver.com/api/stock/{clean_code}/basic"
+                url = f"https://finance.naver.com/item/main.naver?code={clean_code}"
                 
-                # 네이버 서버가 기계(봇)인 줄 꿈에도 모르게 완벽한 PC 브라우저로 위장!
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Accept': 'application/json',
-                    'Referer': f'https://m.stock.naver.com/domestic/stock/{clean_code}/total'
-                }
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+                res = requests.get(url, headers=headers, timeout=5)
                 
-                # SSL 인증서 검증 무시(verify=False)로 보안장벽 강제 패스
-                res = requests.get(url, headers=headers, verify=False, timeout=5)
-                data = res.json()
+                # 네이버 금융 PC화면의 시각장애인용(blind) 영역에서 '시가 OOOO' 숫자를 핀셋으로 뽑아냅니다.
+                match = re.search(r'<dd>시가\s+([0-9,]+)</dd>', res.text)
                 
-                # 드디어 실시간 아침 시가 확보!
-                naver_open_str = str(data.get('openPrice', '0')).replace(',', '')
-                naver_open = float(naver_open_str)
-                debug_msg = "🟢 접속 성공"
+                if match:
+                    naver_open = float(match.group(1).replace(',', ''))
+                    debug_msg = "🟢 PC웹 정밀 타격 성공"
+                else:
+                    naver_open = 0
+                    debug_msg = "🔴 HTML 시가 탐색 실패"
             except Exception as e:
                 naver_open = 0
-                debug_msg = f"🔴 접속 실패 ({e})"
+                debug_msg = f"🔴 통신 장애 ({e})"
 
-            # 💡 시가 확정: 네이버 8시 시가를 1순위로 무조건 덮어씌웁니다!
+            # 💡 시가 확정: 네이버 PC웹 시가를 1순위로 무조건 덮어씌웁니다!
             if naver_open > 0:
                 today_open = naver_open
             elif raw_open > 0:
@@ -551,7 +550,7 @@ if symbol:
             cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
-            # 🚨 [강제 노출]: 네이버 벽을 뚫었는지 붉은 박스로 즉시 확인!
+            # 🚨 [강제 노출]: 붉은 박스로 PC웹 시가 획득 여부 출력
             import streamlit as st
             st.error(f"🚨 [시가 돌파 작전] {debug_msg} | 네이버 아침 시가: {naver_open:,.0f}원 | 📌 기계가 확정한 진짜 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
 
@@ -565,6 +564,20 @@ if symbol:
             upper_tail_len = today_high - max(cur_open_price, p)
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
+
+            # 💡 양봉/음봉 판독
+            if p > cur_open_price:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "십자형 도지"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
 
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
