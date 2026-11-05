@@ -507,41 +507,48 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최종 연동] 네이버 API 실시간 아침 시가 강제 획득 로직
+            # ★ [PRO 디버그 버전] 시가 실시간 추적 및 화면 노출 연산
             # ========================================================
-            try:
-                import urllib.request
-                import json
-                
-                clean_code = str(symbol).replace('.KS', '').replace('.KQ', '') 
-                url = f"https://m.stock.naver.com/api/stock/{clean_code}/basic"
-                
-                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 11)'})
-                response = urllib.request.urlopen(req).read().decode('utf-8')
-                data = json.loads(response)
-                
-                # HTS 호가창의 '시'와 정확히 일치하는 실시간 아침 시가 추출
-                open_str = data.get('openPrice', '0').replace(',', '')
-                real_open = float(open_str)
-                
-                if real_open > 0:
-                    today_open = real_open
-                else:
-                    today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
-            except Exception as e:
-                # 통신 장애 발생 시 야후 표준 데이터로 자동 백업
-                today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
-
+            
+            raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
             today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
 
+            # 네이버 모바일 API로 아침 시가 강제 획득 시도
+            try:
+                import urllib.request
+                import json
+                clean_code = str(symbol).replace('.KS', '').replace('.KQ', '') 
+                url = f"https://m.stock.naver.com/api/stock/{clean_code}/basic"
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                res = urllib.request.urlopen(req).read().decode('utf-8')
+                data = json.loads(res)
+                naver_open = float(data.get('openPrice', '0').replace(',', ''))
+            except:
+                naver_open = 0
+
+            # 시가 최종 선택 순위 (1순위: 네이버 실시간 아침 시가, 2순위: 야후 Open, 3순위: 전일 종가)
+            if naver_open > 0:
+                today_open = naver_open
+                source_label = "네이버 실시간 아침 시가"
+            elif raw_open > 0:
+                today_open = raw_open
+                source_label = "야후 Open 시가"
+            else:
+                today_open = float(str(df["Close"].iloc[-2]).replace(',', '')) if len(df) > 1 else p
+                source_label = "전일 종가 대체"
+
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
             
-            # 💡 [핵심 확정]: HTS와 똑같은 아침 시가를 공식 시가(cur_open_price)로 철저히 고정!
+            # 💡 공식 시가 확정
             cur_open_price = today_open
 
-            # 💡 [철벽 자가 보정]: 고가/저가 범위 재확인 및 지연 감지 변수
+            # 💡 [디버그 검문소]: 기계가 쥐고 있는 시가와 현재가를 웹 화면에 강제로 출력합니다!
+            import streamlit as st
+            st.info(f"🔍 [시가 추적기] 출처: [{source_label}] | 기계가 잡은 시가: {cur_open_price:,.0f원} | 현재가: {p:,.0f원}")
+
+            # 💡 [철벽 자가 보정]
             today_high = max(today_high, cur_open_price, p)
             today_low = min(today_low, cur_open_price, p)
             day_candle_range = max(0.01, today_high - today_low)
