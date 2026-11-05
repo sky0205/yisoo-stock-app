@@ -230,7 +230,7 @@ with col1:
     raw_symbol_input = st.text_input("📊 종목번호", value="272210")
     symbol = raw_symbol_input.strip()
 
-# 📂 기억장치에서 현재 선택된 종목의 기존 입력값을 꺼내옵니다.
+# 📂 기억장치에서 현재 선택된 종목의 기존 입력값을 꺼내옵니다. (없으면 0 세팅)
 mem_data = st.session_state.price_memory.get(symbol, {})
 saved_open = float(mem_data.get('open', 0.0))
 saved_prev = str(mem_data.get('prev', ""))
@@ -241,30 +241,31 @@ saved_ask = float(mem_data.get('ask', 0.0))
 saved_bid = float(mem_data.get('bid', 0.0))
 
 with col2:
-    manual_open = st.number_input("📌 HTS 호가창 시가 (0=자동)", value=saved_open, step=10.0)
+    # 📌 핵심 수술: key에 f"_{symbol}"을 붙여 종목이 바뀔 때마다 새 입력칸(0)으로 초기화시킵니다!
+    manual_open = st.number_input("📌 HTS 호가창 시가 (0=자동)", value=saved_open, step=10.0, key=f"open_{symbol}")
 
 with col3:
-    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value=saved_prev, help="국장/미장 전일 기준가 (종목별 자동 기억)")
+    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value=saved_prev, help="국장/미장 전일 기준가 (종목별 자동 기억)", key=f"prev_{symbol}")
 
 col4, col5, col6 = st.columns(3)
 with col4:
-    manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value=saved_pre, help="미장 프리마켓 실시간 기준가")
+    manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value=saved_pre, help="미장 프리마켓 실시간 기준가", key=f"pre_{symbol}")
 with col5:
-    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=saved_avg, step=100.0, help="맞춤형 분석을 위한 평단가")
+    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=saved_avg, step=100.0, help="맞춤형 분석을 위한 평단가", key=f"avg_{symbol}")
 with col6:
-    user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=saved_1st, step=100.0, help="낙폭 과대(물타기) 하이패스 연산용")
+    user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=saved_1st, step=100.0, help="낙폭 과대(물타기) 하이패스 연산용", key=f"1st_{symbol}")
 
 st.write("")
 
 col_ask, col_bid, col_btn = st.columns([1, 1, 2])
 
 with col_ask:
-    manual_ask = st.number_input("🔴 총매도잔량", min_value=0.0, value=saved_ask, step=1.0, format="%.2f")
+    manual_ask = st.number_input("🔴 총매도잔량", min_value=0.0, value=saved_ask, step=1.0, format="%.2f", key=f"ask_{symbol}")
 
 with col_bid:
-    manual_bid = st.number_input("🔵 총매수잔량", min_value=0.0, value=saved_bid, step=1.0, format="%.2f")
+    manual_bid = st.number_input("🔵 총매수잔량", min_value=0.0, value=saved_bid, step=1.0, format="%.2f", key=f"bid_{symbol}")
 
-# 💾 현재 화면에 있는 값을 즉시 해당 종목의 기억장치에 덮어씌웁니다. (새로고침 되어도 절대 날아가지 않음)
+# 💾 현재 화면에 있는 값을 즉시 해당 종목의 기억장치에 덮어씌웁니다. (돌아가도 날아가지 않음)
 st.session_state.price_memory[symbol] = {
     'open': manual_open,
     'prev': manual_prev_price_str,
