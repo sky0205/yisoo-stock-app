@@ -1423,10 +1423,10 @@ if symbol:
                 elif is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
                     trend_status = f"📈 <b style='color:#388E3C;'>[매수세 유입]</b> {candle_color_txt}(상승률 {p_chg:+.2f}%)을 기록 중이오."
                 elif p_chg < 0:
-                    if is_long_lower_tail:  # 👈 이 부분을 명장님의 엄격한 50% 잣대 변수로 싹 교체합니다!
+                    if is_long_lower_tail:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 전체 길이의 50% 이상 길게 달며 필사적으로 방어선을 치고 있소!"
                     else:
-                        trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 꼬리가 부실하여 방어선이 뚫렸소! 관망 필요!"
+                        trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 아래꼬리가 턱없이 짧아 매수세가 힘도 못 써보고 방어선이 무너졌소!"
                 else:
                     if today_open == today_low:
                         trend_status = f"🔥 <b style='color:#D84315;'>[강한 매수 맹공]</b> 장 시작부터 단 한 번도 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
