@@ -506,30 +506,28 @@ if symbol:
             else:
                 vol_strength = v_ratio
 
-            # 💡 [시가 철벽 수집 엔진 V2]: 네이버의 시각장애인용 텍스트(blind)에서 정규식으로 '시가' 숫자만 완벽하게 뽑아냅니다!
+            # 💡 [시가 철벽 수집 엔진 V3]: 외부 부품(bs4 등) 설치 문제일 수 있으므로, 무조건 작동하는 '파이썬 내장 모듈'만 사용!
             try:
-                import requests
+                import urllib.request
                 import re
-                from bs4 import BeautifulSoup
                 
                 clean_code = str(symbol).replace('.KS', '').replace('.KQ', '') 
                 url = f"https://finance.naver.com/item/main.naver?code={clean_code}"
                 
-                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-                soup = BeautifulSoup(res.text, 'html.parser')
+                # 네이버에 사람인 것처럼 정중하게(?) 접속 요청
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                html = urllib.request.urlopen(req).read().decode('euc-kr', 'ignore')
                 
-                real_kr_open = 0
-                # 네이버 금융의 시각장애인용 요약 텍스트 박스 추출
-                dl_blind = soup.find('dl', {'class': 'blind'})
-                if dl_blind:
-                    for dd in dl_blind.find_all('dd'):
-                        if dd.text.startswith('시가 '):
-                            # '시가 27,800' 같은 문구에서 숫자(27800)만 핀셋 추출
-                            open_str = re.sub(r'[^0-9]', '', dd.text)
-                            if open_str:
-                                real_kr_open = float(open_str)
-                            break
+                # 정규식으로 소스코드에서 '시가 27,800' 텍스트를 찾아 숫자만 핀셋으로 뽑아냅니다!
+                match = re.search(r'시가\s+([0-9,]+)', html)
+                if match:
+                    real_kr_open = float(match.group(1).replace(',', ''))
+                else:
+                    real_kr_open = 0
+                    
             except Exception as e:
+                # 💡 만약 여기서 또 실패하면, 까만 실행창(콘솔)에 범인(에러 원인)을 붉은 글씨로 소리치게 만듭니다!
+                print(f"🚨 [경고] 네이버 시가 수집 실패 원인: {e}")
                 real_kr_open = 0
             # ==================================================================
             # ★ [PRO 버전] 캔들 정합성 검열 및 십자형(Doji) 정밀 연산
