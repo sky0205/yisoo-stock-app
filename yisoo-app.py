@@ -293,7 +293,8 @@ if manual_open > 0:
 else:
     today_open = raw_open
     debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({raw_open:,.0f}원) 적용 중"
-
+# 💡 당일 기억된 수동 시가 및 전일종가 적용 상태 최종 출력 (이 한 줄만 남겨두시옵소서)
+st.markdown(f"🚨 **[시가 수동 통제]** {debug_msg} | 📌 **최종 확정 시가:** {today_open:,.0f}원")
 if symbol:
     try:
         try:
