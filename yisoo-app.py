@@ -506,46 +506,23 @@ if symbol:
             else:
                 vol_strength = v_ratio
 
-            # 💡 [시가 철벽 수집 엔진 V3.1]: 변수명 충돌(html 모듈) 완벽 해결!
-            try:
-                import urllib.request
-                import re
-                
-                clean_code = str(symbol).replace('.KS', '').replace('.KQ', '') 
-                url = f"https://finance.naver.com/item/main.naver?code={clean_code}"
-                
-                # 네이버에 사람인 것처럼 접속 요청
-                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                
-                # 🚨 치명적 버그 수정: 변수명을 html에서 html_source로 변경하여 기본 부품과 충돌 방지!
-                html_source = urllib.request.urlopen(req).read().decode('euc-kr', 'ignore')
-                
-                # 정규식으로 소스코드에서 '시가 27,800' 텍스트를 찾아 숫자만 핀셋으로 뽑아냅니다!
-                match = re.search(r'시가\s+([0-9,]+)', html_source)
-                if match:
-                    real_kr_open = float(match.group(1).replace(',', ''))
-                else:
-                    real_kr_open = 0
-                    
-            except Exception as e:
-                print(f"🚨 [경고] 네이버 시가 수집 실패 원인: {e}")
-                real_kr_open = 0
-            # ==================================================================
-            # ★ [PRO 버전] 캔들 정합성 검열 및 십자형(Doji) 정밀 연산
-            # ==================================================================
+            # ========================================================
+            # ★ [PRO 최종 버전] HTS 8시 기준 시가 고정 및 캔들 정밀 연산
+            # ========================================================
+            
             today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
             today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
-            
+
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
             day_candle_range = max(0.01, today_high - today_low)
             is_api_delayed = (p > today_high * 1.005) or (p < today_low * 0.995) or (today_high == today_low)
 
-            # 💡 [시가/꼬리 연산 순서 완벽 교정]: 진짜 시가(cur_open_price)를 가장 먼저 확정한 뒤 꼬리를 계산해야 100% 정확합니다!
-            cur_open_price = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else today_open
+            # 💡 [최종 확정]: HTS의 8시 프리장 기준 시가(today_open)를 공식 시가(cur_open_price)로 철저히 고정합니다!
+            cur_open_price = today_open
 
-            # 👇 [핵심 수술] 야후(df) 데이터 지연으로 고가/저가가 엉터리인 경우를 대비해, 진짜 시가와 현재가를 기준으로 고가/저가 강제 자가 보정!
+            # 💡 [철벽 자가 보정]: 고가/저가가 시가나 현재가보다 좁아지지 않도록 완벽 방어
             today_high = max(today_high, cur_open_price, p)
             today_low = min(today_low, cur_open_price, p)
             day_candle_range = max(0.01, today_high - today_low) # 캔들 몸집 전체 폭(Range) 완벽 재계산!
