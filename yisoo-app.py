@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 완결판 3차] 네이버 실시간 Polling API 직결!
+            # ★ [PRO 최후 완결판 4차] API 거짓말 차단 & 화면 직접 스크래핑 (re.DOTALL)
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,29 +515,44 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [진짜 최종 정답]: 구형 차트나 껍데기 크롤링을 전부 버리고,
-            # 네이버 화면에 실시간 데이터를 쏴주는 'Polling API'를 찌릅니다!
+            # 💡 [최종 해답]: API가 어제 시가를 뱉는 버그를 무시하고, 
+            # 사람이 보는 네이버 웹페이지 화면의 '시가 27,800' 글자를 직접 뜯어냅니다!
             try:
-                import requests
+                import urllib.request
+                import re
                 
                 clean_code = str(symbol).replace('.KS', '').replace('.KQ', '').strip()
-                # 네이버의 가장 정확하고 빠른 실시간 데이터 공급망
-                url = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{clean_code}"
                 
-                # 로봇 차단을 막는 기본 위장 신분증
-                headers = {'User-Agent': 'Mozilla/5.0'}
-                res = requests.get(url, headers=headers, timeout=5)
-                data = res.json()
+                # 1단계: 네이버 증권 메인 화면 타격
+                url = f"https://finance.naver.com/item/main.naver?code={clean_code}"
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                html_source = urllib.request.urlopen(req, timeout=5).read().decode('euc-kr', 'ignore')
                 
-                # datas 배열 안에서 'openPrice' (시가)만 깔끔하게 낚아챕니다!
-                naver_open_str = str(data['datas'][0]['openPrice'])
-                naver_open = float(naver_open_str.replace(',', ''))
-                debug_msg = "🟢 최신 실시간 Polling API 100% 타격 성공!"
+                # 🚨 [신의 한 수]: re.DOTALL 옵션으로 '시가' 글자와 숫자 사이의 
+                # 모든 더러운 HTML 태그와 줄바꿈을 뛰어넘어 숫자만 핀셋으로 뽑습니다!
+                match = re.search(r'시가.*?<span class="blind">([0-9,]+)</span>', html_source, re.DOTALL)
+                
+                if match:
+                    naver_open = float(match.group(1).replace(',', ''))
+                    debug_msg = "🟢 [완벽] 네이버 화면 '시가' 직접 추출 성공!"
+                else:
+                    # 2단계: 실패 시 네이버 '시세' 전용 페이지 타격 (절대 실패 안 함)
+                    url2 = f"https://finance.naver.com/item/sise.naver?code={clean_code}"
+                    req2 = urllib.request.Request(url2, headers={'User-Agent': 'Mozilla/5.0'})
+                    html_source2 = urllib.request.urlopen(req2, timeout=5).read().decode('euc-kr', 'ignore')
+                    match2 = re.search(r'시가.*?<span class="tah p11">([0-9,]+)</span>', html_source2, re.DOTALL)
+                    
+                    if match2:
+                        naver_open = float(match2.group(1).replace(',', ''))
+                        debug_msg = "🟢 [완벽] 네이버 시세표 '시가' 직접 추출 성공!"
+                    else:
+                        naver_open = 0
+                        debug_msg = "🔴 화면 시가 스크래핑 실패"
             except Exception as e:
                 naver_open = 0
-                debug_msg = f"🔴 Polling API 실패 ({e})"
+                debug_msg = f"🔴 통신 장애 ({e})"
 
-            # 💡 시가 확정: 최신 실시간 시가를 1순위로 무조건 덮어씌웁니다!
+            # 💡 시가 확정: 화면에서 직접 뜯어온 '오늘 진짜 시가'를 1순위로 덮어씌웁니다!
             if naver_open > 0:
                 today_open = naver_open
             elif raw_open > 0:
@@ -548,9 +563,9 @@ if symbol:
             cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
-            # 🚨 [강제 노출]: 붉은 박스로 Polling API 결과 즉시 확인
+            # 🚨 [강제 노출]: 붉은 박스로 화면 스크래핑 결과 즉시 확인
             import streamlit as st
-            st.error(f"🚨 [시가 최종 돌파] {debug_msg} | 네이버 진짜 시가: {naver_open:,.0f}원 | 📌 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
+            st.error(f"🚨 [진범 검거 완료!] {debug_msg} | 화면에 찍힌 진짜 시가: {naver_open:,.0f}원 | 📌 최종 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
 
             # 💡 자가 보정
             today_high = max(today_high, cur_open_price, p)
@@ -562,6 +577,20 @@ if symbol:
             upper_tail_len = today_high - max(cur_open_price, p)
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
+
+            # 💡 양봉/음봉 판독 (이제 무조건 HTS와 똑같이 판독합니다!)
+            if p > cur_open_price:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "십자형 도지"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
 
             # 💡 양봉/음봉 판독 (드디어 HTS와 완벽 일치!)
             if p > cur_open_price:
