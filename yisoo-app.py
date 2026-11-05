@@ -249,6 +249,7 @@ with col_bid:
 with col_btn:
     st.write("")
     st.write("")
+    st.sidebar.number_input("📌 HTS 60분봉 시가 (수동입력, 0=자동)", value=0.0, step=10.0, key="manual_open")
     if st.button("🔄 정밀 분석"):
         st.rerun()
 
@@ -507,7 +508,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 완결판 - 시봉 연동] 60분봉 첫 캔들 시가 강제 획득!
+            # ★ [PRO 최후 완결판 - 수동 룰] 명장님의 HTS 시가 최우선 적용!
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,44 +516,24 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [시봉 연동 수술]: 일봉(Daily) 지표는 살려두고, 
-            # 캔들 판독을 위한 시가만 '60분봉(1시간봉)의 오늘 첫 시가'로 정밀 타격하여 덮어씌웁니다!
-            try:
-                import yfinance as yf
-                import datetime
-                
-                # yfinance로 해당 종목의 최근 2일치 60분봉 데이터를 몰래 가져옵니다.
-                df_60m = yf.download(symbol, period="2d", interval="60m", progress=False)
-                
-                # 낡은 데이터에 속지 않도록, 가장 마지막 날짜(오늘)의 첫 번째 데이터만 멱살을 잡습니다.
-                latest_date = df_60m.index[-1].date()
-                df_latest_day = df_60m[df_60m.index.date == latest_date]
-                
-                if not df_latest_day.empty:
-                    # 오늘 장 시작(첫 60분봉)의 시가
-                    real_open = float(df_latest_day['Open'].iloc[0])
-                    debug_msg = f"🟢 [시봉 연동] 60분봉 첫 시가 완벽 타격 성공!"
-                else:
-                    real_open = 0
-                    debug_msg = "🔴 60분봉 데이터 탐색 실패"
-            except Exception as e:
-                real_open = 0
-                debug_msg = f"🔴 60분봉 통신 장애 ({e})"
+            # 💡 [2번 강제 룰]: 1단계에서 만든 사이드바 입력칸의 숫자를 가져옵니다.
+            import streamlit as st
+            manual_open = st.session_state.get("manual_open", 0.0)
 
-            # 💡 시가 확정: 60분봉에서 뜯어온 '진짜 아침 시작가'를 1순위로 덮어씌웁니다!
-            if real_open > 0:
-                today_open = real_open
-            elif raw_open > 0:
-                today_open = raw_open
+            # 명장님께서 숫자를 입력하셨다면(0보다 크면) 무조건 1순위로 덮어씌웁니다!
+            if manual_open > 0:
+                today_open = manual_open
+                debug_msg = f"🟢 [수동 룰 작동] 명장님의 하명({manual_open:,.0f}원) 완벽 적용!"
             else:
-                today_open = p
+                # 입력을 안 하셨을 경우(0)에만 기계가 가져온 기본 시가를 씁니다.
+                today_open = raw_open
+                debug_msg = "🟡 [수동 입력 없음] 기본 시가 28,550원 임시 적용 중"
 
             cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
-            # 🚨 [강제 노출]: 붉은 박스로 시봉 획득 결과 즉시 확인
-            import streamlit as st
-            st.error(f"🚨 [진범 검거 - 시봉 수술] {debug_msg} | 📌 60분봉 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
+            # 🚨 [강제 노출]: 붉은 박스로 수동 시가 적용 결과 즉시 확인
+            st.error(f"🚨 [시가 수동 통제] {debug_msg} | 📌 최종 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
 
             # 💡 자가 보정
             today_high = max(today_high, cur_open_price, p)
@@ -565,7 +546,7 @@ if symbol:
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
 
-            # 💡 양봉/음봉 판독 (드디어 HTS 시봉 차트와 100% 일치!)
+            # 💡 양봉/음봉 판독 (명장님이 입력하신 시가 기준으로 완벽하게 판독합니다)
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
                 is_candle_bullish = True
@@ -578,7 +559,6 @@ if symbol:
                 candle_color_txt = "십자형 도지"
                 is_candle_bullish = (p_chg >= 0)
                 is_candle_bearish = (p_chg < 0)
-
             # 💡 양봉/음봉 판독 (드디어 100% 정상 판독)
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
