@@ -574,7 +574,7 @@ if symbol:
             lower_tail_len = min(today_open, p) - today_low
             body_len = abs(p - today_open)
 
-            cur_open_price = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else today_open
+            cur_open_price = today_open if ('today_open' in locals() and today_open > 0) else (real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else 0.0)
             
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
