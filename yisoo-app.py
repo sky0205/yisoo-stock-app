@@ -250,6 +250,7 @@ with col_btn:
     st.write("")
     st.write("")
     # 👇 이 코드로 덮어씌워 주시옵소서!
+    # 💡 종목번호 입력 바로 다음에 HTS 호가창 시가 입력칸을 나란히 배치합니다!
     st.number_input("📌 HTS 호가창 시가 (수동입력, 0=자동)", value=0.0, step=10.0, key="manual_open")
     if st.button("🔄 정밀 분석"):
         st.rerun()
