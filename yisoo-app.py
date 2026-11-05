@@ -289,12 +289,7 @@ manual_prev_price = str(manual_prev_price_str_val).strip()
 manual_pre_price = manual_pre_price_str.strip() if 'manual_pre_price_str' in locals() else ""
 manual_ask = 0.0
 manual_bid = 0.0
-# 💡 수동 시가를 입력했을 때만 깔끔하게 안내를 띄우고, 미입력 시에는 군더더기를 없앱니다.
-if manual_open > 0:
-    st.markdown(f"🚨 **[시가 수동 통제]** 🟢 **[수동 룰 작동] 명장님의 하명({manual_open:,.0f}원) 완벽 적용!**")
-else:
-    # 미입력 시에는 엉뚱한 임시 문구를 띄우지 않고 조용히 넘어갑니다.
-    pass
+
 
 if symbol:
     try:
