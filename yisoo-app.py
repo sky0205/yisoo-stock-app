@@ -237,10 +237,10 @@ with col1:
     raw_symbol_input = st.text_input("📊 종목번호", value="257720")
     symbol = raw_symbol_input.strip()
 with col2:
-    import datetime
+    from datetime import date
     
     # 💡 오늘 날짜와 종목번호를 조합하여 당일 전용 기억 키를 생성합니다.
-    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    today_str = date.today().strftime("%Y-%m-%d")
     cache_key = f"open_price_{symbol}_{today_str}"
     
     # 만약 오늘 이 종목에 대해 저장된 값이 없다면 0.0으로 초기화합니다.
