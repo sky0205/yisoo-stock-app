@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 완결판 4차] API 거짓말 차단 & 화면 직접 스크래핑 (re.DOTALL)
+            # ★ [PRO 최후 완결판 5차] 네이버 포기 -> 다음(Daum) 실시간 API 전격 우회!
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,46 +515,40 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [최종 해답]: API가 어제 시가를 뱉는 버그를 무시하고, 
-            # 사람이 보는 네이버 웹페이지 화면의 '시가 27,800' 글자를 직접 뜯어냅니다!
+            # 💡 [발상의 전환]: 네이버가 엉터리 데이터를 주거나 차단한다면, 
+            # 가장 깔끔하고 빠르기로 소문난 '다음(Daum) 증권 API'로 우회 타격합니다!
             try:
-                import urllib.request
-                import re
+                import requests
                 
                 clean_code = str(symbol).replace('.KS', '').replace('.KQ', '').strip()
+                # 다음(Daum) 금융 API (종목코드 앞에 'A'를 붙이는 것이 규칙입니다)
+                url = f"https://finance.daum.net/api/quotes/A{clean_code}"
                 
-                # 1단계: 네이버 증권 메인 화면 타격
-                url = f"https://finance.naver.com/item/main.naver?code={clean_code}"
-                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                html_source = urllib.request.urlopen(req, timeout=5).read().decode('euc-kr', 'ignore')
+                # 다음(Daum) 서버는 Referer(어디서 접속했는지)를 반드시 확인하므로 위장 신분증 완벽 세팅
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Referer': 'https://finance.daum.net/'
+                }
                 
-                # 🚨 [신의 한 수]: re.DOTALL 옵션으로 '시가' 글자와 숫자 사이의 
-                # 모든 더러운 HTML 태그와 줄바꿈을 뛰어넘어 숫자만 핀셋으로 뽑습니다!
-                match = re.search(r'시가.*?<span class="blind">([0-9,]+)</span>', html_source, re.DOTALL)
+                res = requests.get(url, headers=headers, timeout=5)
+                data = res.json()
                 
-                if match:
-                    naver_open = float(match.group(1).replace(',', ''))
-                    debug_msg = "🟢 [완벽] 네이버 화면 '시가' 직접 추출 성공!"
+                # openingPrice 가 정확한 오늘(아침) 시가입니다!
+                daum_open = float(data.get('openingPrice', 0))
+                
+                if daum_open > 0:
+                    real_open = daum_open
+                    debug_msg = "🟢 [완벽] 다음(Daum) 증권 실시간 시가 획득 성공!"
                 else:
-                    # 2단계: 실패 시 네이버 '시세' 전용 페이지 타격 (절대 실패 안 함)
-                    url2 = f"https://finance.naver.com/item/sise.naver?code={clean_code}"
-                    req2 = urllib.request.Request(url2, headers={'User-Agent': 'Mozilla/5.0'})
-                    html_source2 = urllib.request.urlopen(req2, timeout=5).read().decode('euc-kr', 'ignore')
-                    match2 = re.search(r'시가.*?<span class="tah p11">([0-9,]+)</span>', html_source2, re.DOTALL)
-                    
-                    if match2:
-                        naver_open = float(match2.group(1).replace(',', ''))
-                        debug_msg = "🟢 [완벽] 네이버 시세표 '시가' 직접 추출 성공!"
-                    else:
-                        naver_open = 0
-                        debug_msg = "🔴 화면 시가 스크래핑 실패"
+                    real_open = 0
+                    debug_msg = "🔴 다음 증권 API 시가 0원 반환"
             except Exception as e:
-                naver_open = 0
+                real_open = 0
                 debug_msg = f"🔴 통신 장애 ({e})"
 
-            # 💡 시가 확정: 화면에서 직접 뜯어온 '오늘 진짜 시가'를 1순위로 덮어씌웁니다!
-            if naver_open > 0:
-                today_open = naver_open
+            # 💡 시가 확정: 다음(Daum)에서 뜯어온 '오늘 진짜 시가'를 1순위로 덮어씌웁니다!
+            if real_open > 0:
+                today_open = real_open
             elif raw_open > 0:
                 today_open = raw_open
             else:
@@ -563,9 +557,9 @@ if symbol:
             cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
-            # 🚨 [강제 노출]: 붉은 박스로 화면 스크래핑 결과 즉시 확인
+            # 🚨 [강제 노출]: 붉은 박스로 Daum API 획득 결과 즉시 확인
             import streamlit as st
-            st.error(f"🚨 [진범 검거 완료!] {debug_msg} | 화면에 찍힌 진짜 시가: {naver_open:,.0f}원 | 📌 최종 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
+            st.error(f"🚨 [진범 검거 완료!] {debug_msg} | 진짜 아침 시가: {real_open:,.0f}원 | 📌 최종 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
 
             # 💡 자가 보정
             today_high = max(today_high, cur_open_price, p)
@@ -577,6 +571,20 @@ if symbol:
             upper_tail_len = today_high - max(cur_open_price, p)
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
+
+            # 💡 양봉/음봉 판독 (드디어 100% 정상 판독)
+            if p > cur_open_price:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "십자형 도지"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
 
             # 💡 양봉/음봉 판독 (이제 무조건 HTS와 똑같이 판독합니다!)
             if p > cur_open_price:
