@@ -568,7 +568,7 @@ if symbol:
                 today_open = raw_open_val
                 debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({raw_open_val:{fmt_p}}{currency}) 적용 중"
 
-            # 📌 깔끔한 상단 알림 노출 (중복 방지를 위해 딱 한 줄만 둡니다)
+            # 📌 깔끔한 상단 알림 노출
             st.markdown(f"🚨 **[시가 수동 통제]** {debug_msg} | 📌 **최종 확정 시가:** {today_open:{fmt_p}}{currency}")
 
             
