@@ -231,21 +231,39 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 📌 첫 번째 줄 (3개 칸: 종목번호, HTS 호가창 시가, HTS 전일종가)
-col1, col2, col3 = st.columns(3)
+# 📌 첫 번째 줄 (종목번호, HTS 시가, HTS 전일종가 - 당일 자동 기억 시스템)
 with col1:
-    raw_symbol_input = st.text_input("📊 종목번호", value="257720")
+    raw_symbol_input = st.text_input("📊 종목번호", value="005930")
     symbol = raw_symbol_input.strip()
+
 with col2:
-    # 📌 HTS 호가창 시가를 입력받는 핵심 칸
+    from datetime import date
+    today_str = date.today().strftime("%Y-%m-%d")
+    
+    # 💡 HTS 시가 종목별·날짜별 전용 기억 키
+    open_cache_key = f"open_price_{symbol}_{today_str}"
+    if open_cache_key not in st.session_state:
+        st.session_state[open_cache_key] = 0.0
+
     manual_open = st.number_input(
         "📌 HTS 호가창 시가 (0=자동)", 
-        value=0.0, 
+        value=st.session_state[open_cache_key], 
         step=10.0, 
-        key="manual_open"
+        key=open_cache_key
     )
+
 with col3:
-    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value="", help="국장/미장 전일 기준가")
+    # 💡 HTS 전일종가 종목별·날짜별 전용 기억 키
+    prev_cache_key = f"prev_price_{symbol}_{today_str}"
+    if prev_cache_key not in st.session_state:
+        st.session_state[prev_cache_key] = ""
+
+    manual_prev_price_str = st.text_input(
+        "🎯 HTS 전일종가", 
+        value=st.session_state[prev_cache_key], 
+        key=prev_cache_key,
+        help="국장/미장 전일 기준가 (당일 자동 기억)"
+    )
 
 # 📌 두 번째 줄 (3개 칸: 미장 프리시세, 보유 평단가, 직전 1차 매수가)
 col4, col5, col6 = st.columns(3)
@@ -258,12 +276,26 @@ with col6:
 
 st.write("")
 
-# 💡 수동 시가 및 호가 잔량 변수를 안전하게 선언합니다.
-manual_open = st.session_state.get("manual_open", 0.0)
-manual_prev_price = manual_prev_price_str.strip() if 'manual_prev_price_str' in locals() else ""
+# 💡 당일 기억된 수동 시가 및 전일종가를 안전하게 불러옵니다.
+from datetime import date
+today_str = date.today().strftime("%Y-%m-%d")
+
+open_cache_key = f"open_price_{symbol}_{today_str}"
+prev_cache_key = f"prev_price_{symbol}_{today_str}"
+
+manual_open = st.session_state.get(open_cache_key, 0.0)
+manual_prev_price_str_val = st.session_state.get(prev_cache_key, "")
+manual_prev_price = str(manual_prev_price_str_val).strip()
+
 manual_pre_price = manual_pre_price_str.strip() if 'manual_pre_price_str' in locals() else ""
 manual_ask = 0.0
 manual_bid = 0.0
+# 💡 수동 시가를 입력했을 때만 깔끔하게 안내를 띄우고, 미입력 시에는 군더더기를 없앱니다.
+if manual_open > 0:
+    st.markdown(f"🚨 **[시가 수동 통제]** 🟢 **[수동 룰 작동] 명장님의 하명({manual_open:,.0f}원) 완벽 적용!**")
+else:
+    # 미입력 시에는 엉뚱한 임시 문구를 띄우지 않고 조용히 넘어갑니다.
+    pass
 
 if symbol:
     try:
