@@ -1061,6 +1061,13 @@ if symbol:
 
             is_strong_rebound = (p_chg >= 2.0) and (vol_strength >= 100) and (p >= today_open)
             
+            # 📌 [명장님 실전 방어 룰]: 긴 윗꼬리를 달고 시가 턱걸이 중일 때 1단계 진입 신호를 원천 차단합니다!
+            elif is_long_upper_tail and p >= today_open and not is_strong_rebound:
+                final_code = "WAIT_LONG_TAIL_DEFENSE"
+                sig = "🟡 [관망/보류] 윗꼬리 매물 폭탄 / 시가 턱걸이 방어전 (신규 진입 금지)"
+                col = "#F57C00"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[위꼬리 매물 저항]</b> 시가({today_open:,.0f}원) 위로 솟구쳤으나 상단 매물 폭탄을 맞고 밀려 내려와 현재가({p:,.0f}원)가 겨우 시가 위를 방어 중이오! 바닥 지표가 떴다 해도 섣부른 1단계 입질을 엄금하고 방어 성공 여부를 냉정하게 관망하시게."
+            
             if is_stop_loss_triggered:
                 final_code = "STOP_LOSS_ALERT"
                 sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
