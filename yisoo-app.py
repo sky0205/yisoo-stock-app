@@ -544,9 +544,9 @@ if symbol:
             # 💡 공식 시가 확정
             cur_open_price = today_open
 
-            # 💡 [디버그 검문소]: 기계가 쥐고 있는 시가와 현재가를 웹 화면에 강제로 출력합니다!
+            # 💡 [디버그 검문소]: 오타 수정 완료! 기계가 쥐고 있는 시가와 현재가를 웹 화면에 정직하게 출력합니다.
             import streamlit as st
-            st.info(f"🔍 [시가 추적기] 출처: [{source_label}] | 기계가 잡은 시가: {cur_open_price:,.0f원} | 현재가: {p:,.0f원}")
+            st.info(f"🔍 [시가 추적기] 출처: [{source_label}] | 기계가 잡은 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
 
             # 💡 [철벽 자가 보정]
             today_high = max(today_high, cur_open_price, p)
