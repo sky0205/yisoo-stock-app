@@ -577,9 +577,6 @@ if symbol:
             cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
-            # 🚨 [강제 노출]: 붉은 박스로 수동 시가 적용 결과 즉시 확인
-            st.error(f"🚨 [시가 수동 통제] {debug_msg} | 📌 최종 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
-
             # 💡 자가 보정
             today_high = max(today_high, cur_open_price, p)
             today_low = min(today_low, cur_open_price, p)
