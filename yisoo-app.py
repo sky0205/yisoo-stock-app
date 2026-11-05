@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 결전 3차] PC웹 시가 직접 추출 (API 변덕 원천 차단)
+            # ★ [PRO 최후 결전 4차] HTML 태그(dt/dd) 오타 완벽 수정본
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,7 +515,7 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [핵심] JSON API 구조가 숨겨졌으므로, 가장 확실한 PC웹 HTML 텍스트를 직접 뜯어냅니다!
+            # 💡 [핵심] 네이버 PC웹의 <dt>시가</dt><dd>가격</dd> 구조를 정확히 찌릅니다!
             try:
                 import requests
                 import re
@@ -526,15 +526,15 @@ if symbol:
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
                 res = requests.get(url, headers=headers, timeout=5)
                 
-                # 네이버 금융 PC화면의 시각장애인용(blind) 영역에서 '시가 OOOO' 숫자를 핀셋으로 뽑아냅니다.
-                match = re.search(r'<dd>시가\s+([0-9,]+)</dd>', res.text)
+                # 💡 [치명적 오류 수정]: <dd>시가 가 아니라 <dt>시가</dt><dd>가격</dd> 입니다!
+                match = re.search(r'<dt>시가</dt>\s*<dd>([0-9,]+)</dd>', res.text)
                 
                 if match:
                     naver_open = float(match.group(1).replace(',', ''))
-                    debug_msg = "🟢 PC웹 정밀 타격 성공"
+                    debug_msg = "🟢 PC웹 시가 정밀 타격 완벽 성공!"
                 else:
                     naver_open = 0
-                    debug_msg = "🔴 HTML 시가 탐색 실패"
+                    debug_msg = "🔴 HTML 시가 탐색 실패 (태그 불일치)"
             except Exception as e:
                 naver_open = 0
                 debug_msg = f"🔴 통신 장애 ({e})"
@@ -564,6 +564,20 @@ if symbol:
             upper_tail_len = today_high - max(cur_open_price, p)
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
+
+            # 💡 양봉/음봉 판독
+            if p > cur_open_price:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "십자형 도지"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
 
             # 💡 양봉/음봉 판독
             if p > cur_open_price:
