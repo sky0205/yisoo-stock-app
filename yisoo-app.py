@@ -219,37 +219,37 @@ display_global_risk()
 st.divider()
 
 # 💡 핵심 입력칸들을 강조하기 위한 맞춤형 디자인 CSS를 먼저 주입합니다.
-        st.markdown("""
-            <style>
-                /* 종목번호와 HTS 호가창 시가 입력칸의 박스 테두리와 배경을 강조합니다 */
-                div[data-baseweb="input"]:has(input[aria-label*="종목번호"]),
-                div[data-baseweb="input"]:has(input[aria-label*="HTS 호가창 시가"]) {
-                    background-color: #fff8e1 !important;
-                    border: 2px solid #ff8f00 !important;
-                    border-radius: 8px;
-                }
-            </style>
-        """, unsafe_allow_html=True)
+st.markdown("""
+    <style>
+        /* 종목번호와 HTS 호가창 시가 입력칸의 박스 테두리와 배경을 강조합니다 */
+        div[data-baseweb="input"]:has(input[aria-label*="종목번호"]),
+        div[data-baseweb="input"]:has(input[aria-label*="HTS 호가창 시가"]) {
+            background-color: #fff8e1 !important;
+            border: 2px solid #ff8f00 !important;
+            border-radius: 8px;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-        # 5개의 칸을 종목번호, HTS 호가창 시가, 전일종가, 프리시세, 평단가 순으로 재배치합니다!
-        col_symbol, col_open, col_prev, col_pre_us, col_avg = st.columns(5)
+# 5개의 칸을 종목번호, HTS 호가창 시가, 전일종가, 프리시세, 평단가 순으로 재배치합니다!
+col_symbol, col_open, col_prev, col_pre_us, col_avg = st.columns(5)
 
-        with col_symbol:
-            raw_symbol_input = st.text_input("📊 종목번호", value="LRCX")
-            symbol = raw_symbol_input.strip()
+with col_symbol:
+    raw_symbol_input = st.text_input("📊 종목번호", value="LRCX")
+    symbol = raw_symbol_input.strip()
 
-        with col_open:
-            # 👇 종목번호 바로 옆 프리미엄 자리에 위치한 HTS 호가창 시가 입력칸!
-            st.number_input("📌 HTS 호가창 시가 (0=자동)", value=0.0, step=10.0, key="manual_open")
+with col_open:
+    # 👇 종목번호 바로 옆 프리미엄 자리에 위치한 HTS 호가창 시가 입력칸!
+    st.number_input("📌 HTS 호가창 시가 (0=자동)", value=0.0, step=10.0, key="manual_open")
 
-        with col_prev:
-            manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value="", help="국장/미장 전일 기준가")
+with col_prev:
+    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value="", help="국장/미장 전일 기준가")
 
-        with col_pre_us:
-            manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value="", help="미장 프리마켓 실시간 기준가")
+with col_pre_us:
+    manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value="", help="미장 프리마켓 실시간 기준가")
 
-        with col_avg:
-            user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 분석을 위한")
+with col_avg:
+    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 분석을 위한")
 st.write("")
 
 col_ask, col_bid, col_btn = st.columns([1, 1, 2])
