@@ -507,19 +507,20 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 디버그 버전] 시가 실시간 추적 및 화면 노출 연산
+            # ★ [PRO 최종 결전] 8시 시가 강제 획득 및 텍스트 디버그
             # ========================================================
             
-            raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
+            p = float(str(df["Close"].iloc[-1]).replace(',', ''))
             today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
-            p = float(str(df["Close"].iloc[-1]).replace(',', ''))
+            raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 네이버 모바일 API로 아침 시가 강제 획득 시도
+            # 💡 [핵심] 네이버 모바일 API로 8시 기준 진짜 시가를 뜯어옵니다!
             try:
                 import urllib.request
                 import json
-                clean_code = str(symbol).replace('.KS', '').replace('.KQ', '') 
+                # 공백이나 특수문자 때문에 API가 실패하지 않도록 완벽 청소(.strip() 추가)
+                clean_code = str(symbol).replace('.KS', '').replace('.KQ', '').strip()
                 url = f"https://m.stock.naver.com/api/stock/{clean_code}/basic"
                 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
                 res = urllib.request.urlopen(req).read().decode('utf-8')
@@ -528,27 +529,17 @@ if symbol:
             except:
                 naver_open = 0
 
-            # 시가 최종 선택 순위 (1순위: 네이버 실시간 아침 시가, 2순위: 야후 Open, 3순위: 전일 종가)
+            # 💡 시가 확정: 네이버 8시 시가를 1순위로 무조건 덮어씌웁니다!
             if naver_open > 0:
-                today_open = naver_open
-                source_label = "네이버 실시간 아침 시가"
+                cur_open_price = naver_open
             elif raw_open > 0:
-                today_open = raw_open
-                source_label = "야후 Open 시가"
+                cur_open_price = raw_open
             else:
-                today_open = float(str(df["Close"].iloc[-2]).replace(',', '')) if len(df) > 1 else p
-                source_label = "전일 종가 대체"
+                cur_open_price = p
 
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
-            
-            # 💡 공식 시가 확정
-            cur_open_price = today_open
 
-            # 💡 [디버그 검문소]: 오타 수정 완료! 기계가 쥐고 있는 시가와 현재가를 웹 화면에 정직하게 출력합니다.
-            import streamlit as st
-            st.info(f"🔍 [시가 추적기] 출처: [{source_label}] | 기계가 잡은 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
-
-            # 💡 [철벽 자가 보정]
+            # 💡 자가 보정
             today_high = max(today_high, cur_open_price, p)
             today_low = min(today_low, cur_open_price, p)
             day_candle_range = max(0.01, today_high - today_low)
@@ -558,6 +549,20 @@ if symbol:
             upper_tail_len = today_high - max(cur_open_price, p)
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
+
+            # 🚨 [숨통 끊기]: 판독 텍스트에 기계가 쥐고 있는 시가를 강제로 노출시킵니다!
+            if p > cur_open_price:
+                candle_color_txt = f"빨간색 양봉 (시가:{cur_open_price:,.0f}원/현재:{p:,.0f}원)"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = f"파란색 음봉 (시가:{cur_open_price:,.0f}원/현재:{p:,.0f}원)"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = f"십자형 도지 (시가:{cur_open_price:,.0f}원/현재:{p:,.0f}원)"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
             
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
