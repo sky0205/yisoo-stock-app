@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 완결판 2차] 네이버 fchart 최신일자(오늘) 강제 추출!
+            # ★ [PRO 최후 완결판 3차] 네이버 실시간 Polling API 직결!
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,34 +515,29 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [완벽 해결]: count=10으로 10일치를 넉넉히 불러와서 
-            # 무조건 배열의 '맨 마지막(오늘 실시간)' 데이터를 꽂아버립니다!
+            # 💡 [진짜 최종 정답]: 구형 차트나 껍데기 크롤링을 전부 버리고,
+            # 네이버 화면에 실시간 데이터를 쏴주는 'Polling API'를 찌릅니다!
             try:
-                import urllib.request
-                import re
+                import requests
                 
                 clean_code = str(symbol).replace('.KS', '').replace('.KQ', '').strip()
-                url = f"https://fchart.stock.naver.com/sise.nhn?symbol={clean_code}&timeframe=day&count=10&requestType=0"
+                # 네이버의 가장 정확하고 빠른 실시간 데이터 공급망
+                url = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{clean_code}"
                 
-                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                xml_data = urllib.request.urlopen(req, timeout=5).read().decode('euc-kr', 'ignore')
+                # 로봇 차단을 막는 기본 위장 신분증
+                headers = {'User-Agent': 'Mozilla/5.0'}
+                res = requests.get(url, headers=headers, timeout=5)
+                data = res.json()
                 
-                # findall로 10일치 데이터를 전부 리스트로 뽑아냅니다.
-                items = re.findall(r'<item data="([^"]+)"', xml_data)
-                
-                if items:
-                    # 무조건 배열의 맨 마지막([-1] = 오늘) 데이터를 파이프(|)로 쪼갭니다!
-                    daily_data = items[-1].split('|') 
-                    naver_open = float(daily_data[1]) # [1]번 방이 무조건 오늘 시가(Open)!
-                    debug_msg = f"🟢 내부망 오늘({daily_data[0]}) 시가 완벽 타격!"
-                else:
-                    naver_open = 0
-                    debug_msg = "🔴 XML 데이터 추출 실패"
+                # datas 배열 안에서 'openPrice' (시가)만 깔끔하게 낚아챕니다!
+                naver_open_str = str(data['datas'][0]['openPrice'])
+                naver_open = float(naver_open_str.replace(',', ''))
+                debug_msg = "🟢 최신 실시간 Polling API 100% 타격 성공!"
             except Exception as e:
                 naver_open = 0
-                debug_msg = f"🔴 통신 장애 ({e})"
+                debug_msg = f"🔴 Polling API 실패 ({e})"
 
-            # 💡 시가 확정: 네이버 내부망 오늘 시가를 1순위로 무조건 덮어씌웁니다!
+            # 💡 시가 확정: 최신 실시간 시가를 1순위로 무조건 덮어씌웁니다!
             if naver_open > 0:
                 today_open = naver_open
             elif raw_open > 0:
@@ -553,7 +548,7 @@ if symbol:
             cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
-            # 🚨 [강제 노출]: 붉은 박스로 내부망 획득 결과 즉시 확인
+            # 🚨 [강제 노출]: 붉은 박스로 Polling API 결과 즉시 확인
             import streamlit as st
             st.error(f"🚨 [시가 최종 돌파] {debug_msg} | 네이버 진짜 시가: {naver_open:,.0f}원 | 📌 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
 
@@ -568,6 +563,19 @@ if symbol:
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
 
+            # 💡 양봉/음봉 판독 (드디어 HTS와 완벽 일치!)
+            if p > cur_open_price:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "십자형 도지"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
             # 💡 양봉/음봉 판독
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
