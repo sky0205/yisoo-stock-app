@@ -1060,6 +1060,11 @@ if symbol:
             margin_diff = ((target_price_100 - p) / p) * 100 if p > 0 else 0
 
             is_strong_rebound = (p_chg >= 2.0) and (vol_strength >= 100) and (p >= today_open)
+            # 📌 [캔들 부품 계산]: 전체 길이와 아래꼬리 길이를 먼저 명확하게 계산해 둡니다!
+            total_candle_len = high - low if high > low else 0.0
+            tail_bottom_len = (min(open_p, close_p) - low) if low < min(open_p, close_p) else 0.0
+            
+            # 그 아래에 명장님 룰 적용!
             is_long_lower_tail = total_candle_len > 0 and (tail_bottom_len >= total_candle_len * 0.5)
             # 📌 [명장님 실전 방어 룰]: 긴 윗꼬리를 달고 시가 턱걸이 중일 때 1단계 진입 신호를 원천 차단합니다!
             
