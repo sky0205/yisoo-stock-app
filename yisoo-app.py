@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 결전 5차] 명장님의 V3.1 오리지널 정규식 복원!
+            # ★ [PRO 최후 결전 6차] 한글 깨짐 완벽 해결 & 명장님 V3.1 원본 복원!
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,27 +515,28 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [정답은 명장님께 있었습니다!] 복잡한 태그 다 버리고, 
-            # 예전 V3.1에서 완벽하게 작동했던 오리지널 정규식으로 회귀합니다!
+            # 💡 [핵심] 명장님의 V3.1 원본 코드를 그대로 부활시킵니다!
+            # euc-kr 디코딩을 통해 '시가' 한글 깨짐을 완벽하게 방어합니다.
             try:
-                import requests
+                import urllib.request
                 import re
                 
                 clean_code = str(symbol).replace('.KS', '').replace('.KQ', '').strip()
                 url = f"https://finance.naver.com/item/main.naver?code={clean_code}"
                 
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-                res = requests.get(url, headers=headers, timeout=5)
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                # 명장님의 신의 한 수: euc-kr 로 읽어와서 외계어를 한글로 100% 복원!
+                html_source = urllib.request.urlopen(req).read().decode('euc-kr', 'ignore')
                 
-                # 명장님의 오리지널 정밀 타격 정규식 복구! ('시가' 글자 뒤의 숫자만 무식하게 뽑아냅니다)
-                match = re.search(r'시가\s+([0-9,]+)', res.text)
+                # 명장님의 족집게 정규식!
+                match = re.search(r'시가\s+([0-9,]+)', html_source)
                 
                 if match:
                     naver_open = float(match.group(1).replace(',', ''))
-                    debug_msg = "🟢 오리지널 정규식 시가 타격 성공!"
+                    debug_msg = "🟢 [완벽] euc-kr 한글 복원 & 시가 정밀 타격 성공!"
                 else:
                     naver_open = 0
-                    debug_msg = "🔴 HTML 시가 탐색 실패 (오리지널 정규식 매칭 실패)"
+                    debug_msg = "🔴 HTML 시가 탐색 실패 (정규식 매칭 불가)"
             except Exception as e:
                 naver_open = 0
                 debug_msg = f"🔴 통신 장애 ({e})"
@@ -551,7 +552,7 @@ if symbol:
             cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
-            # 🚨 [강제 노출]: 붉은 박스로 PC웹 시가 획득 여부 출력
+            # 🚨 [강제 노출]: 붉은 박스로 PC웹 시가 획득 성공 여부 출력
             import streamlit as st
             st.error(f"🚨 [시가 돌파 작전] {debug_msg} | 네이버 아침 시가: {naver_open:,.0f}원 | 📌 기계 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
 
@@ -566,6 +567,19 @@ if symbol:
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
 
+            # 💡 양봉/음봉 판독
+            if p > cur_open_price:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "십자형 도지"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
             # 💡 양봉/음봉 판독
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
