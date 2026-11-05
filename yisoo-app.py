@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 완결판] 네이버 fchart 내부망 직결 (봇 차단 우회)
+            # ★ [PRO 최후 완결판 2차] 네이버 fchart 최신일자(오늘) 강제 추출!
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,35 +515,34 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [비밀 통로 개척]: 네이버 차트가 사용하는 XML 데이터 공급망을 직격합니다.
-            # 이곳은 봇 차단이 없고, "날짜|시가|고가|저가|종가|거래량" 순으로 정직하게 뱉어냅니다!
+            # 💡 [완벽 해결]: count=10으로 10일치를 넉넉히 불러와서 
+            # 무조건 배열의 '맨 마지막(오늘 실시간)' 데이터를 꽂아버립니다!
             try:
                 import urllib.request
                 import re
                 
                 clean_code = str(symbol).replace('.KS', '').replace('.KQ', '').strip()
-                # 차트용 실시간 데이터 엔드포인트 (가장 최근 1일 치만 요청)
-                url = f"https://fchart.stock.naver.com/sise.nhn?symbol={clean_code}&timeframe=day&count=1&requestType=0"
+                url = f"https://fchart.stock.naver.com/sise.nhn?symbol={clean_code}&timeframe=day&count=10&requestType=0"
                 
                 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
                 xml_data = urllib.request.urlopen(req, timeout=5).read().decode('euc-kr', 'ignore')
                 
-                # 정규식으로 <item data="20261105|28500|29000..." /> 안의 알맹이만 뜯어냅니다.
-                match = re.search(r'<item data="([^"]+)"', xml_data)
+                # findall로 10일치 데이터를 전부 리스트로 뽑아냅니다.
+                items = re.findall(r'<item data="([^"]+)"', xml_data)
                 
-                if match:
-                    # 파이프(|) 기호로 쪼개어 [1]번 방에 있는 '시가'를 정확히 빼옵니다.
-                    daily_data = match.group(1).split('|')
-                    naver_open = float(daily_data[1])
-                    debug_msg = "🟢 차트 내부망(XML) 완벽 타격 성공!"
+                if items:
+                    # 무조건 배열의 맨 마지막([-1] = 오늘) 데이터를 파이프(|)로 쪼갭니다!
+                    daily_data = items[-1].split('|') 
+                    naver_open = float(daily_data[1]) # [1]번 방이 무조건 오늘 시가(Open)!
+                    debug_msg = f"🟢 내부망 오늘({daily_data[0]}) 시가 완벽 타격!"
                 else:
                     naver_open = 0
-                    debug_msg = "🔴 XML 데이터 추출 실패 (양식 불일치)"
+                    debug_msg = "🔴 XML 데이터 추출 실패"
             except Exception as e:
                 naver_open = 0
                 debug_msg = f"🔴 통신 장애 ({e})"
 
-            # 💡 시가 확정: 네이버 내부망 시가를 1순위로 무조건 덮어씌웁니다!
+            # 💡 시가 확정: 네이버 내부망 오늘 시가를 1순위로 무조건 덮어씌웁니다!
             if naver_open > 0:
                 today_open = naver_open
             elif raw_open > 0:
@@ -569,6 +568,19 @@ if symbol:
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
 
+            # 💡 양봉/음봉 판독
+            if p > cur_open_price:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "십자형 도지"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
             # 💡 양봉/음봉 판독
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
