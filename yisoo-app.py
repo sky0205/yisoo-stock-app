@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 결전 6차] 한글 깨짐 완벽 해결 & 명장님 V3.1 원본 복원!
+            # ★ [PRO 최후 결전 7차] HTML 태그 완전 분쇄 및 순수 텍스트 추출!
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,8 +515,8 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [핵심] 명장님의 V3.1 원본 코드를 그대로 부활시킵니다!
-            # euc-kr 디코딩을 통해 '시가' 한글 깨짐을 완벽하게 방어합니다.
+            # 💡 [최종 필살기] 네이버의 복잡한 HTML 태그를 모조리 분쇄하고, 
+            # 순수 텍스트만 남긴 상태에서 '시가'를 족집게처럼 뽑아냅니다!
             try:
                 import urllib.request
                 import re
@@ -525,18 +525,21 @@ if symbol:
                 url = f"https://finance.naver.com/item/main.naver?code={clean_code}"
                 
                 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                # 명장님의 신의 한 수: euc-kr 로 읽어와서 외계어를 한글로 100% 복원!
                 html_source = urllib.request.urlopen(req).read().decode('euc-kr', 'ignore')
                 
-                # 명장님의 족집게 정규식!
-                match = re.search(r'시가\s+([0-9,]+)', html_source)
+                # 🚨 [신의 한 수]: <span>, <td> 등 껍데기 태그를 공백(' ')으로 완벽히 갈아버립니다!
+                clean_text = re.sub(r'<[^>]+>', ' ', html_source)
+                
+                # 태그가 벗겨진 순수 텍스트에서 '시가 28,550'을 완벽하게 낚아챕니다!
+                # (시가총액 등과 겹치지 않도록 '시가' 뒤에 띄어쓰기와 숫자가 오는 놈만 타격)
+                match = re.search(r'시가\s+([0-9,]+)', clean_text)
                 
                 if match:
                     naver_open = float(match.group(1).replace(',', ''))
-                    debug_msg = "🟢 [완벽] euc-kr 한글 복원 & 시가 정밀 타격 성공!"
+                    debug_msg = "🟢 [필살기] HTML 태그 분쇄 & 시가 정밀 타격 100% 성공!"
                 else:
                     naver_open = 0
-                    debug_msg = "🔴 HTML 시가 탐색 실패 (정규식 매칭 불가)"
+                    debug_msg = "🔴 순수 텍스트 시가 탐색 실패"
             except Exception as e:
                 naver_open = 0
                 debug_msg = f"🔴 통신 장애 ({e})"
@@ -567,6 +570,19 @@ if symbol:
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
 
+            # 💡 양봉/음봉 판독 (HTS 기준과 100% 일치하도록 완벽 판정)
+            if p > cur_open_price:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "십자형 도지"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
             # 💡 양봉/음봉 판독
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
