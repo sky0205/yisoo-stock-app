@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최종 철갑 버전] 야후 시가 누락 완벽 방어 및 정밀 연산
+            # ★ [PRO 최종 철갑 버전] 변수 누락 완벽 해결 및 정밀 연산
             # ========================================================
             
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
@@ -515,8 +515,7 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
 
-            # 💡 [핵심 방어]: 야후가 시가(Open)를 제대로 못 가져와서 0이 되거나 비어있으면, 
-            # 전일 종가나 현재가를 시가로 강제 고정하여 음봉 오판을 원천 차단합니다!
+            # 💡 [핵심 방어]: 야후가 시가(Open)를 제대로 못 가져와서 0이 되거나 비어있으면 강제 방어!
             if raw_open <= 0:
                 today_open = float(str(df["Close"].iloc[-2]).replace(',', '')) if len(df) > 1 else p
             else:
@@ -527,10 +526,12 @@ if symbol:
             # 💡 공식 시가 확정
             cur_open_price = today_open
 
-            # 💡 [철벽 자가 보정]: 고가/저가 범위 재확인
+            # 💡 [철벽 자가 보정]: 고가/저가 범위 재확인 및 지연 감지 변수(is_api_delayed) 선언 부활!
             today_high = max(today_high, cur_open_price, p)
             today_low = min(today_low, cur_open_price, p)
             day_candle_range = max(0.01, today_high - today_low)
+            
+            is_api_delayed = (p > today_high * 1.005) or (p < today_low * 0.995) or (today_high == today_low)
 
             upper_tail_len = today_high - max(cur_open_price, p)
             lower_tail_len = min(cur_open_price, p) - today_low
