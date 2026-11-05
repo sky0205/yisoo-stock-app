@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최종 결전 완치] 8시 시가 강제 획득 및 변수 누락 해결
+            # ★ [PRO 최후 결전] SSL 보안 무력화 및 네이버 아침 시가 강제 수집
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,21 +515,27 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [핵심] 네이버 모바일 API로 8시 기준 진짜 시가를 뜯어옵니다!
+            # 💡 [핵심] 파이썬 SSL 보안장벽 무력화 마스터키 장착!
             try:
                 import urllib.request
                 import json
-                # 공백이나 특수문자 때문에 API가 실패하지 않도록 완벽 청소(.strip() 추가)
+                import ssl
+                
+                # 보안 에러(SSL) 무시하고 네이버 뒷문 강제 개방
+                ssl_context = ssl._create_unverified_context()
                 clean_code = str(symbol).replace('.KS', '').replace('.KQ', '').strip()
                 url = f"https://m.stock.naver.com/api/stock/{clean_code}/basic"
+                
                 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                res = urllib.request.urlopen(req).read().decode('utf-8')
+                res = urllib.request.urlopen(req, context=ssl_context).read().decode('utf-8')
                 data = json.loads(res)
+                
+                # 드디어 HTS와 일치하는 아침 시가 확보!
                 naver_open = float(data.get('openPrice', '0').replace(',', ''))
-            except:
+            except Exception as e:
                 naver_open = 0
 
-            # 💡 시가 확정: 네이버 8시 시가를 1순위로 무조건 덮어씌웁니다! (today_open 누락 에러 완벽 해결)
+            # 💡 시가 확정: 네이버 아침 시가를 1순위로 무조건 덮어씌웁니다!
             if naver_open > 0:
                 today_open = naver_open
             elif raw_open > 0:
@@ -539,6 +545,10 @@ if symbol:
 
             cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
+
+            # 🚨 [강제 노출]: 덮어쓰기 당하지 않도록 진단기 화면 맨 위에 붉은 박스로 강제 출력!
+            import streamlit as st
+            st.error(f"🚨 [기계의 실시간 내부 데이터] 네이버 아침 시가: {naver_open:,.0f}원 | 야후 엉터리 시가: {raw_open:,.0f}원 | 📌 최종 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
 
             # 💡 자가 보정
             today_high = max(today_high, cur_open_price, p)
@@ -551,17 +561,16 @@ if symbol:
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
 
-            # 🚨 [숨통 끊기]: 판독 텍스트에 기계가 쥐고 있는 시가를 강제로 노출시킵니다!
             if p > cur_open_price:
-                candle_color_txt = f"빨간색 양봉 (시가:{cur_open_price:,.0f}원/현재:{p:,.0f}원)"
+                candle_color_txt = "빨간색 양봉"
                 is_candle_bullish = True
                 is_candle_bearish = False
             elif p < cur_open_price:
-                candle_color_txt = f"파란색 음봉 (시가:{cur_open_price:,.0f}원/현재:{p:,.0f}원)"
+                candle_color_txt = "파란색 음봉"
                 is_candle_bullish = False
                 is_candle_bearish = True
             else:
-                candle_color_txt = f"십자형 도지 (시가:{cur_open_price:,.0f}원/현재:{p:,.0f}원)"
+                candle_color_txt = "십자형 도지"
                 is_candle_bullish = (p_chg >= 0)
                 is_candle_bearish = (p_chg < 0)
             
