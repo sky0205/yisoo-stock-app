@@ -218,22 +218,46 @@ st.title("🧐 이수할아버지의 냉정 진단기 무결점 통합본 (도�
 display_global_risk()
 st.divider()
 
-col_symbol, col_prev, col_pre_us, col_avg, col_last_1st = st.columns(5)
+# --- [1단계: 입력칸 구성 및 당일 자동 기억 시스템 적용] ---
+col1, col2, col3 = st.columns(3)
 
-with col_symbol:
-    raw_symbol_input = st.text_input("📊 종목번호", "LRCX")
+with col1:
+    raw_symbol_input = st.text_input("📊 종목번호", value="272210")
     symbol = raw_symbol_input.strip()
 
-with col_prev:
-    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value="", help="국장/미장 전일 기준가")
+with col2:
+    from datetime import date
+    today_str = date.today().strftime("%Y-%m-%d")
+    
+    open_cache_key = f"open_price_{symbol}_{today_str}"
+    if open_cache_key not in st.session_state:
+        st.session_state[open_cache_key] = 0.0
 
-with col_pre_us:
+    manual_open = st.number_input(
+        "📌 HTS 호가창 시가 (0=자동)", 
+        value=st.session_state[open_cache_key], 
+        step=10.0, 
+        key=open_cache_key
+    )
+
+with col3:
+    prev_cache_key = f"prev_price_{symbol}_{today_str}"
+    if prev_cache_key not in st.session_state:
+        st.session_state[prev_cache_key] = ""
+
+    manual_prev_price_str = st.text_input(
+        "🎯 HTS 전일종가", 
+        value=st.session_state[prev_cache_key], 
+        key=prev_cache_key,
+        help="국장/미장 전일 기준가 (당일 자동 기억)"
+    )
+
+col4, col5, col6 = st.columns(3)
+with col4:
     manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value="", help="미장 프리마켓 실시간 기준가")
-
-with col_avg:
+with col5:
     user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 분석을 위한 평단가")
-
-with col_last_1st: 
+with col6:
     user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=0.0, step=100.0, help="낙폭 과대(물타기) 하이패스 연산용")
 
 st.write("")
@@ -287,15 +311,10 @@ if symbol:
                 except Exception:
                     pass
 
-            # [시가 수집 수정본]
-            # 네이버 국내주식 실시간 API를 우선 사용하고, 응답값을 검증한 뒤 반영합니다.
-            # 야후 1분봉 첫 행은 프리/시간외 또는 이전 거래일 데이터일 수 있어
-            # 당일 시가의 대체값으로 사용하지 않습니다.
             kr_fetched = False
             _code = clean_symbol
 
             def _to_price(value):
-                """네이버 응답값을 안전하게 숫자로 변환. 빈 값/대시/비정상 값은 0."""
                 if value is None:
                     return 0.0
                 text_value = str(value).strip().replace(",", "").replace("원", "")
@@ -313,14 +332,12 @@ if symbol:
             }
 
             def _apply_naver_quote(quote):
-                """네이버 시세 객체에서 가격/거래량을 읽고 OHLC 관계를 검증."""
                 _price = _to_price(quote.get("closePrice", quote.get("nv")))
                 _open = _to_price(quote.get("openPrice", quote.get("ov")))
                 _high = _to_price(quote.get("highPrice", quote.get("hv")))
                 _low = _to_price(quote.get("lowPrice", quote.get("lv")))
                 _volume = _to_price(quote.get("accumulatedTradingVolume", quote.get("aq")))
 
-                # 시가가 0이거나 고가/저가와 모순되면 해당 응답은 채택하지 않습니다.
                 if _price <= 0 or _open <= 0:
                     return False
                 if _high > 0 and _high < max(_open, _price):
@@ -338,7 +355,6 @@ if symbol:
                     _naver_quote_values["v_curr"] = _volume
                 return True
 
-            # 엔진 1: 네이버 국내주식 실시간 시세 API
             try:
                 api_url = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{_code}"
                 headers = {
@@ -355,7 +371,6 @@ if symbol:
             except (requests.RequestException, ValueError, TypeError, KeyError):
                 pass
 
-            # 엔진 2: 네이버 모바일 기본정보 API (1번 실패 시 보조)
             if not kr_fetched:
                 try:
                     api_url = f"https://m.stock.naver.com/api/stock/{_code}/basic"
@@ -368,7 +383,6 @@ if symbol:
                 except (requests.RequestException, ValueError, TypeError, KeyError):
                     pass
 
-            # 엔진 3: 기존 네이버 실시간 폴링 API (최후의 네이버 보조 경로)
             if not kr_fetched:
                 try:
                     api_url = f"https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:{_code}"
@@ -387,15 +401,10 @@ if symbol:
             real_kr_high = _naver_quote_values["high"]
             real_kr_low = _naver_quote_values["low"]
 
-            # 네이버 시세를 모두 가져오지 못한 경우 현재가/거래량만 일봉에서 보완합니다.
-            # 주의: 일봉의 마지막 행이 오늘 데이터인지 확실하지 않으므로 이를 '실시간 시가'로
-            # 간주하지 않습니다. 아래의 일봉 처리에서만 보수적인 기준값으로 사용합니다.
             if not kr_fetched and not df.empty:
                 auto_p = _to_price(df["Close"].iloc[-1])
                 v_curr = _to_price(df["Volume"].iloc[-1])
-                # real_kr_open은 0으로 유지하여 오래된 일봉 시가를 오늘 시가로 오인하지 않게 함.
 
-            # 거래량 폭증 오류 보정
             if not df.empty and kr_fetched:
                 _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
                 if _avg_v > 0 and v_curr > _avg_v * 10:
@@ -469,7 +478,6 @@ if symbol:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인해 주시게.")
         else:
             df = df.ffill().dropna()
-            # 💡 [서머타임 시간대 충돌 에러 완벽 해결]: utc=True 추가!
             df.index = pd.to_datetime(df.index, utc=True).date
             today_date = now_local.date()
 
@@ -492,7 +500,6 @@ if symbol:
             if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
                 prev_p = float(us_prev_p)
 
-            # 💡 [핵심]: 네이버에서 가져온 진짜 시가, 고가, 저가를 메인 장부에 강력 덮어쓰기!
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
                 df.loc[today_date, "Volume"] = v_curr
@@ -513,7 +520,7 @@ if symbol:
                     fallback_open = prev_p if prev_p > 0 else p
                     new_row = pd.DataFrame({"Open": [fallback_open], "High": [max(p, fallback_open)], "Low": [min(p, fallback_open)], "Close": [p], "Volume": [v_curr]}, index=[today_date])
                 df = pd.concat([df, new_row])
-                            
+                        
 
             v_avg5 = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
             v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
@@ -537,9 +544,24 @@ if symbol:
                 vol_strength = v_ratio
 
             # ==================================================================
-            # ★ [PRO 버전] 캔들 정합성 검열 및 십자형(Doji) 정밀 연산
+            # ★ [수동 시가 1순위 통제 룰 및 당일 기억 시스템 적용]
             # ==================================================================
-            today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
+            open_cache_key = f"open_price_{symbol}_{today_str}"
+            manual_open = st.session_state.get(open_cache_key, 0.0)
+
+            # 원본 자동 시가 추출
+            raw_open_val = float(str(df["Open"].iloc[-1]).replace(',', '')) if not df.empty else 0.0
+
+            if manual_open > 0:
+                today_open = manual_open
+                debug_msg = f"🟢 [수동 룰 작동] 명장님의 하명({manual_open:,.0f}원) 완벽 적용!"
+            else:
+                today_open = raw_open_val
+                debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({raw_open_val:,.0f}원) 적용 중"
+
+            # 📌 깔끔한 상단 알림 노출 (중복 박스 원천 차단)
+            st.markdown(f"🚨 **[시가 수동 통제]** {debug_msg} | 📌 **최종 확정 시가:** {today_open:,.0f}원")
+
             today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -552,7 +574,6 @@ if symbol:
             lower_tail_len = min(today_open, p) - today_low
             body_len = abs(p - today_open)
 
-            # 💡 [철벽 방어]: 네이버 실시간 시가와 현재가를 직관적으로 비교하여 양봉/음봉 완벽 확정!
             cur_open_price = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else today_open
             
             if p > cur_open_price:
@@ -568,22 +589,17 @@ if symbol:
                 is_candle_bullish = (p_chg >= 0)
                 is_candle_bearish = (p_chg < 0)
 
-            # 💡 [철벽 방어]: 종목별 호가(틱) 단위 차이를 반영하여 절대값이 아닌 '비율(%)'로 정밀 도지 판독!
             if day_candle_range > 0:
-                # 수정: 고정값(5원, 10원) 족쇄 삭제! 캔들 전체 길이의 5% 이내이거나, 시가 대비 0.2% 이내 변동일 때만 도지로 인정!
                 is_doji_candle = (body_len <= day_candle_range * 0.05) or (body_len <= cur_open_price * 0.002)
             else:
                 is_doji_candle = (body_len == 0)
                 
             strict_doji_check = is_doji_candle
             
-            # 👇👇 [바로 여기에 아래의 4줄을 추가해 주시옵소서!] 👇👇
             if strict_doji_check:
                 is_candle_bullish = False
                 is_candle_bearish = False
                 candle_color_txt = "십자형 도지(Doji)"
-            
-            
             
             if is_pre_market_mode or is_api_delayed:
                 is_long_upper_tail = False
@@ -597,7 +613,6 @@ if symbol:
                 else:
                     is_long_upper_tail = (upper_tail_len > lower_tail_len) and (upper_tail_len > body_len) and (upper_tail_len >= day_candle_range * 0.3)
                 
-                # 💡 [PRO 3차 패치] '가짜 칼날' 박멸! (상승했거나 양봉이면 무조건 방어 성공으로 인정)
                 is_tail_defended = (lower_tail_len > upper_tail_len) or (lower_tail_len >= day_candle_range * 0.25)
                 is_strong_bull_body = is_candle_bullish and ((p_chg >= 1.0) or (body_len >= upper_tail_len))
                 
@@ -965,7 +980,7 @@ if symbol:
                 else:
                     v_status, v_adv = ("거래 숨고르기", f"🧊 <b>[거래 숨고르기]</b> 시간보정 강도 {vol_strength:.1f}점! 1단계 진바닥 입질 및 양봉 지지력 확인 구역이오.")
                     
-            else: # 음봉일 때
+            else: 
                 is_basement = (rsi_val <= 38 or will_val <= -75)
         
                 if vol_strength >= 300:
@@ -1044,9 +1059,6 @@ if symbol:
             current_chg = float(p_chg)
             margin_diff = ((target_price_100 - p) / p) * 100 if p > 0 else 0
 
-            # ==================================================================
-            # ★ [신호등 분기 논리: 칼날 이중 잠금장치 + 십자형(Doji) 갈라치기]
-            # ==================================================================
             is_strong_rebound = (p_chg >= 2.0) and (vol_strength >= 100) and (p >= today_open)
             
             if is_stop_loss_triggered:
@@ -1090,7 +1102,6 @@ if symbol:
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[긴 위꼬리 저항 포착]</b> 장중 고점 대비 위꼬리가 길게 밀려 내려왔소! 지표상 안착처럼 보여도 위쪽 매물벽 저항이 맵사오니 섣부른 추격매수를 금하고 냉정하게 관망하시게."
             
-            # --- [신고가 레이더 특별 분기] ---
             elif is_new_high_breakout:
                 final_code = "NEW_HIGH_BREAKOUT_WARNING"
                 sig = "🚨 [신고가 돌파 첫날] 불기둥 추격 매수 엄금!"
@@ -1152,14 +1163,12 @@ if symbol:
                 sig = "🟡 [관망/보류] 매도잔량비 실전 기준 미달 (속임수 윗꼬 경계)"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[호가창 기준 미달]</b> 타점 지표는 충족했으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 실전 투입 기준에 미달하오. 세력이 윗꼬리로 밀어버릴 속임수일 확률이 높으니 방아쇠를 잠그고 관망하시게."
-            # 💡 [PRO 6차 패치] 거래량 300점 이상 폭발 + 양봉 시 과다이격 무시하고 불기둥 하이패스 가동!
             elif is_over_extended_5 and (vol_strength >= 300) and (p >= today_open) and (not is_long_upper_tail):
                 final_code = "SQUEEZE_BREAKOUT_ATTACK"
                 sig = f"🔥 [불기둥 하이패스] 대량 거래 폭발! 과다이격({bias_ma5:+.1f}%) 면제"
                 col = "#D84315"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상한가/대시세 추종]</b> 5일선 이격이 +{bias_ma5:.1f}%로 벌어졌으나, 폭발적인 거래량(300점 이상)을 동반한 강력한 양봉 불기둥이오! 세력의 상방 드라이브가 확인되었으니 <b>과다이격 경계를 강제 해제</b>하고 돌파 랠리에 기민하게 동참하시게. 단, 윗꼬리 발생 시 즉각 대피할 수 있도록 비중은 30% 이하로 통제하시게."
 
-            # 위 불기둥 조건에 해당하지 않는 가짜 펌핑은 기존처럼 철통 방어!
             elif is_over_extended_5:
                 final_code = "WAIT_OVER_EXTENDED"
                 sig = f"🟡 [관망/보류] 5일선 과다이격 (+{bias_ma5:.1f}%) / 추격 매수 금지"
@@ -1374,11 +1383,8 @@ if symbol:
                 elif final_code == "WAIT_ORDERBOOK": _p_action = f"-> <b>[호가창 미달 관망]</b> 허매수/속임수 경계"
                 elif final_code == "WAIT_COOL_TIME": _p_action = f"-> <b>[중복 노이즈 관망]</b> 쿨타임 가동으로 중복 매수 차단"
                 elif final_code in ["DOJI_TOP_WARNING", "DOJI_BOTTOM_WAIT", "DOJI_MID_WAIT"]: _p_action = f"-> <b>[십자형 변곡 대기]</b> 내일 상하방 이탈 방향을 확인하라"
-                # 1. 5일선 아래에 있지만 전일 대비 붉은 상승장(p_chg > 0)일 때: 진격 멘트!
                 elif p < ma5_val and p_chg > 0 and not is_candle_bearish:
                     _p_action = f"-> <b>[5일선 탈환 시도]</b> 지표는 포착되었으며 5일선 고지를 향해 맹렬히 진격 중! (돌파/안착 대기)"
-                    
-                # 2. 5일선 아래에 있고 실제로 파랗게 하락 중일 때: 기존의 깐깐한 관망 멘트
                 elif p < ma5_val and (p_chg <= 0 or is_candle_bearish):
                     _p_action = f"-> <b>[추세 꺾임 관망]</b> 지표는 포착되었으나 5일선 아래 하락/저항 구역이므로 진입 금지"
                 elif pullback_rebound_score >= 2: _p_action = f"-> <b>[눌림목 공방 유효]</b> 중간지대 조건 충족!"
@@ -1409,17 +1415,13 @@ if symbol:
                 else:
                     if today_open == today_low:
                         trend_status = f"🔥 <b style='color:#D84315;'>[강한 매수 맹공]</b> 장 시작부터 단 한 번도 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
-                    # 수정: 아래꼬리가 윗꼬리보다 확실히 길거나, 전체 캔들에서 아래꼬리 비중이 클 때만 인정!
                     elif has_meaningful_lower_tail and (lower_tail_len > upper_tail_len) and (today_open > today_low):
                         trend_status = f"🛡️ <b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt} 출현!"
                     elif is_long_upper_tail and is_candle_bearish:
-                        # 추가: 윗꼬리가 긴 파란색 음봉일 때의 정확한 팩트 폭격 멘트
                         trend_status = f"🚨 <b>[상승 기세 꺾임 / 매물 압박]</b> 윗꼬리를 길게 달고 밀려 내려온 {candle_color_txt} 출현! 상단 저항이 거세오."
                     elif is_candle_bearish:
-                        # 추가: 파란색 음봉일 때의 정확한 팩트 멘트
                         trend_status = f"📉 <b>[단기 하락 / 매도 우위]</b> 매물 압박을 받으며 밀려 내려온 {candle_color_txt} 출현!"
                     else:
-                        # 빨간색 양봉일 때만 '견고하다'는 표현 사용
                         trend_status = f"🌱 <b>[방어선 구축 / 상승 전개]</b> 매수세가 유입되며 견고한 {candle_color_txt} 출현!"
             elif is_long_upper_tail:
                 if is_candle_bearish: 
@@ -1573,7 +1575,7 @@ if symbol:
                 elif not is_ma5_safe: def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래로 함락된 채 <b>단기 생명선(5일선) 이탈</b> 상태이오! 회복 전까지 섣부른 진격을 금하시게."
                 elif final_code == "ESCAPE_BUY": def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래이나 5일선을 딛고 <b>2단계 바닥 탈출 진격</b>을 시작하는 중이네!"
                 elif is_ma5_safe: def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래에 있으나 단기 5일선을 사수하며 반격 시동을 거는 중이오!"
-                else: def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래로 함락된 채 기세가 꺾였네! 절대 칼을 뽑지 마시게."
+                else: def_status = f"성벽({defense_line:{fmt_p}}{currency}) 아래로 함락된 채 기세가 꺾네! 절대 칼을 뽑지 마시게."
 
             if is_peak_dumping: base_macd_desc = "<b>🚨 고점 투매 (위험)</b>: 목표선 부근에서 윗꼬리가 생기며 세력의 매도세가 쏟아지고 있소!"
             elif is_massive_dump: base_macd_desc = "<b>🚨 대량 투매 폭발</b>: 하락 험지 속에서 걷잡을 수 없는 매도 폭탄이 떨어지고 있소!"
@@ -1581,7 +1583,6 @@ if symbol:
                 if rsi_val >= 70: base_macd_desc = "<b>🔥 정회전 가속 (과열권)</b>: 추진력은 강력하나 보조지표 초과열권이오."
                 elif vol_strength < 65 or is_candle_bearish or final_code == "DOJI_MID_WAIT":
                     mac_desc_word = "십자성 공방" if final_code == "DOJI_MID_WAIT" else ("음봉 조정" if is_candle_bearish else "숨고르기 공방")
-                    # 수정: 기계가 현재 위치를 파악하여 '성벽 위'인지 '성벽 아래'인지 자동 변경
                     wall_pos = "성벽 위에서" if p >= defense_line else "성벽 아래에서"
                     base_macd_desc = f"<b>⚡ 가속 중이나 거래절벽/{mac_desc_word}</b>: MACD는 가속 중이나 {wall_pos} {mac_desc_word} 중이오."
                 elif p >= defense_line or final_code == "NEW_HIGH_PULLBACK_BUY" or final_code == "SQUEEZE_BREAKOUT_ATTACK": base_macd_desc = "<b>🔥 정회전 가속 (상승 수성)</b>: 방어선을 사수하며 5일선 타고 상승 탄력 풀가동 중이오."
@@ -1727,7 +1728,7 @@ if symbol:
                     if rsi_is_up:
                         r_status = "<b>📈 적정 온도 (온기 유입)</b><br>• <b>역할:</b> 상승 탄력 및 눌림목 반등.<br>• <b>진단:</b> 매수 온도가 따뜻해지며 위로 고개를 틀었소! 긍정적인 방향 전환이 기대되오."
                     elif rsi_is_down:
-                        r_status = "<b>📉 적정 온도 (냉기 유입)</b><br>• <b>역할:</b> 하방 압력 및 추세 이탈 경계.<br>• <b>진단:</b> 매수세가 식어가며 아래로 꺾였소. 지지선을 위협할 수 있으니 섣부른 진입을 삼가시게."
+                        r_status = "<b>📉 적정 온도 (냉기 유입)</b><br>• <b>역할:</b> 하방 압력 및 추세 이탈 경계.<br>• <b>진단:</b> 매수세가 식어가며 아래로 꺾겼소. 지지선을 위협할 수 있으니 섣부른 진입을 삼가시게."
                     else:
                         r_status = "<b>⚖ 적정 온도 구간</b><br>• <b>역할:</b> 에너지 충전 및 눌림목 동조.<br>• <b>진단:</b> 에너지 충전 중. 보조지표 고개 돌림을 주시하시게."
                         
