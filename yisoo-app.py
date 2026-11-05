@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최후 결전 7차] HTML 태그 완전 분쇄 및 순수 텍스트 추출!
+            # ★ [PRO 최후 완결판] 네이버 fchart 내부망 직결 (봇 차단 우회)
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -515,36 +515,35 @@ if symbol:
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
 
-            # 💡 [최종 필살기] 네이버의 복잡한 HTML 태그를 모조리 분쇄하고, 
-            # 순수 텍스트만 남긴 상태에서 '시가'를 족집게처럼 뽑아냅니다!
+            # 💡 [비밀 통로 개척]: 네이버 차트가 사용하는 XML 데이터 공급망을 직격합니다.
+            # 이곳은 봇 차단이 없고, "날짜|시가|고가|저가|종가|거래량" 순으로 정직하게 뱉어냅니다!
             try:
                 import urllib.request
                 import re
                 
                 clean_code = str(symbol).replace('.KS', '').replace('.KQ', '').strip()
-                url = f"https://finance.naver.com/item/main.naver?code={clean_code}"
+                # 차트용 실시간 데이터 엔드포인트 (가장 최근 1일 치만 요청)
+                url = f"https://fchart.stock.naver.com/sise.nhn?symbol={clean_code}&timeframe=day&count=1&requestType=0"
                 
                 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                html_source = urllib.request.urlopen(req).read().decode('euc-kr', 'ignore')
+                xml_data = urllib.request.urlopen(req, timeout=5).read().decode('euc-kr', 'ignore')
                 
-                # 🚨 [신의 한 수]: <span>, <td> 등 껍데기 태그를 공백(' ')으로 완벽히 갈아버립니다!
-                clean_text = re.sub(r'<[^>]+>', ' ', html_source)
-                
-                # 태그가 벗겨진 순수 텍스트에서 '시가 28,550'을 완벽하게 낚아챕니다!
-                # (시가총액 등과 겹치지 않도록 '시가' 뒤에 띄어쓰기와 숫자가 오는 놈만 타격)
-                match = re.search(r'시가\s+([0-9,]+)', clean_text)
+                # 정규식으로 <item data="20261105|28500|29000..." /> 안의 알맹이만 뜯어냅니다.
+                match = re.search(r'<item data="([^"]+)"', xml_data)
                 
                 if match:
-                    naver_open = float(match.group(1).replace(',', ''))
-                    debug_msg = "🟢 [필살기] HTML 태그 분쇄 & 시가 정밀 타격 100% 성공!"
+                    # 파이프(|) 기호로 쪼개어 [1]번 방에 있는 '시가'를 정확히 빼옵니다.
+                    daily_data = match.group(1).split('|')
+                    naver_open = float(daily_data[1])
+                    debug_msg = "🟢 차트 내부망(XML) 완벽 타격 성공!"
                 else:
                     naver_open = 0
-                    debug_msg = "🔴 순수 텍스트 시가 탐색 실패"
+                    debug_msg = "🔴 XML 데이터 추출 실패 (양식 불일치)"
             except Exception as e:
                 naver_open = 0
                 debug_msg = f"🔴 통신 장애 ({e})"
 
-            # 💡 시가 확정: 네이버 8시 시가를 1순위로 무조건 덮어씌웁니다!
+            # 💡 시가 확정: 네이버 내부망 시가를 1순위로 무조건 덮어씌웁니다!
             if naver_open > 0:
                 today_open = naver_open
             elif raw_open > 0:
@@ -555,9 +554,9 @@ if symbol:
             cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
-            # 🚨 [강제 노출]: 붉은 박스로 PC웹 시가 획득 성공 여부 출력
+            # 🚨 [강제 노출]: 붉은 박스로 내부망 획득 결과 즉시 확인
             import streamlit as st
-            st.error(f"🚨 [시가 돌파 작전] {debug_msg} | 네이버 아침 시가: {naver_open:,.0f}원 | 📌 기계 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
+            st.error(f"🚨 [시가 최종 돌파] {debug_msg} | 네이버 진짜 시가: {naver_open:,.0f}원 | 📌 확정 시가: {cur_open_price:,.0f}원 | 현재가: {p:,.0f}원")
 
             # 💡 자가 보정
             today_high = max(today_high, cur_open_price, p)
@@ -570,6 +569,19 @@ if symbol:
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
 
+            # 💡 양봉/음봉 판독
+            if p > cur_open_price:
+                candle_color_txt = "빨간색 양봉"
+                is_candle_bullish = True
+                is_candle_bearish = False
+            elif p < cur_open_price:
+                candle_color_txt = "파란색 음봉"
+                is_candle_bullish = False
+                is_candle_bearish = True
+            else:
+                candle_color_txt = "십자형 도지"
+                is_candle_bullish = (p_chg >= 0)
+                is_candle_bearish = (p_chg < 0)
             # 💡 양봉/음봉 판독 (HTS 기준과 100% 일치하도록 완벽 판정)
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
