@@ -521,6 +521,11 @@ if symbol:
             # 💡 [시가/꼬리 연산 순서 완벽 교정]: 진짜 시가(cur_open_price)를 가장 먼저 확정한 뒤 꼬리를 계산해야 100% 정확합니다!
             cur_open_price = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else today_open
 
+            # 👇 [핵심 수술] 야후(df) 데이터 지연으로 고가/저가가 엉터리인 경우를 대비해, 진짜 시가와 현재가를 기준으로 고가/저가 강제 자가 보정!
+            today_high = max(today_high, cur_open_price, p)
+            today_low = min(today_low, cur_open_price, p)
+            day_candle_range = max(0.01, today_high - today_low) # 캔들 몸집 전체 폭(Range) 완벽 재계산!
+
             upper_tail_len = today_high - max(cur_open_price, p)
             lower_tail_len = min(cur_open_price, p) - today_low
             body_len = abs(p - cur_open_price)
