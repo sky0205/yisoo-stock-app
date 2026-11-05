@@ -518,12 +518,12 @@ if symbol:
             day_candle_range = max(0.01, today_high - today_low)
             is_api_delayed = (p > today_high * 1.005) or (p < today_low * 0.995) or (today_high == today_low)
 
-            upper_tail_len = today_high - max(today_open, p)
-            lower_tail_len = min(today_open, p) - today_low
-            body_len = abs(p - today_open)
-
-            # 💡 [철벽 방어]: 네이버 실시간 시가와 현재가를 직관적으로 비교하여 양봉/음봉 완벽 확정!
+            # 💡 [시가/꼬리 연산 순서 완벽 교정]: 진짜 시가(cur_open_price)를 가장 먼저 확정한 뒤 꼬리를 계산해야 100% 정확합니다!
             cur_open_price = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else today_open
+
+            upper_tail_len = today_high - max(cur_open_price, p)
+            lower_tail_len = min(cur_open_price, p) - today_low
+            body_len = abs(p - cur_open_price)
             
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
@@ -1367,7 +1367,7 @@ if symbol:
             elif strict_doji_check:
                 trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 거의 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
             elif is_defended:
-                has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
+                has_meaningful_lower_tail = (lower_tail_len >= body_len * 1.0) or (lower_tail_len >= day_candle_range * 0.4)
 
                 if is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
                     trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}(상승률 {p_chg:+.2f}%)을(를) 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
