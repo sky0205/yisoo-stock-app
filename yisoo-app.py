@@ -563,14 +563,13 @@ if symbol:
             import streamlit as st
             manual_open = st.session_state.get("manual_open", 0.0)
 
-            # 명장님께서 숫자를 입력하셨다면(0보다 크면) 무조건 1순위로 덮어씌웁니다!
+            # 💡 명장님께서 수동 시가를 입력하셨으면 그것을 우선하고, 아니면 진짜 실시간 자동 시가를 띄웁니다.
             if manual_open > 0:
                 today_open = manual_open
                 debug_msg = f"🟢 [수동 룰 작동] 명장님의 하명({manual_open:,.0f}원) 완벽 적용!"
             else:
-                # 입력을 안 하셨을 경우(0)에만 기계가 가져온 기본 시가를 씁니다.
                 today_open = raw_open
-                debug_msg = "🟡 [수동 입력 없음] 기본 시가 28,550원 임시 적용 중"
+                debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({raw_open:,.0f}원) 적용 중"
 
             cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
