@@ -1062,8 +1062,7 @@ if symbol:
             is_strong_rebound = (p_chg >= 2.0) and (vol_strength >= 100) and (p >= today_open)
             
             # 📌 [명장님 실전 방어 룰]: 긴 윗꼬리를 달고 시가 턱걸이 중일 때 1단계 진입 신호를 원천 차단합니다!
-            elif is_long_upper_tail and p >= today_open and not is_strong_rebound:
-            # 📌 [명장님 실전 방어 룰]: 독립된 if 문장으로 맨 처음에 배치하여 문법 오류를 완벽히 해결합니다!
+            
             if is_long_upper_tail and p >= today_open and not is_strong_rebound:
                 final_code = "WAIT_LONG_TAIL_DEFENSE"
                 sig = "🟡 [관망/보류] 윗꼬리 매물 폭탄 / 시가 턱걸이 방어전 (신규 진입 금지)"
