@@ -506,25 +506,29 @@ if symbol:
             else:
                 vol_strength = v_ratio
 
-            # 💡 [시가 철벽 수집 엔진]: 야후 데이터 지연을 막기 위해 네이버 증권에서 '진짜 시가'를 실시간으로 뜯어옵니다!
+            # 💡 [시가 철벽 수집 엔진 V2]: 네이버의 시각장애인용 텍스트(blind)에서 정규식으로 '시가' 숫자만 완벽하게 뽑아냅니다!
             try:
                 import requests
+                import re
                 from bs4 import BeautifulSoup
                 
-                # 명장님의 진단기에 맞춰 종목코드 변수를 'symbol'로 찰떡같이 수정 완료!
                 clean_code = str(symbol).replace('.KS', '').replace('.KQ', '') 
                 url = f"https://finance.naver.com/item/main.naver?code={clean_code}"
                 
-                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
                 soup = BeautifulSoup(res.text, 'html.parser')
                 
-                # 네이버 증권 메인 화면에서 '시가' 텍스트 정확히 추출
-                open_td = soup.find('td', {'class': 'first'})
-                if open_td:
-                    open_str = open_td.find('span', {'class': 'blind'}).text
-                    real_kr_open = float(open_str.replace(',', ''))
-                else:
-                    real_kr_open = 0
+                real_kr_open = 0
+                # 네이버 금융의 시각장애인용 요약 텍스트 박스 추출
+                dl_blind = soup.find('dl', {'class': 'blind'})
+                if dl_blind:
+                    for dd in dl_blind.find_all('dd'):
+                        if dd.text.startswith('시가 '):
+                            # '시가 27,800' 같은 문구에서 숫자(27800)만 핀셋 추출
+                            open_str = re.sub(r'[^0-9]', '', dd.text)
+                            if open_str:
+                                real_kr_open = float(open_str)
+                            break
             except Exception as e:
                 real_kr_open = 0
             # ==================================================================
