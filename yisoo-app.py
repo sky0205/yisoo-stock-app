@@ -507,25 +507,30 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최종 버전] HTS 8시 기준 시가 고정 및 캔들 정밀 연산
+            # ★ [PRO 최종 철갑 버전] 야후 시가 누락 완벽 방어 및 정밀 연산
             # ========================================================
             
-            today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
+            raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
             today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
 
-            is_down_trend_v = (p < prev_p) and (p_chg < 0)
-            day_candle_range = max(0.01, today_high - today_low)
-            is_api_delayed = (p > today_high * 1.005) or (p < today_low * 0.995) or (today_high == today_low)
+            # 💡 [핵심 방어]: 야후가 시가(Open)를 제대로 못 가져와서 0이 되거나 비어있으면, 
+            # 전일 종가나 현재가를 시가로 강제 고정하여 음봉 오판을 원천 차단합니다!
+            if raw_open <= 0:
+                today_open = float(str(df["Close"].iloc[-2]).replace(',', '')) if len(df) > 1 else p
+            else:
+                today_open = raw_open
 
-            # 💡 [최종 확정]: HTS의 8시 프리장 기준 시가(today_open)를 공식 시가(cur_open_price)로 철저히 고정합니다!
+            is_down_trend_v = (p < prev_p) and (p_chg < 0)
+            
+            # 💡 공식 시가 확정
             cur_open_price = today_open
 
-            # 💡 [철벽 자가 보정]: 고가/저가가 시가나 현재가보다 좁아지지 않도록 완벽 방어
+            # 💡 [철벽 자가 보정]: 고가/저가 범위 재확인
             today_high = max(today_high, cur_open_price, p)
             today_low = min(today_low, cur_open_price, p)
-            day_candle_range = max(0.01, today_high - today_low) # 캔들 몸집 전체 폭(Range) 완벽 재계산!
+            day_candle_range = max(0.01, today_high - today_low)
 
             upper_tail_len = today_high - max(cur_open_price, p)
             lower_tail_len = min(cur_open_price, p) - today_low
