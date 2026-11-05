@@ -231,7 +231,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 📌 첫 번째 줄 (종목번호, HTS 시가, HTS 전일종가 - 당일 자동 기억 시스템)
+# 📌 3열 컬럼을 먼저 선언하여 기계가 위치를 알게 합니다.
+col1, col2, col3 = st.columns(3)
+
 with col1:
     raw_symbol_input = st.text_input("📊 종목번호", value="005930")
     symbol = raw_symbol_input.strip()
@@ -239,8 +241,6 @@ with col1:
 with col2:
     from datetime import date
     today_str = date.today().strftime("%Y-%m-%d")
-    
-    # 💡 HTS 시가 종목별·날짜별 전용 기억 키
     open_cache_key = f"open_price_{symbol}_{today_str}"
     if open_cache_key not in st.session_state:
         st.session_state[open_cache_key] = 0.0
@@ -253,7 +253,6 @@ with col2:
     )
 
 with col3:
-    # 💡 HTS 전일종가 종목별·날짜별 전용 기억 키
     prev_cache_key = f"prev_price_{symbol}_{today_str}"
     if prev_cache_key not in st.session_state:
         st.session_state[prev_cache_key] = ""
