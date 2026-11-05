@@ -507,7 +507,7 @@ if symbol:
                 vol_strength = v_ratio
 
             # ========================================================
-            # ★ [PRO 최종 결전] 8시 시가 강제 획득 및 텍스트 디버그
+            # ★ [PRO 최종 결전 완치] 8시 시가 강제 획득 및 변수 누락 해결
             # ========================================================
             
             p = float(str(df["Close"].iloc[-1]).replace(',', ''))
@@ -529,14 +529,15 @@ if symbol:
             except:
                 naver_open = 0
 
-            # 💡 시가 확정: 네이버 8시 시가를 1순위로 무조건 덮어씌웁니다!
+            # 💡 시가 확정: 네이버 8시 시가를 1순위로 무조건 덮어씌웁니다! (today_open 누락 에러 완벽 해결)
             if naver_open > 0:
-                cur_open_price = naver_open
+                today_open = naver_open
             elif raw_open > 0:
-                cur_open_price = raw_open
+                today_open = raw_open
             else:
-                cur_open_price = p
+                today_open = p
 
+            cur_open_price = today_open
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
 
             # 💡 자가 보정
