@@ -218,57 +218,62 @@ st.title("🧐 이수할아버지의 냉정 진단기 무결점 통합본 (도�
 display_global_risk()
 st.divider()
 
-# --- [1단계: 입력칸 구성 및 당일 자동 기억 시스템 적용] ---
+# ==============================================================================
+# ★ [1단계: 종목별 수동 입력값 무한 기억 장치 이식 완료]
+# ==============================================================================
+if 'price_memory' not in st.session_state:
+    st.session_state.price_memory = {}
+
 col1, col2, col3 = st.columns(3)
 
 with col1:
     raw_symbol_input = st.text_input("📊 종목번호", value="272210")
     symbol = raw_symbol_input.strip()
 
-with col2:
-    from datetime import date
-    today_str = date.today().strftime("%Y-%m-%d")
-    
-    open_cache_key = f"open_price_{symbol}_{today_str}"
-    if open_cache_key not in st.session_state:
-        st.session_state[open_cache_key] = 0.0
+# 📂 기억장치에서 현재 선택된 종목의 기존 입력값을 꺼내옵니다.
+mem_data = st.session_state.price_memory.get(symbol, {})
+saved_open = float(mem_data.get('open', 0.0))
+saved_prev = str(mem_data.get('prev', ""))
+saved_pre = str(mem_data.get('pre', ""))
+saved_avg = float(mem_data.get('avg', 0.0))
+saved_1st = float(mem_data.get('1st', 0.0))
+saved_ask = float(mem_data.get('ask', 0.0))
+saved_bid = float(mem_data.get('bid', 0.0))
 
-    manual_open = st.number_input(
-        "📌 HTS 호가창 시가 (0=자동)", 
-        value=st.session_state[open_cache_key], 
-        step=10.0, 
-        key=open_cache_key
-    )
+with col2:
+    manual_open = st.number_input("📌 HTS 호가창 시가 (0=자동)", value=saved_open, step=10.0)
 
 with col3:
-    prev_cache_key = f"prev_price_{symbol}_{today_str}"
-    if prev_cache_key not in st.session_state:
-        st.session_state[prev_cache_key] = ""
-
-    manual_prev_price_str = st.text_input(
-        "🎯 HTS 전일종가", 
-        value=st.session_state[prev_cache_key], 
-        key=prev_cache_key,
-        help="국장/미장 전일 기준가 (당일 자동 기억)"
-    )
+    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value=saved_prev, help="국장/미장 전일 기준가 (종목별 자동 기억)")
 
 col4, col5, col6 = st.columns(3)
 with col4:
-    manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value="", help="미장 프리마켓 실시간 기준가")
+    manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value=saved_pre, help="미장 프리마켓 실시간 기준가")
 with col5:
-    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 분석을 위한 평단가")
+    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=saved_avg, step=100.0, help="맞춤형 분석을 위한 평단가")
 with col6:
-    user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=0.0, step=100.0, help="낙폭 과대(물타기) 하이패스 연산용")
+    user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=saved_1st, step=100.0, help="낙폭 과대(물타기) 하이패스 연산용")
 
 st.write("")
 
 col_ask, col_bid, col_btn = st.columns([1, 1, 2])
 
 with col_ask:
-    manual_ask = st.number_input("🔴 총매도잔량", min_value=0.0, value=0.0, step=1.0, format="%.2f")
+    manual_ask = st.number_input("🔴 총매도잔량", min_value=0.0, value=saved_ask, step=1.0, format="%.2f")
 
 with col_bid:
-    manual_bid = st.number_input("🔵 총매수잔량", min_value=0.0, value=0.0, step=1.0, format="%.2f")
+    manual_bid = st.number_input("🔵 총매수잔량", min_value=0.0, value=saved_bid, step=1.0, format="%.2f")
+
+# 💾 현재 화면에 있는 값을 즉시 해당 종목의 기억장치에 덮어씌웁니다. (새로고침 되어도 절대 날아가지 않음)
+st.session_state.price_memory[symbol] = {
+    'open': manual_open,
+    'prev': manual_prev_price_str,
+    'pre': manual_pre_price_str,
+    'avg': user_avg_price,
+    '1st': user_last_1st_price,
+    'ask': manual_ask,
+    'bid': manual_bid
+}
 
 with col_btn:
     st.write("")
@@ -544,12 +549,8 @@ if symbol:
                 vol_strength = v_ratio
 
             # ==================================================================
-            # ★ [수동 시가 1순위 통제 룰 및 당일 기억 시스템 적용]
+            # ★ [수동 시가 1순위 통제 룰 적용 완료]
             # ==================================================================
-            open_cache_key = f"open_price_{symbol}_{today_str}"
-            manual_open = st.session_state.get(open_cache_key, 0.0)
-
-            # 원본 자동 시가 추출
             raw_open_val = float(str(df["Open"].iloc[-1]).replace(',', '')) if not df.empty else 0.0
 
             if manual_open > 0:
@@ -559,7 +560,7 @@ if symbol:
                 today_open = raw_open_val
                 debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({raw_open_val:,.0f}원) 적용 중"
 
-            # 📌 깔끔한 상단 알림 노출 (중복 박스 원천 차단)
+            # 📌 깔끔한 상단 알림 노출
             st.markdown(f"🚨 **[시가 수동 통제]** {debug_msg} | 📌 **최종 확정 시가:** {today_open:,.0f}원")
 
             today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
@@ -574,7 +575,7 @@ if symbol:
             lower_tail_len = min(today_open, p) - today_low
             body_len = abs(p - today_open)
 
-            cur_open_price = today_open if ('today_open' in locals() and today_open > 0) else (real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else 0.0)
+            cur_open_price = today_open
             
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
@@ -1060,12 +1061,14 @@ if symbol:
             margin_diff = ((target_price_100 - p) / p) * 100 if p > 0 else 0
 
             is_strong_rebound = (p_chg >= 2.0) and (vol_strength >= 100) and (p >= today_open)
-            # 📌 [명장님 확정 룰]: 네이버 실시간 호가 변수(real_kr_)를 활용한 엄격한 밑꼬리 판정!
-            total_candle_len = real_kr_high - real_kr_low if real_kr_high > real_kr_low else 0.0
-            tail_bottom_len = (min(real_kr_open, p) - real_kr_low) if real_kr_low < min(real_kr_open, p) else 0.0
+            
+            # ==================================================================
+            # ★ [수동 시가 1순위 통제와 꼬리 판독 완벽 연동 로직]
+            # ==================================================================
+            total_candle_len = today_high - today_low if today_high > today_low else 0.0
+            tail_bottom_len = (min(today_open, p) - today_low) if today_low < min(today_open, p) else 0.0
             
             is_long_lower_tail = total_candle_len > 0 and (tail_bottom_len >= total_candle_len * 0.5)
-            # 📌 [명장님 실전 방어 룰]: 긴 윗꼬리를 달고 시가 턱걸이 중일 때 1단계 진입 신호를 원천 차단합니다!
             
             if is_long_upper_tail and p >= today_open and not is_strong_rebound:
                 final_code = "WAIT_LONG_TAIL_DEFENSE"
@@ -1248,7 +1251,7 @@ if symbol:
                         
                         final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 지표 및 강력 방어 확인]</b> {_bot_txt}과(와) <b>{_def_txt}이(가) 동시 확인</b>되었소! <b>[신규 진입자]</b>는 비중 10% 수준의 가벼운 1단계 정찰병을 투입하시게. 단, <b>[기 1단계 매수자]</b>는 섣부른 불타기를 엄금하고 5일선 안착(2단계) 신호를 기다리며 얌전히 관망하시게."
                         if is_memory_ignored:
-                            final_adv = "💡 <b style='color:#1565C0;'>[이수할아버지의 안내]</b> 기계의 기억상 최근 3일 내 바닥 신호가 있었소. 만약 당시 <b>이미 매수하셨다면</b> 상단 <b>[직전 1차 매수가]</b> 칸에 금액을 입력하시게! 그래야 중복 매수를 차단하거나 물타기 계산을 가동할 수 있소이다."
+                            final_adv += "<br><br>💡 <b style='color:#1565C0;'>[이수할아버지의 안내]</b> 기계의 기억상 최근 3일 내 바닥 신호가 있었소. 만약 당시 <b>이미 매수하셨다면</b> 상단 <b>[직전 1차 매수가]</b> 칸에 금액을 입력하시게! 그래야 중복 매수를 차단하거나 물타기 계산을 가동할 수 있소이다."
             elif is_near_ma5_bottom and (is_bottom_indicator_ok or will_val <= -75) and (p >= today_open) and (p_chg >= -1.5):
                 if margin_diff < 4.0: 
                     final_code = "WAIT_NARROW_MARGIN"
@@ -1352,8 +1355,11 @@ if symbol:
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 지표 점수({pullback_rebound_score}/3점)는 포착되었으나, 역배열 하락 추세 등 핵심 전제 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
                 else:
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
+            
+            # 📌 [수정] 안내 문구 덮어쓰기 버그 수정 (+= 연산자로 누적)
             if is_memory_ignored and final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
-                final_adv = "<br><br>💡 <b style='color:#1565C0;'>[이수할아버지의 안내]</b> 기계의 기억상 최근 3일 내 바닥 신호가 있었소. 만약 당시 <b>이미 매수하셨다면</b> 상단 <b>[직전 1차 매수가]</b> 칸에 금액을 입력하시게! 그래야 중복 매수를 차단하거나 물타기 계산을 가동할 수 있소이다."
+                final_adv += "<br><br>💡 <b style='color:#1565C0;'>[이수할아버지의 안내]</b> 기계의 기억상 최근 3일 내 바닥 신호가 있었소. 만약 당시 <b>이미 매수하셨다면</b> 상단 <b>[직전 1차 매수가]</b> 칸에 금액을 입력하시게! 그래야 중복 매수를 차단하거나 물타기 계산을 가동할 수 있소이다."
+            
             if user_last_1st_price > 0 and final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
                 col = "#F57C00"
                 sig = "🟡 [관망/보류] 기 매수자 추가 진입 금지 (대세 하락 방어 가동)"
@@ -1426,10 +1432,10 @@ if symbol:
                     if is_long_lower_tail:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 전체 길이의 50% 이상 길게 달며 필사적으로 방어선을 치고 있소!"
                     else:
-                        trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 하락 중에 방어선이 무너지고 있소!"
+                        trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 매수세의 저항 한 번 써보지 못한 채 방어선이 속절없이 박살 났소!"
                 else:
                     if today_open == today_low:
-                        trend_status = f"🔥 <b style='color:#D84315;'>[강한 매수 맹공]</b> 장 시작부터 단 한 번도 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
+                        trend_status = f"🔥 <b style='color:#D84315;'>[강한 매 매수 맹공]</b> 장 시작부터 단 한 번도 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
                     elif has_meaningful_lower_tail and (lower_tail_len > upper_tail_len) and (today_open > today_low):
                         trend_status = f"🛡️ <b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt} 출현!"
                     elif is_long_upper_tail and is_candle_bearish:
