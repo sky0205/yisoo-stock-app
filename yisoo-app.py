@@ -218,90 +218,39 @@ st.title("🧐 이수할아버지의 냉정 진단기 무결점 통합본 (도�
 display_global_risk()
 st.divider()
 
-# 💡 입력칸 강조 및 3열 정렬을 위한 맞춤형 디자인 CSS
-st.markdown("""
-    <style>
-        /* 종목번호와 HTS 호가창 시가 입력칸 박스 배경과 테두리 강조 */
-        div[data-baseweb="input"]:has(input[aria-label*="종목번호"]),
-        div[data-baseweb="input"]:has(input[aria-label*="HTS 호가창 시가"]) {
-            background-color: #fff8e1 !important;
-            border: 2px solid #ff8f00 !important;
-            border-radius: 8px;
-        }
-    </style>
-""", unsafe_allow_html=True)
+col_symbol, col_prev, col_pre_us, col_avg, col_last_1st = st.columns(5)
 
-# 📌 3열 컬럼을 먼저 선언하여 기계가 위치를 알게 합니다.
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    raw_symbol_input = st.text_input("📊 종목번호", value="005930")
+with col_symbol:
+    raw_symbol_input = st.text_input("📊 종목번호", "LRCX")
     symbol = raw_symbol_input.strip()
 
-with col2:
-    from datetime import date
-    today_str = date.today().strftime("%Y-%m-%d")
-    open_cache_key = f"open_price_{symbol}_{today_str}"
-    if open_cache_key not in st.session_state:
-        st.session_state[open_cache_key] = 0.0
+with col_prev:
+    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value="", help="국장/미장 전일 기준가")
 
-    manual_open = st.number_input(
-        "📌 HTS 호가창 시가 (0=자동)", 
-        value=st.session_state[open_cache_key], 
-        step=10.0, 
-        key=open_cache_key
-    )
-
-with col3:
-    prev_cache_key = f"prev_price_{symbol}_{today_str}"
-    if prev_cache_key not in st.session_state:
-        st.session_state[prev_cache_key] = ""
-
-    manual_prev_price_str = st.text_input(
-        "🎯 HTS 전일종가", 
-        value=st.session_state[prev_cache_key], 
-        key=prev_cache_key,
-        help="국장/미장 전일 기준가 (당일 자동 기억)"
-    )
-
-# 📌 두 번째 줄 (3개 칸: 미장 프리시세, 보유 평단가, 직전 1차 매수가)
-col4, col5, col6 = st.columns(3)
-with col4:
+with col_pre_us:
     manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value="", help="미장 프리마켓 실시간 기준가")
-with col5:
-    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 분석을 위한")
-with col6:
-    user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=0.0, step=100.0, help="낙폭 과대 판독용")
+
+with col_avg:
+    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 분석을 위한 평단가")
+
+with col_last_1st: 
+    user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=0.0, step=100.0, help="낙폭 과대(물타기) 하이패스 연산용")
 
 st.write("")
 
-## 💡 당일 기억된 수동 시가 및 전일종가를 안전하게 불러옵니다.
-from datetime import date
-today_str = date.today().strftime("%Y-%m-%d")
+col_ask, col_bid, col_btn = st.columns([1, 1, 2])
 
-open_cache_key = f"open_price_{symbol}_{today_str}"
-prev_cache_key = f"prev_price_{symbol}_{today_str}"
+with col_ask:
+    manual_ask = st.number_input("🔴 총매도잔량", min_value=0.0, value=0.0, step=1.0, format="%.2f")
 
-manual_open = st.session_state.get(open_cache_key, 0.0)
-manual_prev_price_str_val = st.session_state.get(prev_cache_key, "")
-manual_prev_price = str(manual_prev_price_str_val).strip()
+with col_bid:
+    manual_bid = st.number_input("🔵 총매수잔량", min_value=0.0, value=0.0, step=1.0, format="%.2f")
 
-# 💡 [긴급 안전 방패] 바로 이 자리에 딱 넣어주시옵소서!
-manual_ask = 0.0
-manual_bid = 0.0
-manual_pre_price = ""
-
-# 📌 [수정된 안전 판독 로직] raw_open이 아직 없을 때를 대비한 안전 장치 적용
-if manual_open > 0:
-    today_open = manual_open
-    debug_msg = f"🟢 [수동 룰 작동] 명장님의 하명({manual_open:,.0f}원) 완벽 적용!"
-else:
-    # raw_open 변수가 없으면 일단 0.0으로 안전하게 처리합니다.
-    safe_raw_open = raw_open if 'raw_open' in locals() else 0.0
-    today_open = safe_raw_open
-    debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({safe_raw_open:,.0f}원) 적용 중"
-# 💡 당일 기억된 수동 시가 및 전일종가 적용 상태 최종 출력 (이 한 줄만 남겨두시옵소서)
-st.markdown(f"🚨 **[시가 수동 통제]** {debug_msg} | 📌 **최종 확정 시가:** {today_open:,.0f}원")
+with col_btn:
+    st.write("")
+    st.write("")
+    if st.button("🔄 정밀 분석"):
+        st.rerun()
 
 if symbol:
     try:
@@ -338,84 +287,114 @@ if symbol:
                 except Exception:
                     pass
 
-            # 💡 [무적의 자동 엔진 교체] 네이버 모바일 API를 최우선으로 가동하여 시가·고가·저가·현재가 완벽 자동 획득!
+            # [시가 수집 수정본]
+            # 네이버 국내주식 실시간 API를 우선 사용하고, 응답값을 검증한 뒤 반영합니다.
+            # 야후 1분봉 첫 행은 프리/시간외 또는 이전 거래일 데이터일 수 있어
+            # 당일 시가의 대체값으로 사용하지 않습니다.
             kr_fetched = False
             _code = clean_symbol
-            
-            # 엔진 1: 네이버 모바일 API (가장 빠르고 정확하며 HTML 변동에 끄떡없음)
+
+            def _to_price(value):
+                """네이버 응답값을 안전하게 숫자로 변환. 빈 값/대시/비정상 값은 0."""
+                if value is None:
+                    return 0.0
+                text_value = str(value).strip().replace(",", "").replace("원", "")
+                if text_value in ("", "-", "--", "None", "null"):
+                    return 0.0
+                try:
+                    number = float(text_value)
+                    return number if pd.notna(number) and number > 0 else 0.0
+                except (TypeError, ValueError):
+                    return 0.0
+
+            _naver_quote_values = {
+                "auto_p": auto_p, "v_curr": v_curr,
+                "open": real_kr_open, "high": real_kr_high, "low": real_kr_low
+            }
+
+            def _apply_naver_quote(quote):
+                """네이버 시세 객체에서 가격/거래량을 읽고 OHLC 관계를 검증."""
+                _price = _to_price(quote.get("closePrice", quote.get("nv")))
+                _open = _to_price(quote.get("openPrice", quote.get("ov")))
+                _high = _to_price(quote.get("highPrice", quote.get("hv")))
+                _low = _to_price(quote.get("lowPrice", quote.get("lv")))
+                _volume = _to_price(quote.get("accumulatedTradingVolume", quote.get("aq")))
+
+                # 시가가 0이거나 고가/저가와 모순되면 해당 응답은 채택하지 않습니다.
+                if _price <= 0 or _open <= 0:
+                    return False
+                if _high > 0 and _high < max(_open, _price):
+                    return False
+                if _low > 0 and _low > min(_open, _price):
+                    return False
+                if _high > 0 and _low > 0 and _high < _low:
+                    return False
+
+                _naver_quote_values["auto_p"] = _price
+                _naver_quote_values["open"] = _open
+                _naver_quote_values["high"] = max(_high, _open, _price)
+                _naver_quote_values["low"] = min(_low, _open, _price) if _low > 0 else min(_open, _price)
+                if _volume > 0:
+                    _naver_quote_values["v_curr"] = _volume
+                return True
+
+            # 엔진 1: 네이버 국내주식 실시간 시세 API
+            try:
+                api_url = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{_code}"
+                headers = {
+                    "User-Agent": "Mozilla/5.0",
+                    "Referer": "https://finance.naver.com/",
+                    "Accept": "application/json, text/plain, */*",
+                }
+                res = requests.get(api_url, headers=headers, timeout=5)
+                res.raise_for_status()
+                payload = res.json()
+                quotes = payload.get("datas", []) if isinstance(payload, dict) else []
+                if quotes and isinstance(quotes[0], dict):
+                    kr_fetched = _apply_naver_quote(quotes[0])
+            except (requests.RequestException, ValueError, TypeError, KeyError):
+                pass
+
+            # 엔진 2: 네이버 모바일 기본정보 API (1번 실패 시 보조)
             if not kr_fetched:
                 try:
                     api_url = f"https://m.stock.naver.com/api/stock/{_code}/basic"
-                    headers = {"User-Agent": "Mozilla/5.0"}
-                    res = requests.get(api_url, headers=headers, timeout=3)
-                    if res.status_code == 200:
-                        data = res.json()
-                        auto_p = float(str(data["closePrice"]).replace(",", ""))
-                        v_curr = float(str(data["accumulatedTradingVolume"]).replace(",", ""))
-                        real_kr_open = float(str(data["openPrice"]).replace(",", ""))
-                        real_kr_high = float(str(data["highPrice"]).replace(",", ""))
-                        real_kr_low = float(str(data["lowPrice"]).replace(",", ""))
-                        if auto_p > 0 and real_kr_open > 0:
-                            kr_fetched = True
-                except Exception:
+                    headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://m.stock.naver.com/"}
+                    res = requests.get(api_url, headers=headers, timeout=5)
+                    res.raise_for_status()
+                    data = res.json()
+                    if isinstance(data, dict):
+                        kr_fetched = _apply_naver_quote(data)
+                except (requests.RequestException, ValueError, TypeError, KeyError):
                     pass
 
-            # 엔진 2: 네이버 폴링 백도어 API
+            # 엔진 3: 기존 네이버 실시간 폴링 API (최후의 네이버 보조 경로)
             if not kr_fetched:
                 try:
                     api_url = f"https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:{_code}"
-                    res = requests.get(api_url, timeout=3)
-                    if res.status_code == 200:
-                        _d = res.json()["result"]["areas"][0]["datas"][0]
-                        auto_p = float(_d["nv"])          
-                        real_kr_open = float(_d["ov"])    
-                        real_kr_high = float(_d["hv"])    
-                        real_kr_low = float(_d["lv"])     
-                        v_curr = float(_d["aq"])
-                        if auto_p > 0 and real_kr_open > 0:
-                            kr_fetched = True
-                except Exception:
+                    headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://finance.naver.com/"}
+                    res = requests.get(api_url, headers=headers, timeout=5)
+                    res.raise_for_status()
+                    payload = res.json()
+                    quote = payload["result"]["areas"][0]["datas"][0]
+                    kr_fetched = _apply_naver_quote(quote)
+                except (requests.RequestException, ValueError, TypeError, KeyError, IndexError):
                     pass
 
-            # 엔진 3: PC버전 HTML 강제 크롤링 (최후의 보조 수단)
-            if not kr_fetched:
-                try:
-                    url = f"https://finance.naver.com/item/main.naver?code={_code}"
-                    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-                    res = requests.get(url, headers=headers, timeout=3)
-                    if res.status_code == 200:
-                        soup = BeautifulSoup(res.text, "html.parser")
-                        auto_p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
-                        em_blinds = soup.select(".no_info tr td em .blind")
-                        if len(em_blinds) >= 6:
-                            real_kr_high = float(em_blinds[1].text.replace(",", ""))
-                            v_curr = float(em_blinds[3].text.replace(",", ""))
-                            real_kr_open = float(em_blinds[4].text.replace(",", ""))
-                            real_kr_low = float(em_blinds[5].text.replace(",", ""))
-                            if auto_p > 0 and real_kr_open > 0:
-                                kr_fetched = True
-                except Exception:
-                    pass
-            # 3중 엔진이 모두 실패했을 때만 최후의 수단으로 기존 장부(Yahoo 등) 수혈
+            auto_p = _naver_quote_values["auto_p"]
+            v_curr = _naver_quote_values["v_curr"]
+            real_kr_open = _naver_quote_values["open"]
+            real_kr_high = _naver_quote_values["high"]
+            real_kr_low = _naver_quote_values["low"]
+
+            # 네이버 시세를 모두 가져오지 못한 경우 현재가/거래량만 일봉에서 보완합니다.
+            # 주의: 일봉의 마지막 행이 오늘 데이터인지 확실하지 않으므로 이를 '실시간 시가'로
+            # 간주하지 않습니다. 아래의 일봉 처리에서만 보수적인 기준값으로 사용합니다.
             if not kr_fetched and not df.empty:
-                auto_p = float(df["Close"].iloc[-1])
-                v_curr = float(df["Volume"].iloc[-1])
-                real_kr_open = float(df["Open"].iloc[-1])
-                real_kr_high = float(df["High"].iloc[-1])
-                real_kr_low = float(df["Low"].iloc[-1])
-                
-                # 💡 [17,120원 찌꺼기 완벽 박멸]: 클라우드에서 네이버가 막혔을 때, 야후의 '1분봉' 첫 시가를 정밀 타격해 가져옵니다!
-                try:
-                    _tk = yf.Ticker(f"{clean_symbol}.KS")
-                    _min_df = _tk.history(period="1d", interval="1m")
-                    if _min_df.empty:
-                        _tk = yf.Ticker(f"{clean_symbol}.KQ")
-                        _min_df = _tk.history(period="1d", interval="1m")
-                    if not _min_df.empty:
-                        real_kr_open = float(_min_df["Open"].iloc[0]) # 아침 9시 정각의 100% 진짜 시가!
-                except Exception:
-                    pass
-                        
+                auto_p = _to_price(df["Close"].iloc[-1])
+                v_curr = _to_price(df["Volume"].iloc[-1])
+                # real_kr_open은 0으로 유지하여 오래된 일봉 시가를 오늘 시가로 오인하지 않게 함.
+
             # 거래량 폭증 오류 보정
             if not df.empty and kr_fetched:
                 _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
@@ -557,212 +536,24 @@ if symbol:
             else:
                 vol_strength = v_ratio
 
-            # ========================================================
-            # ★ [PRO 최후 완결판 - 수동 룰] 명장님의 HTS 시가 최우선 적용!
-            # ========================================================
-            
-            p = float(str(df["Close"].iloc[-1]).replace(',', ''))
+            # ==================================================================
+            # ★ [PRO 버전] 캔들 정합성 검열 및 십자형(Doji) 정밀 연산
+            # ==================================================================
+            today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
             today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
             today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
-            raw_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
-
-            # 💡 [2번 강제 룰]: 1단계에서 만든 사이드바 입력칸의 숫자를 가져옵니다.
-            import streamlit as st
-            manual_open = st.session_state.get("manual_open", 0.0)
-
-            # 💡 명장님께서 수동 시가를 입력하셨으면 그것을 우선하고, 아니면 진짜 실시간 자동 시가를 띄웁니다.
-            if manual_open > 0:
-                today_open = manual_open
-                debug_msg = f"🟢 [수동 룰 작동] 명장님의 하명({manual_open:,.0f}원) 완벽 적용!"
-            else:
-                today_open = raw_open
-                debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({raw_open:,.0f}원) 적용 중"
-
-            cur_open_price = today_open
-            is_down_trend_v = (p < prev_p) and (p_chg < 0)
-
-            # 💡 자가 보정
-            today_high = max(today_high, cur_open_price, p)
-            today_low = min(today_low, cur_open_price, p)
-            day_candle_range = max(0.01, today_high - today_low)
+            p = float(str(df["Close"].iloc[-1]).replace(',', ''))
             
+            is_down_trend_v = (p < prev_p) and (p_chg < 0)
+            day_candle_range = max(0.01, today_high - today_low)
             is_api_delayed = (p > today_high * 1.005) or (p < today_low * 0.995) or (today_high == today_low)
 
-            upper_tail_len = today_high - max(cur_open_price, p)
-            lower_tail_len = min(cur_open_price, p) - today_low
-            body_len = abs(p - cur_open_price)
+            upper_tail_len = today_high - max(today_open, p)
+            lower_tail_len = min(today_open, p) - today_low
+            body_len = abs(p - today_open)
 
-            # 💡 양봉/음봉 판독 (명장님이 입력하신 시가 기준으로 완벽하게 판독합니다)
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
-            # 💡 양봉/음봉 판독 (드디어 100% 정상 판독)
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
-
-            # 💡 양봉/음봉 판독 (이제 무조건 HTS와 똑같이 판독합니다!)
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
-
-            # 💡 양봉/음봉 판독 (드디어 HTS와 완벽 일치!)
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
-            # 💡 양봉/음봉 판독
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
-            # 💡 양봉/음봉 판독
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
-            # 💡 양봉/음봉 판독 (HTS 기준과 100% 일치하도록 완벽 판정)
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
-            # 💡 양봉/음봉 판독
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
-            # 💡 양봉/음봉 판독
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
-            # 💡 양봉/음봉 판독
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
-
-            # 💡 양봉/음봉 판독
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
-
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
-            if p > cur_open_price:
-                candle_color_txt = "빨간색 양봉"
-                is_candle_bullish = True
-                is_candle_bearish = False
-            elif p < cur_open_price:
-                candle_color_txt = "파란색 음봉"
-                is_candle_bullish = False
-                is_candle_bearish = True
-            else:
-                candle_color_txt = "십자형 도지"
-                is_candle_bullish = (p_chg >= 0)
-                is_candle_bearish = (p_chg < 0)
+            # 💡 [철벽 방어]: 네이버 실시간 시가와 현재가를 직관적으로 비교하여 양봉/음봉 완벽 확정!
+            cur_open_price = real_kr_open if ('real_kr_open' in locals() and real_kr_open > 0) else today_open
             
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
@@ -1606,7 +1397,7 @@ if symbol:
             elif strict_doji_check:
                 trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 거의 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
             elif is_defended:
-                has_meaningful_lower_tail = (lower_tail_len >= body_len * 1.0) or (lower_tail_len >= day_candle_range * 0.4)
+                has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
 
                 if is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
                     trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}(상승률 {p_chg:+.2f}%)을(를) 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
