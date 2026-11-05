@@ -287,158 +287,113 @@ if symbol:
                 except Exception:
                     pass
 
-            # [네이버 실시간 시세 3중 교차검증]
-            # 세 경로를 모두 조회한 뒤 시가와 현재가가 일치하는 응답끼리만 채택합니다.
-            # 서로 다른 시점/값이 섞이면 시가를 임의로 추정하지 않고 검증 실패로 표시합니다.
+            # [시가 수집 수정본]
+            # 네이버 국내주식 실시간 API를 우선 사용하고, 응답값을 검증한 뒤 반영합니다.
+            # 야후 1분봉 첫 행은 프리/시간외 또는 이전 거래일 데이터일 수 있어
+            # 당일 시가의 대체값으로 사용하지 않습니다.
             kr_fetched = False
-            naver_check_message = "네이버 시세 교차검증 미실행"
             _code = clean_symbol
 
             def _to_price(value):
+                """네이버 응답값을 안전하게 숫자로 변환. 빈 값/대시/비정상 값은 0."""
                 if value is None:
                     return 0.0
-                value = str(value).strip().replace(",", "").replace("원", "")
-                if value in ("", "-", "--", "None", "null"):
+                text_value = str(value).strip().replace(",", "").replace("원", "")
+                if text_value in ("", "-", "--", "None", "null"):
                     return 0.0
                 try:
-                    number = float(value)
+                    number = float(text_value)
                     return number if pd.notna(number) and number > 0 else 0.0
                 except (TypeError, ValueError):
                     return 0.0
 
-            def _krx_tick(price):
-                # KRX 일반주식 가격대별 호가단위(시가 비교 허용 오차 계산용)
-                if price < 2_000: return 1
-                if price < 5_000: return 5
-                if price < 20_000: return 10
-                if price < 50_000: return 50
-                if price < 200_000: return 100
-                if price < 500_000: return 500
-                return 1_000
-
-            def _normalise_naver_quote(quote, source):
-                if not isinstance(quote, dict):
-                    return None
-                close = _to_price(quote.get("closePrice", quote.get("nv")))
-                opn = _to_price(quote.get("openPrice", quote.get("ov")))
-                high = _to_price(quote.get("highPrice", quote.get("hv")))
-                low = _to_price(quote.get("lowPrice", quote.get("lv")))
-                volume = _to_price(quote.get("accumulatedTradingVolume", quote.get("aq")))
-                if close <= 0 or opn <= 0 or high <= 0 or low <= 0:
-                    return None
-                if high < max(opn, close) or low > min(opn, close) or high < low:
-                    return None
-                return {"source": source, "close": close, "open": opn,
-                        "high": high, "low": low, "volume": volume}
-
-            _headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-                "Referer": "https://finance.naver.com/",
-                "Accept": "application/json, text/plain, */*",
+            _naver_quote_values = {
+                "auto_p": auto_p, "v_curr": v_curr,
+                "open": real_kr_open, "high": real_kr_high, "low": real_kr_low
             }
-            _naver_quotes = []
-            _naver_errors = []
 
-            # 출처 A: 네이버 국내주식 실시간 polling API
+            def _apply_naver_quote(quote):
+                """네이버 시세 객체에서 가격/거래량을 읽고 OHLC 관계를 검증."""
+                _price = _to_price(quote.get("closePrice", quote.get("nv")))
+                _open = _to_price(quote.get("openPrice", quote.get("ov")))
+                _high = _to_price(quote.get("highPrice", quote.get("hv")))
+                _low = _to_price(quote.get("lowPrice", quote.get("lv")))
+                _volume = _to_price(quote.get("accumulatedTradingVolume", quote.get("aq")))
+
+                # 시가가 0이거나 고가/저가와 모순되면 해당 응답은 채택하지 않습니다.
+                if _price <= 0 or _open <= 0:
+                    return False
+                if _high > 0 and _high < max(_open, _price):
+                    return False
+                if _low > 0 and _low > min(_open, _price):
+                    return False
+                if _high > 0 and _low > 0 and _high < _low:
+                    return False
+
+                _naver_quote_values["auto_p"] = _price
+                _naver_quote_values["open"] = _open
+                _naver_quote_values["high"] = max(_high, _open, _price)
+                _naver_quote_values["low"] = min(_low, _open, _price) if _low > 0 else min(_open, _price)
+                if _volume > 0:
+                    _naver_quote_values["v_curr"] = _volume
+                return True
+
+            # 엔진 1: 네이버 국내주식 실시간 시세 API
             try:
-                _url = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{_code}"
-                _res = requests.get(_url, headers=_headers, timeout=6)
-                _res.raise_for_status()
-                _payload = _res.json()
-                _items = _payload.get("datas", []) if isinstance(_payload, dict) else []
-                if _items:
-                    _q = _normalise_naver_quote(_items[0], "국내 실시간 API")
-                    if _q: _naver_quotes.append(_q)
-                    else: _naver_errors.append("국내 실시간 API 응답값 검증 실패")
-                else:
-                    _naver_errors.append("국내 실시간 API 데이터 없음")
-            except Exception as _e:
-                _naver_errors.append(f"국내 실시간 API: {type(_e).__name__}")
+                api_url = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{_code}"
+                headers = {
+                    "User-Agent": "Mozilla/5.0",
+                    "Referer": "https://finance.naver.com/",
+                    "Accept": "application/json, text/plain, */*",
+                }
+                res = requests.get(api_url, headers=headers, timeout=5)
+                res.raise_for_status()
+                payload = res.json()
+                quotes = payload.get("datas", []) if isinstance(payload, dict) else []
+                if quotes and isinstance(quotes[0], dict):
+                    kr_fetched = _apply_naver_quote(quotes[0])
+            except (requests.RequestException, ValueError, TypeError, KeyError):
+                pass
 
-            # 출처 B: 네이버 모바일 기본정보 API
-            try:
-                _url = f"https://m.stock.naver.com/api/stock/{_code}/basic"
-                _res = requests.get(_url, headers={**_headers, "Referer": "https://m.stock.naver.com/"}, timeout=6)
-                _res.raise_for_status()
-                _q = _normalise_naver_quote(_res.json(), "모바일 기본정보 API")
-                if _q: _naver_quotes.append(_q)
-                else: _naver_errors.append("모바일 API 응답값 검증 실패")
-            except Exception as _e:
-                _naver_errors.append(f"모바일 API: {type(_e).__name__}")
+            # 엔진 2: 네이버 모바일 기본정보 API (1번 실패 시 보조)
+            if not kr_fetched:
+                try:
+                    api_url = f"https://m.stock.naver.com/api/stock/{_code}/basic"
+                    headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://m.stock.naver.com/"}
+                    res = requests.get(api_url, headers=headers, timeout=5)
+                    res.raise_for_status()
+                    data = res.json()
+                    if isinstance(data, dict):
+                        kr_fetched = _apply_naver_quote(data)
+                except (requests.RequestException, ValueError, TypeError, KeyError):
+                    pass
 
-            # 출처 C: 네이버 구형 실시간 polling API
-            try:
-                _url = f"https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:{_code}"
-                _res = requests.get(_url, headers=_headers, timeout=6)
-                _res.raise_for_status()
-                _payload = _res.json()
-                _qdata = _payload["result"]["areas"][0]["datas"][0]
-                _q = _normalise_naver_quote(_qdata, "구형 실시간 polling API")
-                if _q: _naver_quotes.append(_q)
-                else: _naver_errors.append("구형 polling API 응답값 검증 실패")
-            except Exception as _e:
-                _naver_errors.append(f"구형 polling API: {type(_e).__name__}")
+            # 엔진 3: 기존 네이버 실시간 폴링 API (최후의 네이버 보조 경로)
+            if not kr_fetched:
+                try:
+                    api_url = f"https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:{_code}"
+                    headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://finance.naver.com/"}
+                    res = requests.get(api_url, headers=headers, timeout=5)
+                    res.raise_for_status()
+                    payload = res.json()
+                    quote = payload["result"]["areas"][0]["datas"][0]
+                    kr_fetched = _apply_naver_quote(quote)
+                except (requests.RequestException, ValueError, TypeError, KeyError, IndexError):
+                    pass
 
-            # 두 출처 이상에서 시가와 현재가가 호가단위 오차 이내로 일치해야 통과
-            _consensus = []
-            _best_group = []
-            for _candidate in _naver_quotes:
-                _group = []
-                for _other in _naver_quotes:
-                    _tol = max(_krx_tick((_candidate["open"] + _other["open"]) / 2), 1)
-                    _close_tol = max(_krx_tick((_candidate["close"] + _other["close"]) / 2), 1)
-                    if (abs(_candidate["open"] - _other["open"]) <= _tol
-                            and abs(_candidate["close"] - _other["close"]) <= _close_tol):
-                        _group.append(_other)
-                if len(_group) > len(_best_group):
-                    _best_group = _group
-            if len(_best_group) >= 2:
-                # 가장 큰 일치 그룹만 사용해 불일치한 제3의 응답이 OHLC에 섞이지 않게 함
-                _consensus = _best_group
+            auto_p = _naver_quote_values["auto_p"]
+            v_curr = _naver_quote_values["v_curr"]
+            real_kr_open = _naver_quote_values["open"]
+            real_kr_high = _naver_quote_values["high"]
+            real_kr_low = _naver_quote_values["low"]
 
-            if _consensus:
-                # 일치 그룹 중 우선순위가 가장 높은 API를 대표값으로 채택
-                _chosen = _consensus[0]
-                auto_p = _chosen["close"]
-                real_kr_open = _chosen["open"]
-                real_kr_high = max(q["high"] for q in _consensus)
-                real_kr_low = min(q["low"] for q in _consensus)
-                _volumes = [q["volume"] for q in _consensus if q["volume"] > 0]
-                if _volumes: v_curr = max(_volumes)
-                kr_fetched = True
-                _sources = ", ".join(sorted(set(q["source"] for q in _consensus)))
-                naver_check_message = (
-                    f"네이버 실시간 교차검증 통과: {_sources} / "
-                    f"시가 {real_kr_open:,.0f}원 / 현재가 {auto_p:,.0f}원"
-                )
-            elif len(_naver_quotes) == 1:
-                # 단일 출처만 응답하면 값을 표시하되 교차검증 미완료로 명확히 경고하고
-                # 실시간 캔들 판독에는 사용하지 않음(오판 방지).
-                _q = _naver_quotes[0]
-                auto_p, v_curr = _q["close"], _q["volume"]
-                real_kr_open, real_kr_high, real_kr_low = 0.0, 0.0, 0.0
-                naver_check_message = f"네이버 응답 1개만 수신({_q['source']}); 교차검증 미완료 — 시가 판독 보류"
-            elif len(_naver_quotes) >= 2:
-                real_kr_open, real_kr_high, real_kr_low = 0.0, 0.0, 0.0
-                naver_check_message = "네이버 API 간 시가/현재가 불일치 — 실시간 시가 판독 보류"
-            else:
-                real_kr_open, real_kr_high, real_kr_low = 0.0, 0.0, 0.0
-                naver_check_message = "네이버 시세 수신 실패 — 실시간 시가 판독 보류"
-
-            if kr_fetched:
-                st.success("✅ " + naver_check_message)
-            else:
-                st.warning("⚠️ " + naver_check_message)
-                if _naver_errors:
-                    st.caption("응답 점검: " + " / ".join(_naver_errors[:3]))
-
-            # 교차검증이 통과하지 않으면 일봉 종가를 참고값으로만 사용합니다.
-            # 일봉의 Open을 오늘 실시간 시가로 둔갑시키지 않습니다.
+            # 네이버 시세를 모두 가져오지 못한 경우 현재가/거래량만 일봉에서 보완합니다.
+            # 주의: 일봉의 마지막 행이 오늘 데이터인지 확실하지 않으므로 이를 '실시간 시가'로
+            # 간주하지 않습니다. 아래의 일봉 처리에서만 보수적인 기준값으로 사용합니다.
             if not kr_fetched and not df.empty:
-                if auto_p <= 0:
-                    auto_p = _to_price(df["Close"].iloc[-1])
-                if v_curr <= 0:
-                    v_curr = _to_price(df["Volume"].iloc[-1])
+                auto_p = _to_price(df["Close"].iloc[-1])
+                v_curr = _to_price(df["Volume"].iloc[-1])
+                # real_kr_open은 0으로 유지하여 오래된 일봉 시가를 오늘 시가로 오인하지 않게 함.
 
             # 거래량 폭증 오류 보정
             if not df.empty and kr_fetched:
@@ -591,12 +546,7 @@ if symbol:
             
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
             day_candle_range = max(0.01, today_high - today_low)
-            is_api_delayed = (
-                (p > today_high * 1.005)
-                or (p < today_low * 0.995)
-                or (today_high == today_low)
-                or (is_kr and not kr_fetched)
-            )
+            is_api_delayed = (p > today_high * 1.005) or (p < today_low * 0.995) or (today_high == today_low)
 
             upper_tail_len = today_high - max(today_open, p)
             lower_tail_len = min(today_open, p) - today_low
@@ -635,7 +585,6 @@ if symbol:
             
             
             
-            has_meaningful_lower_tail = False
             if is_pre_market_mode or is_api_delayed:
                 is_long_upper_tail = False
                 is_defended = is_candle_bullish      
@@ -648,29 +597,11 @@ if symbol:
                 else:
                     is_long_upper_tail = (upper_tail_len > lower_tail_len) and (upper_tail_len > body_len) and (upper_tail_len >= day_candle_range * 0.3)
                 
-                # [엄격한 밑꼬리 판정]
-                # 꼬리 길이가 캔들 전체 범위의 30% 이상이고, 몸통의 50% 이상이며,
-                # 윗꼬리보다 실제로 길 때만 '유의미한 밑꼬리'로 인정합니다.
-                has_meaningful_lower_tail = (
-                    lower_tail_len > 0
-                    and lower_tail_len >= day_candle_range * 0.30
-                    and lower_tail_len >= body_len * 0.50
-                    and lower_tail_len > upper_tail_len
-                )
-                is_tail_defended = has_meaningful_lower_tail
-                is_strong_bull_body = (
-                    is_candle_bullish
-                    and p_chg > 0
-                    and ((p_chg >= 1.0) or (body_len >= upper_tail_len))
-                )
-
-                # 전일 대비 상승만으로 방어 성공 처리하지 않습니다.
-                # 양봉이면서 실제 상승했거나, 엄격한 밑꼬리가 확인된 경우만 방어로 분류합니다.
-                is_defended = (
-                    (p_chg > 0 and is_candle_bullish)
-                    or is_tail_defended
-                    or is_strong_bull_body
-                )
+                # 💡 [PRO 3차 패치] '가짜 칼날' 박멸! (상승했거나 양봉이면 무조건 방어 성공으로 인정)
+                is_tail_defended = (lower_tail_len > upper_tail_len) or (lower_tail_len >= day_candle_range * 0.25)
+                is_strong_bull_body = is_candle_bullish and ((p_chg >= 1.0) or (body_len >= upper_tail_len))
+                
+                is_defended = (p_chg > 0) or is_candle_bullish or is_tail_defended or is_strong_bull_body
                 is_candle_unknown = False
 
             is_pure_bullish_candle = p >= today_open
@@ -1465,26 +1396,31 @@ if symbol:
                 pass  
             elif strict_doji_check:
                 trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 거의 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
-            elif p_chg < 0:
-                # 하락 중에는 is_defended 값과 관계없이 실제 밑꼬리 검증 결과로만 문구를 결정합니다.
-                if has_meaningful_lower_tail:
-                    trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어 시도 / 반등 미확인]</b> 전일 대비 {p_chg:.2f}% 하락했으나 엄격한 기준의 밑꼬리가 확인됩니다. 방어 시도일 뿐 매도 압력이 해소된 것은 아니므로 관망하시게."
-                else:
-                    trend_status = f"🚨 <b style='color:#D32F2F;'>[하방 압력 지속 / 밑꼬리 방어 미확인]</b> 전일 대비 {p_chg:.2f}% 하락 중이며 유의미한 밑꼬리가 확인되지 않습니다. 매도 우위로 판단하며 섣부른 진입을 금하시게."
             elif is_defended:
+                has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
+
                 if is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
-                    trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 확인]</b> {candle_color_txt}(상승률 {p_chg:+.2f}%)이 확인됩니다. 다만 추세 전환은 후속 거래일 확인이 필요하오."
+                    trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}(상승률 {p_chg:+.2f}%)을(를) 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
+                elif p_chg < 0:
+                    if has_meaningful_lower_tail:
+                        trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 길게 달며 필사적으로 방어선을 치고 있소! 아직 안심하긴 이르나 투매는 멈춘 듯하네."
+                    else:
+                        trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 밑꼬리조차 없는 {candle_color_txt}으로 매도세에 짓눌려 속절없이 추락 중이오! 절대 칼날을 잡지 마시게."
                 else:
                     if today_open == today_low:
-                        trend_status = f"🔥 <b style='color:#D84315;'>[시가 저점 / 상승 우위]</b> 시가가 당일 저점이며 현재 양봉 흐름입니다."
-                    elif has_meaningful_lower_tail and (today_open > today_low):
-                        trend_status = f"🛡️ <b>[밑꼬리 지지 흔적 확인]</b> 엄격한 기준의 밑꼬리가 확인됩니다. 다만 이것만으로 추세 전환을 확정할 수는 없소."
+                        trend_status = f"🔥 <b style='color:#D84315;'>[강한 매수 맹공]</b> 장 시작부터 단 한 번도 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
+                    # 수정: 아래꼬리가 윗꼬리보다 확실히 길거나, 전체 캔들에서 아래꼬리 비중이 클 때만 인정!
+                    elif has_meaningful_lower_tail and (lower_tail_len > upper_tail_len) and (today_open > today_low):
+                        trend_status = f"🛡️ <b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt} 출현!"
                     elif is_long_upper_tail and is_candle_bearish:
-                        trend_status = f"🚨 <b style='color:#F57C00;'>[상승 기세 꺾임 / 매물 압박]</b> 윗꼬리를 길게 달고 밀려 내려온 {candle_color_txt} 출현! 상단 저항이 거세오."
+                        # 추가: 윗꼬리가 긴 파란색 음봉일 때의 정확한 팩트 폭격 멘트
+                        trend_status = f"🚨 <b>[상승 기세 꺾임 / 매물 압박]</b> 윗꼬리를 길게 달고 밀려 내려온 {candle_color_txt} 출현! 상단 저항이 거세오."
                     elif is_candle_bearish:
+                        # 추가: 파란색 음봉일 때의 정확한 팩트 멘트
                         trend_status = f"📉 <b>[단기 하락 / 매도 우위]</b> 매물 압박을 받으며 밀려 내려온 {candle_color_txt} 출현!"
                     else:
-                        trend_status = f"🌱 <b>[상승 전개]</b> 매수세가 유입되며 {candle_color_txt} 출현!"
+                        # 빨간색 양봉일 때만 '견고하다'는 표현 사용
+                        trend_status = f"🌱 <b>[방어선 구축 / 상승 전개]</b> 매수세가 유입되며 견고한 {candle_color_txt} 출현!"
             elif is_long_upper_tail:
                 if is_candle_bearish: 
                     if p >= ma5_val:
