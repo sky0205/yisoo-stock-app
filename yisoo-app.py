@@ -563,13 +563,17 @@ if symbol:
 
             if manual_open > 0:
                 today_open = manual_open
-                debug_msg = f"🟢 [수동 룰 작동] 명장님의 하명({manual_open:{fmt_p}}{currency}) 완벽 적용!"
+                # 📌 변수를 완전히 분리하여 충돌을 없앴사옵니다
+                _price_str = f"{manual_open:{fmt_p}}"
+                debug_msg = f"🟢 [수동 룰 작동] 명장님의 하명({_price_str}{currency}) 완벽 적용!"
             else:
                 today_open = raw_open_val
-                debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({raw_open_val:{fmt_p}}{currency}) 적용 중"
+                _price_str = f"{raw_open_val:{fmt_p}}"
+                debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({_price_str}{currency}) 적용 중"
 
-            # 📌 깔끔한 상단 알림 노출
-            st.markdown(f"🚨 **[시가 수동 통제]** {debug_msg} | 📌 **최종 확정 시가:** {today_open:{fmt_p}}{currency}")
+            # 📌 최종 확정 시가 출력부
+            _final_str = f"{today_open:{fmt_p}}"
+            st.markdown(f"🚨 **[시가 수동 통제]** {debug_msg} | 📌 **최종 확정 시가:** {_final_str}{currency}")
 
             
             today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
