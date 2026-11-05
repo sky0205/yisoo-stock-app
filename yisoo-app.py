@@ -219,38 +219,38 @@ display_global_risk()
 st.divider()
 
 # 💡 입력칸 강조 및 3열 정렬을 위한 맞춤형 디자인 CSS
-    st.markdown("""
-        <style>
-            /* 종목번호와 HTS 호가창 시가 입력칸 박스 배경과 테두리 강조 */
-            div[data-baseweb="input"]:has(input[aria-label*="종목번호"]),
-            div[data-baseweb="input"]:has(input[aria-label*="HTS 호가창 시가"]) {
-                background-color: #fff8e1 !important;
-                border: 2px solid #ff8f00 !important;
-                border-radius: 8px;
-            }
-        </style>
-    """, unsafe_allow_html=True)
+st.markdown("""
+    <style>
+        /* 종목번호와 HTS 호가창 시가 입력칸 박스 배경과 테두리 강조 */
+        div[data-baseweb="input"]:has(input[aria-label*="종목번호"]),
+        div[data-baseweb="input"]:has(input[aria-label*="HTS 호가창 시가"]) {
+            background-color: #fff8e1 !important;
+            border: 2px solid #ff8f00 !important;
+            border-radius: 8px;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-    # 📌 첫 번째 줄 (3개 칸: 종목번호, HTS 호가창 시가, HTS 전일종가)
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        raw_symbol_input = st.text_input("📊 종목번호", value="257720")
-        symbol = raw_symbol_input.strip()
-    with col2:
-        st.number_input("📌 HTS 호가창 시가 (0=자동)", value=0.0, step=10.0, key="manual_open")
-    with col3:
-        manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value="", help="국장/미장 전일 기준가")
+# 📌 첫 번째 줄 (3개 칸: 종목번호, HTS 호가창 시가, HTS 전일종가)
+col1, col2, col3 = st.columns(3)
+with col1:
+    raw_symbol_input = st.text_input("📊 종목번호", value="257720")
+    symbol = raw_symbol_input.strip()
+with col2:
+    st.number_input("📌 HTS 호가창 시가 (0=자동)", value=0.0, step=10.0, key="manual_open")
+with col3:
+    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value="", help="국장/미장 전일 기준가")
 
-    # 📌 두 번째 줄 (3개 칸: 미장 프리시세, 보유 평단가, 직전 1차 매수가)
-    col4, col5, col6 = st.columns(3)
-    with col4:
-        manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value="", help="미장 프리마켓 실시간 기준가")
-    with col5:
-        user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 분석을 위한")
-    with col6:
-        user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=0.0, step=100.0, help="낙폭 과대 판독용")
+# 📌 두 번째 줄 (3개 칸: 미장 프리시세, 보유 평단가, 직전 1차 매수가)
+col4, col5, col6 = st.columns(3)
+with col4:
+    manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value="", help="미장 프리마켓 실시간 기준가")
+with col5:
+    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=0.0, step=100.0, help="맞춤형 분석을 위한")
+with col6:
+    user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=0.0, step=100.0, help="낙폭 과대 판독용")
 
-    st.write("")
+st.write("")
     # 💡 종목번호 입력 바로 다음에 HTS 호가창 시가 입력칸을 나란히 배치합니다!
     st.number_input("📌 HTS 호가창 시가 (수동입력, 0=자동)", value=0.0, step=10.0, key="manual_open")
     if st.button("🔄 정밀 분석"):
