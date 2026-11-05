@@ -249,7 +249,8 @@ with col_bid:
 with col_btn:
     st.write("")
     st.write("")
-    st.sidebar.number_input("📌 HTS 60분봉 시가 (수동입력, 0=자동)", value=0.0, step=10.0, key="manual_open")
+    # 👇 이 코드로 덮어씌워 주시옵소서!
+    st.number_input("📌 HTS 호가창 시가 (수동입력, 0=자동)", value=0.0, step=10.0, key="manual_open")
     if st.button("🔄 정밀 분석"):
         st.rerun()
 
