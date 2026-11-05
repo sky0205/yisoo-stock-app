@@ -286,6 +286,10 @@ manual_open = st.session_state.get(open_cache_key, 0.0)
 manual_prev_price_str_val = st.session_state.get(prev_cache_key, "")
 manual_prev_price = str(manual_prev_price_str_val).strip()
 
+# 💡 [긴급 안전 방패] 바로 이 자리에 딱 넣어주시옵소서!
+manual_ask = 0.0
+manual_bid = 0.0
+manual_pre_price = ""
 # 📌 [핵심] 명장님께서 0보다 큰 수동 시가를 입력하셨다면 무조건 1순위로 확정 시가를 덮어씁니다!
 if manual_open > 0:
     today_open = manual_open
