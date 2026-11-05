@@ -219,18 +219,20 @@ display_global_risk()
 st.divider()
 
 # ==============================================================================
-# ★ [1단계: 종목별 수동 입력값 무한 기억 장치 이식 완료]
+# ★ [1단계: 종목별 수동 입력값 무한 기억 및 🎛️ 실전 타점 통제소 UI 개편]
 # ==============================================================================
 if 'price_memory' not in st.session_state:
     st.session_state.price_memory = {}
 
-col1, col2, col3 = st.columns(3)
+st.markdown("### 🎛️ 실전 정밀 타점 통제소")
 
-with col1:
+# 📂 1. 종목 번호 입력 및 기억 장치 로딩 (최상단 분리)
+col_sym, _ = st.columns([1, 3])
+with col_sym:
     raw_symbol_input = st.text_input("📊 종목번호", value="272210")
     symbol = raw_symbol_input.strip()
 
-# 📂 기억장치에서 현재 선택된 종목의 기존 입력값을 꺼내옵니다. (없으면 0 세팅)
+# 기계의 뇌에서 현재 종목의 기억을 꺼내옵니다.
 mem_data = st.session_state.price_memory.get(symbol, {})
 saved_open = float(mem_data.get('open', 0.0))
 saved_prev = str(mem_data.get('prev', ""))
@@ -240,32 +242,33 @@ saved_1st = float(mem_data.get('1st', 0.0))
 saved_ask = float(mem_data.get('ask', 0.0))
 saved_bid = float(mem_data.get('bid', 0.0))
 
-with col2:
-    # 📌 핵심 수술: key에 f"_{symbol}"을 붙여 종목이 바뀔 때마다 새 입력칸(0)으로 초기화시킵니다!
+st.markdown("<hr style='margin: 5px 0 15px 0; border: 1px solid #CFD8DC;'>", unsafe_allow_html=True)
+
+# 📊 2. 시장 기준 가격 통제 (1열)
+st.markdown("<span style='color:#1565C0; font-size:18px;'><b>[시장 기준 가격 통제]</b></span>", unsafe_allow_html=True)
+c1, c2, c3 = st.columns(3)
+with c1:
     manual_open = st.number_input("📌 HTS 호가창 시가 (0=자동)", value=saved_open, step=10.0, key=f"open_{symbol}")
+with c2:
+    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value=saved_prev, help="전일 기준가", key=f"prev_{symbol}")
+with c3:
+    manual_pre_price_str = st.text_input("🇺🇸 미장 프리(Pre) 시세", value=saved_pre, help="미장 프리마켓 시세", key=f"pre_{symbol}")
 
-with col3:
-    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value=saved_prev, help="국장/미장 전일 기준가 (종목별 자동 기억)", key=f"prev_{symbol}")
+st.write("") # 시각적 숨고르기 간격
 
-col4, col5, col6 = st.columns(3)
-with col4:
-    manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value=saved_pre, help="미장 프리마켓 실시간 기준가", key=f"pre_{symbol}")
-with col5:
-    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=saved_avg, step=100.0, help="맞춤형 분석을 위한 평단가", key=f"avg_{symbol}")
-with col6:
-    user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=saved_1st, step=100.0, help="낙폭 과대(물타기) 하이패스 연산용", key=f"1st_{symbol}")
-
-st.write("")
-
-col_ask, col_bid, col_btn = st.columns([1, 1, 2])
-
-with col_ask:
+# 💰 3. 보유 계좌 및 수급 공방 통제 (2열)
+st.markdown("<span style='color:#D32F2F; font-size:18px;'><b>[보유 계좌 및 호가창 수급 동향]</b></span>", unsafe_allow_html=True)
+c4, c5, c6, c7 = st.columns(4)
+with c4:
+    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=saved_avg, step=100.0, key=f"avg_{symbol}")
+with c5:
+    user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=saved_1st, step=100.0, key=f"1st_{symbol}")
+with c6:
     manual_ask = st.number_input("🔴 총매도잔량", min_value=0.0, value=saved_ask, step=1.0, format="%.2f", key=f"ask_{symbol}")
-
-with col_bid:
+with c7:
     manual_bid = st.number_input("🔵 총매수잔량", min_value=0.0, value=saved_bid, step=1.0, format="%.2f", key=f"bid_{symbol}")
 
-# 💾 현재 화면에 있는 값을 즉시 해당 종목의 기억장치에 덮어씌웁니다. (돌아가도 날아가지 않음)
+# 💾 실시간 기억 저장 (화면이 바뀌어도 절대 날아가지 않음)
 st.session_state.price_memory[symbol] = {
     'open': manual_open,
     'prev': manual_prev_price_str,
@@ -276,11 +279,15 @@ st.session_state.price_memory[symbol] = {
     'bid': manual_bid
 }
 
-with col_btn:
-    st.write("")
-    st.write("")
-    if st.button("🔄 정밀 분석"):
+st.markdown("<hr style='margin: 15px 0 20px 0; border: 1px solid #CFD8DC;'>", unsafe_allow_html=True)
+
+# 🚀 4. 정밀 분석 버튼 (중앙 집중 배치)
+_, btn_col, _ = st.columns([1, 2, 1])
+with btn_col:
+    if st.button("🔄 정밀 분석 가동"):
         st.rerun()
+
+# (이 아래부터 기존의 if symbol: 로직이 이어집니다)
 
 if symbol:
     try:
