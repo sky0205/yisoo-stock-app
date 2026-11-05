@@ -1404,12 +1404,12 @@ if symbol:
                 trend_status = f"⚖️ <b style='color:#F57C00;'>[십자 도지(Doji)형 변곡점]</b> 매수세와 매도세가 팽팽하게 맞서며 시가와 종가가 거의 같은 십자형 캔들을 만들었소! 내일 방향(상승/하락)이 결정될 때까지 당일 진입은 철저히 관망하시게."
             elif is_defended:
                 has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
-                # 📌 [추가 완료] 윗꼬리를 길게 달고 시가 위에서 아슬아슬하게 버티는 위태로운 압박 국면 반영
+                
+                # 📌 [완벽 정돈] 중복 조건과 꼬인 구조를 말끔히 해결한 블록
                 if is_long_upper_tail:
                     trend_status = f"⚠️ <b style='color:#F57C00;'>[위꼬리 매물 폭탄 / 시가 턱걸이 버팀]</b> 시가({today_open:,.0f}원) 위로 솟구쳤으나 상단 매물 폭탄을 맞고 밀려 내려와, 현재가({p:,.0f}원)가 시가 턱밑에서 아슬아슬하게 수성 중이오! 방심 금지."
                 elif is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
-                if is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
-                    trend_status = f"📈 <b style='color:#388E3C;'>[강한 매수세 유입 / 반등 성공]</b> 시원한 {candle_color_txt}(상승률 {p_chg:+.2f}%)을(를) 뽑아내며 하락 수압을 강하게 밀어 올리고 있소! 매수세가 살아있네."
+                    trend_status = f"📈 <b style='color:#388E3C;'>[매수세 유입]</b> {candle_color_txt}(상승률 {p_chg:+.2f}%)을 기록 중이오."
                 elif p_chg < 0:
                     if has_meaningful_lower_tail:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 길게 달며 필사적으로 방어선을 치고 있소! 아직 안심하긴 이르나 투매는 멈춘 듯하네."
