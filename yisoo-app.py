@@ -506,7 +506,7 @@ if symbol:
             else:
                 vol_strength = v_ratio
 
-            # 💡 [시가 철벽 수집 엔진 V3]: 외부 부품(bs4 등) 설치 문제일 수 있으므로, 무조건 작동하는 '파이썬 내장 모듈'만 사용!
+            # 💡 [시가 철벽 수집 엔진 V3.1]: 변수명 충돌(html 모듈) 완벽 해결!
             try:
                 import urllib.request
                 import re
@@ -514,19 +514,20 @@ if symbol:
                 clean_code = str(symbol).replace('.KS', '').replace('.KQ', '') 
                 url = f"https://finance.naver.com/item/main.naver?code={clean_code}"
                 
-                # 네이버에 사람인 것처럼 정중하게(?) 접속 요청
+                # 네이버에 사람인 것처럼 접속 요청
                 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                html = urllib.request.urlopen(req).read().decode('euc-kr', 'ignore')
+                
+                # 🚨 치명적 버그 수정: 변수명을 html에서 html_source로 변경하여 기본 부품과 충돌 방지!
+                html_source = urllib.request.urlopen(req).read().decode('euc-kr', 'ignore')
                 
                 # 정규식으로 소스코드에서 '시가 27,800' 텍스트를 찾아 숫자만 핀셋으로 뽑아냅니다!
-                match = re.search(r'시가\s+([0-9,]+)', html)
+                match = re.search(r'시가\s+([0-9,]+)', html_source)
                 if match:
                     real_kr_open = float(match.group(1).replace(',', ''))
                 else:
                     real_kr_open = 0
                     
             except Exception as e:
-                # 💡 만약 여기서 또 실패하면, 까만 실행창(콘솔)에 범인(에러 원인)을 붉은 글씨로 소리치게 만듭니다!
                 print(f"🚨 [경고] 네이버 시가 수집 실패 원인: {e}")
                 real_kr_open = 0
             # ==================================================================
