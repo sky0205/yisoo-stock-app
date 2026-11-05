@@ -237,18 +237,12 @@ with col1:
     raw_symbol_input = st.text_input("📊 종목번호", value="257720")
     symbol = raw_symbol_input.strip()
 with col2:
-    from datetime import date
-    today_str = date.today().strftime("%Y-%m-%d")
-    cache_key = f"open_price_{symbol}_{today_str}"
-    
-    if cache_key not in st.session_state:
-        st.session_state[cache_key] = 0.0
-
+    # 📌 HTS 호가창 시가를 입력받는 핵심 칸
     manual_open = st.number_input(
         "📌 HTS 호가창 시가 (0=자동)", 
-        value=st.session_state[cache_key], 
+        value=0.0, 
         step=10.0, 
-        key=cache_key
+        key="manual_open"
     )
 with col3:
     manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value="", help="국장/미장 전일 기준가")
@@ -263,16 +257,8 @@ with col6:
     user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=0.0, step=100.0, help="낙폭 과대 판독용")
 
 st.write("")
-# 💡 종목별·날짜별로 입력된 수동 시가를 확실하게 불러옵니다.
-from datetime import date
-today_str = date.today().strftime("%Y-%m-%d")
-cache_key = f"open_price_{symbol}_{today_str}"
-manual_open = st.session_state.get(cache_key, 0.0)
-
-manual_prev_price = manual_prev_price_str.strip()
-manual_pre_price = manual_pre_price_str.strip()
-manual_ask = 0.0
-manual_bid = 0.0
+# 💡 입력칸에 적힌 수동 시가 값을 곧바로 가져옵니다.
+manual_open = st.session_state.get("manual_open", 0.0)
 
 if symbol:
     try:
