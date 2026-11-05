@@ -257,8 +257,13 @@ with col6:
     user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=0.0, step=100.0, help="낙폭 과대 판독용")
 
 st.write("")
-# 💡 입력칸에 적힌 수동 시가 값을 곧바로 가져옵니다.
+
+# 💡 수동 시가 및 호가 잔량 변수를 안전하게 선언합니다.
 manual_open = st.session_state.get("manual_open", 0.0)
+manual_prev_price = manual_prev_price_str.strip() if 'manual_prev_price_str' in locals() else ""
+manual_pre_price = manual_pre_price_str.strip() if 'manual_pre_price_str' in locals() else ""
+manual_ask = 0.0
+manual_bid = 0.0
 
 if symbol:
     try:
