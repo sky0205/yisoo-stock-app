@@ -506,6 +506,27 @@ if symbol:
             else:
                 vol_strength = v_ratio
 
+            # 💡 [시가 철벽 수집 엔진]: 야후 데이터 지연을 막기 위해 네이버 증권에서 '진짜 시가'를 실시간으로 뜯어옵니다!
+            try:
+                import requests
+                from bs4 import BeautifulSoup
+                
+                # 명장님의 진단기에 맞춰 종목코드 변수를 'symbol'로 찰떡같이 수정 완료!
+                clean_code = str(symbol).replace('.KS', '').replace('.KQ', '') 
+                url = f"https://finance.naver.com/item/main.naver?code={clean_code}"
+                
+                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+                soup = BeautifulSoup(res.text, 'html.parser')
+                
+                # 네이버 증권 메인 화면에서 '시가' 텍스트 정확히 추출
+                open_td = soup.find('td', {'class': 'first'})
+                if open_td:
+                    open_str = open_td.find('span', {'class': 'blind'}).text
+                    real_kr_open = float(open_str.replace(',', ''))
+                else:
+                    real_kr_open = 0
+            except Exception as e:
+                real_kr_open = 0
             # ==================================================================
             # ★ [PRO 버전] 캔들 정합성 검열 및 십자형(Doji) 정밀 연산
             # ==================================================================
