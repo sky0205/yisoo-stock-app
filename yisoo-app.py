@@ -1439,7 +1439,12 @@ if symbol:
                 elif final_code == "WAIT_COOL_TIME": _p_action = f"-> <b>[중복 노이즈 관망]</b> 쿨타임 가동으로 중복 매수 차단"
                 elif final_code in ["DOJI_TOP_WARNING", "DOJI_BOTTOM_WAIT", "DOJI_MID_WAIT"]: _p_action = f"-> <b>[십자형 변곡 대기]</b> 내일 상하방 이탈 방향을 확인하라"
                 elif p < ma5_val and p_chg > 0 and not is_candle_bearish:
-                    _p_action = f"-> <b>[5일선 탈환 시도]</b> 지표는 포착되었으며 5일선 고지를 향해 맹렬히 진격 중! (돌파/안착 대기)"
+                    # [데드캣 방어 수술] 5일선 대비 4% 이상 폭락한 구간에서 뜬 가짜 양봉인지 검사
+                    if p < (ma5_val * 0.96):
+                        _p_action = f"-> <b><span style='color:#D32F2F;'>[가짜 반등 주의]</span></b> 붉은 양봉이 출현하여 반등을 시도하나, 5일선 저항이 까마득하여 첩첩산중이오! (데드캣 경계)"
+                    else:
+                        # 5일선 턱밑의 건전한 양봉일 경우에만 진격 문구 출력
+                        _p_action = f"-> <b>[5일선 탈환 시도]</b> 지표는 포착되었으며 5일선 고지를 향해 맹렬히 진격 중! (돌파/안착 대기)"
                 elif p < ma5_val and (p_chg <= 0 or is_candle_bearish):
                     _p_action = f"-> <b>[추세 꺾임 관망]</b> 지표는 포착되었으나 5일선 아래 하락/저항 구역이므로 진입 금지"
                 elif pullback_rebound_score >= 2: _p_action = f"-> <b>[눌림목 공방 유효]</b> 중간지대 조건 충족!"
