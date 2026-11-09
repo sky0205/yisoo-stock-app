@@ -123,7 +123,10 @@ st.markdown(
     .ind-title { font-size: 24px !important; color: #1976D2 !important; border-bottom: 2px solid #EEEEEE; padding-bottom: 10px; margin-bottom: 15px; }
     .ind-diag { font-size: 19px !important; color: #333333 !important; line-height: 1.8; background-color: #FDFDFD; padding: 12px; border-radius: 10px; border-left: 8px solid #D32F2F; }
     .final-msg { color: #D32F2F !important; font-size: 24px !important; font-weight: 900 !important; line-height: 1.5 !important; }
-    
+    /* 글로벌 지수 증감 비율칸(먹박스) 배경 투명화 */
+    div[data-testid="stMetricDelta"] > div {
+        background-color: transparent !important;
+    }
     div.stButton > button {
         background: linear-gradient(90deg, #1A237E 0%, #283593 100%) !important;
         color: #FFFFFF !important;
