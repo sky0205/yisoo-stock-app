@@ -210,7 +210,15 @@ def display_global_risk():
             strategy = "장 초반 뇌동매매를 삼가고 지표 동조와 5일선 안착 여부를 확인하며 기민하게 대응하시게."
 
         macro_text = " | ".join(macro_alerts) if macro_alerts else "매크로 특이 동향 없음"
-        st.info(f"🧐 **이수 할배의 글로벌 판독:** {market_mood}!\n\n- {macro_text}\n- 💡 **[대응 전략]** {strategy}")
+        st.markdown(f"""
+        <div style="background-color: #FFFFFF; color: #000000; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; margin-bottom: 20px;">
+            <strong style="font-size: 1.1em; color: #1E3A8A;">🧐 이수 할배의 글로벌 판독: {market_mood}!</strong>
+            <p style="margin-top: 10px; line-height: 1.6; font-size: 1em;">
+                - {macro_text}<br>
+                - 💡 <strong>[대응 전략]</strong> {strategy}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
     except Exception:
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
