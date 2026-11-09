@@ -211,14 +211,13 @@ def display_global_risk():
 
         macro_text = " | ".join(macro_alerts) if macro_alerts else "매크로 특이 동향 없음"
         st.markdown(f"""
-        <div style="background-color: #FFFFFF; color: #263238; padding: 22px; border-radius: 12px; border: 2.5px solid #CFD8DC; margin-bottom: 20px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-            <div style="font-size: 20px; font-weight: 900; margin-bottom: 12px;">
-                🧐 이수 할배의 글로벌 판독: <span style="color: #D32F2F;">{market_mood}!</span>
-            </div>
-            <ul style="margin: 0; padding-left: 25px; line-height: 1.8; font-size: 17px; font-weight: bold;">
-                <li>{macro_text}</li>
-                <li>💡 <strong style="color: #1976D2;">[대응 전략]</strong> {strategy}</li>
-            </ul>
+        <div style="background-color: #FFFFFF; padding: 20px; border-radius: 12px; border: 2.5px solid #CFD8DC; color: #263238; margin-bottom: 20px;">
+        
+        **🧐 이수 할배의 글로벌 판독:** <span style="color: #D32F2F; font-weight: bold;">{market_mood}!</span>
+        
+        - {macro_text}
+        - 💡 **[대응 전략]** {strategy}
+        
         </div>
         """, unsafe_allow_html=True)
     except Exception:
