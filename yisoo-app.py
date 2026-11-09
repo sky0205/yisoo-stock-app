@@ -1415,8 +1415,12 @@ if symbol:
             elif final_code == "NEW_HIGH_BREAKOUT_WARNING": sub_indicator_str = f"   - <b>신고가 돌파 주의:</b> 5일선 이격 과다(과열) -> <b>[관망]</b> 5일선 눌림목까지 추격 매수 차단"
             elif final_code == "BREAK_MA20_CONFIRMED": sub_indicator_str = f"   - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 기민한 분할 타진 진행"
             elif final_code == "ESCAPE_BUY": sub_indicator_str = f"   - <b>진바닥 탈출 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 유지 -> <b>[매수 유효]</b> 2단계 분할 진격 타점 가동"
-            elif final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]: 
-                sub_indicator_str = f"   - <b>진바닥 지표 동조:</b> 바닥 지표({bottom_score}점) 포착 완료 -> <b>[매수 유효]</b> 1단계 정찰병 입질 타점 가동"
+            elif final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
+                # [데드캣 방어 최상위 로직] 현재가(p)가 5일선(ma5_val) 대비 4% 이상 폭락했는지 검사
+                if p < (ma5_val * 0.96):
+                    sub_indicator_str = f"  - <b style='color:#D32F2F;'>🚨 [절대 관망령] 데드캣 바운스 경고:</b> 바닥 지표({bottom_score}점) 포착! 허나 5일선 아래 까마득한 폭포수 구간이오! -> <b><span style='color:#D32F2F;'>[진입 전면 금지]</span></b> 단 1주의 정찰병도 아깝소!"
+                else:
+                    sub_indicator_str = f"  - <b style='color:#1976D2;'>✅ [정상 진바닥 동조]:</b> 바닥 지표({bottom_score}점) 포착 완료 (건전한 5일선 눌림목) -> <b>[매수 유효]</b> 계획된 1단계 선발대 투입 가동"
             elif final_code == "DEEP_DISCOUNT_ENTRY": 
                 sub_indicator_str = f"   - <b>가격 메리트 동조:</b> 직전 매수가 대비 -{drop_ratio:.1f}% 하락 -> <b>[추가 진입 유효]</b> 하이패스 물타기 타점 가동"
             elif final_code == "PULLBACK_BUY": sub_indicator_str = f"   - <b>눌림목 지지 성공:</b> 안전마진 확보 완료 -> <b>[매수 유효]</b> 3단계 본진 진격 타점 가동"
