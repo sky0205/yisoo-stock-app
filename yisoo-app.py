@@ -1263,20 +1263,27 @@ if symbol:
                         sig = "🟡 [관망/보류] 1단계 진입 쿨타임 가동 중 (중복 노이즈 차단)"
                         final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 극한 진바닥 지표가 떴으나, <b>최근 3일 내에 이미 1차 진입 신호가 나간 이력</b>이 있소! 잔노이즈일 확률이 높으니 섣부른 중복 입질을 엄금하고 관망하시게."
                     else:
-                        final_code = "EXTREME_BOTTOM_ENTRY"
-                        col = "#388E3C"
-                        sig = f"🟢 [극한 진바닥 포착] 신규 1단계 유효 (기 1단계 매수자는 추매 금지)"
-                        
-                        if is_candle_unknown:
-                            _def_txt = "하락 진정 및 반등 기세"
-                        elif is_strong_bull_body and not is_tail_defended:
-                            _def_txt = "강력한 매수세(반등 몸통)"
+                        # [데드캣 2트랙 방어 수술] 5일선 이격도를 기준으로 전황을 쪼갠다!
+                        if p < (ma5_val * 0.96):
+                            final_code = "DEAD_CAT_WARNING"
+                            col = "#D32F2F"  # 시퍼런 피눈물 붉은색 테마로 강제 전환
+                            sig = "🚨 [절대 관망령] 데드캣 바운스 경계 (단 1주도 아깝소!)"
+                            final_adv = "<b>[최종 결론]</b> 바닥 지표가 반응했으나, 5일선과 까마득히 멀어진 수직 폭포수 구간이오! 뻔히 죽을 자리로 끌어들이는 가짜 반등(속임수)이 분명하니, <b style='color:#D32F2F;'>단 1주의 정찰병 파병조차 전면 금지하오!</b> 100% 현금을 사수하시게!"
                         else:
-                            _def_txt = "아래꼬리 지지력(투매 방어)"
+                            final_code = "EXTREME_BOTTOM_ENTRY"
+                            col = "#388E3C"  # 얕은 조정일 때는 기존 초록색 유지
+                            sig = "🟢 [극한 진바닥 포착] 신규 1단계 유효 (기 1단계 매수자는 추매 금지)"
                             
-                        _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 진바닥 터치 후 강력 반등"
-                        
-                        final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 지표 및 강력 방어 확인]</b> {_bot_txt}과(와) <b>{_def_txt}이(가) 동시 확인</b>되었소! <b>[신규 진입자]</b>는 비중 10% 수준의 가벼운 1단계 정찰병을 투입하시게. 단, <b>[기 1단계 매수자]</b>는 섣부른 불타기를 엄금하고 5일선 안착(2단계) 신호를 기다리며 얌전히 관망하시게."
+                            if is_candle_unknown:
+                                _def_txt = "하락 진정 및 반등 기세"
+                            elif is_strong_bull_body and not is_tail_defended:
+                                _def_txt = "강력한 매수세(반등 몸통)"
+                            else:
+                                _def_txt = "아래꼬리 지지력(투매 방어)"
+                            
+                            _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 진바닥 터치 후 강력 반등"
+            
+                            final_adv = f"<b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[진바닥 지표 및 강력 방어 확인]</b> {_bot_txt}과(와) <b>{_def_txt}</b>이(가) 동시 확인되었소!<br>👉 [신규 진입자]는 비중 10% 수준의 가벼운 1단계 정찰병을 투입하시게. 단, [기 1단계 매수자]는 섣부른 물타기를 엄금하고 5일선 안착(2단계)을 기다리며 관망하시게."
                         
             elif is_near_ma5_bottom and (is_bottom_indicator_ok or will_val <= -75) and (p >= today_open) and (p_chg >= -1.5):
                 if margin_diff < 4.0: 
