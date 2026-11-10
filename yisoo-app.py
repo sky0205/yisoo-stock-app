@@ -1264,7 +1264,7 @@ if symbol:
                         final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 극한 진바닥 지표가 떴으나, <b>최근 3일 내에 이미 1차 진입 신호가 나간 이력</b>이 있소! 잔노이즈일 확률이 높으니 섣부른 중복 입질을 엄금하고 관망하시게."
                     else:
                         # [데드캣 2트랙 방어 수술] 5일선 이격도를 기준으로 전황을 쪼갠다!
-                        if p < (ma5_val * 0.96):
+                        if p < (ma5_val * 0.97):
                             final_code = "DEAD_CAT_WARNING"
                             col = "#D32F2F"  # 시퍼런 피눈물 붉은색 테마로 강제 전환
                             sig = "🚨 [절대 관망령] 데드캣 바운스 경계 (단 1주도 아깝소!)"
@@ -1424,7 +1424,7 @@ if symbol:
             elif final_code == "ESCAPE_BUY": sub_indicator_str = f"   - <b>진바닥 탈출 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 유지 -> <b>[매수 유효]</b> 2단계 분할 진격 타점 가동"
             elif final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
                 # [데드캣 방어 최상위 로직] 현재가(p)가 5일선(ma5_val) 대비 4% 이상 폭락했는지 검사
-                if p < (ma5_val * 0.96):
+                if p < (ma5_val * 0.97):
                     sub_indicator_str = f"  - <b style='color:#D32F2F;'>🚨 [절대 관망령] 데드캣 바운스 경고:</b> 바닥 지표({bottom_score}점) 포착! 허나 5일선 아래 까마득한 폭포수 구간이오! -> <b><span style='color:#D32F2F;'>[진입 전면 금지]</span></b> 단 1주의 정찰병도 아깝소!"
                 else:
                     sub_indicator_str = f"  - <b style='color:#1976D2;'>✅ [정상 진바닥 동조]:</b> 바닥 지표({bottom_score}점) 포착 완료 (건전한 5일선 눌림목) -> <b>[매수 유효]</b> 계획된 1단계 선발대 투입 가동"
@@ -1440,7 +1440,7 @@ if symbol:
                 elif final_code in ["DOJI_TOP_WARNING", "DOJI_BOTTOM_WAIT", "DOJI_MID_WAIT"]: _p_action = f"-> <b>[십자형 변곡 대기]</b> 내일 상하방 이탈 방향을 확인하라"
                 elif p < ma5_val and p_chg > 0 and not is_candle_bearish:
                     # [데드캣 방어 수술] 5일선 대비 4% 이상 폭락한 구간에서 뜬 가짜 양봉인지 검사
-                    if p < (ma5_val * 0.96):
+                    if p < (ma5_val * 0.97):
                         _p_action = f"-> <b><span style='color:#D32F2F;'>[가짜 반등 주의]</span></b> 붉은 양봉이 출현하여 반등을 시도하나, 5일선 저항이 까마득하여 첩첩산중이오! (데드캣 경계)"
                     else:
                         # 5일선 턱밑의 건전한 양봉일 경우에만 진격 문구 출력
