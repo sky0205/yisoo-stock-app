@@ -1063,6 +1063,7 @@ if symbol:
         
             is_escape_buy_signal = (
                 is_ma5_safe and is_bottom_indicator_ok
+                and (bias_ma5 <= 4.0)  # 🚨 [추가] 5일선에서 4% 이상 공중 부양하면 2단계(바닥 탈출) 무효!
                 and (vol_strength >= 65 or is_pre_market_mode)
                 and is_macd_not_deepening and is_valid_buy_candle
                 and is_bandwidth_ok and is_ob_stage2_safe and (not is_target_reached) 
