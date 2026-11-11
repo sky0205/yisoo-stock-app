@@ -1467,7 +1467,10 @@ if symbol:
                 
                 # 📌 [완벽 정돈] 중복 조건과 꼬인 구조를 말끔히 해결한 블록
                 if is_long_upper_tail:
-                    trend_status = f"⚠️ <b style='color:#F57C00;'>[위꼬리 매물 폭탄 / 시가 턱걸이 버팀]</b> 시가({today_open:,.0f}원) 위로 솟구쳤으나 상단 매물 폭탄을 맞고 밀려 내려와, 현재가({p:,.0f}원)가 시가 턱밑에서 아슬아슬하게 수성 중이오! 방심 금지."
+                    if p >= today_open:
+                        trend_status = f"⚠️ <b style='color:#F57C00;'>[위꼬리 매물 폭탄 / 시가 턱걸이 버팀]</b> 시가({today_open:,.0f}원) 위로 솟구쳤으나 상단 매물 폭탄을 맞고 밀려 내려와, 현재가({p:,.0f}원)가 시가 바로 위에서 아슬아슬하게 턱걸이 수성 중이오! 방심 금지."
+                    else:
+                        trend_status = f"⚠️ <b style='color:#F57C00;'>[위꼬리 매물 폭탄 / 시가 붕괴]</b> 장중 강하게 솟구쳤으나 상단 매물 폭탄을 맞고 밀려 내려와, 현재가({p:,.0f}원)가 시가({today_open:,.0f}원) 아래(턱밑)로 완전히 처박혔소! 섣부른 진입 금지."
                 elif is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
                     trend_status = f"📈 <b style='color:#388E3C;'>[매수세 유입]</b> {candle_color_txt}(상승률 {p_chg:+.2f}%)을 기록 중이오."
                 elif p_chg < 0:
