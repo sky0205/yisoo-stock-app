@@ -1330,11 +1330,26 @@ if symbol:
                     sig = f"🟢 [추가 진격] 2단계 바닥 탈출 (기 2단계 매수자는 추매 금지) ({time_tag_ok})"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{time_tag_ok}]</b> 밴드폭 응축돌파 및 5일선 안착! 단, 머리 위 성벽 저항이 남았으니 <b>[신규 진입자 및 1단계 매수자]</b>는 20~30% 정찰대 증원으로 대응하시게. <b>[기 2단계 매수자]</b>는 섣부른 불타기를 엄금하고 3단계 눌림목 신호 전까지 관망하시게."
             elif is_pullback_buy_signal:
-                if margin_diff < 4.0: 
+                # 1. 상승 여력(마진)이 4% 미만이면 수지타산 불량으로 차단!
+                if margin_diff < 4.0:
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! 관망하시게."
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%로 너무 비좁소! 굳이 푼돈 먹겠다고 호랑이 굴에 들어가지 말고 관망하시게."
+    
+                # 2. [추가 방어벽] 만약 앞선 로직을 뚫고 들어왔더라도, 오늘 캔들이 음봉이거나 대량 매도가 터지면 무조건 차단! (이중 잠금장치)
+                elif (not is_valid_buy_candle) or (vol_trend_status in ['DUMP', 'HEAVY_DUMP']):
+                    final_code = "WAIT_DUMP_WARNING"
+                    sig = "🟡 [관망/보류] 떨어지는 칼날 (대량 투매 경고)"
+                    col = "#F57C00"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 위에 있으나 현재 쏟아지는 음봉 폭포수(대량 투매) 구간이오! 섣부른 줍줍(눌림목 착각)을 금하고 방어선 지지를 확인할 때까지 철저히 관망하시게."
+                
+                # 3. 마진도 넉넉하고, 캔들도 예쁜 진짜 정석 눌림목일 때만 파란불 켬!
+                else:
+                    final_code = "PULLBACK_BUY"
+                    sig = "🔵 [정석 눌림목 진격] 20일선 완벽 돌파 (기 진입자는 추매 금지)"
+                    col = "#5482F0"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [눌림목 돌파 완료] 20일선 및 안전마진선({ma20:.0f}원)을 시원하게 돌파하였소! [신규 진입자]는 30~50% 비중으로 화끈하게 진격하고, [기 진입자]는 비중을 유지하며 랠리를 즐기시게."
                 elif p_chg <= -1.5:  
                     final_code = "FAKE_PULLBACK"
                     col = "#FF9800"
