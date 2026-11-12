@@ -1350,16 +1350,7 @@ if symbol:
                     sig = "🔵 [정석 눌림목 진격] 20일선 완벽 돌파 (기 진입자는 추매 금지)"
                     col = "#5482F0"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [눌림목 돌파 완료] 20일선 및 안전마진선({ma20:.0f}원)을 시원하게 돌파하였소! [신규 진입자]는 30~50% 비중으로 화끈하게 진격하고, [기 진입자]는 비중을 유지하며 랠리를 즐기시게."
-                elif p_chg <= -1.5:  
-                    final_code = "FAKE_PULLBACK"
-                    col = "#FF9800"
-                    sig = f"⚠️ [진격 불가] 가짜 눌림목 (세력 휩소 경계)"
-                    final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[경고]</b> 미들라인은 돌파했으나 -1.5% 이상 음봉 하락이오! 세력의 수급 이탈 및 투매 징후가 농후하니 절대 매수 금지하시게."
-                else:  
-                    final_code = "PULLBACK_BUY"
-                    col = "#1976D2"
-                    sig = f"🔵 [본진 진격] 3단계 눌림목 안착 (기 3단계 매수자는 추매 금지) ({time_tag_ok})"
-                    final_adv = f" • <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{time_tag_ok}]</b> 눌림목 안전마진 확보 완료! <b>[신규 진입자 및 이전 단계 매수자]</b>는 50% 분할 타진하시게. 단, <b>[기 3단계 매수자]</b>는 잦은 매매를 멈추고 상방 목표선까지 든든하게 랠리를 추종하시게."
+                
             elif p >= ma20_safe_threshold and not is_down_trend_structural and is_ma5_safe and pullback_rebound_score >= 1 and (vol_strength >= 65 or is_pre_market_mode) and is_ob_stage3_safe:
                 if margin_diff < 4.0: 
                     final_code = "WAIT_NARROW_MARGIN"
