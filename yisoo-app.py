@@ -154,11 +154,18 @@ st.markdown(
         font-size: 16px !important;
     }
 
-    /* 🎯 종목번호 입력칸 특수 배경색 적용 (붉은색 테마) */
+    /* 🎯 종목번호 입력칸 특수 배경색 적용 (겉포장지 뚫기 완벽판) */
+    div[data-baseweb="input"]:has(input[aria-label="📊 종목번호"]) {
+        background-color: #D32F2F !important; /* 겉포장지를 강렬한 붉은색으로! */
+        border: 2px solid #FFCDD2 !important; /* 테두리 포인트 */
+        border-radius: 8px !important;
+    }
     input[aria-label="📊 종목번호"] {
-        background-color: #D32F2F !important; 
-        color: #FFFFFF !important; 
-        font-size: 22px !important; 
+        background-color: transparent !important; /* 속살 바탕은 투명하게 */
+        -webkit-text-fill-color: #FFFFFF !important; /* 글씨 색상을 강제로 하얗게! */
+        color: #FFFFFF !important;
+        font-size: 26px !important; /* 글씨 크기 대폭 확대! */
+        font-weight: 900 !important;
     }
     </style>
     """,
