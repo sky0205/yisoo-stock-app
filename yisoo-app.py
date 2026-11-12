@@ -1350,22 +1350,6 @@ if symbol:
                     sig = "🔵 [정석 눌림목 진격] 20일선 완벽 돌파 (기 진입자는 추매 금지)"
                     col = "#5482F0"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [눌림목 돌파 완료] 20일선 및 안전마진선({ma20:.0f}원)을 시원하게 돌파하였소! [신규 진입자]는 30~50% 비중으로 화끈하게 진격하고, [기 진입자]는 비중을 유지하며 랠리를 즐기시게."
-                
-            elif p >= ma20_safe_threshold and not is_down_trend_structural and is_ma5_safe and pullback_rebound_score >= 1 and (vol_strength >= 65 or is_pre_market_mode) and is_ob_stage3_safe:
-                if margin_diff < 4.0: 
-                    final_code = "WAIT_NARROW_MARGIN"
-                    sig = "🟡 [관망/보류] 돌파 조건 충족이나 상승 여력 부족"
-                    col = "#F57C00"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 돌파 조건은 완벽하나 목표선까지의 활주로(상승 여력)가 {margin_diff:.1f}%밖에 되지 않아 리스크 대비 기대 수익이 낮소. 진입을 보류하시게."
-                else:
-                    final_code = "BREAK_MA20_CONFIRMED"
-                    col = "#1E88E5"
-                    if defense_line > target_price_100:
-                        sig = "🔵 [눌림목 공방] 20일선 안착 타진 (※ 기 진입자는 추매 금지)"
-                        final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[20일선 안착 / 역배열 소화 중]</b> 현재가({p:{fmt_p}}{currency})가 20일선({ma20_safe_threshold:{fmt_p}}{currency})을 돌파하였으나 상단에 왜곡된 성벽이 남았소. <b>[신규 진입자]</b>만 10~20% 정찰병으로 기민하게 타진하고, <b>[기 진입자]</b>는 불타기를 멈추고 관망하시게."
-                    else:
-                        sig = "🔵 [정석 눌림목 진격] 20일선 완벽 돌파 (기 진입자는 추매 금지)"
-                        final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[눌림목 돌파 완료]</b> 20일선 및 안전마진선({ma20_safe_threshold:{fmt_p}}{currency})을 시원하게 돌파하였소! <b>[신규 진입자]</b>는 30~50% 비중으로 화끈하게 진격하고, <b>[기 진입자]</b>는 비중을 유지하며 랠리를 즐기시게."
             elif is_ma_tangled:
                 final_code = "MA_TANGLED_WARNING"
                 sig = "🟡 [이평선 꼬임 혼조세] 방향성 상실로 인한 관망"
