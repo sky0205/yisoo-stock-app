@@ -1466,9 +1466,9 @@ if symbol:
                     trend_status = f"📈 <b style='color:#388E3C;'>[매수세 유입]</b> {candle_color_txt}(상승률 {p_chg:+.2f}%)을 기록 중이오."
                 elif p_chg < 0:
                     if is_long_lower_tail:
-                        trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 방어선 구축 시도]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 전체 길이의 50% 이상 길게 달며 필사적으로 방어선을 치고 있소!"
+                        trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 밑꼬리 반발]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 전체 길이의 50% 이상 길게 달며 반발 매수세가 들어왔소! 허나 아직 완벽한 양봉 전환이 아니니, 내일 확실한 지지를 눈으로 확인하기 전까지는 섣부른 줍줍을 금하시게."
                     else:
-                        trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 매수세의 저항 한 번 써보지 못한 채 방어선이 속절없이 박살 났소!"
+                        trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 매수세의 저항 한 번 제대로 못 해보고 속절없이 쏟아지고 있소! 절대 칼날을 잡지 마시게."
                 else:
                     if today_open == today_low:
                         trend_status = f"🔥 <b style='color:#D84315;'>[강한 매 매수 맹공]</b> 장 시작부터 단 한 번도 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
