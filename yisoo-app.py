@@ -228,7 +228,7 @@ def display_global_risk():
     except Exception:
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 무결점 통합본 (도지 귀신 박멸)")
+st.title("🧐 이수할아버지의 냉정 진단기 무결점 통합본 (수동통제 완벽 장착)")
 display_global_risk()
 st.divider()
 
@@ -300,8 +300,6 @@ _, btn_col, _ = st.columns([1, 2, 1])
 with btn_col:
     if st.button("🔄 정밀 분석 가동"):
         st.rerun()
-
-# (이 아래부터 기존의 if symbol: 로직이 이어집니다)
 
 if symbol:
     try:
@@ -527,25 +525,29 @@ if symbol:
             if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
                 prev_p = float(us_prev_p)
 
+            # ==================================================================
+            # 🚨 [핵심 수술] 수동 시가 최우선 통제 - 데이터프레임(df) 자체에 각인!
+            # ==================================================================
+            actual_open = manual_open if manual_open > 0 else (real_kr_open if (is_kr and real_kr_open > 0) else (prev_p if prev_p > 0 else p))
+            
             if today_date in df.index:
                 df.loc[today_date, "Close"] = p
                 df.loc[today_date, "Volume"] = v_curr
-                if is_kr and real_kr_open > 0:
-                    df.loc[today_date, "Open"] = real_kr_open
-                    df.loc[today_date, "High"] = max(real_kr_high, p)
-                    df.loc[today_date, "Low"] = min(real_kr_low, p)
-                else:
-                    fallback_open = prev_p if prev_p > 0 else p
-                    if pd.isna(df.loc[today_date, "Open"]) or df.loc[today_date, "Open"] == 0:
-                        df.loc[today_date, "Open"] = fallback_open
-                    if p > df.loc[today_date, "High"]: df.loc[today_date, "High"] = p
-                    if p < df.loc[today_date, "Low"]: df.loc[today_date, "Low"] = p
+                df.loc[today_date, "Open"] = actual_open
+                
+                # 고가(High), 저가(Low)가 수동 시가를 벗어나지 않도록 강제 보정!
+                c_high = df.loc[today_date, "High"]
+                c_low = df.loc[today_date, "Low"]
+                df.loc[today_date, "High"] = max(c_high if pd.notna(c_high) else p, actual_open, p, real_kr_high)
+                
+                safe_lows = [val for val in [c_low, real_kr_low] if pd.notna(val) and val > 0]
+                df.loc[today_date, "Low"] = min(min(safe_lows), actual_open, p) if safe_lows else min(actual_open, p)
             else:
-                if is_kr and real_kr_open > 0:
-                    new_row = pd.DataFrame({"Open": [real_kr_open], "High": [max(real_kr_high, p)], "Low": [min(real_kr_low, p)], "Close": [p], "Volume": [v_curr]}, index=[today_date])
-                else:
-                    fallback_open = prev_p if prev_p > 0 else p
-                    new_row = pd.DataFrame({"Open": [fallback_open], "High": [max(p, fallback_open)], "Low": [min(p, fallback_open)], "Close": [p], "Volume": [v_curr]}, index=[today_date])
+                df_high = max(real_kr_high, actual_open, p)
+                safe_lows = [val for val in [real_kr_low] if pd.notna(val) and val > 0]
+                df_low = min(min(safe_lows), actual_open, p) if safe_lows else min(actual_open, p)
+                
+                new_row = pd.DataFrame({"Open": [actual_open], "High": [df_high], "Low": [df_low], "Close": [p], "Volume": [v_curr]}, index=[today_date])
                 df = pd.concat([df, new_row])
                         
 
@@ -571,28 +573,22 @@ if symbol:
                 vol_strength = v_ratio
 
             # ==================================================================
-            # ★ [수동 시가 1순위 통제 룰 적용 완료]
+            # ★ [수동 시가 확인 및 변수 확정]
             # ==================================================================
-            raw_open_val = float(str(df["Open"].iloc[-1]).replace(',', '')) if not df.empty else 0.0
-
+            today_open = float(str(df["Open"].iloc[-1]).replace(',', ''))
+            today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
+            today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
+            p = float(str(df["Close"].iloc[-1]).replace(',', ''))
+            
             if manual_open > 0:
-                today_open = manual_open
-                # 📌 변수를 완전히 분리하여 충돌을 없앴사옵니다
-                _price_str = f"{manual_open:{fmt_p}}"
-                debug_msg = f"🟢 [수동 룰 작동] 명장님의 하명({_price_str}{currency}) 완벽 적용!"
+                debug_msg = f"🟢 [수동 룰 작동] 명장님의 하명({manual_open:{fmt_p}}{currency}) 데이터에 완벽 각인!"
             else:
-                today_open = raw_open_val
-                _price_str = f"{raw_open_val:{fmt_p}}"
-                debug_msg = f"🟡 [자동 시가 모드] 실시간 60분봉 시가 ({_price_str}{currency}) 적용 중"
+                debug_msg = f"🟡 [자동 시가 모드] 실시간 API 시가 ({today_open:{fmt_p}}{currency}) 적용 중"
 
             # 📌 최종 확정 시가 출력부
             _final_str = f"{today_open:{fmt_p}}"
             st.markdown(f"🚨 **[시가 수동 통제]** {debug_msg} | 📌 **최종 확정 시가:** {_final_str}{currency}")
 
-            
-            today_high = float(str(df["High"].iloc[-1]).replace(',', ''))
-            today_low = float(str(df["Low"].iloc[-1]).replace(',', ''))
-            p = float(str(df["Close"].iloc[-1]).replace(',', ''))
             
             is_down_trend_v = (p < prev_p) and (p_chg < 0)
             day_candle_range = max(0.01, today_high - today_low)
@@ -1063,7 +1059,7 @@ if symbol:
         
             is_escape_buy_signal = (
                 is_ma5_safe and is_bottom_indicator_ok
-                and (bias_ma5 <= 4.0)  # 🚨 [추가] 5일선에서 4% 이상 공중 부양하면 2단계(바닥 탈출) 무효!
+                and (bias_ma5 <= 4.0)  
                 and (vol_strength >= 65 or is_pre_market_mode)
                 and is_macd_not_deepening and is_valid_buy_candle
                 and is_bandwidth_ok and is_ob_stage2_safe and (not is_target_reached) 
@@ -1074,7 +1070,7 @@ if symbol:
                 and (pullback_rebound_score >= 1)
                 and (vol_strength >= 65 or is_pre_market_mode)
                 and is_macd_not_deepening
-                and is_valid_buy_candle  # 🚨 [핵심 수술] 퍼런 음봉 폭포수나 윗꼬리 투매 시 강제 차단! (양봉/아래꼬리만 합격)
+                and is_valid_buy_candle 
                 and is_bandwidth_ok and is_ob_stage3_safe and (not is_target_reached)
             )
 
@@ -1100,7 +1096,7 @@ if symbol:
             
             if is_long_upper_tail and p >= today_open and not is_strong_rebound:
                 final_code = "WAIT_LONG_TAIL_DEFENSE"
-                sig = "🟡 [관망/보류] 윗꼬리 매물 폭탄 / 시가 턱걸이 방어전 (신규 진입 금지)"
+                sig = "🟡 [관망/보류] 윗꼬 매물 폭탄 / 시가 턱걸이 방어전 (신규 진입 금지)"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[위꼬리 매물 저항]</b> 시가({today_open:,.0f}원) 위로 솟구쳤으나 상단 매물 폭탄을 맞고 밀려 내려와 현재가({p:,.0f}원)가 겨우 시가 위를 방어 중이오! 바닥 지표가 떴다 해도 섣부른 1단계 입질을 엄금하고 방어 성공 여부를 냉정하게 관망하시게."
         
@@ -1239,7 +1235,7 @@ if symbol:
                 final_code = "DEEP_DISCOUNT_ENTRY"
                 sig = f"🔵 [낙폭 과대 하이패스] 추가 1단계 유효 (직전 매수가 대비 -{drop_ratio:.1f}% 폭탄 세일)"
                 col = "#0277BD"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가격 메리트 극대화]</b> 직전 1차 매수가({user_last_1st_price:{fmt_p}}{currency}) 대비 <b>-{drop_ratio:.1f}%</b> 하락하여 완벽한 할인 구간에 진입했소! 대세 하락장이 아님을 확인했으니 기존의 쿨타임과 추매 금지 제약을 해제하고 평단가를 낮추는 과감한 물타기(추가 진입)가 유효하오."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가격 메리트 극대화]</b> 직전 1차 매수가({user_last_1st_price:{fmt_p}}{currency}) 대비 <b>-{drop_ratio:.1f}%</b> 하락하여 완벽한 할인 구간에 진입했소! 대세 하락장이 아 벌임을 확인했으니 기존의 쿨타임과 추매 금지 제약을 해제하고 평단가를 낮추는 과감한 물타기(추가 진입)가 유효하오."
 
             elif (bottom_score >= 2 or rsi_val <= 30):
                 if is_massive_dump:
@@ -1264,15 +1260,14 @@ if symbol:
                         sig = "🟡 [관망/보류] 1단계 진입 쿨타임 가동 중 (중복 노이즈 차단)"
                         final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 극한 진바닥 지표가 떴으나, <b>최근 3일 내에 이미 1차 진입 신호가 나간 이력</b>이 있소! 잔노이즈일 확률이 높으니 섣부른 중복 입질을 엄금하고 관망하시게."
                     else:
-                        # [데드캣 2트랙 방어 수술] 5일선 이격도를 기준으로 전황을 쪼갠다!
                         if p < (ma5_val * 0.97):
                             final_code = "DEAD_CAT_WARNING"
-                            col = "#D32F2F"  # 시퍼런 피눈물 붉은색 테마로 강제 전환
+                            col = "#D32F2F"  
                             sig = "🚨 [절대 관망령] 데드캣 바운스 경계 (단 1주도 아깝소!)"
                             final_adv = "<b>[최종 결론]</b> 바닥 지표가 반응했으나, 5일선과 까마득히 멀어진 수직 폭포수 구간이오! 뻔히 죽을 자리로 끌어들이는 가짜 반등(속임수)이 분명하니, <b style='color:#D32F2F;'>단 1주의 정찰병 파병조차 전면 금지하오!</b> 100% 현금을 사수하시게!"
                         else:
                             final_code = "EXTREME_BOTTOM_ENTRY"
-                            col = "#388E3C"  # 얕은 조정일 때는 기존 초록색 유지
+                            col = "#388E3C"  
                             sig = "🟢 [극한 진바닥 포착] 신규 1단계 유효 (기 1단계 매수자는 추매 금지)"
                             
                             if is_candle_unknown:
@@ -1330,21 +1325,18 @@ if symbol:
                     sig = f"🟢 [추가 진격] 2단계 바닥 탈출 (기 2단계 매수자는 추매 금지) ({time_tag_ok})"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{time_tag_ok}]</b> 밴드폭 응축돌파 및 5일선 안착! 단, 머리 위 성벽 저항이 남았으니 <b>[신규 진입자 및 1단계 매수자]</b>는 20~30% 정찰대 증원으로 대응하시게. <b>[기 2단계 매수자]</b>는 섣부른 불타기를 엄금하고 3단계 눌림목 신호 전까지 관망하시게."
             elif is_pullback_buy_signal:
-                # 1. 상승 여력(마진)이 4% 미만이면 수지타산 불량으로 차단!
                 if margin_diff < 4.0:
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%로 너무 비좁소! 굳이 푼돈 먹겠다고 호랑이 굴에 들어가지 말고 관망하시게."
     
-                # 2. [추가 방어벽] 캔들 모양이 불량이거나, 전일 대비 하락(음봉, p_chg < 0) 중이면 무조건 파란불 강제 차단!
                 elif (not is_valid_buy_candle) or (p_chg < 0):
                     final_code = "WAIT_DUMP_WARNING"
                     sig = "🟡 [관망/보류] 떨어지는 칼날 (음봉 하락 경고)"
                     col = "#F57C00"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 20일선 위에 있으나 현재 전일 대비 하락({p_chg:.2f}%) 중인 퍼런 음봉이오! 대량 투매에 휘말릴 수 있으니 섣부른 진격을 금하고 지지가 확인될 때까지 철저히 관망하시게."
                 
-                # 3. 마진도 넉넉하고, 캔들도 예쁜 진짜 정석 눌림목일 때만 파란불 켬!
                 else:
                     final_code = "PULLBACK_BUY"
                     sig = "🔵 [정석 눌림목 진격] 20일선 완벽 돌파 (기 진입자는 추매 금지)"
@@ -1380,7 +1372,6 @@ if symbol:
                 else:
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 조건 미충족 상태이므로 뇌동매매를 금하고 관망 유지."
             
-            # 📌 [수정] 안내 문구 덮어쓰기 버그 수정 (+= 연산자로 누적)
             if is_memory_ignored and final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
                 final_adv += "<br><br>💡 <b style='color:#1565C0;'>[이수할아버지의 안내]</b> 기계의 기억상 최근 3일 내 바닥 신호가 있었소. 만약 당시 <b>이미 매수하셨다면</b> 상단 <b>[직전 1차 매수가]</b> 칸에 금액을 입력하시게! 그래야 중복 매수를 차단하거나 물타기 계산을 가동할 수 있소이다."
             
@@ -1414,7 +1405,6 @@ if symbol:
             elif final_code == "BREAK_MA20_CONFIRMED": sub_indicator_str = f"   - <b>돌파 타진 성공:</b> 20일선({mid_line:{fmt_p}}{currency}) 안착 확인 완료 -> <b>[매수 유효]</b> 기민한 분할 타진 진행"
             elif final_code == "ESCAPE_BUY": sub_indicator_str = f"   - <b>진바닥 탈출 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 유지 -> <b>[매수 유효]</b> 2단계 분할 진격 타점 가동"
             elif final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
-                # [데드캣 방어 최상위 로직] 현재가(p)가 5일선(ma5_val) 대비 4% 이상 폭락했는지 검사
                 if p < (ma5_val * 0.97):
                     sub_indicator_str = f"  - <b style='color:#D32F2F;'>🚨 [절대 관망령] 데드캣 바운스 경고:</b> 바닥 지표({bottom_score}점) 포착! 허나 5일선 아래 까마득한 폭포수 구간이오! -> <b><span style='color:#D32F2F;'>[진입 전면 금지]</span></b> 단 1주의 정찰병도 아깝소!"
                 else:
@@ -1430,11 +1420,9 @@ if symbol:
                 elif final_code == "WAIT_COOL_TIME": _p_action = f"-> <b>[중복 노이즈 관망]</b> 쿨타임 가동으로 중복 매수 차단"
                 elif final_code in ["DOJI_TOP_WARNING", "DOJI_BOTTOM_WAIT", "DOJI_MID_WAIT"]: _p_action = f"-> <b>[십자형 변곡 대기]</b> 내일 상하방 이탈 방향을 확인하라"
                 elif p < ma5_val and p_chg > 0 and not is_candle_bearish:
-                    # [데드캣 방어 수술] 5일선 대비 4% 이상 폭락한 구간에서 뜬 가짜 양봉인지 검사
                     if p < (ma5_val * 0.97):
                         _p_action = f"-> <b><span style='color:#D32F2F;'>[가짜 반등 주의]</span></b> 붉은 양봉이 출현하여 반등을 시도하나, 5일선 저항이 까마득하여 첩첩산중이오! (데드캣 경계)"
                     else:
-                        # 5일선 턱밑의 건전한 양봉일 경우에만 진격 문구 출력
                         _p_action = f"-> <b>[5일선 탈환 시도]</b> 지표는 포착되었으며 5일선 고지를 향해 맹렬히 진격 중! (돌파/안착 대기)"
                 elif p < ma5_val and (p_chg <= 0 or is_candle_bearish):
                     _p_action = f"-> <b>[추세 꺾임 관망]</b> 지표는 포착되었으나 5일선 아래 하락/저항 구역이므로 진입 금지"
@@ -1456,7 +1444,6 @@ if symbol:
             elif is_defended:
                 has_meaningful_lower_tail = (lower_tail_len >= body_len * 0.3) or (lower_tail_len >= day_candle_range * 0.2)
                 
-                # 📌 [완벽 정돈] 중복 조건과 꼬인 구조를 말끔히 해결한 블록
                 if is_long_upper_tail:
                     if p >= today_open:
                         trend_status = f"⚠️ <b style='color:#F57C00;'>[위꼬리 매물 폭탄 / 시가 턱걸이 버팀]</b> 시가({today_open:,.0f}원) 위로 솟구쳤으나 상단 매물 폭탄을 맞고 밀려 내려와, 현재가({p:,.0f}원)가 시가 바로 위에서 아슬아슬하게 턱걸이 수성 중이오! 방심 금지."
@@ -1471,7 +1458,7 @@ if symbol:
                         trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 매수세의 저항 한 번 제대로 못 해보고 속절없이 쏟아지고 있소! 절대 칼날을 잡지 마시게."
                 else:
                     if today_open == today_low:
-                        trend_status = f"🔥 <b style='color:#D84315;'>[강한 매 매수 맹공]</b> 장 시작부터 단 한 번도 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
+                        trend_status = f"🔥 <b style='color:#D84315;'>[강한 매수세 맹공]</b> 장 시작부터 단 한 번도 밀리지 않고 위로 뻗어가는 강력한 {candle_color_txt} 출현!"
                     elif has_meaningful_lower_tail and (lower_tail_len > upper_tail_len) and (today_open > today_low):
                         trend_status = f"🛡️ <b>[방어선 구축 / 꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt} 출현!"
                     elif is_long_upper_tail and is_candle_bearish:
@@ -1485,13 +1472,11 @@ if symbol:
                     if p >= ma5_val:
                         trend_status = f"⚠️ <b style='color:#F57C00;'>[장중 차익 매물 출회 / 5일선 사수]</b> 시가에서부터 파란 음봉으로 쫙 밀리며 매물이 쏟아지고 있으나, 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 지지 여부를 끝까지 확인하시게."
                     else:
-                        # 📌 [수정] 5일선 아래인데 '위태롭다'고 헛소리하던 모순을 '붕괴 확정'으로 수정
                         trend_status = f"🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 투매 거셈]</b> 시가에서부터 파란 음봉으로 강하게 밀리며 단기 생명선인 5일선마저 무참히 붕괴되었소! 상승 시도마다 매물 폭탄을 맞고 있으니 즉각 관망 모드로 전환하시게."
                 else: 
                     if p >= ma5_val:
                         trend_status = f"⚠️ <b style='color:#F57C00;'>[고점 매물 저항 / 5일선 사수]</b> 윗꼬리를 길게 달았으나 단기 생명선(5일선)은 아직 지켜내고 있소. 섣부른 추격은 금하되 보수적으로 대응하시게."
                     else:
-                        # 📌 [수정] 위와 동일하게 모순 수정
                         trend_status = f"🚨 <b style='color:#D32F2F;'>[상승 기세 꺾임 / 하방 압력 거셈]</b> 윗꼬리를 길게 달고 하방 압력이 거세어 단기 생명선인 5일선마저 붕괴되었소! 즉각 관망 모드로 전환하시게."
             elif final_code in ["RED_SELL_WARNING", "SELL_PROFIT_TAKE", "LONG_TAIL_WARNING", "STOP_LOSS_ALERT"]:
                 if p < ma5_val:
