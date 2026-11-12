@@ -1338,7 +1338,7 @@ if symbol:
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%로 너무 비좁소! 굳이 푼돈 먹겠다고 호랑이 굴에 들어가지 말고 관망하시게."
     
                 # 2. [추가 방어벽] 만약 앞선 로직을 뚫고 들어왔더라도, 오늘 캔들이 음봉이거나 대량 매도가 터지면 무조건 차단! (이중 잠금장치)
-                elif (not is_valid_buy_candle) or (vol_trend_status in ['DUMP', 'HEAVY_DUMP']):
+                elif not is_valid_buy_candle:
                     final_code = "WAIT_DUMP_WARNING"
                     sig = "🟡 [관망/보류] 떨어지는 칼날 (대량 투매 경고)"
                     col = "#F57C00"
