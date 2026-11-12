@@ -153,6 +153,13 @@ st.markdown(
         color: #FFFFFF !important;
         font-size: 16px !important;
     }
+
+    /* 🎯 종목번호 입력칸 특수 배경색 적용 (붉은색 테마) */
+    input[aria-label="📊 종목번호"] {
+        background-color: #D32F2F !important; 
+        color: #FFFFFF !important; 
+        font-size: 22px !important; 
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -1235,7 +1242,7 @@ if symbol:
                 final_code = "DEEP_DISCOUNT_ENTRY"
                 sig = f"🔵 [낙폭 과대 하이패스] 추가 1단계 유효 (직전 매수가 대비 -{drop_ratio:.1f}% 폭탄 세일)"
                 col = "#0277BD"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가격 메리트 극대화]</b> 직전 1차 매수가({user_last_1st_price:{fmt_p}}{currency}) 대비 <b>-{drop_ratio:.1f}%</b> 하락하여 완벽한 할인 구간에 진입했소! 대세 하락장이 아 벌임을 확인했으니 기존의 쿨타임과 추매 금지 제약을 해제하고 평단가를 낮추는 과감한 물타기(추가 진입)가 유효하오."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[가격 메리트 극대화]</b> 직전 1차 매수가({user_last_1st_price:{fmt_p}}{currency}) 대비 <b>-{drop_ratio:.1f}%</b> 하락하여 완벽한 할인 구간에 진입했소! 대세 하락장이 아님을 확인했으니 기존의 쿨타임과 추매 금지 제약을 해제하고 평단가를 낮추는 과감한 물타기(추가 진입)가 유효하오."
 
             elif (bottom_score >= 2 or rsi_val <= 30):
                 if is_massive_dump:
@@ -1533,7 +1540,7 @@ if symbol:
                 ma5_guide_text = f"⚠️ <b>[고점 상투 십자성]</b> 상승 에너지가 멈추고 십자성(Doji)이 떴소! 5일선 지지를 맹신하지 말고 언제든 던질 채비를 하시게."
             elif final_code == "LONG_TAIL_WARNING":
                 if p >= ma5_val:
-                    ma5_guide_text = f"⚠️ <b>[고점 매물 저항]</b> 현재가({p:{fmt_p}}{currency}) 위로 긴 꼬리가 생겼소! 5일선({ma5_val:{fmt_p}}{currency}) 위를 간신히 지키고 있으나 위꼬 매물이 무거우니 주의하시게."
+                    ma5_guide_text = f"⚠️ <b>[고점 매물 저항]</b> 현재가({p:{fmt_p}}{currency}) 위로 긴 꼬꼈소! 5일선({ma5_val:{fmt_p}}{currency}) 위를 간신히 지키고 있으나 위꼬 매물이 무거우니 주의하시게."
                 elif p >= today_open:
                     ma5_guide_text = f"⚠️ <b>[고점 매물 저항]</b> 현재가({p:{fmt_p}}{currency})가 5일선 아래에 있으나 시가 대비 양봉으로 버티고 있소. 5일선 탈환 여부를 주시하시게."
                 else:
