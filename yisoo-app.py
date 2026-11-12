@@ -1070,12 +1070,12 @@ if symbol:
             )
         
             is_pullback_buy_signal = (
-                (not is_down_trend_structural) and is_ma20_buffer_safe
-                and is_ma5_safe and is_ob_stage3_safe 
+                (not is_down_trend_structural) and is_ma20_buffer_safe and is_ma5_safe
                 and (pullback_rebound_score >= 1)
                 and (vol_strength >= 65 or is_pre_market_mode)
-                and is_bandwidth_ok and is_macd_not_deepening
-                and is_valid_buy_candle and (not is_target_reached)
+                and is_macd_not_deepening
+                and is_valid_buy_candle  # 🚨 [핵심 수술] 퍼런 음봉 폭포수나 윗꼬리 투매 시 강제 차단! (양봉/아래꼬리만 합격)
+                and is_bandwidth_ok and is_ob_stage3_safe and (not is_target_reached)
             )
 
             if is_kr:
