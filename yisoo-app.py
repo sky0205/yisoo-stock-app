@@ -1230,12 +1230,13 @@ if symbol:
                 final_code = "WAIT_MA20_BATTLE"
                 sig = f"🟡 [관망/대기] 20일선 성벽 공방전 (돌파 대기)"
                 col = "#F57C00"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[20일선 탈환 공방전]</b> 단기 생명선(5일선) 위로 올라타 20일 중심선({mid_line:{fmt_p}}{currency}) <b>턱 위에 떡하니 올라타서</b> 피 터지게 싸우는 중이오! 지금 들이대는 것은 칼받이가 되는 꼴이니, 20일선을 완벽하게 밟고 안착하는 <b>'3단계 눌림목(PULLBACK_BUY)'</b> 신호가 뜰 때까지 방아쇠를 잠그고 철저히 관망하시게."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[20일선 탈환 공방전]</b> 단기 생명선(5일선) 위로 올라타 20일 중심선({mid_line:{fmt_p}}{currency}) 턱 위에 떡하니 올라타서 피 터지게 싸우는 중이오! 지금 들이대는 것은 칼받이가 되는 꼴이니, 20일선을 완벽하게 밟고 안착하는 '3단계 눌림목(PULLBACK_BUY)' 신호가 뜰 때까지 방아쇠를 잠고 철저히 관망하시게. <b>단, 20일선 이탈 시 즉각 대응할 수 있도록 이 종목의 비중은 30% 이하로 조정하시게.</b>"
+
             elif is_over_extended_5 and (vol_strength >= 300) and (p >= today_open) and (not is_long_upper_tail):
                 final_code = "SQUEEZE_BREAKOUT_ATTACK"
                 sig = f"🔥 [불기둥 하이패스] 대량 거래 폭발! 과다이격({bias_ma5:+.1f}%) 면제"
                 col = "#D84315"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상한가/대시세 추종]</b> 5일선 이격이 +{bias_ma5:.1f}%로 벌어졌으나, 폭발적인 거래량(300점 이상)을 동반한 강력한 양봉 불기둥이오! 세력의 상방 드라이브가 확인되었으니 <b>과다이격 경계를 강제 해제</b>하고 돌파 랠리에 기민하게 동참하시게. 단, 20일선 이탈 시 즉각 대응할 수 있도록 이 종목의 비중은 30% 이하로 통제하시게."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상한가/대시세 추종]</b> 5일선 이격이 +{bias_ma5:.1f}%로 벌어졌으나, 폭발적인 거래"
 
             elif is_over_extended_5:
                 final_code = "WAIT_OVER_EXTENDED"
