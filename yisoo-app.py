@@ -1220,16 +1220,17 @@ if symbol:
                 sig = "🟡 [관망/보류] 허매수 징후 포착 (폭락 경계)"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[허매수 투매 경계]</b> 진바닥 지표는 포착되었으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 0.5배 미만으로 매수잔량이 비정상적으로 많소! 세력이 바닥을 가장해 개미에게 물량을 떠넘길 위험이 크니 절대 칼날을 잡지 마시게."
-            elif is_ma20_battling:
-                final_code = "WAIT_MA20_BATTLE"
-                sig = f"🟡 [관망/대기] 20일선 성벽 공방전 (돌파 대기)"
-                col = "#F57C00"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[20일선 탈환 공방전]</b> 단기 생명선(5일선) 위로 올라타 20일 중심선({mid_line:{fmt_p}}{currency}) 턱밑에서 피 터지게 싸우는 중이오! 지금 들이대는 것은 칼받이가 되는 꼴이니, 20일선을 완벽하게 뚫어내고 지지받는 <b>'3단계 눌림목(PULLBACK_BUY)'</b> 신호가 뜰 때까지 방아쇠를 잠그고 철저히 관망하시게."
+            
             elif is_ma5_safe and not is_down_trend_structural and (bottom_score >= 1 or pullback_rebound_score >= 1) and has_manual_ob and ((pullback_rebound_score >= 1 and not is_ob_stage3_safe) or (bottom_score >= 1 and not is_ob_stage2_safe)):
                 final_code = "WAIT_ORDERBOOK"
                 sig = "🟡 [관망/보류] 매도잔량비 실전 기준 미달 (속임수 윗꼬 경계)"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[호가창 기준 미달]</b> 타점 지표는 충족했으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 실전 투입 기준에 미달하오. 세력이 윗꼬리로 밀어버릴 속임수일 확률이 높으니 방아쇠를 잠그고 관망하시게."
+            elif is_ma20_battling:
+                final_code = "WAIT_MA20_BATTLE"
+                sig = f"🟡 [관망/대기] 20일선 성벽 공방전 (돌파 대기)"
+                col = "#F57C00"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[20일선 탈환 공방전]</b> 단기 생명선(5일선) 위로 올라타 20일 중심선({mid_line:{fmt_p}}{currency}) 턱밑에서 피 터지게 싸우는 중이오! 지금 들이대는 것은 칼받이가 되는 꼴이니, 20일선을 완벽하게 뚫어내고 지지받는 <b>'3단계 눌림목(PULLBACK_BUY)'</b> 신호가 뜰 때까지 방아쇠를 잠그고 철저히 관망하시게."
             elif is_over_extended_5 and (vol_strength >= 300) and (p >= today_open) and (not is_long_upper_tail):
                 final_code = "SQUEEZE_BREAKOUT_ATTACK"
                 sig = f"🔥 [불기둥 하이패스] 대량 거래 폭발! 과다이격({bias_ma5:+.1f}%) 면제"
