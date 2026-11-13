@@ -1234,9 +1234,9 @@ if symbol:
 
             elif is_over_extended_5 and (vol_strength >= 300) and (p >= today_open) and (not is_long_upper_tail):
                 final_code = "SQUEEZE_BREAKOUT_ATTACK"
-                sig = f"🔥 [불기둥 하이패스] 대량 거래 폭발! 과다이격({bias_ma5:+.1f}%) 면제"
+                sig = f"🔥 [불기둥 하이패스] 대량 거래 폭발! 과다이격({bias_ma5:+.1f}%) 경계"
                 col = "#D84315"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[상한가/대시세 추종]</b> 5일선 이격이 +{bias_ma5:.1f}%로 벌어졌으나, 폭발적인 거래량이 받쳐주고 있으니 추격 매수 진격 허용! <b>단, 20일선 이탈 시 즉각 대응할 수 있도록 이 종목의 비중은 30% 이하로 조정하시게.</b>"
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[과다이격 경계]</b> 5일선 이격이 +{bias_ma5:.1f}%로 과도하게 벌어졌으니 섣부른 추격 매수는 깊이 참고 자제하시게. <b>단, 20일선 이탈 시 즉각 대응할 수 있도록 이 종목의 비중은 30% 이하로 엄격히 조여두시게.</b>"
 
             elif is_over_extended_5:
                 final_code = "WAIT_OVER_EXTENDED"
