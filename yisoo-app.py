@@ -1349,11 +1349,16 @@ if symbol:
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! 관망하시게."
+                elif is_long_upper_tail:
+                    final_code = "TRAP_UPPER_TAIL"
+                    col = "#D32F2F"
+                    sig = f"🚨 [진입 보류] 치명적 윗꼬리 발생! 2단계 진격 백지화"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 5일선 위에는 간신히 턱걸이했으나, 고점에서 차익 매물이 쏟아지며 흉측한 윗꼬리(상투)가 달렸소! 전형적인 세력의 물량 떠넘기기 함정이니 섣부른 2단계 진입을 전면 취소하고 철저히 관망하시게."
                 else:
                     final_code = "ESCAPE_BUY"
                     col = "#2E7D32"
                     sig = f"🟢 [추가 진격] 2단계 바닥 탈출 (기 2단계 매수자는 추매 금지) ({time_tag_ok})"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{time_tag_ok}]</b> 밴드폭 응축돌파 및 5일선 안착! 단, 머리 위 성벽 저항이 남았으니 <b>[신규 진입자 및 1단계 매수자]</b>는 20~30% 정찰대 증원으로 대응하시게. <b>[기 2단계 매수자]</b>는 섣부른 불타기를 엄금하고 3단계 눌림목 신호 전까지 관망하시게."
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[{time_tag_ok}]</b> 밴드폭 응축돌파 및 5일선 안착! 단, 머리 위 성벽 저항이 남았으니 [신규 진입자 및 1단계 매수자]는 20~30% 정찰대 증원으로 대응하시게. [기 2단계 매수자]는 섣부른 불타기를 엄금하고 3단계 눌림목 신호 전까지 관망하시게."
             elif is_pullback_buy_signal:
                 if margin_diff < 4.0:
                     final_code = "WAIT_NARROW_MARGIN"
