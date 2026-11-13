@@ -1153,11 +1153,11 @@ if symbol:
                 sig = "🟡 [추세 변곡 탐색] 십자형 공방전! 내일 승패를 확인하라"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[중간 지대 십자 도지(Doji) 포착]</b> 현재 매수세와 매도세가 50:50으로 피 터지게 싸우며 십자형을 만들었소. 당일 승패를 예단하는 것은 위험하니 관망하시게."
-            elif (rsi_val >= 60 and rsi_val < rsi_prev) or (will_val >= -20 and will_val < will_prev):
+            elif (rsi_val >= 70 and rsi_val < rsi_sig_val) or (will_val >= -20 and will_val < will_sig_val): # ★ 수술 부위: 5일선 무관하게 극한 과열 꺾임 선제 타격!
                 final_code = "SELL_PROFIT_TAKE"
-                sig = "🚨 [익절/수확 경보] 고점 과열권 꺾임 (세력 이탈)"
+                sig = "🚨 [선제 익절/수확 경보] 지표 초과열권 꺾임 포착!"
                 col = "#D32F2F"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[선제적 익절 구간]</b> RSI나 윌리엄스 지표가 극한의 천장을 찍고 <b>아래로 꺾이고(▼ 하락)</b> 있소! 세력의 고점 차익 실현(매도)이 시작되었으니, <b>보유자는 미련 없이 수익을 챙겨 탈출(수확)</b>하고 신규 진입자는 절대 추격 매수를 금하시게."
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[선제적 1차 익절 구간]</b> 현재가가 비록 5일선 위에 있더라도, RSI나 윌리엄스 지표가 극한의 천장을 찍고 시그널선을 뚫고 <b>아래로 꺾이고(▼ 데드크로스)</b> 있소! 세력의 고점 차익 실현(매도)이 막 시작된 찰나이니, <b>이평선이 무너지기 전에 미련 없이 50% 이상 분할 수확</b>하시고 신규 진입은 뇌동매매니 절대 엄금하시게."
             elif is_long_upper_tail and (p >= defense_line or p >= mid_line):
                 final_code = "LONG_TAIL_WARNING"
                 sig = "🟡 [위꼬리 저항 경계] 고점 매물 출회 / 추격 매수 금지"
@@ -1359,6 +1359,11 @@ if symbol:
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
                     col = "#F57C00"
                     final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 타점 조건은 충족했으나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! 관망하시게."
+                elif (rsi_val >= 68) or (will_val >= -25):
+                    final_code = "WAIT_OVER_HEATED_IND"
+                    col = "#F57C00"
+                    sig = f"🚨 [진입 보류] 지표 단기 과열권 도달! 2단계 진격 보류"
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 5일선에 안착하여 바닥은 탈출했으나, RSI나 윌리엄스 지표가 이미 <b>단기 천장(과열권)</b>에 도달했소! 지금 들이대면 고점에 물릴 확률이 몹시 크니, 섣부른 2단계 진입을 멈추고 지표 온도가 식을 때까지 철저히 관망하시게."
                 elif is_long_upper_tail:
                     final_code = "TRAP_UPPER_TAIL"
                     col = "#D32F2F"
