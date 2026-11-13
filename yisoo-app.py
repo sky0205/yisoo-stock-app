@@ -1228,9 +1228,15 @@ if symbol:
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[호가창 기준 미달]</b> 타점 지표는 충족했으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 실전 투입 기준에 미달하오. 세력이 윗꼬리로 밀어버릴 속임수일 확률이 높으니 방아쇠를 잠그고 관망하시게."
             elif is_ma20_battling:
                 final_code = "WAIT_MA20_BATTLE"
-                sig = f"🟡 [관망/대기] 20일선 성벽 공방전 (돌파 대기)"
                 col = "#F57C00"
-                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[20일선 탈환 공방전]</b> 단기 생명선(5일선) 위로 올라타 20일 중심선({mid_line:{fmt_p}}{currency}) 턱 위에 떡하니 올라타서 피 터지게 싸우는 중이오! 지금 들이대는 것은 칼받이가 되는 꼴이니, 20일선을 완벽하게 밟고 안착하는 '눌림목' 신호가 뜰 때까지 방아쇠를 잠그고 철저히 관망하시게."
+                if p >= mid_line:
+                    sig = f"🟡 [관망/대기] 20일선 성벽 수성전 (안착 대기)"
+                    _battle_txt = f"20일 중심선({mid_line:{fmt_p}}{currency}) 턱 위에 떡하니 올라타서 피 터지게 수성(방어)전을 치르는 중이오!"
+                else:
+                    sig = f"🟡 [관망/대기] 20일선 성벽 공방전 (돌파 대기)"
+                    _battle_txt = f"20일 중심선({mid_line:{fmt_p}}{currency}) 턱밑까지 진격하여 피 터지게 돌파 공방을 벌이는 중이오!"
+                
+                final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[20일선 탈환 공방전]</b> 단기 생명선(5일선) 위로 올라타 {_battle_txt} 지금 들이대는 것은 칼받이가 되는 꼴이니, 20일선을 완벽하게 밟고 안착하는 '눌림목' 신호가 뜰 때까지 방아쇠를 잠그고 철저히 관망하시게."
 
             elif is_over_extended_5 and (vol_strength >= 300) and (p >= today_open) and (not is_long_upper_tail):
                 final_code = "SQUEEZE_BREAKOUT_ATTACK"
