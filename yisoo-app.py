@@ -1362,7 +1362,7 @@ if symbol:
                     final_code = "PULLBACK_BUY"
                     sig = "🔵 [정석 눌림목 진격] 20일선 완벽 돌파 (기 진입자는 추매 금지)"
                     col = "#5482F0"
-                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [눌림목 돌파 완료] 20일선 및 안전마진선({ma20:.0f}원)을 시원하게 돌파하였소! [신규 진입자]는 30~50% 비중으로 화끈하게 진격하고, [기 진입자]는 비중을 유지하며 랠리를 즐기시게."
+                    final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). [눌림목 돌파 완료] 20일선 및 안전마진선({mid_line:{fmt_p}}{currency})을 시원하게 돌파하였소! [신규 진입자]는 30~50% 비중으로 화끈하게 진격하고, [기 진입자]는 비중을 유지하며 랠리를 즐기시게."
             elif is_ma_tangled:
                 final_code = "MA_TANGLED_WARNING"
                 sig = "🟡 [이평선 꼬임 혼조세] 방향성 상실로 인한 관망"
