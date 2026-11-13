@@ -753,7 +753,7 @@ if symbol:
 
             ma20_safe_threshold = mid_line * 1.002
             is_ma20_teetering = (p >= mid_line * 0.998) and (p < ma20_safe_threshold)
-            is_ma20_battling = (p < mid_line) and (p >= mid_line * 0.985) and (p >= ma5_val)
+            is_ma20_battling = (p >= mid_line * 0.97) and (p <= mid_line * 1.04) and (p >= ma5_val)
             is_ma20_buffer_safe = p >= ma20_safe_threshold
             is_ma20_buffer_safe = p >= ma20_safe_threshold
 
