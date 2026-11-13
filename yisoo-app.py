@@ -1328,20 +1328,30 @@ if symbol:
                         col = "#F57C00"
                         sig = "🟡 [관망/보류] 1단계 진입 쿨타임 가동 중 (중복 노이즈 차단)"
                         final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 1단계 바닥 지표가 켜졌으나, <b>최근 3일 내에 이미 1차 진입 이력</b>이 있소! 잔노이즈일 확률이 높으니 섣부른 중복 입질을 멈추고 관망하시게."
+                    elif is_long_upper_tail:
+                        final_code = "TRAP_UPPER_TAIL_1"
+                        col = "#D32F2F"
+                        sig = f"🚨 [진입 보류] 치명적 윗꼬리 발생! 1단계 입질 백지화"
+                        final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 지표는 바닥권이나, 흉측한 윗꼬리(상투)가 달리며 물량 떠넘기기가 의심되오! 전형적인 함정이니 섣부른 1단계 정찰병 투입마저 전면 취소하고 철저히 관망하시게."
+                    elif vol_strength >= 300:
+                        final_code = "OVERHEATED_BLOCK_1"
+                        col = "#D32F2F"
+                        sig = f"🚨 [진입 보류] 거래량 광기(과열)! 1단계 입질 백지화"
+                        final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). 진바닥 타점이긴 하나, 매수세가 비정상적으로 과열된 '오버슈팅' 상태이오! 언제 급락의 철퇴를 맞을지 모르니 1단계 입질도 멈추고 방아쇠를 꽉 잠그시게."
                     else:
                         final_code = "BOTTOM_ENTRY"
                         col = "#388E3C"
                         sig = f"🟢 [진바닥 입질] 신규 1단계 유효 (기 1단계 매수자는 2단계 대기) ({time_tag_ok})"
-                        
+        
                         if is_candle_unknown:
                             _def_txt = "하락 진정 및 반등 기세"
                         elif is_strong_bull_body and not is_tail_defended:
                             _def_txt = "강력한 매수세(반등 몸통)"
                         else:
                             _def_txt = "아래꼬리 지지력(투매 방어)"
-                            
+        
                         _bot_txt = f"당일 진바닥 지표({bottom_score}점)" if bottom_score >= 1 else "최근 3일 내 바닥 터치 후 강력 반등"
-                        
+
                         final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점). <b>[1단계 정찰병 포착]</b> {_def_txt} 및 {_bot_txt}이(가) 확인되었소! <b>[신규 진입자]</b>라면 비중 10% 수준의 1단계 정찰병(입질) 투입이 유효하오. 단, <b>[기 1단계 매수자]</b>는 추가 매수를 멈추고 5일선 위로 올라타는 2단계 진격 신호 전까지 철저히 관망하시게."
             elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
                 if margin_diff < 4.0: 
