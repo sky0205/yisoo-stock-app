@@ -370,18 +370,29 @@ if symbol:
                 _krx_low = _to_price(quote.get("lowPrice", quote.get("lv")))
                 _volume = _to_price(quote.get("accumulatedTradingVolume", quote.get("aq")))
 
-                # 🎯 [핵심 추가] HTS 호가창과 100% 일치하는 전일 3시 30분 정규장 종가(기준가) 추출!
+                # 🎯 [핵심 교정] 마이너스(-) 부호 때문에 등락폭이 0으로 증발하던 버그 완벽 제거!
                 _prev_close = _to_price(quote.get("previousClosePrice", quote.get("basePrice", quote.get("sv"))))
                 if _prev_close <= 0 and _krx_close > 0:
-                    _cmp_val = _to_price(quote.get("compareToPreviousClosePrice", quote.get("cv")))
+                    _raw_cmp = str(quote.get("compareToPreviousClosePrice", quote.get("cv", ""))).replace(",", "").replace("원", "").strip()
                     _risefall = quote.get("compareToPreviousPrice", {})
+                    if not isinstance(_risefall, dict):
+                        _risefall = {}
                     _rf_code = str(_risefall.get("code", quote.get("rf", ""))).strip()
                     _rf_name = str(_risefall.get("name", "")).upper()
-                    if _cmp_val > 0:
-                        if _rf_code in ["1", "2"] or "UP" in _rf_name or "상승" in _rf_name or "상한" in _rf_name:
-                            _prev_close = _krx_close - _cmp_val
-                        elif _rf_code in ["4", "5"] or "DOWN" in _rf_name or "FALL" in _rf_name or "하락" in _rf_name or "하한" in _rf_name:
-                            _prev_close = _krx_close + _cmp_val
+
+                    try:
+                        _cmp_signed = float(_raw_cmp) if _raw_cmp not in ("", "-", "None", "null") else 0.0
+                    except ValueError:
+                        _cmp_signed = 0.0
+
+                    _cmp_abs = abs(_cmp_signed)
+                    if _cmp_abs > 0:
+                        # 1) 부호가 이미 마이너스(-)로 들어온 경우 또는 하락 코드(4, 5, DOWN, 하락)인 경우 -> 더해서 전일종가 복원!
+                        if _cmp_signed < 0 or _rf_code in ["4", "5"] or "DOWN" in _rf_name or "FALL" in _rf_name or "하락" in _rf_name or "하한" in _rf_name:
+                            _prev_close = _krx_close + _cmp_abs
+                        # 2) 상승 코드(1, 2, UP, 상승)인 경우 -> 빼서 전일종가 복원!
+                        elif _rf_code in ["1", "2"] or "UP" in _rf_name or "RISE" in _rf_name or "상승" in _rf_name or "상한" in _rf_name or _cmp_signed > 0:
+                            _prev_close = _krx_close - _cmp_abs
                     elif _rf_code == "3" or "FLAT" in _rf_name or "보합" in _rf_name:
                         _prev_close = _krx_close
 
@@ -399,6 +410,21 @@ if symbol:
                     _over_high = _to_price(_over_info.get("highPrice"))
                     _over_low = _to_price(_over_info.get("lowPrice"))
                     _over_vol = _to_price(_over_info.get("accumulatedTradingVolume"))
+
+                    # 만약 위에서 전일종가를 못 구했다면 애프터마켓 등락폭으로도 역산!
+                    if _prev_close <= 0 and _over_p > 0:
+                        _over_cmp_raw = str(_over_info.get("compareToPreviousClosePrice", "")).replace(",", "").strip()
+                        _over_rf = _over_info.get("compareToPreviousPrice", {})
+                        _over_rf_code = str(_over_rf.get("code", "")).strip() if isinstance(_over_rf, dict) else ""
+                        try:
+                            _over_cmp_val = abs(float(_over_cmp_raw))
+                        except ValueError:
+                            _over_cmp_val = 0.0
+                        if _over_cmp_val > 0:
+                            if "-" in _over_cmp_raw or _over_rf_code in ["4", "5"]:
+                                _prev_close = _over_p + _over_cmp_val
+                            else:
+                                _prev_close = _over_p - _over_cmp_val
 
                     if _over_open > 0:
                         _open = _over_open
