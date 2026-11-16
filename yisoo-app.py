@@ -657,10 +657,10 @@ if symbol:
                     # 2) 일반 윗꼬리 저항 (신설!): 양봉 몸통이 더 길더라도 고점 대비 전체 진폭의 15% 이상(또는 몸통의 25% 이상, 또는 0.8% 이상 하락) 윗꼬리가 달렸을 때!
                     has_upper_tail_resist = (upper_tail_len >= day_candle_range * 0.15) or (body_len > 0 and upper_tail_len >= body_len * 0.25) or (today_high > 0 and ((today_high - max(today_open, p)) / today_high) >= 0.008)
                 
-                is_tail_defended = (lower_tail_len > upper_tail_len) or (lower_tail_len >= day_candle_range * 0.25)
+                is_tail_defended = (lower_tail_len > upper_tail_len) and (lower_tail_len >= day_candle_range * 0.25) and (not (is_candle_bearish and p_chg < 0 and lower_tail_len < body_len))
                 is_strong_bull_body = is_candle_bullish and ((p_chg >= 1.0) or (body_len >= upper_tail_len))
                 
-                is_defended = (p_chg > 0) or is_candle_bullish or is_tail_defended or is_strong_bull_body
+                is_defended = ((p_chg > 0 or is_candle_bullish) and not is_long_upper_tail) or is_tail_defended or is_strong_bull_body
                 is_candle_unknown = False
 
             is_pure_bullish_candle = p >= today_open
@@ -1409,10 +1409,16 @@ if symbol:
                     col = "#F57C00"
                     final_adv = f"• <b>[최종 결론]</b> 진바닥 타점이나 수확 목표선까지의 상승 여력이 {margin_diff:.1f}%에 불과하오! 뇌동매매를 금하고 관망하시게."
                 elif not is_defended:
-                    final_code = "BEARISH_GUARD"
-                    sig = "🔴 [떨어지는 칼날 경고] 지표는 바닥이나 하방 압력 지속!"
-                    col = "#D32F2F"
-                    final_adv = f"• <b>[최종 결론]</b> <b>[떨어지는 칼날 경고]</b> 지표는 극한의 바닥이나, 하방 압력(음봉/윗꼬리)이 여전히 거세오! 섣부른 희망 회로를 접고 <b>방어선이 확인될 때까지</b> 즉각 관망 모드로 대기하시게."
+                    if p < (ma5_val * 0.97):
+                        final_code = "WATERFALL_DROP_WARNING"
+                        sig = f"🚨 [절대 관망령] 지하실 폭포수 추락 중! (5일선 {bias_ma5:.1f}% 붕괴)"
+                        col = "#D32F2F"
+                        final_adv = f"• <b>[최종 결론]</b> 바닥 지표({bottom_score}/3점)가 반응했으나, 반등은커녕 5일선과 까마득히 멀어진 채 <b>{candle_color_txt}({p_chg:+.2f}%)으로 지하실을 파고드는 수직 폭포수 추락 구간</b>이오! 떨어지는 칼날에 손목이 날아갈 자리이니 <b style='color:#FFEB3B;'>단 1주의 정찰병 파병조차 전면 금지하오!</b> 양봉 방어선이 구축될 때까지 100% 현금을 사수하시게!"
+                    else:
+                        final_code = "BEARISH_GUARD"
+                        sig = "🔴 [떨어지는 칼날 경고] 지표는 바닥이나 하방 압력 지속!"
+                        col = "#D32F2F"
+                        final_adv = f"• <b>[최종 결론]</b> <b>[떨어지는 칼날 경고]</b> 지표는 극한의 바닥이나, 하방 압력(음봉/윗꼬리)이 여전히 거세오! 섣부른 희망 회로를 접고 <b>양봉 방어선이 확인될 때까지</b> 즉각 관망 모드로 대기하시게."
                 else:
                     if recent_bottom_entry_flag and not is_strong_rebound:
                         final_code = "WAIT_COOL_TIME"
@@ -1421,10 +1427,16 @@ if symbol:
                         final_adv = f"• <b>[최종 결론]</b> 극한 진바닥 지표가 떴으나, <b>최근 3일 내에 이미 1차 진입 신호가 나간 이력</b>이 있소! 잔노이즈일 확률이 높으니 섣부른 중복 입질을 엄금하고 관망하시게."
                     else:
                         if p < (ma5_val * 0.97):
-                            final_code = "DEAD_CAT_WARNING"
-                            col = "#D32F2F"  
-                            sig = "🚨 [절대 관망령] 데드캣 바운스 경계 (단 1주도 아깝소!)"
-                            final_adv = f"• <b>[최종 결론]</b> 바닥 지표가 반응했으나, 5일선과 까마득히 멀어진 수직 폭포수 구간이오! 뻔히 죽을 자리로 끌어들이는 가짜 반등(속임수)이 분명하니, <b style='color:#FFEB3B;'>단 1주의 정찰병 파병조차 전면 금지하오!</b> 100% 현금을 사수하시게!"
+                            if p_chg <= 0 or is_candle_bearish:
+                                final_code = "WATERFALL_DROP_WARNING"
+                                col = "#D32F2F"
+                                sig = f"🚨 [절대 관망령] 지하실 폭포수 추락 중! (단 1주도 아깝소!)"
+                                final_adv = f"• <b>[최종 결론]</b> 바닥 지표가 반응했으나, 5일선과 까마득히 멀어진 수직 폭포수 하락({p_chg:+.2f}%) 구간이오! 아직 하락이 멈추지 않은 위험천만한 칼날이니, <b style='color:#FFEB3B;'>단 1주의 정찰병 파병조차 전면 금지하오!</b> 100% 현금을 사수하시게!"
+                            else:
+                                final_code = "DEAD_CAT_WARNING"
+                                col = "#D32F2F"  
+                                sig = "🚨 [절대 관망령] 데드캣 바운스 경계 (단 1주도 아깝소!)"
+                                final_adv = f"• <b>[최종 결론]</b> 바닥 지표가 반응하며 반등을 시도하나, 5일선과 까마득히 멀어진 수직 폭포수 구간이오! 뻔히 죽을 자리로 끌어들이는 가짜 기술적 반등(데드캣 바운스) 위험이 크니, <b style='color:#FFEB3B;'>단 1주의 정찰병 파병조차 전면 금지하오!</b> 100% 현금을 사수하시게!"
                         else:
                             final_code = "EXTREME_BOTTOM_ENTRY"
                             col = "#388E3C"  
