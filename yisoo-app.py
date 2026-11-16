@@ -1697,12 +1697,18 @@ if symbol:
                 _score_phrase = f"3대 지표(0/3점 · RSI {rsi_val:.1f} · 볼린저위치 {bb_pct_b:.1f}%[{_c_short}])"
 
             _holistic_prefix = (
-                f"• <b>[종합 전황 총평]</b> <b>{_arr_name}({_ma5_state})</b> 구도 속에 "
+                f"🔍 <b>[지표 판독 근거]</b> <b>{_arr_name}({_ma5_state})</b> 구도 속에 "
                 f"거래량 화력(<b>{vol_strength:.1f}점·{v_status}</b>), {_score_phrase}, "
-                f"엔진(<b>{_macd_short}</b>){_ob_short}을(를) 종합 판독한 결과 — "
+                f"엔진(<b>{_macd_short}</b>){_ob_short} 종합 판독"
             )
             _pure_body = final_adv.replace("• <b>[최종 결론]</b> ", "").replace("<b>[최종 결론]</b> ", "")
-            signal_box_adv = _holistic_prefix + _pure_body
+            signal_box_adv = (
+                f"<div style='font-size: 1.08em; font-weight: bold; line-height: 1.5; margin-bottom: 10px;'>"
+                f"💡 [핵심 지침] {_pure_body}</div>"
+                f"<hr style='border: 0; border-top: 1px dashed rgba(255,255,255,0.45); margin: 8px 0;'>"
+                f"<div style='font-size: 0.82em; opacity: 0.9; font-weight: normal; line-height: 1.4;'>"
+                f"{_holistic_prefix}</div>"
+            )
 
             if final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
                 action_command_msg = f"🎯 [최종 실전 행동 강령] 신규 진입자는 현재가 부근에서 비중 10% 이내로 '1단계 정찰병'만 가볍게 투입하시게! (이미 1단계 입질한 보유자는 중복 추매 금지 / 2단계 증원 기준선인 5일선 {ma5_val:{fmt_p}}{currency} 돌파 대기 / 최후 손절선 {stop_loss_price:{fmt_p}}{currency} 엄수)"
