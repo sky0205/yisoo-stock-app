@@ -579,12 +579,28 @@ if symbol:
 
         override_pre_p = 0.0
         is_pre_market_mode = False
-        if not is_kr and manual_pre_price_str:
-            try:
-                override_pre_p = float(manual_pre_price_str.replace(",", "").replace("$", ""))
-                if override_pre_p > 0: is_pre_market_mode = True
-            except ValueError:
-                pass
+        
+        if not is_kr:
+            # 1순위: 명장님이 수동 통제소에 직접 입력하신 가격이 있으면 절대 우선 적용!
+            if manual_pre_price_str:
+                try:
+                    override_pre_p = float(manual_pre_price_str.replace(",", "").replace("$", ""))
+                    if override_pre_p > 0: is_pre_market_mode = True
+                except ValueError:
+                    pass
+            
+            # 2순위: 수동 입력칸이 빈칸(0)일 경우, 야후 파이낸스에서 프리장/애프터장 실시간 자동 추출!
+            if not is_pre_market_mode:
+                try:
+                    import yfinance as yf
+                    _yf_df = yf.Ticker(symbol).history(period="1d", interval="1m", prepost=True)
+                    if not _yf_df.empty:
+                        _auto_pre_p = float(_yf_df["Close"].iloc[-1])
+                        if _auto_pre_p > 0:
+                            override_pre_p = _auto_pre_p
+                            is_pre_market_mode = True
+                except Exception:
+                    pass
 
         p = override_pre_p if is_pre_market_mode else auto_p
 
