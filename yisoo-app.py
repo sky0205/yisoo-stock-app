@@ -369,20 +369,49 @@ if symbol:
                 _low = _to_price(quote.get("lowPrice", quote.get("lv")))
                 _volume = _to_price(quote.get("accumulatedTradingVolume", quote.get("aq")))
 
-                # 🔥 [핵심 추가] 정규장 마감 후 애프터마켓(NXT) / 시간외 새로운 실시간 주가 탈취!
+                # 🔥 [전천후 레이더] 아침 8~9시 프리마켓 & 오후 3시30분~8시 애프터마켓 실시간 주가 탈취!
                 _over_info = quote.get("overMarketPriceInfo")
                 if isinstance(_over_info, dict):
                     _over_status = str(_over_info.get("overMarketStatus", "")).upper()
                     _over_p = _to_price(_over_info.get("overPrice", _over_info.get("closePrice")))
-                    # 애프터마켓이 진행 중(OPEN)이거나 종가(CLOSE)가 형성되어 있으면 새로운 주가로 즉시 덮어씀!
-                    if _over_p > 0 and (_over_status in ["OPEN", "CLOSE"] or now_local.hour >= 15):
+                    _over_vol = _to_price(_over_info.get("accumulatedTradingVolume"))
+                    _over_open = _to_price(_over_info.get("openPrice"))
+                    _over_high = _to_price(_over_info.get("highPrice"))
+                    _over_low = _to_price(_over_info.get("lowPrice"))
+
+                    # 1) 아침 프리마켓 시간대 (08:00 ~ 09:00 전) 또는 정규장 시가 생성 전
+                    if _over_p > 0 and (now_local.hour == 8 or _open <= 0):
                         _price = _over_p
-                        _over_vol = _to_price(_over_info.get("accumulatedTradingVolume"))
+                        if _open <= 0:
+                            _open = _over_open if _over_open > 0 else _over_p
+                        if _high <= 0:
+                            _high = _over_high if _over_high > 0 else max(_open, _price)
+                        if _low <= 0:
+                            _low = _over_low if _over_low > 0 else min(_open, _price)
+                        if _over_vol > 0:
+                            _volume = _over_vol if _volume <= 0 else (_volume + _over_vol)
+
+                    # 2) 오후 애프터마켓 시간대 (15:30 이후 ~ 야간)
+                    elif _over_p > 0 and (_over_status in ["OPEN", "CLOSE"] or now_local.hour >= 15):
+                        _price = _over_p
                         if _over_vol > 0:
                             _volume += _over_vol
 
-                if _price <= 0 or _open <= 0:
+                if _price <= 0:
                     return False
+                if _open <= 0:
+                    _open = _price
+
+                _high = max(_high, _open, _price) if _high > 0 else max(_open, _price)
+                _low = min(_low, _open, _price) if _low > 0 else min(_open, _price)
+
+                _naver_quote_values["auto_p"] = _price
+                _naver_quote_values["open"] = _open
+                _naver_quote_values["high"] = _high
+                _naver_quote_values["low"] = _low
+                if _volume > 0:
+                    _naver_quote_values["v_curr"] = _volume
+                return True
 
                 # 애프터마켓에서 새로운 주가가 고가/저가를 경신했을 때 캔들이 버려지지 않도록 고가·저가 자동 확장!
                 _high = max(_high, _open, _price) if _high > 0 else max(_open, _price)
@@ -538,7 +567,7 @@ if symbol:
             # ==================================================================
             df_sorted = df.sort_index()
             last_df_date = df_sorted.index[-1]
-            is_active_weekday = (now_local.weekday() < 5) and (now_local.hour >= 9)
+            is_active_weekday = (now_local.weekday() < 5) and (now_local.hour >= 8)
 
             if today_date in df_sorted.index:
                 target_candle_date = today_date
@@ -585,9 +614,9 @@ if symbol:
             p_chg = (p_diff / prev_p) * 100 if prev_p > 0 else 0
 
             if is_kr:
-                m_start = now_local.replace(hour=9, minute=0, second=0, microsecond=0)
+                m_start = now_local.replace(hour=8, minute=0, second=0, microsecond=0)
                 m_end = now_local.replace(hour=20, minute=0, second=0, microsecond=0)
-                total_minutes = 660 
+                total_minutes = 720 
             else:
                 m_start = now_local.replace(hour=9, minute=30, second=0, microsecond=0)
                 m_end = now_local.replace(hour=16, minute=0, second=0, microsecond=0)
