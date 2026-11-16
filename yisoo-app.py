@@ -359,7 +359,8 @@ if symbol:
 
             _naver_quote_values = {
                 "auto_p": auto_p, "v_curr": v_curr,
-                "open": real_kr_open, "high": real_kr_high, "low": real_kr_low
+                "open": real_kr_open, "high": real_kr_high, "low": real_kr_low,
+                "prev_p": 0.0
             }
 
             def _apply_naver_quote(quote):
@@ -369,12 +370,27 @@ if symbol:
                 _krx_low = _to_price(quote.get("lowPrice", quote.get("lv")))
                 _volume = _to_price(quote.get("accumulatedTradingVolume", quote.get("aq")))
 
+                # 🎯 [핵심 추가] HTS 호가창과 100% 일치하는 전일 3시 30분 정규장 종가(기준가) 추출!
+                _prev_close = _to_price(quote.get("previousClosePrice", quote.get("basePrice", quote.get("sv"))))
+                if _prev_close <= 0 and _krx_close > 0:
+                    _cmp_val = _to_price(quote.get("compareToPreviousClosePrice", quote.get("cv")))
+                    _risefall = quote.get("compareToPreviousPrice", {})
+                    _rf_code = str(_risefall.get("code", quote.get("rf", ""))).strip()
+                    _rf_name = str(_risefall.get("name", "")).upper()
+                    if _cmp_val > 0:
+                        if _rf_code in ["1", "2"] or "UP" in _rf_name or "상승" in _rf_name or "상한" in _rf_name:
+                            _prev_close = _krx_close - _cmp_val
+                        elif _rf_code in ["4", "5"] or "DOWN" in _rf_name or "FALL" in _rf_name or "하락" in _rf_name or "하한" in _rf_name:
+                            _prev_close = _krx_close + _cmp_val
+                    elif _rf_code == "3" or "FLAT" in _rf_name or "보합" in _rf_name:
+                        _prev_close = _krx_close
+
                 _price = _krx_close
                 _open = _krx_open
                 _high = _krx_high
                 _low = _krx_low
 
-                # 🔥 [핵심] 아침 8시 프리마켓 시가 & 애프터마켓 현재가 통합 추적!
+                # 🔥 아침 8시 프리마켓 시가 & 애프터마켓 현재가 통합 추적!
                 _over_info = quote.get("overMarketPriceInfo")
                 if isinstance(_over_info, dict):
                     _over_status = str(_over_info.get("overMarketStatus", "")).upper()
@@ -384,15 +400,12 @@ if symbol:
                     _over_low = _to_price(_over_info.get("lowPrice"))
                     _over_vol = _to_price(_over_info.get("accumulatedTradingVolume"))
 
-                    # 1) 네이버가 아침 8시 시가(_over_open)를 주면 하루 종일 8시 시가를 최우선 적용!
                     if _over_open > 0:
                         _open = _over_open
 
-                    # 2) 아침 8~9시 프리마켓 진행 중이거나, 오후 3시 30분 이후 애프터마켓 진행 중일 때 현재가 갱신!
                     if _over_p > 0 and (now_local.hour == 8 or _krx_open <= 0 or _over_status in ["OPEN", "CLOSE"] or now_local.hour >= 15):
                         _price = _over_p
 
-                    # 3) 통합 고가·저가·거래량 합산 반영
                     if _over_high > 0:
                         _high = max(_high, _over_high) if _high > 0 else _over_high
                     if _over_low > 0:
@@ -412,6 +425,8 @@ if symbol:
                 _naver_quote_values["open"] = _open
                 _naver_quote_values["high"] = _high
                 _naver_quote_values["low"] = _low
+                if _prev_close > 0:
+                    _naver_quote_values["prev_p"] = _prev_close
                 if _volume > 0:
                     _naver_quote_values["v_curr"] = _volume
                 return True
@@ -582,7 +597,8 @@ if symbol:
                 target_candle_date = today_date
                 df_past = df_sorted
 
-            calc_prev_p = float(df_past["Close"].iloc[-1]) if len(df_past) >= 1 else p
+            naver_prev_p = _naver_quote_values.get("prev_p", 0.0) if is_kr else 0.0
+            calc_prev_p = naver_prev_p if naver_prev_p > 0 else (float(df_past["Close"].iloc[-1]) if len(df_past) >= 1 else p)
             prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
             if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
                 prev_p = float(us_prev_p)
