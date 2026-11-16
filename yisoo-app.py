@@ -268,30 +268,27 @@ saved_bid = float(mem_data.get('bid', 0.0))
 
 st.markdown("<hr style='margin: 5px 0 15px 0; border: 1px solid #CFD8DC;'>", unsafe_allow_html=True)
 
-# 🔥 [접이식 서랍 시작] 평소에는 닫혀 있고, 클릭하면 쫘악 펼쳐지는 수동 통제소 서랍!
-with st.expander("⚙️ [시장 기준 가격 및 수동 통제소] (필요 시 클릭하여 열기)", expanded=False):
-    
-    st.markdown("<span style='color:#1565C0; font-size:18px;'><b>[시장 기준 가격 통제]</b></span>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        manual_open = st.number_input("📌 HTS 호가창 시가 (0=자동)", value=saved_open, step=10.0, key=f"open_{symbol}")[cite: 12]
-    with c2:
-        manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value=saved_prev, help="전일 기준가", key=f"prev_{symbol}")[cite: 12]
-    with c3:
-        manual_pre_price_str = st.text_input("us 미장 프리(Pre) 시세", value=saved_pre, help="미장 프리마켓 시세", key=f"pre_{symbol}")[cite: 12]
+st.markdown("<span style='color:#1565C0; font-size:18px;'><b>[시장 기준 가격 통제]</b></span>", unsafe_allow_html=True)
+c1, c2, c3 = st.columns(3)
+with c1:
+    manual_open = st.number_input("📌 HTS 호가창 시가 (0=자동)", value=saved_open, step=10.0, key=f"open_{symbol}")
+with c2:
+    manual_prev_price_str = st.text_input("🎯 HTS 전일종가", value=saved_prev, help="전일 기준가", key=f"prev_{symbol}")
+with c3:
+    manual_pre_price_str = st.text_input("🇺🇸 미장 프리(Pre) 시세", value=saved_pre, help="미장 프리마켓 시세", key=f"pre_{symbol}")
 
-    st.write("")
+st.write("")
 
-    st.markdown("<span style='color:#D32F2F; font-size:18px;'><b>[보유 계좌 및 호가창 수급 동향]</b></span>", unsafe_allow_html=True)
-    c4, c5, c6, c7 = st.columns(4)
-    with c4:
-        user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=saved_avg, step=100.0, key=f"avg_{symbol}")
-    with c5:
-        user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=saved_lst, step=100.0, key=f"1st_{symbol}")
-    with c6:
-        manual_ask = st.number_input("🔴 총매도잔량", min_value=0.0, value=saved_ask, step=1.0, format="%.2f", key=f"ask_{symbol}")
-    with c7:
-        manual_bid = st.number_input("🔵 총매수잔량", min_value=0.0, value=saved_bid, step=1.0, format="%.2f", key=f"bid_{symbol}")
+st.markdown("<span style='color:#D32F2F; font-size:18px;'><b>[보유 계좌 및 호가창 수급 동향]</b></span>", unsafe_allow_html=True)
+c4, c5, c6, c7 = st.columns(4)
+with c4:
+    user_avg_price = st.number_input("💡 보유 평단가", min_value=0.0, value=saved_avg, step=100.0, key=f"avg_{symbol}")
+with c5:
+    user_last_1st_price = st.number_input("📉 직전 1차 매수가", min_value=0.0, value=saved_1st, step=100.0, key=f"1st_{symbol}")
+with c6:
+    manual_ask = st.number_input("🔴 총매도잔량", min_value=0.0, value=saved_ask, step=1.0, format="%.2f", key=f"ask_{symbol}")
+with c7:
+    manual_bid = st.number_input("🔵 총매수잔량", min_value=0.0, value=saved_bid, step=1.0, format="%.2f", key=f"bid_{symbol}")
 
 st.session_state.price_memory[symbol] = {
     'open': manual_open,
@@ -300,7 +297,7 @@ st.session_state.price_memory[symbol] = {
     'avg': user_avg_price,
     '1st': user_last_1st_price,
     'ask': manual_ask,
-    'bid': manual_bid,
+    'bid': manual_bid
 }
 
 st.markdown("<hr style='margin: 15px 0 20px 0; border: 1px solid #CFD8DC;'>", unsafe_allow_html=True)
