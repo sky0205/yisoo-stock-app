@@ -363,39 +363,42 @@ if symbol:
             }
 
             def _apply_naver_quote(quote):
-                _price = _to_price(quote.get("closePrice", quote.get("nv")))
-                _open = _to_price(quote.get("openPrice", quote.get("ov")))
-                _high = _to_price(quote.get("highPrice", quote.get("hv")))
-                _low = _to_price(quote.get("lowPrice", quote.get("lv")))
+                _krx_close = _to_price(quote.get("closePrice", quote.get("nv")))
+                _krx_open = _to_price(quote.get("openPrice", quote.get("ov")))
+                _krx_high = _to_price(quote.get("highPrice", quote.get("hv")))
+                _krx_low = _to_price(quote.get("lowPrice", quote.get("lv")))
                 _volume = _to_price(quote.get("accumulatedTradingVolume", quote.get("aq")))
 
-                # 🔥 [전천후 레이더] 아침 8~9시 프리마켓 & 오후 3시30분~8시 애프터마켓 실시간 주가 탈취!
+                _price = _krx_close
+                _open = _krx_open
+                _high = _krx_high
+                _low = _krx_low
+
+                # 🔥 [핵심] 아침 8시 프리마켓 시가 & 애프터마켓 현재가 통합 추적!
                 _over_info = quote.get("overMarketPriceInfo")
                 if isinstance(_over_info, dict):
                     _over_status = str(_over_info.get("overMarketStatus", "")).upper()
                     _over_p = _to_price(_over_info.get("overPrice", _over_info.get("closePrice")))
-                    _over_vol = _to_price(_over_info.get("accumulatedTradingVolume"))
                     _over_open = _to_price(_over_info.get("openPrice"))
                     _over_high = _to_price(_over_info.get("highPrice"))
                     _over_low = _to_price(_over_info.get("lowPrice"))
+                    _over_vol = _to_price(_over_info.get("accumulatedTradingVolume"))
 
-                    # 1) 아침 프리마켓 시간대 (08:00 ~ 09:00 전) 또는 정규장 시가 생성 전
-                    if _over_p > 0 and (now_local.hour == 8 or _open <= 0):
-                        _price = _over_p
-                        if _open <= 0:
-                            _open = _over_open if _over_open > 0 else _over_p
-                        if _high <= 0:
-                            _high = _over_high if _over_high > 0 else max(_open, _price)
-                        if _low <= 0:
-                            _low = _over_low if _over_low > 0 else min(_open, _price)
-                        if _over_vol > 0:
-                            _volume = _over_vol if _volume <= 0 else (_volume + _over_vol)
+                    # 1) 네이버가 아침 8시 시가(_over_open)를 주면 하루 종일 8시 시가를 최우선 적용!
+                    if _over_open > 0:
+                        _open = _over_open
 
-                    # 2) 오후 애프터마켓 시간대 (15:30 이후 ~ 야간)
-                    elif _over_p > 0 and (_over_status in ["OPEN", "CLOSE"] or now_local.hour >= 15):
+                    # 2) 아침 8~9시 프리마켓 진행 중이거나, 오후 3시 30분 이후 애프터마켓 진행 중일 때 현재가 갱신!
+                    if _over_p > 0 and (now_local.hour == 8 or _krx_open <= 0 or _over_status in ["OPEN", "CLOSE"] or now_local.hour >= 15):
                         _price = _over_p
-                        if _over_vol > 0:
-                            _volume += _over_vol
+
+                    # 3) 통합 고가·저가·거래량 합산 반영
+                    if _over_high > 0:
+                        _high = max(_high, _over_high) if _high > 0 else _over_high
+                    if _over_low > 0:
+                        _low = min(_low, _over_low) if _low > 0 else _over_low
+                    if _over_vol > 0:
+                        _volume = _over_vol if _krx_open <= 0 else (_volume + _over_vol)
 
                 if _price <= 0:
                     return False
@@ -412,7 +415,6 @@ if symbol:
                 if _volume > 0:
                     _naver_quote_values["v_curr"] = _volume
                 return True
-
                 # 애프터마켓에서 새로운 주가가 고가/저가를 경신했을 때 캔들이 버려지지 않도록 고가·저가 자동 확장!
                 _high = max(_high, _open, _price) if _high > 0 else max(_open, _price)
                 _low = min(_low, _open, _price) if _low > 0 else min(_open, _price)
