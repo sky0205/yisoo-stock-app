@@ -369,19 +369,29 @@ if symbol:
                 _low = _to_price(quote.get("lowPrice", quote.get("lv")))
                 _volume = _to_price(quote.get("accumulatedTradingVolume", quote.get("aq")))
 
+                # 🔥 [핵심 추가] 정규장 마감 후 애프터마켓(NXT) / 시간외 새로운 실시간 주가 탈취!
+                _over_info = quote.get("overMarketPriceInfo")
+                if isinstance(_over_info, dict):
+                    _over_status = str(_over_info.get("overMarketStatus", "")).upper()
+                    _over_p = _to_price(_over_info.get("overPrice", _over_info.get("closePrice")))
+                    # 애프터마켓이 진행 중(OPEN)이거나 종가(CLOSE)가 형성되어 있으면 새로운 주가로 즉시 덮어씀!
+                    if _over_p > 0 and (_over_status in ["OPEN", "CLOSE"] or now_local.hour >= 15):
+                        _price = _over_p
+                        _over_vol = _to_price(_over_info.get("accumulatedTradingVolume"))
+                        if _over_vol > 0:
+                            _volume += _over_vol
+
                 if _price <= 0 or _open <= 0:
                     return False
-                if _high > 0 and _high < max(_open, _price):
-                    return False
-                if _low > 0 and _low > min(_open, _price):
-                    return False
-                if _high > 0 and _low > 0 and _high < _low:
-                    return False
+
+                # 애프터마켓에서 새로운 주가가 고가/저가를 경신했을 때 캔들이 버려지지 않도록 고가·저가 자동 확장!
+                _high = max(_high, _open, _price) if _high > 0 else max(_open, _price)
+                _low = min(_low, _open, _price) if _low > 0 else min(_open, _price)
 
                 _naver_quote_values["auto_p"] = _price
                 _naver_quote_values["open"] = _open
-                _naver_quote_values["high"] = max(_high, _open, _price)
-                _naver_quote_values["low"] = min(_low, _open, _price) if _low > 0 else min(_open, _price)
+                _naver_quote_values["high"] = _high
+                _naver_quote_values["low"] = _low
                 if _volume > 0:
                     _naver_quote_values["v_curr"] = _volume
                 return True
