@@ -1699,7 +1699,7 @@ if symbol:
             _holistic_prefix = (
                 f"🔍 <b>[지표 판독 근거]</b> <b>{_arr_name}({_ma5_state})</b> 구도 속에 "
                 f"거래량 화력(<b>{vol_strength:.1f}점·{v_status}</b>), {_score_phrase}, "
-                f"엔진(<b>{_macd_short}</b>){_ob_short} 종합 판독"
+                f"엔진(<b>{_macd_short}</b>){_ob_short}"
             )
             _pure_body = final_adv.replace("• <b>[최종 결론]</b> ", "").replace("<b>[최종 결론]</b> ", "")
             signal_box_adv = (
