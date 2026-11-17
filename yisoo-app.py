@@ -649,7 +649,7 @@ if symbol:
                 target_candle_date = today_date
                 df_past = df_sorted
 
-            nnaver_prev_p = _naver_quote_values.get("prev_p", 0.0) if is_kr else 0.0
+            naver_prev_p = _naver_quote_values.get("prev_p", 0.0) if is_kr else 0.0
             # 🎯 미장 전일종가는 일봉 장부(df_past)의 직전 정규장 마감 종가를 1순위로 사용하여 오차 원천 차단!
             calc_prev_p = naver_prev_p if naver_prev_p > 0 else (float(df_past["Close"].iloc[-1]) if len(df_past) >= 1 else (float(us_prev_p) if (not is_kr and us_prev_p and us_prev_p > 0) else p))
             prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
