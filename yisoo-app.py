@@ -578,29 +578,37 @@ if symbol:
             ob_data = {"ask": 0.0, "bid": 0.0, "ratio": None, "ok": False, "msg": "실시간 호가 API 미연결"}
 
         override_pre_p = 0.0
+        auto_us_open = 0.0
+        auto_us_high = 0.0
+        auto_us_low = 0.0
         is_pre_market_mode = False
-        
+
         if not is_kr:
-            # 1순위: 명장님이 수동 통제소에 직접 입력하신 가격이 있으면 절대 우선 적용!
+            # 1순위: 수동 통제소에 직접 입력하신 프리장 시세가 있으면 최우선 적용
             if manual_pre_price_str:
                 try:
                     override_pre_p = float(manual_pre_price_str.replace(",", "").replace("$", ""))
                     if override_pre_p > 0: is_pre_market_mode = True
                 except ValueError:
                     pass
-            
-            # 2순위: 수동 입력칸이 빈칸(0)일 경우, 야후 파이낸스에서 프리장/애프터장 실시간 자동 추출!
-            if not is_pre_market_mode:
-                try:
-                    import yfinance as yf
-                    _yf_df = yf.Ticker(symbol).history(period="1d", interval="1m", prepost=True)
-                    if not _yf_df.empty:
+
+            # 2순위: 야후 1분봉(prepost=True)에서 미장 당일(프리장 포함) 실시간 현재가·시가·고가·저가 자동 추출!
+            try:
+                import yfinance as yf
+                _tk = yf.Ticker(symbol)
+                _yf_df = _tk.history(period="1d", interval="1m", prepost=True)
+                if not _yf_df.empty:
+                    if not is_pre_market_mode:
                         _auto_pre_p = float(_yf_df["Close"].iloc[-1])
                         if _auto_pre_p > 0:
                             override_pre_p = _auto_pre_p
                             is_pre_market_mode = True
-                except Exception:
-                    pass
+                    _reg_open = float(_tk.fast_info.get("open", 0.0) or 0.0)
+                    auto_us_open = _reg_open if _reg_open > 0 else float(_yf_df["Open"].iloc[0])
+                    auto_us_high = float(_yf_df["High"].max())
+                    auto_us_low = float(_yf_df["Low"].min())
+            except Exception:
+                pass
 
         p = override_pre_p if is_pre_market_mode else auto_p
 
@@ -610,10 +618,11 @@ if symbol:
             df = df.ffill().dropna()
             if is_kr:
                 df.index = pd.to_datetime(df.index).date
+                today_date = now_local.date()
             else:
-                df.index = pd.to_datetime(df.index, utc=True).date
-            today_date = now_local.date()
-
+                # 🇺🇸 미장은 utc=True를 빼서 뉴욕 현지 거래일 날짜를 그대로 보존하고, 뉴욕 기준 오늘 날짜를 사용!
+                df.index = pd.to_datetime(df.index).tz_localize(None).date if getattr(pd.to_datetime(df.index), 'tz', None) is not None else pd.to_datetime(df.index).date
+                today_date = pd.Timestamp.now(tz="America/New_York").date()
             override_prev_p = 0.0
             if manual_prev_price_str:
                 try:
@@ -640,14 +649,14 @@ if symbol:
                 target_candle_date = today_date
                 df_past = df_sorted
 
-            naver_prev_p = _naver_quote_values.get("prev_p", 0.0) if is_kr else 0.0
-            calc_prev_p = naver_prev_p if naver_prev_p > 0 else (float(df_past["Close"].iloc[-1]) if len(df_past) >= 1 else p)
+            nnaver_prev_p = _naver_quote_values.get("prev_p", 0.0) if is_kr else 0.0
+            # 🎯 미장 전일종가는 일봉 장부(df_past)의 직전 정규장 마감 종가를 1순위로 사용하여 오차 원천 차단!
+            calc_prev_p = naver_prev_p if naver_prev_p > 0 else (float(df_past["Close"].iloc[-1]) if len(df_past) >= 1 else (float(us_prev_p) if (not is_kr and us_prev_p and us_prev_p > 0) else p))
             prev_p = override_prev_p if override_prev_p > 0 else calc_prev_p
-            if not is_kr and us_prev_p and us_prev_p > 0 and override_prev_p == 0:
-                prev_p = float(us_prev_p)
 
             existing_open = float(df.loc[target_candle_date, "Open"]) if (target_candle_date in df.index and pd.notna(df.loc[target_candle_date, "Open"])) else 0.0
-            actual_open = manual_open if manual_open > 0 else (real_kr_open if (is_kr and real_kr_open > 0) else (existing_open if existing_open > 0 else (prev_p if prev_p > 0 else p)))
+            us_auto_open_val = existing_open if existing_open > 0 else auto_us_open
+            actual_open = manual_open if manual_open > 0 else (real_kr_open if (is_kr and real_kr_open > 0) else (us_auto_open_val if (not is_kr and us_auto_open_val > 0) else (existing_open if existing_open > 0 else prev_p)))
             
             if target_candle_date in df.index:
                 df.loc[target_candle_date, "Close"] = p
