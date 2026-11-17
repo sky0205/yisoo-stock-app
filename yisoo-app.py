@@ -723,7 +723,10 @@ if symbol:
             body_len = abs(p - today_open)
             upper_tail_pct_of_range = (upper_tail_len / day_candle_range) * 100.0 if day_candle_range > 0 else 0.0
 
-            cur_open_price = today_open
+            if is_pre_market_mode and manual_open <= 0:
+                cur_open_price = prev_p
+            else:
+                cur_open_price = today_open
             
             if p > cur_open_price:
                 candle_color_txt = "빨간색 양봉"
