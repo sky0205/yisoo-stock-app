@@ -1663,11 +1663,16 @@ if symbol:
                 sig = "🟡 [이평선 꼬임 혼조세] 방향성 상실로 인한 관망"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> <b>[이평선 꼬임 혼조세]</b> 단기·중기 이평선이 엉키며 방향성을 상실했으니 뇌동매매를 금하고 냉정하게 관망하시게."
-            elif current_chg < 0.0 and bias_ma5 < 0.0 and not strict_doji_check:
+            elif (current_chg < 0.0 or p < actual_open) and bias_ma5 < 0.0 and not strict_doji_check:
                 final_code = "BEARISH_GUARD"
-                sig = f"🟡 [하락/조정] 음봉 압력 속 추세 이탈 경계 "
-                col = "#F57C00"
-                final_adv = f"• <b>[최종 결론]</b> 현재 하락 음봉 국면이오니, 양봉 숨고르기라는 헛된 기대를 버리고 성벽 및 5일선 이탈에 따른 칼질 관망을 유지하시게."
+                if p < actual_open:
+                    sig = f"🟡 [하락/조정] 음봉 압력 속 추세 이탈 경계"
+                    col = "#F57C00"
+                    final_adv = f"• <b>[최종 결론]</b> 현재 시가({actual_open:{fmt_p}}{currency}) 아래로 밀리는 파란 음봉 하락 국면이오니, 헛된 기대를 버리고 성벽 및 5일선({ma5_val:{fmt_p}}{currency}) 회복 전까지 칼질 관망을 유지하시게."
+                else:
+                    sig = f"🟡 [하락/조정] 갭하락 반등 양봉이나 5일선 아래 경계"
+                    col = "#F57C00"
+                    final_adv = f"• <b>[최종 결론]</b> 장중 저점에서 반등하여 시가({actual_open:{fmt_p}}{currency}) 위로 빨간 양봉을 세웠으나, 아직 전일 대비 약세({current_chg:+.2f}%)이고 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency}) 아래에 머물러 있소! 5일선 안착이 확인될 때까지 섣부른 진입을 금하고 관망을 유지하시게."
             elif is_ma5_safe and not is_bottom_indicator_ok and not is_down_trend_structural:
                 if pullback_rebound_score >= 1:
                     final_code = "WAIT_INDICATOR"
