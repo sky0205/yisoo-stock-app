@@ -1403,10 +1403,20 @@ if symbol:
                 col = "#D32F2F"
                 final_adv = f"• <b>[최종 결론]</b> <b>[역사적 신고가 돌파]</b> 1년 최고점({high_250:{fmt_p}}{currency})을 뚫는 강력한 불기둥이 솟구쳤소! 섣불리 불을 잡지 말고, 단기 5일선({ma5_val:{fmt_p}}{currency}) 눌림목 안착 때까지 방아쇠를 굳게 잠그시게."
             elif is_new_high_pullback:
-                final_code = "NEW_HIGH_PULLBACK_BUY"
-                sig = "🔵 [신고가 첫 눌림목] 정석 타점 (비중 채운 보유자는 불타기 금지)"
-                col = "#1E88E5"
-                final_adv = f"• <b>[최종 결론]</b> <b>[신고가 5일선 눌림목]</b> 1년 최고점 돌파 후 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency})에 아주 예쁘게 안착했소! <b>[신규 및 1·2단계 소량 보유자]</b>는 총 비중 50%까지 과감하게 본진을 투입(증원)하시게. 단, <b>[이미 비중을 다 채운 기 보유자]</b>는 무리한 고점 불타기를 금하고 신고가 대시세를 끝까지 발라먹으시게."
+                _c_range = max(c_high - c_low, 1e-9)
+                _body_len = abs(p - actual_open)
+                _upper_wick = c_high - max(p, actual_open)
+                _is_top_doji_or_wick = (_body_len / _c_range <= 0.25) or (_upper_wick > _body_len) or ("윗꼬리" in _c_short) or ("도지" in _c_short)
+                if bb_pct_b >= 75.0 or _is_top_doji_or_wick:
+                    final_code = "NEW_HIGH_BREAKOUT_WARNING"
+                    sig = "🟠 [신고가 상단 도지/저항] 힘 빠짐 경계 (신규 매수 금지 · 보유자만 대응)"
+                    col = "#FB8C00"
+                    final_adv = f"• <b>[최종 결론]</b> <b>[고점 도지·윗꼬리 저항]</b> 1년 최고점 및 5일선({ma5_val:{fmt_p}}{currency}) 부근이나, 상단 과열(볼린저 {bb_pct_b:.1f}%) 속에 윗꼬리·도지 캔들이 출현하여 상승 추진력이 둔화되었소! 가짜 눌림목(상투) 위험이 크니 <b>[신규 매수 및 추가 불타기]는 절대 금하시고</b>, <b>[기 보유자]</b>만 5일선 이탈 전까지 추세를 지켜보시게."
+                else:
+                    final_code = "NEW_HIGH_PULLBACK_BUY"
+                    sig = "🔵 [신고가 첫 눌림목] 정석 타점 (비중 채운 보유자는 불타기 금지)"
+                    col = "#1E88E5"
+                    final_adv = f"• <b>[최종 결론]</b> <b>[신고가 5일선 눌림목]</b> 1년 최고점 돌파 후 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency})에 알찬 실체 양봉으로 아주 예쁘게 안착했소! <b>[신규 및 1·2단계 소량 보유자]</b>는 총 비중 50%까지 과감하게 본진을 투입(증원)하시게. 단, <b>[이미 비중을 다 채운 기 보유자]</b>는 무리한 고점 불타기를 금하고 신고가 대시세를 끝까지 발라 먹으시게."
             
             elif p >= target_price_100:
                 if bandwidth <= 12.0:
