@@ -1052,7 +1052,7 @@ if symbol:
             is_on_the_wall = (p >= defense_line) and (p < target_price_100)
             is_band_riding = is_target_reached and is_band_expanding and is_ma5_safe and (not is_bearish_candle)
             
-            is_peak_dumping = is_long_upper_tail and (is_band_riding or is_target_reached or p >= (target_price_100 * 0.98) or bb_pct_b >= 85.0)
+            is_peak_dumping = is_long_upper_tail and (is_band_riding or is_target_reached or p >= (target_price_100 * 0.98) or bb_pct_b >= 75.0)
 
             is_ob_stage2_safe = True
             is_ob_stage3_safe = True
