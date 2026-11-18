@@ -214,8 +214,12 @@ def display_global_risk():
         if u_chg > 0.3: macro_alerts.append(f"📈 오늘 환율 {u_chg:+.2f}% 치솟는 중!")
         elif u_chg < -0.3: macro_alerts.append(f"📉 오늘 환율 {u_chg:+.2f}% 진정세")
 
-        if tnx_val >= 5.0 or u_val >= 1400: 
-            strategy = "초고금리와 환율 발작으로 외인 수급 이탈 우려가 큽니다. 추격매수를 멈추고 철저히 관망하시게."
+        if tnx_val >= 5.0 and u_val >= 1400: 
+            strategy = "초고금리와 고환율 동반 발작으로 외인 수급 이탈 우려가 큽니다. 추격매수를 멈추고 철저히 관망하시게."
+        elif tnx_val >= 5.0:
+            strategy = f"환율({u_val:,.2f}원)은 안정권이나 미 국채 금리({tnx_val:.3f}%) 초고금리 발작으로 기술주 하방 압력이 큽니다. 추격매수를 멈추고 철저히 관망하시게."
+        elif u_val >= 1400:
+            strategy = f"고환율({u_val:,.2f}원) 압박으로 외인 수급 이탈 우려가 큽니다. 추격매수를 멈추고 보수적으로 관망하시게."
         elif tnx_val >= 4.5 or u_val >= 1380: 
             if tnx_chg < 0:
                 strategy = "매크로 고점(금리 4.5%↑)이나 단기 하락 진정세가 나타나고 있소. 5일선 지지 확인 후 선별적으로 타진하시게."
@@ -227,16 +231,13 @@ def display_global_risk():
             strategy = "장 초반 뇌동매매를 삼가고 지표 동조와 5일선 안착 여부를 확인하며 기민하게 대응하시게."
 
         macro_text = " | ".join(macro_alerts) if macro_alerts else "매크로 특이 동향 없음"
-        st.markdown(f"""
-        <div style="background-color: #FFFFFF; padding: 20px; border-radius: 12px; border: 2.5px solid #CFD8DC; color: #263238; margin-bottom: 20px;">
-        
-        **🧐 이수 할배의 글로벌 판독:** <span style="color: #D32F2F; font-weight: bold;">{market_mood}!</span>
-        
-- {macro_text}
-- 💡 **[대응 전략]** {strategy}
-        
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='background-color: #FFFFFF; padding: 20px; border-radius: 12px; border: 2.5px solid #CFD8DC; color: #263238; margin-bottom: 20px;'>"
+            f"<div style='font-size: 20px; margin-bottom: 10px;'><b>🧐 이수 할배의 글로벌 판독:</b> <span style='color: #D32F2F; font-weight: bold;'>{market_mood}</span></div>"
+            f"<div style='font-size: 18px; line-height: 1.8;'>• {macro_text}<br>• 💡 <b>[대응 전략]</b> {strategy}</div>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
     except Exception:
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
