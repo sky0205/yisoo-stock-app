@@ -232,8 +232,8 @@ def display_global_risk():
         
         **🧐 이수 할배의 글로벌 판독:** <span style="color: #D32F2F; font-weight: bold;">{market_mood}!</span>
         
-        - {macro_text}
-        - 💡 **[대응 전략]** {strategy}
+- {macro_text}
+- 💡 **[대응 전략]** {strategy}
         
         </div>
         """, unsafe_allow_html=True)
@@ -388,10 +388,8 @@ if symbol:
 
                     _cmp_abs = abs(_cmp_signed)
                     if _cmp_abs > 0:
-                        # 1) 부호가 이미 마이너스(-)로 들어온 경우 또는 하락 코드(4, 5, DOWN, 하락)인 경우 -> 더해서 전일종가 복원!
                         if _cmp_signed < 0 or _rf_code in ["4", "5"] or "DOWN" in _rf_name or "FALL" in _rf_name or "하락" in _rf_name or "하한" in _rf_name:
                             _prev_close = _krx_close + _cmp_abs
-                        # 2) 상승 코드(1, 2, UP, 상승)인 경우 -> 빼서 전일종가 복원!
                         elif _rf_code in ["1", "2"] or "UP" in _rf_name or "RISE" in _rf_name or "상승" in _rf_name or "상한" in _rf_name or _cmp_signed > 0:
                             _prev_close = _krx_close - _cmp_abs
                     elif _rf_code == "3" or "FLAT" in _rf_name or "보합" in _rf_name:
@@ -412,7 +410,6 @@ if symbol:
                     _over_low = _to_price(_over_info.get("lowPrice"))
                     _over_vol = _to_price(_over_info.get("accumulatedTradingVolume"))
 
-                    # 만약 위에서 전일종가를 못 구했다면 애프터마켓 등락폭으로도 역산!
                     if _prev_close <= 0 and _over_p > 0:
                         _over_cmp_raw = str(_over_info.get("compareToPreviousClosePrice", "")).replace(",", "").strip()
                         _over_rf = _over_info.get("compareToPreviousPrice", {})
@@ -454,17 +451,6 @@ if symbol:
                 _naver_quote_values["low"] = _low
                 if _prev_close > 0:
                     _naver_quote_values["prev_p"] = _prev_close
-                if _volume > 0:
-                    _naver_quote_values["v_curr"] = _volume
-                return True
-                # 애프터마켓에서 새로운 주가가 고가/저가를 경신했을 때 캔들이 버려지지 않도록 고가·저가 자동 확장!
-                _high = max(_high, _open, _price) if _high > 0 else max(_open, _price)
-                _low = min(_low, _open, _price) if _low > 0 else min(_open, _price)
-
-                _naver_quote_values["auto_p"] = _price
-                _naver_quote_values["open"] = _open
-                _naver_quote_values["high"] = _high
-                _naver_quote_values["low"] = _low
                 if _volume > 0:
                     _naver_quote_values["v_curr"] = _volume
                 return True
@@ -598,7 +584,9 @@ if symbol:
                 _tk = yf.Ticker(symbol)
                 _yf_df = _tk.history(period="1d", interval="1m", prepost=True)
                 if not _yf_df.empty:
-                    if not is_pre_market_mode:
+                    # 뉴욕 현지 시간 정규장(09:30 ~ 16:00)일 때는 프리마켓 모드를 자동 해제하여 거래량 로직을 복구!
+                    is_us_regular = (now_local.hour > 9 or (now_local.hour == 9 and now_local.minute >= 30)) and (now_local.hour < 16) and (now_local.weekday() < 5)
+                    if not is_pre_market_mode and not is_us_regular:
                         _auto_pre_p = float(_yf_df["Close"].iloc[-1])
                         if _auto_pre_p > 0:
                             override_pre_p = _auto_pre_p
@@ -656,8 +644,16 @@ if symbol:
 
             existing_open = float(df.loc[target_candle_date, "Open"]) if (target_candle_date in df.index and pd.notna(df.loc[target_candle_date, "Open"])) else 0.0
             us_auto_open_val = existing_open if existing_open > 0 else auto_us_open
-            actual_open = manual_open if manual_open > 0 else (real_kr_open if (is_kr and real_kr_open > 0) else (us_auto_open_val if (not is_kr and us_auto_open_val > 0) else (existing_open if existing_open > 0 else prev_p)))
             
+            # 프리마켓 중 수동 시가 미입력 시, 전일 종가(prev_p)를 시가로 원천 고정하여 양의 음봉 왜곡 차단!
+            if not is_kr and is_pre_market_mode and manual_open <= 0:
+                actual_open = prev_p
+            else:
+                actual_open = manual_open if manual_open > 0 else (real_kr_open if (is_kr and real_kr_open > 0) else (us_auto_open_val if (not is_kr and us_auto_open_val > 0) else (existing_open if existing_open > 0 else prev_p)))
+            
+            rt_high = real_kr_high if is_kr else auto_us_high
+            rt_low = real_kr_low if is_kr else auto_us_low
+
             if target_candle_date in df.index:
                 df.loc[target_candle_date, "Close"] = p
                 df.loc[target_candle_date, "Volume"] = v_curr if v_curr > 0 else df.loc[target_candle_date, "Volume"]
@@ -665,13 +661,13 @@ if symbol:
                 
                 c_high = df.loc[target_candle_date, "High"]
                 c_low = df.loc[target_candle_date, "Low"]
-                df.loc[target_candle_date, "High"] = max(c_high if pd.notna(c_high) else p, actual_open, p, real_kr_high)
+                df.loc[target_candle_date, "High"] = max(c_high if pd.notna(c_high) else p, actual_open, p, rt_high)
                 
-                safe_lows = [val for val in [c_low, real_kr_low] if pd.notna(val) and val > 0]
+                safe_lows = [val for val in [c_low, rt_low] if pd.notna(val) and val > 0]
                 df.loc[target_candle_date, "Low"] = min(min(safe_lows), actual_open, p) if safe_lows else min(actual_open, p)
             else:
-                df_high = max(real_kr_high, actual_open, p)
-                safe_lows = [val for val in [real_kr_low] if pd.notna(val) and val > 0]
+                df_high = max(rt_high, actual_open, p)
+                safe_lows = [val for val in [rt_low] if pd.notna(val) and val > 0]
                 df_low = min(min(safe_lows), actual_open, p) if safe_lows else min(actual_open, p)
                 
                 new_row = pd.DataFrame({"Open": [actual_open], "High": [df_high], "Low": [df_low], "Close": [p], "Volume": [v_curr]}, index=[target_candle_date])
@@ -1406,9 +1402,9 @@ if symbol:
                 col = "#D32F2F"
                 final_adv = f"• <b>[최종 결론]</b> <b>[역사적 신고가 돌파]</b> 1년 최고점({high_250:{fmt_p}}{currency})을 뚫는 강력한 불기둥이 솟구쳤소! 섣불리 불을 잡지 말고, 단기 5일선({ma5_val:{fmt_p}}{currency}) 눌림목 안착 때까지 방아쇠를 굳게 잠그시게."
             elif is_new_high_pullback:
-                _c_range = max(c_high - c_low, 1e-9)
-                _body_len = abs(p - actual_open)
-                _upper_wick = c_high - max(p, actual_open)
+                _c_range = max(today_high - today_low, 1e-9)
+                _body_len = abs(p - today_open)
+                _upper_wick = today_high - max(p, today_open)
                 _is_top_doji_or_wick = (_body_len / _c_range <= 0.25) or (_upper_wick > _body_len) or ("윗꼬리" in _c_short) or ("도지" in _c_short)
                 if bb_pct_b >= 75.0 or _is_top_doji_or_wick:
                     final_code = "NEW_HIGH_BREAKOUT_WARNING"
