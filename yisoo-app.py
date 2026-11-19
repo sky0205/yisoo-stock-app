@@ -1266,7 +1266,7 @@ if symbol:
             final_display_name = get_stock_name(symbol, is_kr)
             safe_display_name = html.escape(final_display_name)
 
-            st.markdown(f"### 📊 현재주가현황 &nbsp; <span style='font-size:18px; color:#546E7A;'>{session_badge}</span>", unsafe_allow_html=True)
+            st.markdown("### 📊 현재주가현황")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(
                 f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'>"
