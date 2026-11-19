@@ -1241,7 +1241,7 @@ if symbol:
                 f" {bias_ma5:+.1f}%)</span> | <span style='color:#1976D2;'"
                 f" font-weight:bold;'>🔵 20일선: {ma20_str}</span> | <span"
                 f" style='color:#388E3C; font-weight:bold;'>🟢 60일선: {ma60_str}</span> |"
-                f" <span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>"
+                f" <span style='color:#7B1FA2; font-weight:bold;'>🟣 120일선: {ma120_str}</span><br>{ma20_resist_msg}"
             )
             ma_price_summary += generate_ma_hierarchy(df, p)
               
