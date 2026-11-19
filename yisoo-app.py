@@ -1556,14 +1556,25 @@ if symbol:
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> <b>[허매수 투매 경계]</b> 진바닥 지표는 포착되었으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 0.5배 미만으로 매수잔량이 비정상적으로 많소! 세력이 바닥을 가장해 개미에게 물량을 떠넘길 위험이 크니 절대 칼날을 잡지 마시게."
             elif is_ma5_safe and is_ma20_chronic_resist:
-                final_code = "WAIT_MA20_RESIST"
-                sig = f"🟡 [저항 관망] 20일선 {ma20_fail_days_now}일 연속 미돌파 (하락 저항)"
-                col = "#F57C00"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> <b>[20일선 천장 저항]</b> 최근 <b>{ma20_fail_days_now}거래일 연속</b>으로 "
-                    f"20일선({mid_line:{fmt_p}}{currency}, {arrow_20})을 돌파하지 못하고 있사옵니다. "
-                    f"신규 매수는 보류하시고, 보유자께서는 20일선 부근 반등 시 비중 축소·분할 익절을 우선 고려하시옵소서."
-                )
+                _dist_to_ma20 = ((mid_line - p) / mid_line * 100.0) if (mid_line and mid_line > 0 and p) else 999.0
+                if _dist_to_ma20 <= 5.0:
+                    final_code = "WAIT_MA20_RESIST"
+                    sig = f"🟡 [저항 관망] 20일선 {ma20_fail_days_now}일 연속 미돌파 (20일선 근접 저항)"
+                    col = "#F57C00"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> <b>[20일선 천장 저항]</b> 최근 <b>{ma20_fail_days_now}거래일 연속</b>으로 "
+                        f"20일선({mid_line:{fmt_p}}{currency}, {arrow_20})을 돌파하지 못한 상태에서 20일선 코앞(-{_dist_to_ma20:.1f}%)까지 접근했사옵니다. "
+                        f"신규 매수는 보류하시고, 보유자께서는 20일선 부근 반등 시 비중 축소·분할 익절을 우선 고려하시옵소서."
+                    )
+                else:
+                    final_code = "WAIT_MA5_BOUNCE"
+                    sig = f"🟡 [단기 반등] 5일선 안착 반격 중 (20일선까지 +{_dist_to_ma20:.1f}% 거리)"
+                    col = "#F57C00"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> <b>[5일선 단기 반등]</b> 현재가({p:{fmt_p}}{currency})가 5일선 위에 안착하며 단기 반격을 시작했사오나, "
+                        f"20일선({mid_line:{fmt_p}}{currency})까지는 아직 <b>{_dist_to_ma20:.1f}%</b> 거리가 남은 역배열 구간이옵니다. "
+                        f"20일선 공방 단계가 아니므로 5일선 지지 여부를 보며 단기 기술적 반등으로만 가볍게 대응하시옵소서."
+                    )
             elif is_ma20_breakout_real:
                 if bias_ma5 >= 7.0:
                     final_code = "WAIT_MA20_BREAK_OVEREXT"
