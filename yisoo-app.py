@@ -1528,11 +1528,22 @@ if symbol:
                     col = "#D32F2F"
                     final_adv = f"• <b>[최종 결론]</b> <b>[가짜 돌파 경계]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 음봉을 띄우며 차익 매물을 쏟아내고 있소! 섣부른 추격 매수를 삼가고 방어선 붕괴 여부를 확인하시게."
                     
-                elif p >= ma5_val:  
-                    final_code = "BREAKOUT_ATTACK"
-                    sig = f"🟢 [성벽 위 {candle_color_txt}] 기세 유지 랠리 추종"
-                    col = "#2E7D32"
-                    final_adv = f"• <b>[최종 결론]</b> <b>[기세 유지 랠리 추종]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 뿜어내고 있소! 5일선을 사수하며 위로 밀어 올리는 세력의 힘을 믿고 상방 목표선까지 추세를 끝까지 발라먹도록 하시게."
+                elif p >= ma5_val:
+                    _upside_pct = ((target_price_100 - p) / p * 100.0) if (p and p > 0 and target_price_100) else 999.0
+                    if _upside_pct < 5.0:
+                        final_code = "BREAKOUT_NEAR_TARGET_WAIT"
+                        sig = f"🟡 [상단 근접·여력 {_upside_pct:.1f}%] 신규 추격 금지 / 보유자 관망·추종"
+                        col = "#F57C00"
+                        final_adv = (
+                            f"• <b>[최종 결론]</b> <b>[상단 근접·신규 추격 보류]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency})과 5일선({ma5_val:{fmt_p}}{currency}) 위에서 기세를 유지 중이나, "
+                            f"수확 목표선({target_price_100:{fmt_p}}{currency})까지 남은 상승 여력이 <b>+{_upside_pct:.1f}%</b>(5% 미만)뿐이오. "
+                            f"신규 진입자는 매수 버튼에서 손을 떼고 눌림목을 기다리시며, 보유자만 5일선 종가 이탈 전까지 잔여 물량 수익을 관리하시게."
+                        )
+                    else:
+                        final_code = "BREAKOUT_ATTACK"
+                        sig = f"🟢 [성벽 위 {candle_color_txt}] 기세 유지 랠리 추종"
+                        col = "#2E7D32"
+                        final_adv = f"• <b>[최종 결론]</b> <b>[기세 유지 랠리 추종]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 {candle_color_txt} 기세를 유지하고 있소! 5일선({ma5_val:{fmt_p}}{currency}) 지지 여부를 확인하며 상방 목표선({target_price_100:{fmt_p}}{currency}) 흐름을 추종하시게."
             
                 else:  
                     final_code = "BREAKOUT_WARNING"
