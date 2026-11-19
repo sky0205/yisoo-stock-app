@@ -1704,20 +1704,33 @@ if symbol:
                                 sig = "🚨 [절대 관망령] 데드캣 바운스 경계 (단 1주도 아깝소!)"
                                 final_adv = f"• <b>[최종 결론]</b> 바닥 지표가 반응하며 반등을 시도하나, 5일선과 까마득히 멀어진 수직 폭포수 구간이오! 뻔히 죽을 자리로 끌어들이는 가짜 기술적 반등(데드캣 바운스) 위험이 크니, <b style='color:#FFEB3B;'>단 1주의 정찰병 파병조차 전면 금지하오!</b> 100% 현금을 사수하시게!"
                         else:
-                            final_code = "EXTREME_BOTTOM_ENTRY"
-                            col = "#388E3C"  
-                            sig = "🟢 [극한 진바닥 포착] 신규 1단계 유효 (기 1단계 매수자는 추매 금지)"
-                            
-                            if is_candle_unknown:
-                                _def_txt = "하락 진정 및 반등 기세"
-                            elif is_strong_bull_body and not is_tail_defended:
-                                _def_txt = "강력한 매수세(반등 몸통)"
+                            _bot_txt = f"당일 진바닥 지표({bottom_score}점, 볼린저위치 {bb_pct_b:.1f}%·{_c_short})" if bottom_score >= 1 else f"최근 3일 내 진바닥 터치(볼린저위치 {bb_pct_b:.1f}%·{_c_short})"
+                
+                            if "윗꼬리" in str(_c_short):
+                                final_code = "WAIT_BOTTOM_UPPER_TAIL"
+                                col = "#F57C00"
+                                sig = "🟡 [진바닥·윗꼬리 주의] 매물 저항 출회 (종가 확인 후 1단계)"
+                                final_adv = (
+                                    f"• <b>[최종 결론]</b> <b>[극한 진바닥·윗꼬리 매물 주의]</b> {_bot_txt}이(가) 포착되었사오나, "
+                                    f"상단 매물 저항(윗꼬리)이 동반되어 성급히 진입할 자리가 아니옵니다. "
+                                    f"<b>[신규 진입자]</b>는 장중 추격을 보류하시고 종가 방어 또는 5일선 안착 확인 후 1단계 진입을 검토하시게."
+                                )
                             else:
-                                _def_txt = "아래꼬리 지지력(투매 방어)"
-                            
-                            _bot_txt = f"당일 진바닥 지표({bottom_score}점, 볼린저위치 {bb_pct_b:.1f}%·{_c_short})" if bottom_score >= 1 else f"최근 3일 내 진바닥 터치 후 반등(볼린저위치 {bb_pct_b:.1f}%·{_c_short})"
-            
-                            final_adv = f"• <b>[최종 결론]</b> <b>[진바닥 지표 및 강력 방어 확인]</b> {_bot_txt}과(와) <b>{_def_txt}</b>이(가) 동시 확인되었소! [신규 진입자]는 비중 10% 수준의 가벼운 1단계 정찰병을 투입하시게. 단, [기 1단계 매수자]는 섣부른 물타기를 엄금하고 5일선 안착(2단계)을 기다리며 관망하시게."
+                                final_code = "EXTREME_BOTTOM_ENTRY"
+                                col = "#388E3C"
+                                sig = "🟢 [극한 진바닥 포착] 신규 1단계 유효 (기 1단계 매수자는 추매 금지)"
+                
+                                if is_candle_unknown:
+                                    _def_txt = "하락 진정 및 반등 기세"
+                                elif is_strong_bull_body and not is_tail_defended:
+                                    _def_txt = "강력한 매수세(반등 몸통)"
+                                else:
+                                    _def_txt = "아래꼬리 지지력(투매 방어)"
+                
+                                final_adv = (
+                                    f"• <b>[최종 결론]</b> <b>[진바닥 지표 및 강력 방어 확인]</b> {_bot_txt}과(와) <b>{_def_txt}</b>이(가) 동시 확인되었소! "
+                                    f"<b>[신규 진입자]</b>는 비중 10% 수준의 가벼운 1단계 정찰병을 투입하시게. 단, <b>[기 1단계 매수자]</b>는 섣부른 물타기를 엄금하고 5일선 안착(2단계)을 기다리며 관망하시게."
+                                )
                         
             elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= -1.5):
                 if margin_diff < 4.0: 
@@ -1945,7 +1958,8 @@ if symbol:
                 if p < (ma5_val * 0.97):
                     sub_indicator_str = f"  - <b style='color:#D32F2F;'>🚨 [절대 관망령] 데드캣 바운스 경고:</b> 바닥 지표({bottom_score}점) 포착! 허나 5일선 아래 까마득한 폭포수 구간이오! -> <b><span style='color:#D32F2F;'>[진입 전면 금지]</span></b> 단 1주의 정찰병도 아깝소!"
                 else:
-                    sub_indicator_str = f"  - <b style='color:#1976D2;'>✅ [정상 진바닥 동조]:</b> 바닥 지표({bottom_score}점) 포착 완료 (건전한 5일선 눌림목) -> <b>[매수 유효]</b> 계획된 1단계 선발대 투입 가동"
+                    _ma5_note = "5일선 근접 하회·바닥 방어" if p < ma5_val else "건전한 5일선 눌림목"
+                    sub_indicator_str = f"  - <b style='color:#1976D2;'>✅ [정상 진바닥 동조]:</b> 바닥 지표({bottom_score}점) 포착 완료 ({_ma5_note}) -> <b>[매수 유효]</b> 계획된 1단계 선발대 투입 가동"
             elif final_code == "DEEP_DISCOUNT_ENTRY": 
                 sub_indicator_str = f"   - <b>가격 메리트 동조:</b> 직전 매수가 대비 -{drop_ratio:.1f}% 하락 -> <b>[추가 진입 유효]</b> 하이패스 물타기 타점 가동"
             elif final_code == "PULLBACK_BUY": sub_indicator_str = f"   - <b>눌림목 지지 성공:</b> 볼린저 중심선 위 양봉 안전마진 확보 완료 -> <b>[매수 유효]</b> 3단계 본진 진격 타점 가동"
