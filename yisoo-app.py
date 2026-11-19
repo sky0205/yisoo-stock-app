@@ -118,8 +118,8 @@ st.markdown(
     .signal-subtext { font-size: 22px !important; color: #FFFFFF !important; line-height: 1.6; margin-top: 10px; }
     .trend-card { background-color: #FFFFFF; padding: 30px; border-radius: 20px; border: 5px solid #D32F2F; margin: 20px 0; }
     .trend-title { font-size: 32px !important; color: #D32F2F !important; border-bottom: 3px solid #FFEBEE; padding-bottom: 12px; margin-bottom: 20px; }
-    .price-card { background-color: #FFFFFF; padding: 15px; border-radius: 12px; border: 2.5px solid #CFD8DC; text-align: center; box-shadow: 1px 1px 6px rgba(0,0,0,0.05); }
-    .ind-box { background-color: #FFFFFF; padding: 22px; border-radius: 15px; border: 2.5px solid #90A4AE; min-height: 540px; margin-bottom: 15px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); }
+    .price-card { background-color: #FFFFFF; padding: 15px; border-radius: 12px; border: 2.5px solid #CFD8DC; text-align: center; box-shadow: 1px 1px 6px rgba(0,0,0,0.05); min-height: 175px; display: flex; flex-direction: column; justify-content: center; }
+    .ind-box { background-color: #FFFFFF; padding: 22px; border-radius: 15px; border: 2.5px solid #90A4AE; min-height: 300px; margin-bottom: 18px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); }
     .ind-title { font-size: 24px !important; color: #1976D2 !important; border-bottom: 2px solid #EEEEEE; padding-bottom: 10px; margin-bottom: 15px; }
     .ind-diag { font-size: 19px !important; color: #333333 !important; line-height: 1.8; background-color: #FDFDFD; padding: 12px; border-radius: 10px; border-left: 8px solid #D32F2F; }
     .final-msg { color: #D32F2F !important; font-size: 24px !important; font-weight: 900 !important; line-height: 1.5 !important; }
@@ -241,7 +241,7 @@ def display_global_risk():
     except Exception:
         st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 무결점 통합본 (수동통제 완벽 장착)")
+st.title("🧐 이수할아버지의 냉정 진단기")
 display_global_risk()
 st.divider()
 
@@ -1812,7 +1812,7 @@ if symbol:
             else:
                 final_code = "WAIT_GENERAL"
                 sig = "🟡 [관망] 조건 미충족 / 뇌동매매 금지"
-                col = "#FBC02D"
+                col = "#E68A00"
                 if pullback_rebound_score >= 1 or bottom_score >= 1:
                     final_adv = f"• <b>[최종 결론]</b> 일부 바닥·눌림 지표({max(bottom_score, pullback_rebound_score)}/3점)는 반응했으나, 대세 역배열 저항 또는 추세 안전마진 미충족 상태이오! 섣부른 뇌동매매를 금하고 관망을 유지하시게."
                 else:
@@ -2197,7 +2197,7 @@ if symbol:
 
             st.divider()
 
-            i1, i2, i3, i4 = st.columns(4)
+            i1, i2 = st.columns(2)
             with i1:
                 if final_code == "STOP_LOSS_ALERT" or is_massive_dump:
                     bb_diag = f"🚨 <b>[방어선 붕괴 / 대투매 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 칼날 회피 및 계좌 방어.<br>• <b>진단:</b> 전저점 지하실이 뚫리며 매물이 쏟아지고 있소! 절대 입질조차 하지 말고 즉각 대피하시게."
@@ -2334,7 +2334,7 @@ if symbol:
                         r_status = "<b>📉 적정 온도 (냉기 유지)</b><br>• <b>진단:</b> 시그널 선 아래에서 하방 압력을 받고 있소. 돌파를 대기하시게."
                         
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (14,9 시그널)</p><p style='font-size:32px; color:#E65100; margin:10px 0;'>{rsi_val:.2f} <span style='font-size:18px; color:{rsi_trend_col};'>({rsi_trend_tag})</span></p><p class='ind-diag'>{r_status}</p></div>", unsafe_allow_html=True)
-
+            i3, i4 = st.columns(2)
             with i3:
                 will_cross_up = (will_prev <= will_sig_prev) and (will_val > will_sig_val)
                 will_cross_down = (will_prev >= will_sig_prev) and (will_val < will_sig_val)
