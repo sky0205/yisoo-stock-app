@@ -1817,7 +1817,10 @@ if symbol:
                 elif p < ma5_val and (p_chg <= 0 or is_candle_bearish):
                     _p_action = f"-> <b>[추세 꺾임 관망]</b> 지표는 포착되었으나 5일선 아래 음봉/저항 구역이므로 진입 금지"
                 elif is_down_trend_structural:
-                    _p_action = f"-> <b>[역배열 저항 관망]</b> 20일선은 넘었으나 상위 이평선(60·120일) 역배열 저항 구역이므로 섣부른 진입 보류"
+                    if p >= mid_line:
+                        _p_action = f"-> <b>[역배열 저항 관망]</b> 20일선은 넘었으나 상위 이평선(60·120일) 역배열 저항 구역이므로 섣부른 진입 보류"
+                    else:
+                        _p_action = f"-> <b>[역배열 저항 관망]</b> 20일선({mid_line:{fmt_p}}{currency}) 아래 대세 역배열 저항 구역이므로 섣부른 진입 보류"
                 elif pullback_rebound_score >= 2: _p_action = f"-> <b>[눌림목 공방 유효]</b> 중간지대 조건 충족!"
                 elif pullback_rebound_score == 1: _p_action = f"-> <b>[입질 대기]</b> 눌림목 지표 1개 포착"
                 elif bottom_score >= 1: _p_action = f"-> <b>[바닥 포착/대기]</b> 바닥 지표는 켜졌으나 제반 조건 미달"
