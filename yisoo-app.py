@@ -1679,7 +1679,7 @@ if symbol:
                         final_code = "WATERFALL_DROP_WARNING"
                         sig = f"🚨 [절대 관망령] 지하실 폭포수 추락 중! (5일선 {bias_ma5:.1f}% 붕괴)"
                         col = "#D32F2F"
-                        final_adv = f"• <b>[최종 결론]</b> 바닥 지표({bottom_score}/3점)가 반응했으나, 반등은커녕 5일선과 까마득히 멀어진 채 <b>{candle_color_txt}({p_chg:+.2f}%)으로 지하실을 파고드는 수직 폭포수 추락 구간</b>이오! 떨어지는 칼날에 손목이 날아갈 자리이니 <b style='color:#FFEB3B;'>단 1주의 정찰병 파병조차 전면 금지하오!</b> 양봉 방어선이 구축될 때까지 100% 현금을 사수하시게!"
+                        final_adv = f"• <b>[최종 결론]</b> 바닥 지표({bottom_score}/3점)가 반응했으나, 반등은커녕 5일선과 까마득히 멀어진 채 <b>{candle_color_txt}으로 지하실을 파고드는 수직 폭포수 추락 구간</b>이오! 떨어지는 칼날에 손목이 날아갈 자리이니 <b style='color:#FFEB3B;'>단 1주의 정찰병 파병조차 전면 금지하오!</b> 양봉 방어선이 구축될 때까지 100% 현금을 사수하시게!"
                     else:
                         final_code = "BEARISH_GUARD"
                         sig = "🔴 [떨어지는 칼날 경고] 지표는 바닥이나 하방 압력 지속!"
@@ -2010,14 +2010,14 @@ if symbol:
                         trend_status = f"⚠️ <b style='color:#F57C00;'>[장대 위꼬리 매물 폭탄 / 시가 붕괴]</b> 장중 고점({today_high:{fmt_p}}{currency})까지 강하게 솟구쳤으나 상단 매물 폭탄을 맞고 밀려 내려와, 현재가({p:{fmt_p}}{currency})가 시가({today_open:{fmt_p}}{currency}) 아래로 처박혔소! 섣부른 진입 금지."
                 elif has_upper_tail_resist and is_candle_bullish:
                     if has_meaningful_lower_tail:
-                        trend_status = f"⚠️ <b style='color:#E65100;'>[위·아래꼬리 공방 속 양봉 안착]</b> 장중 저점({today_low:{fmt_p}}{currency})에서 반등하여 {candle_color_txt}({p_chg:+.2f}%)을 세웠으나, 당일 고점({today_high:{fmt_p}}{currency}) 상단 매물 저항에 부딪혀 윗꼬리(진폭의 {upper_tail_pct_of_range:.0f}%)를 달고 일부 밀려 내려왔소! 상단 저항을 의식하며 대응하시게."
+                        trend_status = f"⚠️ <b style='color:#E65100;'>[위·아래꼬리 공방 속 양봉 안착]</b> 장중 저점({today_low:{fmt_p}}{currency})에서 반등하여 {candle_color_txt}을 세웠으나, 당일 고점({today_high:{fmt_p}}{currency}) 상단 매물 저항에 부딪혀 윗꼬리(진폭의 {upper_tail_pct_of_range:.0f}%)를 달고 일부 밀려 내려왔소! 상단 저항을 의식하며 대응하시게."
                     else:
                         trend_status = f"⚠️ <b style='color:#E65100;'>[양봉 상승 속 윗꼬리 매물 출회]</b> 시가({today_open:{fmt_p}}{currency})에서 밀리지 않고 고점({today_high:{fmt_p}}{currency})까지 치솟았으나, 상단 매물벽 저항을 맞고 <b>윗꼬리(진폭의 {upper_tail_pct_of_range:.0f}%)를 달며 현재가({p:{fmt_p}}{currency}, {p_chg:+.2f}%)로 일부 밀려 내려온 {candle_color_txt}</b>이오! 무조건적인 맹공이 아니니 상단 매물 소화를 확인하시게."
                 elif is_strong_bull_body and not has_meaningful_lower_tail and p_chg > 0:
                     if today_open == today_low and upper_tail_len <= day_candle_range * 0.15:
                         trend_status = f"🔥 <b style='color:#D84315;'>[강한 매수세 맹공 (꽉 찬 양봉)]</b> 시가({today_open:{fmt_p}}{currency})부터 아래꼬리와 윗꼬리 저항을 거의 허용하지 않고 고점 부근({p:{fmt_p}}{currency}, {p_chg:+.2f}%)까지 꽉 채워 밀어 올린 강력한 {candle_color_txt} 출현!"
                     else:
-                        trend_status = f"📈 <b style='color:#388E3C;'>[견고한 매수세 유입]</b> 상단 윗꼬리 저항을 이겨내고 든든한 몸통의 {candle_color_txt}(상승률 {p_chg:+.2f}%)을 기록 중이오."
+                        trend_status = f"📈 <b style='color:#388E3C;'>[견고한 매수세 유입]</b> 상단 윗꼬리 저항을 이겨내고 든든한 몸통의 {candle_color_txt}을 기록 중이오."
                 elif p_chg < 0:
                     if is_long_lower_tail:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 밑꼬리 반발]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 전체 길이의 50% 이상 길게 달며 반발 매수세가 들어왔소! 허나 아직 완벽한 양봉 전환이 아니니, 내일 확실한 지지를 눈으로 확인하기 전까지는 섣부른 줍줍을 금하시게."
