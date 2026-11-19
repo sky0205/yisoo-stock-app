@@ -950,7 +950,48 @@ if symbol:
             ma5_val = float(df["MA5"].iloc[-1]) if (len(df) >= 5 and pd.notna(df["MA5"].iloc[-1])) else p
             ma60_val = float(df["MA60"].iloc[-1]) if (len(df) >= 60 and pd.notna(df["MA60"].iloc[-1])) else mid_line
             ma120_val = float(df["MA120"].iloc[-1]) if (len(df) >= 120 and pd.notna(df["MA120"].iloc[-1])) else ma60_val
-            
+            # --- [신규] 이평선 기울기(↗/→/↘) 및 20일선 연속 미돌파 일수 계산 ---
+            def get_ma_slope_arrow(series, lookback=5, flat_pct=0.003):
+                if len(series) <= lookback or pd.isna(series.iloc[-1]) or pd.isna(series.iloc[-1 - lookback]):
+                    return "→"
+                prev_val = series.iloc[-1 - lookback]
+                curr_val = series.iloc[-1]
+                if prev_val == 0:
+                    return "→"
+                diff_pct = (curr_val - prev_val) / prev_val
+                if diff_pct >= flat_pct:
+                    return "↗"
+                elif diff_pct <= -flat_pct:
+                    return "↘"
+                return "→"
+    
+            _ma20_s = df["Close"].rolling(20).mean()
+            arrow_5   = get_ma_slope_arrow(df["MA5"], lookback=3, flat_pct=0.005)
+            arrow_20  = get_ma_slope_arrow(_ma20_s, lookback=5, flat_pct=0.003)
+            arrow_60  = get_ma_slope_arrow(df["MA60"], lookback=5, flat_pct=0.002)
+            arrow_120 = get_ma_slope_arrow(df["MA120"], lookback=5, flat_pct=0.002)
+    
+            # 어제까지 20일선 연속 미돌파 일수 역산
+            ma20_fail_days = 0
+            for idx in range(len(df) - 2, -1, -1):
+                c_val = df["Close"].iloc[idx]
+                m_val = _ma20_s.iloc[idx]
+                if pd.isna(m_val):
+                    break
+                if c_val < m_val:
+                    ma20_fail_days += 1
+                else:
+                    break
+    
+            ma20_fail_days_now = (ma20_fail_days + 1) if (p < mid_line) else 0
+    
+            # [판정 플래그] 지속 저항 vs 장기 저항 첫 돌파
+            is_ma20_chronic_resist = (ma20_fail_days_now >= 10) and (arrow_20 == "↘")
+            _is_bull_today = (p >= float(df["Open"].iloc[-1])) if "Open" in df.columns else True
+            _vol_5avg = df["Volume"].iloc[-6:-1].mean() if len(df) >= 6 else 0
+            _is_vol_ok = (df["Volume"].iloc[-1] >= _vol_5avg) if _vol_5avg > 0 else True
+            is_ma20_breakout_real = (ma20_fail_days >= 10) and (p >= mid_line) and _is_bull_today and _is_vol_ok
+            is_ma20_breakout_try  = (ma20_fail_days >= 10) and (p >= mid_line) and (not is_ma20_breakout_real)
             is_ma5_safe = p >= ma5_val
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
@@ -1137,10 +1178,19 @@ if symbol:
             bb_pos_summary_line = f"<br>• 📍 <b>[볼린저 위치×캔들 판독]:</b> <span style='color:{bb_pos_col}; font-weight:bold;'>{bb_pos_tag}</span> — {bb_pos_desc}"
             squeeze_info_str = bb_pos_summary_line + squeeze_info_str
 
-            ma5_str = f"{ma5_val:{fmt_p}}{currency}"
-            ma20_str = f"{mid_line:{fmt_p}}{currency}"
-            ma60_str = f"{ma60_val:{fmt_p}}{currency}"
-            ma120_str = f"{ma120_val:{fmt_p}}{currency}"
+            ma5_str = f"{ma5_val:{fmt_p}}{currency}({arrow_5})"
+            ma20_str = f"{mid_line:{fmt_p}}{currency}({arrow_20})"
+            ma60_str = f"{ma60_val:{fmt_p}}{currency}({arrow_60})"
+            ma120_str = f"{ma120_val:{fmt_p}}{currency}({arrow_120})"
+    
+            if is_ma20_chronic_resist:
+                ma20_resist_msg = f"<br>⚠️ <b>[20일선 천장 저항]</b> 최근 <b>{ma20_fail_days_now}거래일 연속</b> 20일선 돌파 실패 중 (우하향 압박)"
+            elif is_ma20_breakout_real:
+                ma20_resist_msg = f"<br>🚀 <b>[장기 저항 첫 돌파!]</b> {ma20_fail_days}일간의 20일선 천장을 거래량 실린 양봉으로 돌파!"
+            elif is_ma20_breakout_try:
+                ma20_resist_msg = f"<br>⏳ <b>[20일선 돌파 시도]</b> {ma20_fail_days}일 만에 20일선 상향 시도 중 (거래량·종가 안착 확인 필요)"
+            else:
+                ma20_resist_msg = ""
 
             if is_bullish:
                 if p < mid_line: trend_status = "⚠️ <b>[정배열 붕괴 경계]</b> 완벽한 우상향이나 현재가가 20일선 성벽을 깨고 추락 중"
@@ -1464,7 +1514,32 @@ if symbol:
                 sig = "🟡 [관망/보류] 허매수 징후 포착 (폭락 경계)"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> <b>[허매수 투매 경계]</b> 진바닥 지표는 포착되었으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 0.5배 미만으로 매수잔량이 비정상적으로 많소! 세력이 바닥을 가장해 개미에게 물량을 떠넘길 위험이 크니 절대 칼날을 잡지 마시게."
-            
+            elif is_ma20_chronic_resist:
+                final_code = "WAIT_MA20_RESIST"
+                sig = f"🟡 [저항 관망] 20일선 {ma20_fail_days_now}일 연속 미돌파 (하락 저항)"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> <b>[20일선 천장 저항]</b> 최근 <b>{ma20_fail_days_now}거래일 연속</b>으로 "
+                    f"20일선({mid_line:{fmt_p}}{currency}, {arrow_20})을 돌파하지 못하고 있사옵니다. "
+                    f"신규 매수는 보류하시고, 보유자께서는 20일선 부근 반등 시 비중 축소·분할 익절을 우선 고려하시옵소서."
+                )
+            elif is_ma20_breakout_real:
+                final_code = "BUY_MA20_BREAKOUT"
+                sig = f"🟢 [추세 전환] {ma20_fail_days}일 만의 20일선 장기 저항 돌파!"
+                col = "#2E7D32"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> <b>[장기 저항 첫 돌파!]</b> {ma20_fail_days}거래일간 짓누르던 "
+                    f"20일선({mid_line:{fmt_p}}{currency}) 천장을 거래량 실린 양봉으로 뚫어냈사옵니다. "
+                    f"추세 전환 신호로 인정하오니 2단계 분할 진입 및 보유자 홀딩 전략을 검토하시옵소서."
+                )
+            elif is_ma20_breakout_try:
+                final_code = "WAIT_MA20_BREAK_TRY"
+                sig = f"🟡 [돌파 시도] {ma20_fail_days}일 만의 20일선 돌파 시도 (종가 안착 확인)"
+                col = "#F57C00"
+                final_adv = (
+                    f"• <b>[최종 결론]</b> <b>[20일선 돌파 시도 중]</b> {ma20_fail_days}일 만에 20일선을 넘보고 있으나 "
+                    f"거래량 또는 양봉 안착이 아직 충분치 않사옵니다. 윗꼬리 함정을 피하기 위해 종가 기준 안착을 확인한 뒤 움직이시옵소서."
+                )
             elif is_ma5_safe and not is_down_trend_structural and (bottom_score >= 1 or pullback_rebound_score >= 1) and has_manual_ob and ((pullback_rebound_score >= 1 and not is_ob_stage3_safe) or (bottom_score >= 1 and not is_ob_stage2_safe)):
                 final_code = "WAIT_ORDERBOOK"
                 sig = "🟡 [관망/보류] 매도잔량비 실전 기준 미달 (속임수 윗꼬 경계)"
