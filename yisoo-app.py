@@ -978,7 +978,7 @@ if symbol:
                 m_val = _ma20_s.iloc[idx]
                 if pd.isna(m_val):
                     break
-                if c_val < m_val:
+                if c_val < m_val * 1.01:
                     ma20_fail_days += 1
                 else:
                     break
@@ -1184,13 +1184,13 @@ if symbol:
             ma120_str = f"{ma120_val:{fmt_p}}{currency}({arrow_120})"
     
             if is_ma20_chronic_resist:
-                ma20_resist_msg = f"<br>⚠️ <b>[20일선 천장 저항]</b> 최근 <b>{ma20_fail_days_now}거래일 연속</b> 20일선 돌파 실패 중 (우하향 압박)"
+                ma20_resist_msg = f"<br>⚠️ <b>[20일선 천장 저항]</b> 최근 <b>{ma20_fail_days_now}거래일 연속</b> 20일선 돌파 실패 중 (우하향 압박)"<br>
             elif is_ma20_breakout_real:
-                ma20_resist_msg = f"<br>🚀 <b>[장기 저항 첫 돌파!]</b> {ma20_fail_days}일간의 20일선 천장을 거래량 실린 양봉으로 돌파!"
+                ma20_resist_msg = f"<br>🚀 <b>[장기 저항 첫 돌파!]</b> {ma20_fail_days}일간의 20일선 천장을 거래량 실린 양봉으로 돌파!"<br>
             elif is_ma20_breakout_try:
-                ma20_resist_msg = f"<br>⏳ <b>[20일선 돌파 시도]</b> {ma20_fail_days}일 만에 20일선 상향 시도 중 (거래량·종가 안착 확인 필요)"
+                ma20_resist_msg = f"<br>⏳ <b>[20일선 돌파 시도]</b> {ma20_fail_days}일 만에 20일선 상향 시도 중 (거래량·종가 안착 확인 필요)"<br>
             else:
-                ma20_resist_msg = f"<br>ℹ️ [체크] 연속 미돌파: {ma20_fail_days_now}일 / 기울기: {arrow_20}"
+                ma20_resist_msg = ""
 
             if is_bullish:
                 if p < mid_line: trend_status = "⚠️ <b>[정배열 붕괴 경계]</b> 완벽한 우상향이나 현재가가 20일선 성벽을 깨고 추락 중"
