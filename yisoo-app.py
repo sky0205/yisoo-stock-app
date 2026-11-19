@@ -1183,7 +1183,7 @@ if symbol:
             ma60_str = f"{ma60_val:{fmt_p}}{currency}({arrow_60})"
             ma120_str = f"{ma120_val:{fmt_p}}{currency}({arrow_120})"
     
-            if is_ma20_chronic_resist:
+            if is_ma5_safe and is_ma20_chronic_resist:
                 ma20_resist_msg = f"<br>⚠️ <b>[20일선 천장 저항]</b> 최근 <b>{ma20_fail_days_now}거래일 연속</b> 20일선 돌파 실패 중 (우하향 압박)<br>"
             elif is_ma20_breakout_real:
                 ma20_resist_msg = f"<br>🚀 <b>[장기 저항 첫 돌파!]</b> {ma20_fail_days}일간의 20일선 천장을 거래량 실린 양봉으로 돌파!<br>"
@@ -1514,7 +1514,7 @@ if symbol:
                 sig = "🟡 [관망/보류] 허매수 징후 포착 (폭락 경계)"
                 col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> <b>[허매수 투매 경계]</b> 진바닥 지표는 포착되었으나, 매도/매수 잔량비({ob_ratio_val:.2f}배)가 0.5배 미만으로 매수잔량이 비정상적으로 많소! 세력이 바닥을 가장해 개미에게 물량을 떠넘길 위험이 크니 절대 칼날을 잡지 마시게."
-            elif is_ma20_chronic_resist:
+            elif is_ma5_safe and is_ma20_chronic_resist:
                 final_code = "WAIT_MA20_RESIST"
                 sig = f"🟡 [저항 관망] 20일선 {ma20_fail_days_now}일 연속 미돌파 (하락 저항)"
                 col = "#F57C00"
