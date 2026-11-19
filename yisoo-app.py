@@ -401,7 +401,7 @@ if symbol:
                 _high = _krx_high
                 _low = _krx_low
 
-                # 🔥 아침 8시 프리마켓 시가 & 애프터마켓 현재가 통합 추적!
+                # 🔥 아침 8시 프리마켓 시가 & 15시 30분 이후 애프터마켓 현재가 정밀 추적!
                 _over_info = quote.get("overMarketPriceInfo")
                 if isinstance(_over_info, dict):
                     _over_status = str(_over_info.get("overMarketStatus", "")).upper()
@@ -428,7 +428,8 @@ if symbol:
                     if _over_open > 0:
                         _open = _over_open
 
-                    if _over_p > 0 and (now_local.hour == 8 or _krx_open <= 0 or _over_status in ["OPEN", "CLOSE"] or now_local.hour >= 15):
+                    is_after_kr_regular = (now_local.hour > 15) or (now_local.hour == 15 and now_local.minute >= 30)
+                    if _over_p > 0 and (now_local.hour == 8 or _krx_open <= 0 or _over_status in ["OPEN", "CLOSE"] or is_after_kr_regular):
                         _price = _over_p
 
                     if _over_high > 0:
@@ -508,7 +509,7 @@ if symbol:
 
             if not df.empty and kr_fetched:
                 _avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
-                if _avg_v > 0 and v_curr > _avg_v * 10:
+                if _avg_v > 0 and v_curr > _avg_v * 50:
                     v_curr = float(df["Volume"].iloc[-1])
                     
             if auto_p > 0:
@@ -546,7 +547,7 @@ if symbol:
 
             if not df.empty:
                 _us_avg_v = float(df["Volume"].iloc[-6:-1].mean()) if len(df) >= 6 else float(df["Volume"].mean())
-                if _us_avg_v > 0 and v_curr > _us_avg_v * 10:
+                if _us_avg_v > 0 and v_curr > _us_avg_v * 50:
                     v_curr = float(df["Volume"].iloc[-1])
 
         multiplier = 1000.0 if is_kr else 1.0
@@ -763,7 +764,7 @@ if symbol:
                 else:
                     # 1) 치명적 장대 윗꼬리: 윗꼬리가 몸통보다 길거나 전체 진폭의 35% 이상이면서 몸통의 70% 이상일 때
                     is_long_upper_tail = (upper_tail_len > lower_tail_len) and ((upper_tail_len > body_len) or (upper_tail_len >= day_candle_range * 0.35 and upper_tail_len >= body_len * 0.7))
-                    # 2) 일반 윗꼬리 저항 (신설!): 양봉 몸통이 더 길더라도 고점 대비 전체 진폭의 15% 이상(또는 몸통의 25% 이상, 또는 0.8% 이상 하락) 윗꼬리가 달렸을 때!
+                    # 2) 일반 윗꼬리 저항: 양봉 몸통이 더 길더라도 고점 대비 전체 진폭의 15% 이상(또는 몸통의 25% 이상, 또는 0.8% 이상 하락) 윗꼬리가 달렸을 때!
                     has_upper_tail_resist = (upper_tail_len >= day_candle_range * 0.15) or (body_len > 0 and upper_tail_len >= body_len * 0.25) or (today_high > 0 and ((today_high - max(today_open, p)) / today_high) >= 0.008)
                 
                 is_tail_defended = (lower_tail_len > upper_tail_len) and (lower_tail_len >= day_candle_range * 0.25) and (not (is_candle_bearish and p_chg < 0 and lower_tail_len < body_len))
@@ -1572,7 +1573,7 @@ if symbol:
             
                             final_adv = f"• <b>[최종 결론]</b> <b>[진바닥 지표 및 강력 방어 확인]</b> {_bot_txt}과(와) <b>{_def_txt}</b>이(가) 동시 확인되었소! [신규 진입자]는 비중 10% 수준의 가벼운 1단계 정찰병을 투입하시게. 단, [기 1단계 매수자]는 섣부른 물타기를 엄금하고 5일선 안착(2단계)을 기다리며 관망하시게."
                         
-            elif is_near_ma5_bottom and (is_bottom_indicator_ok or will_val <= -75) and (p >= today_open) and (p_chg >= -1.5):
+            elif is_bottom_entry_signal and (p >= today_open) and (p_chg >= -1.5):
                 if margin_diff < 4.0: 
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
@@ -1697,10 +1698,12 @@ if symbol:
                 final_adv += "<br><br>💡 <b style='color:#FFEB3B;'>[이수할아버지의 안내]</b> 기계의 기억상 최근 3일 내 바닥 신호가 있었소. 만약 당시 <b>이미 매수하셨다면</b> 상단 <b>[직전 1차 매수가]</b> 칸에 금액을 입력하시게! 그래야 중복 매수를 차단하거나 물타기 계산을 가동할 수 있소이다."
             
             if user_last_1st_price > 0 and final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
+                final_code = "WAIT_GENERAL"
                 col = "#F57C00"
                 sig = "🟡 [관망/보류] 기 매수자 추가 진입 금지 (대세 하락 방어 가동)"
                 final_adv = "• <b>[최종 결론]</b> 당일 강력한 반등 기세가 보이나, 대세 하락장 역배열 방어 로직이 작동 중이오! 이미 물량을 보유한 [기 1단계 매수자]는 섣부른 물타기(추매)를 엄금하고, 5일선 완벽 안착 신호를 기다리며 얌전히 관망하시게."
             if "투매" in sig and (v_ratio < 15):
+                final_code = "WAIT_GENERAL"
                 col = "#F57C00"
                 sig = "🟡 [관망/보류] 장 초반 시간보정 노이즈 (가짜 투매 방어)"
                 final_adv = f"• <b>[최종 결론]</b> 보정강도({vol_strength:.1f}점)가 치솟았으나, 실시간 거래량이 {v_ratio:.1f}% 수준으로 씨가 마른 상태이오! 얇은 호가에 툭 던진 물량이 만든 '시간보정 착시 현상'일 뿐이니 붉은 경고에 쫄지 말고 차분히 관망하시게."
@@ -1827,8 +1830,7 @@ if symbol:
             bottom_score_display = f"<b>{bottom_score}점</b> <span style='color:#E65100;'>(최근 3일 바닥 터치 인정)</span>" if (bottom_score == 0 and recent_bottom_memory) else f"<b>{bottom_score}점</b> (기준 1점)"
             
             # ==================================================================
-            # 🚨 [핵심 교정] 추세 정밀 판독: 윗꼬리가 달린 양봉을 '단 한 번도 밀리지 않은 양봉'으로
-            # 오판하던 버그를 수정하여, 고점 대비 윗꼬리 저항을 칼같이 짚어내도록 수술!
+            # 🚨 [핵심 교정] 추세 정밀 판독: 윗꼬리가 달린 양봉 저항 판별
             # ==================================================================
             if is_candle_unknown:
                 pass  
