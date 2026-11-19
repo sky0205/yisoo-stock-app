@@ -429,7 +429,7 @@ if symbol:
                         _open = _over_open
 
                     is_after_kr_regular = (now_local.hour > 15) or (now_local.hour == 15 and now_local.minute >= 30)
-                    if _over_p > 0 and (now_local.hour == 8 or _krx_open <= 0 or _over_status in ["OPEN", "CLOSE"] or is_after_kr_regular):
+                    if _over_p > 0 and (_krx_open <= 0 or is_after_kr_regular):
                         _price = _over_p
 
                     if _over_high > 0:
