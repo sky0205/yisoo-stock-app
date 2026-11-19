@@ -1190,7 +1190,7 @@ if symbol:
             elif is_ma20_breakout_try:
                 ma20_resist_msg = f"<br>⏳ <b>[20일선 돌파 시도]</b> {ma20_fail_days}일 만에 20일선 상향 시도 중 (거래량·종가 안착 확인 필요)"
             else:
-                ma20_resist_msg = ""
+                ma20_resist_msg = f"<br>ℹ️ [체크] 연속 미돌파: {ma20_fail_days_now}일 / 기울기: {arrow_20}"
 
             if is_bullish:
                 if p < mid_line: trend_status = "⚠️ <b>[정배열 붕괴 경계]</b> 완벽한 우상향이나 현재가가 20일선 성벽을 깨고 추락 중"
