@@ -992,6 +992,21 @@ if symbol:
             _is_vol_ok = (df["Volume"].iloc[-1] >= _vol_5avg) if _vol_5avg > 0 else True
             is_ma20_breakout_real = (ma20_fail_days >= 10) and (p >= mid_line) and _is_bull_today and _is_vol_ok
             is_ma20_breakout_try  = (ma20_fail_days >= 10) and (p >= mid_line) and (not is_ma20_breakout_real)
+
+            # [보완 1] 돌파 시도 사유 구체화 (누적 거래량 % 명시)
+            _try_reasons = []
+            if not _is_vol_ok:
+                _try_reasons.append(f"실제 누적 거래량 미달(현재 {v_ratio:.1f}%)")
+            if not _is_bull_today:
+                _try_reasons.append("음봉(시가 아래)")
+            _try_reason_txt = " · ".join(_try_reasons) if _try_reasons else "거래량·양봉 안착 미달"
+
+            # [보완 4] 장중 실시간 vs 종가 확정 구분
+            if is_kr:
+                is_market_closed = (now_local.weekday() >= 5) or (now_local.hour > 15) or (now_local.hour == 15 and now_local.minute >= 30) or (now_local.hour < 9)
+            else:
+                is_market_closed = (not is_pre_market_mode) and ((now_local.weekday() >= 5) or (now_local.hour >= 16) or (now_local.hour < 9) or (now_local.hour == 9 and now_local.minute < 30))
+            session_badge = "🔒 [종가 확정]" if is_market_closed else "⏱️ [장중 실시간]"
             is_ma5_safe = p >= ma5_val
             bias_ma5 = ((p - ma5_val) / ma5_val) * 100 if ma5_val > 0 else 0
             bias_ma20 = ((p - mid_line) / mid_line) * 100 if mid_line > 0 else 0
@@ -1186,9 +1201,12 @@ if symbol:
             if is_ma5_safe and is_ma20_chronic_resist:
                 ma20_resist_msg = f"<br>⚠️ <b>[20일선 천장 저항]</b> 최근 <b>{ma20_fail_days_now}거래일 연속</b> 20일선 돌파 실패 중 (우하향 압박)<br>"
             elif is_ma20_breakout_real:
-                ma20_resist_msg = f"<br>🚀 <b>[장기 저항 첫 돌파!]</b> {ma20_fail_days}일간의 20일선 천장을 거래량 실린 양봉으로 돌파!<br>"
+                if bias_ma5 >= 7.0:
+                    ma20_resist_msg = f"<br>⚠️ <b>[장기 저항 돌파·이격 과열]</b> {ma20_fail_days}일간의 20일선 천장 돌파! (단, 5일선 이격 +{bias_ma5:.1f}% 과열로 추격 금지)<br>"
+                else:
+                    ma20_resist_msg = f"<br>🚀 <b>[장기 저항 첫 돌파!]</b> {ma20_fail_days}일간의 20일선 천장을 거래량 실린 양봉으로 돌파!<br>"
             elif is_ma20_breakout_try:
-                ma20_resist_msg = f"<br>⏳ <b>[20일선 돌파 시도]</b> {ma20_fail_days}일 만에 20일선 상향 시도 중 (거래량·종가 안착 확인 필요)<br>"
+                ma20_resist_msg = f"<br>⏳ <b>[20일선 돌파 시도]</b> {ma20_fail_days}일 만에 20일선 상향 시도 중 ({_try_reason_txt})<br>"
             else:
                 ma20_resist_msg = ""
 
@@ -1248,7 +1266,7 @@ if symbol:
             final_display_name = get_stock_name(symbol, is_kr)
             safe_display_name = html.escape(final_display_name)
 
-            st.markdown("### 📊 현재주가현황")
+            st.markdown(f"### 📊 현재주가현황 &nbsp; <span style='font-size:18px; color:#546E7A;'>{session_badge}</span>", unsafe_allow_html=True)
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(
                 f"<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'>"
@@ -1283,15 +1301,27 @@ if symbol:
                 )
 
             with c_tgt:
-                tgt_diff = ((target_price_100 - p) / p) * 100 if p > 0 else 0
-                if is_band_riding: tgt_status_tag = "🌊 목표선 상방 확장 중 (밴드 라이딩)"; tgt_color = "#6A1B9A"
-                elif p >= (target_price_100 * 0.98) or bb_pct_b >= 90.0: tgt_status_tag = f"🎯 목표 임박/도달 ({_c_short} 수확 구역)"; tgt_color = "#E65100"
-                else: tgt_status_tag = f"상승 여력 {tgt_diff:+.1f}%"; tgt_color = "#1565C0"
+                _real_candidates = [x for x in [defense_line, ma60_val] if x > p and x < target_price_100]
+                if is_down_trend_structural and _real_candidates:
+                    _disp_tgt = min(_real_candidates)
+                    _disp_tgt_name = "성벽" if _disp_tgt == defense_line else "60일선"
+                    _disp_diff = ((_disp_tgt - p) / p) * 100 if p > 0 else 0
+                    tgt_title = f"🏆 1차 현실 목표선 (역배열 {_disp_tgt_name})"
+                    tgt_val_show = _disp_tgt
+                    tgt_status_tag = f"현실 여력 {_disp_diff:+.1f}% (볼린저상단 {target_price_100:{fmt_p}}{currency})"
+                    tgt_color = "#E65100"
+                else:
+                    tgt_title = "🏆 수확 목표선 (볼린저 상단)"
+                    tgt_val_show = target_price_100
+                    tgt_diff = ((target_price_100 - p) / p) * 100 if p > 0 else 0
+                    if is_band_riding: tgt_status_tag = "🌊 목표선 상방 확장 중 (밴드 라이딩)"; tgt_color = "#6A1B9A"
+                    elif p >= (target_price_100 * 0.98) or bb_pct_b >= 90.0: tgt_status_tag = f"🎯 목표 임박/도달 ({_c_short} 수확 구역)"; tgt_color = "#E65100"
+                    else: tgt_status_tag = f"상승 여력 {tgt_diff:+.1f}%"; tgt_color = "#1565C0"
 
                 st.markdown(
                     f"""<div class='price-card' style='border-top: 5px solid {tgt_color}; margin-top: 10px;'>
-                    <div style='font-size: 20px; color: #37474F;'>🏆 수확 목표선 (볼린저 상단)</div>
-                    <div style='font-size: 30px; color: {tgt_color}; margin: 8px 0;'>{target_price_100:{fmt_p}}{currency}</div>
+                    <div style='font-size: 20px; color: #37474F;'>{tgt_title}</div>
+                    <div style='font-size: 30px; color: {tgt_color}; margin: 8px 0;'>{tgt_val_show:{fmt_p}}{currency}</div>
                     <div style='font-size: 17px; color: {tgt_color};'>{tgt_status_tag}</div>
                     </div>""", unsafe_allow_html=True
                 )
@@ -1524,22 +1554,41 @@ if symbol:
                     f"신규 매수는 보류하시고, 보유자께서는 20일선 부근 반등 시 비중 축소·분할 익절을 우선 고려하시옵소서."
                 )
             elif is_ma20_breakout_real:
-                final_code = "BUY_MA20_BREAKOUT"
-                sig = f"🟢 [추세 전환] {ma20_fail_days}일 만의 20일선 장기 저항 돌파!"
-                col = "#2E7D32"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> <b>[장기 저항 첫 돌파!]</b> {ma20_fail_days}거래일간 짓누르던 "
-                    f"20일선({mid_line:{fmt_p}}{currency}) 천장을 거래량 실린 양봉으로 뚫어냈사옵니다. "
-                    f"추세 전환 신호로 인정하오니 2단계 분할 진입 및 보유자 홀딩 전략을 검토하시옵소서."
-                )
+                if bias_ma5 >= 7.0:
+                    final_code = "WAIT_MA20_BREAK_OVEREXT"
+                    sig = f"🟡 [돌파 성공·이격 과열] {ma20_fail_days}일 만의 20일선 돌파 (5일선 이격 +{bias_ma5:.1f}%)"
+                    col = "#F57C00"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> <b>[장기 저항 돌파·추격 매수 금지]</b> {ma20_fail_days}거래일간 짓누르던 "
+                        f"20일선({mid_line:{fmt_p}}{currency}) 천장을 거래량 실린 양봉으로 뚫어냈으나, "
+                        f"5일선 대비 이격이 <b>+{bias_ma5:.1f}%</b>로 단기 과열되었사옵니다. "
+                        f"고점 추격 매수는 금하시고, 20일선 눌림목 지지 확인 후 진입하시옵소서."
+                    )
+                else:
+                    final_code = "BUY_MA20_BREAKOUT"
+                    sig = f"🟢 [추세 전환] {ma20_fail_days}일 만의 20일선 장기 저항 돌파!"
+                    col = "#2E7D32"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> <b>[장기 저항 첫 돌파!]</b> {ma20_fail_days}거래일간 짓누르던 "
+                        f"20일선({mid_line:{fmt_p}}{currency}) 천장을 거래량 실린 양봉으로 뚫어냈사옵니다. "
+                        f"추세 전환 신호로 인정하오니 2단계 분할 진입 및 보유자 홀딩 전략을 검토하시옵소서."
+                    )
             elif is_ma20_breakout_try:
                 final_code = "WAIT_MA20_BREAK_TRY"
-                sig = f"🟡 [돌파 시도] {ma20_fail_days}일 만의 20일선 돌파 시도 (종가 안착 확인)"
+                if is_market_closed:
+                    sig = f"🟡 [돌파 시도·종가 확정] {ma20_fail_days}일 만의 20일선 돌파 ({_try_reason_txt})"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> <b>[20일선 돌파 시도·종가 확정]</b> {ma20_fail_days}일 만에 20일선 위에 올라섰으나 "
+                        f"<b>{_try_reason_txt}</b>로 인해 완전한 추세 전환으로 보기엔 부족하옵니다. "
+                        f"내일 20일선({mid_line:{fmt_p}}{currency}) 지지 안착 여부를 확인한 뒤 대응하시옵소서."
+                    )
+                else:
+                    sig = f"🟡 [돌파 시도] {ma20_fail_days}일 만의 20일선 돌파 시도 (종가 안착 확인)"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> <b>[20일선 돌파 시도 중]</b> {ma20_fail_days}일 만에 20일선을 넘보고 있으나 "
+                        f"<b>{_try_reason_txt}</b> 상태이옵니다. 윗꼬리 함정을 피하기 위해 종가 기준 안착을 확인한 뒤 움직이시옵소서."
+                    )
                 col = "#F57C00"
-                final_adv = (
-                    f"• <b>[최종 결론]</b> <b>[20일선 돌파 시도 중]</b> {ma20_fail_days}일 만에 20일선을 넘보고 있으나 "
-                    f"거래량 또는 양봉 안착이 아직 충분치 않사옵니다. 윗꼬리 함정을 피하기 위해 종가 기준 안착을 확인한 뒤 움직이시옵소서."
-                )
             elif is_ma5_safe and not is_down_trend_structural and (bottom_score >= 1 or pullback_rebound_score >= 1) and has_manual_ob and ((pullback_rebound_score >= 1 and not is_ob_stage3_safe) or (bottom_score >= 1 and not is_ob_stage2_safe)):
                 final_code = "WAIT_ORDERBOOK"
                 sig = "🟡 [관망/보류] 매도잔량비 실전 기준 미달 (속임수 윗꼬 경계)"
@@ -1856,6 +1905,7 @@ if symbol:
             )
 
             is_overall_cautious_state = final_code in [
+                "WAIT_MA20_RESIST", "WAIT_MA20_BREAK_TRY", "WAIT_MA20_BREAK_OVEREXT",
                 "WAIT_GENERAL", "WAIT_INDICATOR", "WAIT_MACD", "WAIT_VOLUME",
                 "WAIT_DOWNTREND_FALL", "WAIT_PULLBACK_CANDLE", "WAIT_PULLBACK",
                 "WAIT_ORDERBOOK", "WAIT_OVER_EXTENDED", "HIGH_PASS_OVEREXTENDED", "NEW_HIGH_BREAKOUT_WARNING",
