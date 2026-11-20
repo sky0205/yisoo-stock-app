@@ -607,7 +607,7 @@ if symbol:
         else:
             df = df.ffill().dropna()
             if len(df) < 20:
-                st.warning(f"🚨 **[{symbol}] 신규 상장 / 데이터 부족 분석 불가** — 현재 누적 거래일이 **{len(df)}일**뿐이라 20일선 및 보조지표 산출이 불가능하오! 최소 20거래일 이상 데이터가 쌓인 뒤 분석하시게.")
+                st.markdown(f"<div style='background-color:#FFF8E1; border:2px solid #FFB300; border-left:8px solid #FF6F00; padding:16px 20px; border-radius:8px; color:#3E2723; font-size:17px; font-weight:700; line-height:1.5;'>🚨 [{symbol}] 신규 상장 / 데이터 부족 분석 불가 — 현재 누적 거래일이 <span style='color:#D32F2F;'>{len(df)}일</span>뿐이라 20일선 및 보조지표 산출이 불가능하오! 최소 20거래일 이상 데이터가 쌓인 뒤 분석하시게.</div>", unsafe_allow_html=True)
                 st.stop()
             if is_kr:
                 df.index = pd.to_datetime(df.index).date
