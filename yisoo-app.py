@@ -607,10 +607,30 @@ if symbol:
         else:
             df = df.ffill().dropna()
             if len(df) < 20:
-                _cur_p_txt = ""
-                if not df.empty and "Close" in df.columns and pd.notna(df["Close"].iloc[-1]):
-                    _cur_val = float(df["Close"].iloc[-1])
-                    _cur_p_txt = f" | 현재 주가: <span style='color:#0D47A1;'>{_cur_val:,.0f}원</span>" if is_kr else f" | 현재 주가: <span style='color:#0D47A1;'>${_cur_val:,.2f}</span>"
+                _close_val = float(df["Close"].iloc[-1]) if (not df.empty and "Close" in df.columns and pd.notna(df["Close"].iloc[-1])) else None
+                _live_val = None
+                try:
+                    _tk = yf.Ticker(symbol)
+                    _fi = getattr(_tk, "fast_info", None)
+                    if _fi is not None:
+                        _live_val = _fi.get("lastPrice") or _fi.get("regularMarketPrice")
+                    if _live_val is None:
+                        _info = _tk.info or {}
+                        _live_val = _info.get("currentPrice") or _info.get("regularMarketPrice")
+                    if _live_val is not None:
+                        _live_val = float(_live_val)
+                except Exception:
+                    _live_val = None
+
+                _price_parts = []
+                if _live_val is not None and _live_val > 0:
+                    _live_str = f"{_live_val:,.0f}원" if is_kr else f"${_live_val:,.2f}"
+                    _price_parts.append(f"실시간가: <span style='color:#D32F2F;'>{_live_str}</span>")
+                if _close_val is not None:
+                    _close_str = f"{_close_val:,.0f}원" if is_kr else f"${_close_val:,.2f}"
+                    _price_parts.append(f"최근종가: <span style='color:#0D47A1;'>{_close_str}</span>")
+
+                _cur_p_txt = (" | " + " / ".join(_price_parts)) if _price_parts else ""
                 st.markdown(f"<div style='background-color:#FFF8E1; border:2px solid #FFB300; border-left:8px solid #FF6F00; padding:16px 20px; border-radius:8px; color:#3E2723; font-size:17px; font-weight:700; line-height:1.5;'>🚨 [{symbol}] 신규 상장 / 데이터 부족 분석 불가 — 현재 누적 거래일이 <span style='color:#D32F2F;'>{len(df)}일</span>뿐이라 20일선 및 보조지표 산출이 불가능하오! 최소 20거래일 이상 데이터가 쌓인 뒤 분석하시게.{_cur_p_txt}</div>", unsafe_allow_html=True)
                 st.stop()
             if is_kr:
