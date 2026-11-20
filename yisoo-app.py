@@ -876,11 +876,16 @@ if symbol:
                     bb_pos_col = "#D32F2F"
                     bb_pos_desc = f"볼린저 하단 바닥선({low_b:{fmt_p}}{currency}) 코앞({bb_pct_b:.1f}% 지점)에 도달했으나, <b>{candle_color_txt} 매도 압력에 밀려 바닥 붕괴를 위협</b>받고 있으니 양봉 확인 전까지 입질을 금하오!"
             elif bb_pct_b < 45.0:
-                if is_candle_bullish:
+                if p < ma5_val:
+                    bb_pos_tag = f"🌱 5일선 아래 {_c_short} 반등 시도 ({bb_pct_b:.1f}%)"
+                    bb_pos_short = f"하단부 {_c_short}"
+                    bb_pos_col = "#E65100"
+                    bb_pos_desc = f"볼린저 하단권({bb_pct_b:.1f}% 지점)에서 <b>{candle_color_txt}</b>으로 반등을 시도 중이나, 아직 5일선({ma5_val:{fmt_p}}{currency}) 아래에 갇혀 있어 회복 여부를 지켜봐야 할 구간이오."
+                else:
                     bb_pos_tag = f"🌱 중심선 아래 {_c_short} 반격 ({bb_pct_b:.1f}%)"
                     bb_pos_short = f"하단부 {_c_short}"
                     bb_pos_col = "#1565C0"
-                    bb_pos_desc = f"바닥을 찍고 <b>{candle_color_txt}을 세우며</b> 20일 중심선({mid_line:{fmt_p}}{currency})을 향해 치고 올라가는 반등 구간({bb_pct_b:.1f}% 지점)이오{_tail_note}."
+                    bb_pos_desc = f"바닥을 찍고 <b>{candle_color_txt}을 세우며</b> 20일 중심선({mid_line:{fmt_p}}{currency})을 향해 치고 올라가는 반등 구간({bb_pct_b:.1f}% 지점)이오."
                 elif strict_doji_check:
                     bb_pos_tag = f"⚖️ 중심선 아래 도지 탐색 ({bb_pct_b:.1f}%)"
                     bb_pos_short = "하단부 도지탐색"
