@@ -877,11 +877,12 @@ if symbol:
                     bb_pos_desc = f"볼린저 하단 바닥선({low_b:{fmt_p}}{currency}) 코앞({bb_pct_b:.1f}% 지점)에 도달했으나, <b>{candle_color_txt} 매도 압력에 밀려 바닥 붕괴를 위협</b>받고 있으니 양봉 확인 전까지 입질을 금하오!"
             elif bb_pct_b < 45.0:
                 if is_candle_bullish:
-                    if p < ma5_val:
+                    _ma5_chk = float(df["MA5"].iloc[-1]) if (len(df) >= 5 and pd.notna(df["MA5"].iloc[-1])) else p
+                    if p < _ma5_chk:
                         bb_pos_tag = f"🌱 5일선 아래 {_c_short} 반등 시도 ({bb_pct_b:.1f}%)"
                         bb_pos_short = f"하단부 {_c_short}"
                         bb_pos_col = "#E65100"
-                        bb_pos_desc = f"볼린저 하단권({bb_pct_b:.1f}% 지점)에서 <b>{candle_color_txt}</b>으로 반등을 시도 중이나, 아직 5일선({ma5_val:{fmt_p}}{currency}) 아래에 갇혀 있어 회복 여부를 지켜봐야 할 구간이오."
+                        bb_pos_desc = f"볼린저 하단권({bb_pct_b:.1f}% 지점)에서 <b>{candle_color_txt}</b>으로 반등을 시도 중이나, 아직 5일선({_ma5_chk:{fmt_p}}{currency}) 아래에 갇혀 있어 회복 여부를 지켜봐야 할 구간이오."
                     else:
                         bb_pos_tag = f"🌱 중심선 아래 {_c_short} 반격 ({bb_pct_b:.1f}%)"
                         bb_pos_short = f"하단부 {_c_short}"
