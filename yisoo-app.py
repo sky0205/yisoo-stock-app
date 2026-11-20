@@ -606,6 +606,9 @@ if symbol:
             st.warning(f"⚠️ [{symbol}] 종목의 데이터를 불러오지 못했구먼. 종목번호를 다시 확인해 주시게.")
         else:
             df = df.ffill().dropna()
+            if len(df) < 20:
+                st.warning(f"🚨 **[{symbol}] 신규 상장 / 데이터 부족 분석 불가** — 현재 누적 거래일이 **{len(df)}일**뿐이라 20일선 및 보조지표 산출이 불가능하오! 최소 20거래일 이상 데이터가 쌓인 뒤 분석하시게.")
+                st.stop()
             if is_kr:
                 df.index = pd.to_datetime(df.index).date
                 today_date = now_local.date()
