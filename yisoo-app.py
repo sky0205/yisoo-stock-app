@@ -2020,7 +2020,7 @@ if symbol:
             elif final_code == "ESCAPE_BUY":
                 action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency}) 양봉 안착이 확인되었소! 신규 및 1단계 소량 보유자는 총 비중 {stage2_alloc}까지 '2단계 증원 매수'를 집행하고, 이미 비중을 채운 보유자는 추매 없이 5일선 사수를 지켜보시게!"
             elif final_code == "BUY_MA20_BREAKOUT":
-                action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] {ma20_fail_days}일 만의 20일선({mid_line:{fmt_p}}{currency}) 장기 저항 돌파가 확인되었소! 다만 상위 이평선(60·120일) 역배열 압력이 남아 있으니 신규 및 소량 보유자는 총 비중 {stage2_alloc} 한도 내에서만 2단계 분할 진입하시고, 5일선({ma5_val:{fmt_p}}{currency}) 및 20일선 재이탈 시 즉시 보수 전환하시게!"
+                action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] {ma20_fail_days}일 만의 20일선({mid_line:{fmt_p}}{currency}) 첫 돌파가 확인되었소! 다만 역배열 저항 및 윗꼬리 매물 압력이 남아 있을 수 있으니, 신규 및 소량 보유자는 20일선 지지 안착 여부를 확인한 뒤 총 비중 {stage2_alloc} 한도 내에서 분할 진입을 검토하시고, 20일선 재이탈 시 즉시 보수 전환하시게!"
             elif final_code in ["PULLBACK_BUY", "BREAK_MA20_CONFIRMED", "NEW_HIGH_PULLBACK_BUY"]:
                 action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] 추세와 양봉 안전마진이 모두 검증된 핵심 승부처이오! 신규 및 1·2단계 소량 보유자는 총 비중 {stage3_alloc}까지 '3단계 본진'을 과감히 투입(증원)하고, 이미 목표 비중을 다 채운 기 보유자는 무리한 불타기 없이 수확 목표선({target_price_100:{fmt_p}}{currency})까지 5일선({ma5_val:{fmt_p}}{currency})을 타고 랠리를 즐기시게!"
             elif final_code == "SQUEEZE_BREAKOUT_ATTACK":
@@ -2409,6 +2409,8 @@ if symbol:
                     elif is_kr: bb_time_diag = "14:00 이후 5일선 안착 시 총 비중 20~30%까지 정찰대 증원"
                     else: bb_time_diag = "정규장(세션) 수급 동반 5일선 안착 시 총 비중 20~30%까지 정찰대 증원"
                     bb_diag = f"🟢 <b>[2단계 진바닥 탈출 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 5일선 양봉 안착 후 배팅 확대.<br>• <b>진단:</b> {bw_diag_msg}. {bb_time_diag} (윗꼬리 5일선 이탈 시 철수)"
+                elif final_code == "BUY_MA20_BREAKOUT":
+                    bb_diag = f"🟡 <b>[20일선 첫 돌파 · 안착 확인 구역] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 장기 저항 돌파 후 지지력 검증.<br>• <b>진단:</b> {ma20_fail_days}일 만에 20일선({mid_line:{fmt_p}}{currency})을 거래량 실린 양봉으로 돌파했사오나, 역배열 저항 및 윗꼬리 매물 압력이 남았으니 20일선 지지 안착 확인 후 분할 진입을 검토하시게."
                 elif final_code == "BREAK_MA20_CONFIRMED":
                     if defense_line > target_price_100:
                         bb_diag = f"🔵 <b>[눌림목 공방 / 정찰병 타점] (밴드폭: {bandwidth:.1f}%)</b><br>• <b>역할:</b> 역배열 매물 소화 중 선제 타진.<br>• <b>진단:</b> 20일선 양봉 돌파 성공! 단, 상단 성벽 왜곡이 남았으니 10~20% 정찰병만 투입하시게. (윗꼬리 이탈 시 철수)"
