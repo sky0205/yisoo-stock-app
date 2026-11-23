@@ -905,16 +905,21 @@ if symbol:
             elif bb_pct_b < 45.0:
                 if is_candle_bullish:
                     _ma5_chk = float(df["MA5"].iloc[-1]) if (len(df) >= 5 and pd.notna(df["MA5"].iloc[-1])) else p
-                    if p < _ma5_chk:
+                    if p_chg < 0 and is_down_trend_structural:
+                        bb_pos_tag = f"📉 갭하락 양봉 방어 시도 ({bb_pct_b:.1f}%)"
+                        bb_pos_short = f"하단부 {_c_short} 방어시도"
+                        bb_pos_col = "#F57C00"
+                        bb_pos_desc = f"볼린저 하단부({bb_pct_b:.1f}% 지점)에서 <b>{candle_color_txt}</b>으로 저가 방어를 시도 중이나, 전일 대비 하락({p_chg:.2f}%) 및 대세 역배열 압력이 남아 있어 섣부른 진입은 보류하시게."
+                    elif p < _ma5_chk:
                         bb_pos_tag = f"🌱 5일선 아래 {_c_short} 반등 시도 ({bb_pct_b:.1f}%)"
                         bb_pos_short = f"하단부 {_c_short}"
                         bb_pos_col = "#E65100"
-                        bb_pos_desc = f"볼린저 하단권({bb_pct_b:.1f}% 지점)에서 <b>{candle_color_txt}</b>으로 반등을 시도 중이나, 아직 5일선({_ma5_chk:{fmt_p}}{currency}) 아래에 갇혀 있어 회복 여부를 지켜봐야 할 구간이오."
+                        bb_pos_desc = f"볼린저 하단권({bb_pct_b:.1f}% 지점)에서 <b>{candle_color_txt}</b>으로 반등을 시도 중이나, 아직 5일선({_ma5_chk:{fmt_p}}{currency}) 저항이 남아 있으니 안착 여부를 확인하시게."
                     else:
                         bb_pos_tag = f"🌱 중심선 아래 {_c_short} 반격 ({bb_pct_b:.1f}%)"
                         bb_pos_short = f"하단부 {_c_short}"
                         bb_pos_col = "#1565C0"
-                        bb_pos_desc = f"바닥을 찍고 <b>{candle_color_txt}을 세우며</b> 20일 중심선({mid_line:{fmt_p}}{currency})을 향해 치고 올라가는 반등 구간({bb_pct_b:.1f}% 지점)이오."
+                        bb_pos_desc = f"바닥을 찍고 <b>{candle_color_txt}</b>을 세우며 20일 중심선({mid_line:{fmt_p}}{currency})을 향해 치고 올라가는 반등 구간({bb_pct_b:.1f}% 지점)이오."
                 elif strict_doji_check:
                     bb_pos_tag = f"⚖️ 중심선 아래 도지 탐색 ({bb_pct_b:.1f}%)"
                     bb_pos_short = "하단부 도지탐색"
