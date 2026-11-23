@@ -425,7 +425,7 @@ if symbol:
                             else:
                                 _prev_close = _over_p - _over_cmp_val
 
-                    if _krx_open <= 0 and _over_open > 0:
+                    if _over_open > 0:
                         _open = _over_open
 
                     is_after_kr_regular = (now_local.hour > 15) or (now_local.hour == 15 and now_local.minute >= 30)
