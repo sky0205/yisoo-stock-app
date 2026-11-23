@@ -2129,6 +2129,8 @@ if symbol:
                 elif p_chg < 0:
                     if is_long_lower_tail:
                         trend_status = f"📉 <b style='color:#F57C00;'>[하락 속 밑꼬리 반발]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이나, 밑꼬리를 전체 길이의 50% 이상 길게 달며 반발 매수세가 들어왔소! 허나 아직 완벽한 양봉 전환이 아니니, 내일 확실한 지지를 눈으로 확인하기 전까지는 섣부른 줍줍을 금하시게."
+                    elif not is_candle_bearish:
+                        trend_status = f"📉 <b style='color:#F57C00;'>[갭하락 반발 매수 / 경계 유지]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 구간이나, 저가 반발 매수세가 유입되며 양봉으로 버티고 있소. 다만 대세 하락 압력이 남아 있으니 성급한 추격은 경계하시게."
                     else:
                         trend_status = f"📉 <b style='color:#D32F2F;'>[추세 맹폭 / 방어선 붕괴]</b> 전일 대비 하락(-{abs(p_chg):.2f}%) 중이며, 매수세의 저항 한 번 제대로 못 해보고 속절없이 쏟아지고 있소! 절대 칼날을 잡지 마시게."
                 else:
