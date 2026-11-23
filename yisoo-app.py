@@ -1705,12 +1705,12 @@ if symbol:
                     )
                 else:
                     final_code = "BUY_MA20_BREAKOUT"
-                    sig = f"🟢 [추세 전환] {ma20_fail_days}일 만의 20일선 장기 저항 돌파!"
-                    col = "#2E7D32"
+                    sig = f"🟡 [돌파 확인] {ma20_fail_days}일 만의 20일선 첫 돌파 (안착 확인)"
+                    col = "#F57C00"
                     final_adv = (
-                        f"• <b>[최종 결론]</b> <b>[장기 저항 첫 돌파!]</b> {ma20_fail_days}거래일간 짓누르던 "
-                        f"20일선({mid_line:{fmt_p}}{currency}) 천장을 거래량 실린 양봉으로 뚫어냈사옵니다. "
-                        f"추세 전환 신호로 인정하오니 2단계 분할 진입 및 보유자 홀딩 전략을 검토하시옵소서."
+                        f"• <b>[최종 결론]</b> <b>[20일선 첫 돌파·안착 확인]</b> {ma20_fail_days}거래일간 짓누르던 "
+                        f"20일선({mid_line:{fmt_p}}{currency})을 거래량 실린 양봉으로 뚫어냈사옵니다. "
+                        f"다만 역배열 저항 및 윗꼬리 매물 압력이 남아 있을 수 있으니, 20일선 지지 안착 여부를 확인한 뒤 분할 진입 및 홀딩을 검토하시옵소서."
                     )
             elif is_ma20_breakout_try:
                 final_code = "WAIT_MA20_BREAK_TRY"
