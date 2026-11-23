@@ -877,7 +877,7 @@ if symbol:
             _tail_note = f" (단, 고점 {today_high:{fmt_p}}{currency} 대비 윗꼬리 매물 저항 동반)" if has_upper_tail_resist else ""
 
             if p < low_b:
-                if is_candle_bullish or is_bottom_lower_tail:
+                if is_candle_bullish or is_extreme_lower_tail:
                     bb_pos_tag = f"🌱 지하실 이탈 후 {_c_short} 반발 ({bb_pct_b:.1f}%)"
                     bb_pos_short = f"지하실 {_c_short}"
                     bb_pos_col = "#E65100"
@@ -888,7 +888,7 @@ if symbol:
                     bb_pos_col = "#D32F2F"
                     bb_pos_desc = f"현재가가 볼린저 바닥선({low_b:{fmt_p}}{currency})마저 깨고 <b>{candle_color_txt}으로 언더슈팅 추락({bb_pct_b:.1f}%)</b> 중인 위험 구역이오!"
             elif bb_pct_b <= 15.0 or p <= (low_b * 1.02):
-                if is_candle_bullish or is_bottom_lower_tail:
+                if is_candle_bullish or is_extreme_lower_tail:
                     if p_chg < 0 and bb_pct_b <= 15.0:
                         bb_pos_tag = f"📉 하단 바닥선 {_c_short} 반발 타진 ({bb_pct_b:.1f}%)"
                         bb_pos_short = f"하단 {_c_short}반발타진"
