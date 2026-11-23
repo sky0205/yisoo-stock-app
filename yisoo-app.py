@@ -888,11 +888,11 @@ if symbol:
                     bb_pos_desc = f"현재가가 볼린저 바닥선({low_b:{fmt_p}}{currency})마저 깨고 <b>{candle_color_txt}으로 언더슈팅 추락({bb_pct_b:.1f}%)</b> 중인 위험 구역이오!"
             elif bb_pct_b <= 15.0 or p <= (low_b * 1.02):
                 if is_candle_bullish or is_bottom_lower_tail:
-                    if p_chg < 0 and is_down_trend_structural:
+                    if p_chg < 0 and (p < _ma5_chk or p < mid_line):
                         bb_pos_tag = f"📉 하단 바닥선 {_c_short} 반발 타진 ({bb_pct_b:.1f}%)"
                         bb_pos_short = f"하단 {_c_short}반발타진"
                         bb_pos_col = "#F57C00"
-                        bb_pos_desc = f"볼린저 하단 바닥선({low_b:{fmt_p}}{currency}) 부근({bb_pct_b:.1f}% 지점)에서 <b>{candle_color_txt}</b>으로 저가 반발을 시도 중이나, 하락({p_chg:.2f}%) 및 역배열 추세 압력이 남아 있으니 경계하며 확인하시게."
+                        bb_pos_desc = f"볼린저 하단 바닥선({low_b:{fmt_p}}{currency}) 부근({bb_pct_b:.1f}% 지점)에서 <b>{candle_color_txt}</b>으로 저가 반발을 시도 중이나, 전일 대비 하락({p_chg:.2f}%) 및 이평선 저항 압력이 남아 있으니 경계하며 확인하시게."
                     else:
                         bb_pos_tag = f"🎯 하단 바닥선 {_c_short} 지지 ({bb_pct_b:.1f}%)"
                         bb_pos_short = f"하단 {_c_short}지지"
