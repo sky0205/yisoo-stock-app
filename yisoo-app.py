@@ -1085,10 +1085,27 @@ if symbol:
             
             pullback_rebound_score = min(3, int(rsi_pullback_val + will_pullback_val + bb_center_val))
 
-            is_bullish = (ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
-            is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
-            is_down_trend_structural = is_bearish or (p < mid_line and mid_line <= ma60_val)
-
+            # ==================================================================
+            # ★ [신규] 3대 시장 국면 자동 분류 (정배열 / 혼조세 / 역배열)
+            # ==================================================================
+            if is_bullish or (p >= mid_line and ma5_val >= mid_line and mid_line >= ma60_val and arrow_20 != "↘"):
+                market_regime = "정배열"
+                regime_badge = "🟢 [정배열 · 추세 추종 모드]"
+                stage1_alloc = "10%"
+                stage2_alloc = "20~30%"
+                stage3_alloc = "50%"
+            elif is_down_trend_structural:
+                market_regime = "역배열"
+                regime_badge = "🔴 [역배열 · 방어 최우선 모드]"
+                stage1_alloc = "5~10%(초소액 정찰)"
+                stage2_alloc = "15~20%(20일선 돌파 조건부)"
+                stage3_alloc = "20일선 안착 후 눌림목 대기"
+            else:
+                market_regime = "혼조세"
+                regime_badge = "🟡 [혼조세 · 선별 짧은 호흡 모드]"
+                stage1_alloc = "10%"
+                stage2_alloc = "20%"
+                stage3_alloc = "40~50%"
             rolling_low_b = df["MA20"] - (df["Std"] * 2)
             rolling_up_b = df["MA20"] + (df["Std"] * 2)
             rolling_pct_b = ((df["Close"] - rolling_low_b) / (rolling_up_b - rolling_low_b + 1e-10)) * 100.0
@@ -1419,34 +1436,85 @@ if symbol:
             is_macd_not_deepening = not is_macd_reverse_deepening
             is_volume_ok_for_bottom = is_pre_market_mode or ((vol_strength >= 65.0) if (p_chg >= 0.0 and p >= today_open) else (vol_strength >= 70.0))
             
+            # ==================================================================
+            # ★ [신규] 국면별(역배열 / 혼조세 / 정배열) 1차·2차·눌림목 진입 조건 분기
+            # ==================================================================
             is_near_ma5_bottom = (not is_ma5_safe) and (bias_ma5 >= -1.5) and (not is_candle_bearish)
+            is_near_ma5_bull = (bias_ma5 >= -2.0) and (bias_ma5 <= 3.0) and (not is_candle_bearish)
 
-            is_bottom_entry_signal = (
-                (is_near_ma5_bottom) and (bottom_score >= 1 or will_val <= -75)
-                and is_volume_ok_for_bottom and (not is_down_trend_v)
-                and is_macd_not_deepening and is_valid_bottom_candle and (not is_target_reached)
-                and (bb_pct_b <= 40.0)
-                and (not has_manual_ob or ob_ratio_val is None or ob_ratio_val >= 0.5)
-            )
-        
-            is_escape_buy_signal = (
-                is_ma5_safe and is_bottom_indicator_ok
-                and (bias_ma5 <= 4.0)  
-                and (vol_strength >= 65 or is_pre_market_mode)
-                and is_macd_not_deepening and is_valid_buy_candle
-                and is_bandwidth_ok and is_ob_stage2_safe and (not is_target_reached)
-                and (bb_pct_b < 80.0)
-            )
-        
-            is_pullback_buy_signal = (
-                (not is_down_trend_structural) and is_ma20_buffer_safe and is_ma5_safe
-                and (pullback_rebound_score >= 1)
-                and (vol_strength >= 65 or is_pre_market_mode)
-                and is_macd_not_deepening
-                and is_valid_buy_candle 
-                and is_bandwidth_ok and is_ob_stage3_safe and (not is_target_reached)
-                and (45.0 <= bb_pct_b < 82.0)
-            )
+            if market_regime == "역배열":
+                # [역배열] 기존 보수 방어 로직 유지 (20일선 돌파 전 2차·눌림목 진입 엄격 차단)
+                is_bottom_entry_signal = (
+                    is_near_ma5_bottom and (bottom_score >= 1 or will_val <= -75)
+                    and is_volume_ok_for_bottom and (not is_down_trend_v)
+                    and is_macd_not_deepening and is_valid_bottom_candle and (not is_target_reached)
+                    and (bb_pct_b <= 40.0)
+                    and (not has_manual_ob or ob_ratio_val is None or ob_ratio_val >= 0.5)
+                )
+                is_escape_buy_signal = (
+                    is_ma5_safe and (p >= mid_line) and is_bottom_indicator_ok
+                    and (bias_ma5 <= 4.0)
+                    and (vol_strength >= 65 or is_pre_market_mode)
+                    and is_macd_not_deepening and is_valid_buy_candle
+                    and is_bandwidth_ok and is_ob_stage2_safe and (not is_target_reached)
+                    and (bb_pct_b < 80.0)
+                )
+                is_pullback_buy_signal = False
+
+            elif market_regime == "혼조세":
+                # [혼조세] 1차(5일선 직전·안착 + 진바닥), 2차(5일선 안착 + 20일선 돌파/근접), 눌림목(20일선 지지)
+                is_bottom_entry_signal = (
+                    (is_near_ma5_bottom or (is_ma5_safe and bias_ma5 <= 2.5))
+                    and (bottom_score >= 1 or will_val <= -70)
+                    and (vol_strength >= 55.0 or is_pre_market_mode)
+                    and (not is_down_trend_v)
+                    and is_macd_not_deepening and is_valid_bottom_candle and (not is_target_reached)
+                    and (bb_pct_b <= 50.0)
+                    and (not has_manual_ob or ob_ratio_val is None or ob_ratio_val >= 0.5)
+                )
+                is_escape_buy_signal = (
+                    is_ma5_safe and (p >= mid_line * 0.99)
+                    and (is_bottom_indicator_ok or pullback_rebound_score >= 1)
+                    and (bias_ma5 <= 4.5)
+                    and (vol_strength >= 60.0 or is_pre_market_mode)
+                    and is_macd_not_deepening and is_valid_buy_candle
+                    and is_ob_stage2_safe and (not is_target_reached)
+                    and (bb_pct_b < 80.0)
+                )
+                is_pullback_buy_signal = (
+                    is_ma20_buffer_safe and is_ma5_safe
+                    and (pullback_rebound_score >= 1)
+                    and (vol_strength >= 60.0 or is_pre_market_mode)
+                    and is_macd_not_deepening and is_valid_buy_candle
+                    and is_bandwidth_ok and is_ob_stage3_safe and (not is_target_reached)
+                    and (45.0 <= bb_pct_b < 82.0)
+                )
+
+            else:
+                # [정배열] 1차(5일선 지지·재돌파 유연 허용), 2차(5일선 안착 + MACD 정회전/회복), 눌림목(20일선 첫 눌림목)
+                is_bottom_entry_signal = (
+                    is_near_ma5_bull and (not is_ma5_safe or bias_ma5 <= 2.0)
+                    and (bottom_score >= 1 or pullback_rebound_score >= 1 or rsi_val <= 55)
+                    and (vol_strength >= 50.0 or is_pre_market_mode)
+                    and is_macd_not_deepening and is_valid_buy_candle and (not is_target_reached)
+                    and (bb_pct_b <= 75.0)
+                    and (not has_manual_ob or ob_ratio_val is None or ob_ratio_val >= 0.5)
+                )
+                is_escape_buy_signal = (
+                    is_ma5_safe and (bias_ma5 <= 5.0)
+                    and (is_macd_bullish or is_macd_recovering)
+                    and (vol_strength >= 55.0 or is_pre_market_mode)
+                    and is_valid_buy_candle and is_ob_stage2_safe and (not is_target_reached)
+                    and (bb_pct_b < 82.0)
+                )
+                is_pullback_buy_signal = (
+                    is_ma20_buffer_safe and is_ma5_safe
+                    and (pullback_rebound_score >= 1 or (p <= mid_line * 1.04 and is_macd_bullish))
+                    and (vol_strength >= 50.0 or is_pre_market_mode)
+                    and is_macd_not_deepening and is_valid_buy_candle
+                    and is_ob_stage3_safe and (not is_target_reached)
+                    and (40.0 <= bb_pct_b < 85.0)
+                )
 
             if is_kr:
                 is_morning_breakout_fast = (now_local.hour >= 10) and (vol_strength >= 300) and is_ma5_safe
@@ -1808,7 +1876,7 @@ if symbol:
                         _bot_txt = f"당일 진바닥 지표({bottom_score}점, 볼린저위치 {bb_pct_b:.1f}%·{_c_short})" if bottom_score >= 1 else f"최근 3일 내 바닥 터치 후 반등(볼린저위치 {bb_pct_b:.1f}%·{_c_short})"
 
                         final_adv = f"• <b>[최종 결론]</b> <b>[1단계 정찰병 포착]</b> {_def_txt} 및 {_bot_txt}이(가) 확인되었소! <b>[신규 진입자]</b>라면 비중 10% 수준의 1단계 정찰병(입질) 투입이 유효하오. 단, <b>[기 1단계 매수자]</b>는 추가 매수를 멈추고 5일선 위로 올라타는 2단계 진격 신호 전까지 철저히 관망하시게."
-            elif is_escape_buy_signal and (bottom_score >= 1 or pullback_rebound_score >= 1):
+            elif is_escape_buy_signal and (market_regime == "정배열" or bottom_score >= 1 or pullback_rebound_score >= 1):
                 if margin_diff < 4.0: 
                     final_code = "WAIT_NARROW_MARGIN"
                     sig = "🟡 [관망/보류] 상승 여력 부족 (수지타산 불량)"
@@ -1917,7 +1985,7 @@ if symbol:
                 _score_phrase = f"3대 지표(0/3점 · RSI {rsi_val:.1f} · 볼린저위치 {bb_pct_b:.1f}%[{_c_short}])"
 
             _holistic_prefix = (
-                f"🔍 <b>[지표 판독 근거]</b> <b>{_arr_name}({_ma5_state})</b> 구도 속에 "
+                f"🔍 <b>[지표 판독 근거]</b> {regime_badge} | <b>{_arr_name}({_ma5_state})</b> 구도 속에 "
                 f"거래량 화력(<b>{vol_strength:.1f}점·{v_status}</b>), {_score_phrase}, "
                 f"엔진(<b>{_macd_short}</b>){_ob_short}"
             )
@@ -1931,13 +1999,13 @@ if symbol:
             )
 
             if final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
-                action_command_msg = f"🎯 [최종 실전 행동 강령] 신규 진입자는 현재가 부근에서 비중 10% 이내로 '1단계 정찰병'만 가볍게 투입하시게! (이미 1단계 입질한 보유자는 중복 추매 금지 / 2단계 증원 기준선인 5일선 {ma5_val:{fmt_p}}{currency} 돌파 대기 / 최후 손절선 {stop_loss_price:{fmt_p}}{currency} 엄수)"
+                action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] 신규 진입자는 현재가 부근에서 비중 {stage1_alloc} 이내로 '1단계 정찰병'만 가볍게 투입하시게! (기 1단계 매수자는 중복 추매 금지 / 2단계 기준선 5일선 {ma5_val:{fmt_p}}{currency} 안착 확인 / 최후 손절선 {stop_loss_price:{fmt_p}}{currency} 엄수)"
             elif final_code == "DEEP_DISCOUNT_ENTRY":
-                action_command_msg = f"🎯 [최종 실전 행동 강령] 직전 매수가 대비 -{drop_ratio:.1f}% 폭탄 세일 구간이오! 평단가를 낮추는 추가 1단계 물타기를 집행하되, 최후 방어선({stop_loss_price:{fmt_p}}{currency}) 이탈 시 칼손절 원칙을 지키시게."
+                action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] 직전 매수가 대비 -{drop_ratio:.1f}% 폭탄 세일 구간이오! 평단가를 낮추는 추가 1단계 물타기를 집행하되, 최후 방어선({stop_loss_price:{fmt_p}}{currency}) 이탈 시 칼손절 원칙을 지키시게."
             elif final_code == "ESCAPE_BUY":
-                action_command_msg = f"🎯 [최종 실전 행동 강령] 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency}) 양봉 탈환 안착이 확인되었소! 신규 및 1단계 소량 보유자는 총 비중 20~30%까지 '2단계 탈출 매수(증원)'를 집행하고, 이미 비중을 채운 보유자는 추매 없이 5일선 사수를 지켜보시게!"
+                action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency}) 양봉 안착이 확인되었소! 신규 및 1단계 소량 보유자는 총 비중 {stage2_alloc}까지 '2단계 증원 매수'를 집행하고, 이미 비중을 채운 보유자는 추매 없이 5일선 사수를 지켜보시게!"
             elif final_code in ["PULLBACK_BUY", "BREAK_MA20_CONFIRMED", "NEW_HIGH_PULLBACK_BUY"]:
-                action_command_msg = f"🎯 [최종 실전 행동 강령] 추세와 양봉 안전마진이 모두 검증된 핵심 승부처이오! 신규 및 1·2단계 소량 보유자는 총 비중 50%까지 '3단계 본진'을 과감히 투입(증원)하고, 이미 목표 비중을 다 채운 기 보유자는 무리한 불타기 없이 수확 목표선({target_price_100:{fmt_p}}{currency})까지 5일선({ma5_val:{fmt_p}}{currency})을 타고 랠리를 즐기시게!"
+                action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] 추세와 양봉 안전마진이 모두 검증된 핵심 승부처이오! 신규 및 1·2단계 소량 보유자는 총 비중 {stage3_alloc}까지 '3단계 본진'을 과감히 투입(증원)하고, 이미 목표 비중을 다 채운 기 보유자는 무리한 불타기 없이 수확 목표선({target_price_100:{fmt_p}}{currency})까지 5일선({ma5_val:{fmt_p}}{currency})을 타고 랠리를 즐기시게!"
             elif final_code == "SQUEEZE_BREAKOUT_ATTACK":
                 action_command_msg = f"🎯 [최종 실전 행동 강령] 응축된 밴드가 양봉으로 폭발하는 대시세 초입이오! 신규 및 1·2단계 소량 보유자는 총 비중 50%까지 본진을 과감히 투입(증원)하고, 이미 비중을 다 채운 기 보유자는 평단가를 높이는 불타기 없이 5일선({ma5_val:{fmt_p}}{currency}) 이탈 전까지 랠리를 즐기시게!"
             elif final_code == "HIGH_PASS_OVEREXTENDED":
