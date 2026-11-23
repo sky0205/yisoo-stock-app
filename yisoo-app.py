@@ -888,7 +888,7 @@ if symbol:
                     bb_pos_desc = f"현재가가 볼린저 바닥선({low_b:{fmt_p}}{currency})마저 깨고 <b>{candle_color_txt}으로 언더슈팅 추락({bb_pct_b:.1f}%)</b> 중인 위험 구역이오!"
             elif bb_pct_b <= 15.0 or p <= (low_b * 1.02):
                 if is_candle_bullish or is_bottom_lower_tail:
-                    if p_chg < 0 and (p < _ma5_chk or p < mid_line):
+                    if p_chg < 0 and (p < ma5_val or p < mid_line):
                         bb_pos_tag = f"📉 하단 바닥선 {_c_short} 반발 타진 ({bb_pct_b:.1f}%)"
                         bb_pos_short = f"하단 {_c_short}반발타진"
                         bb_pos_col = "#F57C00"
