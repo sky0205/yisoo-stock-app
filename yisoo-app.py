@@ -911,7 +911,7 @@ if symbol:
             elif bb_pct_b < 45.0:
                 if is_candle_bullish:
                     _ma5_chk = float(df["MA5"].iloc[-1]) if (len(df) >= 5 and pd.notna(df["MA5"].iloc[-1])) else p
-                    if p_chg < 0 and is_down_trend_structural:
+                    if p_chg < 0 and p < _ma5_chk:
                         bb_pos_tag = f"📉 갭하락 양봉 방어 시도 ({bb_pct_b:.1f}%)"
                         bb_pos_short = f"하단부 {_c_short} 방어시도"
                         bb_pos_col = "#F57C00"
