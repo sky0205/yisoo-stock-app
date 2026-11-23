@@ -802,6 +802,7 @@ if symbol:
 
             is_pure_bullish_candle = p >= today_open
             is_bottom_lower_tail = ((lower_tail_len >= day_candle_range * 0.35) or (lower_tail_len >= body_len * 1.0)) and (p_chg >= -1.5)
+            is_extreme_lower_tail = (day_candle_range > 0) and (lower_tail_len >= day_candle_range * 0.65) and ((day_candle_range - body_len - lower_tail_len) <= day_candle_range * 0.10) and (lower_tail_len >= body_len * 2.5) and (p_chg >= -1.5)
             is_valid_bottom_candle = (is_pure_bullish_candle or is_bottom_lower_tail) and (not is_down_trend_v)
             is_massive_dump = (vol_strength >= 150 and p_chg <= -2.5) or (vol_strength >= 80 and p_chg <= -4.5)
 
@@ -871,7 +872,7 @@ if symbol:
             elif is_candle_bullish:
                 _c_short = "윗꼬리양봉" if has_upper_tail_resist else "양봉"
             else:
-                _c_short = "윗꼬리음봉" if has_upper_tail_resist else "음봉"
+                _c_short = "극한아래꼬리음봉" if is_extreme_lower_tail else ("윗꼬리음봉" if has_upper_tail_resist else "음봉")
 
             _tail_note = f" (단, 고점 {today_high:{fmt_p}}{currency} 대비 윗꼬리 매물 저항 동반)" if has_upper_tail_resist else ""
 
@@ -1834,7 +1835,7 @@ if symbol:
                                     f"상단 매물 저항(윗꼬리)이 동반되어 성급히 진입할 자리가 아니옵니다. "
                                     f"<b>[신규 진입자]</b>는 장중 추격을 보류하시고 종가 방어 또는 5일선 안착 확인 후 1단계 진입을 검토하시게."
                                 )
-                            elif is_candle_bearish:
+                            elif is_candle_bearish and not is_extreme_lower_tail:
                                 final_code = "BEARISH_GUARD"
                                 col = "#D32F2F"
                                 sig = "🚨 [진바닥·음봉 압력 주의] 양봉 전환 및 지지 확인 전까지 관망"
@@ -2087,7 +2088,7 @@ if symbol:
             elif final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
                 if p < (ma5_val * 0.97):
                     sub_indicator_str = f"  - <b style='color:#D32F2F;'>🚨 [절대 관망령] 데드캣 바운스 경고:</b> 바닥 지표({bottom_score}점) 포착! 허나 5일선 아래 까마득..."
-                elif is_candle_bearish:
+                elif is_candle_bearish and not is_extreme_lower_tail:
                     sub_indicator_str = f"  - <b style='color:#D32F2F;'>⏳ [진바닥 음봉 대기]:</b> 바닥 지표({bottom_score}점) 포착되었으나 파란색 음봉 압력 중! 양봉 전환 및 지지 확인 전까지 입질 대기"
                 else:
                     _ma5_note = "5일선 근접 하회·바닥 방어" if p < ma5_val else "건전한 5일선 눌림목"
