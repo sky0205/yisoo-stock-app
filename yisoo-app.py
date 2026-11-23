@@ -2176,7 +2176,7 @@ if symbol:
                 else:
                     if today_open == today_low and not has_upper_tail_resist:
                         trend_status = f"🔥 <b style='color:#D84315;'>[강한 매수세 맹공]</b> 장 시작부터 밀리지 않고 위로 뻗어가는 {candle_color_txt} 출현!"
-                    elif has_meaningful_lower_tail and (lower_tail_len > upper_tail_len) and (today_open > today_low):
+                    elif ((is_candle_bullish and has_meaningful_lower_tail) or is_extreme_lower_tail) and (lower_tail_len > upper_tail_len) and (today_open > today_low):
                         trend_status = f"🛡️ <b>[방어선 구축 / 아래꼬리 지지 확인]</b> 하락 수압을 이겨내고 아래꼬리가 달린 {candle_color_txt} 출현!"
                     elif (is_long_upper_tail or has_upper_tail_resist) and is_candle_bearish:
                         trend_status = f"🚨 <b>[상승 기세 꺾임 / 윗꼬리 음봉 압박]</b> 고점({today_high:{fmt_p}}{currency})에서 윗꼬리를 달고 시가 아래로 밀려 내려온 {candle_color_txt} 출현! 상단 저항이 거세오."
