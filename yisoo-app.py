@@ -2008,6 +2008,8 @@ if symbol:
                 action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] 직전 매수가 대비 -{drop_ratio:.1f}% 폭탄 세일 구간이오! 평단가를 낮추는 추가 1단계 물타기를 집행하되, 최후 방어선({stop_loss_price:{fmt_p}}{currency}) 이탈 시 칼손절 원칙을 지키시게."
             elif final_code == "ESCAPE_BUY":
                 action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency}) 양봉 안착이 확인되었소! 신규 및 1단계 소량 보유자는 총 비중 {stage2_alloc}까지 '2단계 증원 매수'를 집행하고, 이미 비중을 채운 보유자는 추매 없이 5일선 사수를 지켜보시게!"
+            elif final_code == "BUY_MA20_BREAKOUT":
+                action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] {ma20_fail_days}일 만의 20일선({mid_line:{fmt_p}}{currency}) 장기 저항 돌파가 확인되었소! 다만 상위 이평선(60·120일) 역배열 압력이 남아 있으니 신규 및 소량 보유자는 총 비중 {stage2_alloc} 한도 내에서만 2단계 분할 진입하시고, 5일선({ma5_val:{fmt_p}}{currency}) 및 20일선 재이탈 시 즉시 보수 전환하시게!"
             elif final_code in ["PULLBACK_BUY", "BREAK_MA20_CONFIRMED", "NEW_HIGH_PULLBACK_BUY"]:
                 action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] 추세와 양봉 안전마진이 모두 검증된 핵심 승부처이오! 신규 및 1·2단계 소량 보유자는 총 비중 {stage3_alloc}까지 '3단계 본진'을 과감히 투입(증원)하고, 이미 목표 비중을 다 채운 기 보유자는 무리한 불타기 없이 수확 목표선({target_price_100:{fmt_p}}{currency})까지 5일선({ma5_val:{fmt_p}}{currency})을 타고 랠리를 즐기시게!"
             elif final_code == "SQUEEZE_BREAKOUT_ATTACK":
@@ -2083,7 +2085,7 @@ if symbol:
                         _p_action = f"-> <b>[5일선 탈환 시도]</b> 지표는 포착되었으며 양봉으로 5일선 고지를 향해 맹렬히 진격 중! (돌파/안착 대기)"
                 elif p < ma5_val and (p_chg <= 0 or is_candle_bearish):
                     _p_action = f"-> <b>[추세 꺾임 관망]</b> 지표는 포착되었으나 5일선 아래 음봉/저항 구역이므로 진입 금지"
-                elif is_down_trend_structural:
+                elif is_down_trend_structural and not is_ma20_breakout_real:
                     if p >= mid_line:
                         _p_action = f"-> <b>[역배열 저항 관망]</b> 20일선은 넘었으나 상위 이평선(60·120일) 역배열 저항 구역이므로 섣부른 진입 보류"
                     else:
