@@ -2077,7 +2077,9 @@ if symbol:
             elif final_code == "ESCAPE_BUY": sub_indicator_str = f"   - <b>진바닥 탈출 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 유지 -> <b>[매수 유효]</b> 2단계 분할 진격 타점 가동"
             elif final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
                 if p < (ma5_val * 0.97):
-                    sub_indicator_str = f"  - <b style='color:#D32F2F;'>🚨 [절대 관망령] 데드캣 바운스 경고:</b> 바닥 지표({bottom_score}점) 포착! 허나 5일선 아래 까마득한 폭포수 구간이오! -> <b><span style='color:#D32F2F;'>[진입 전면 금지]</span></b> 단 1주의 정찰병도 아깝소!"
+                    sub_indicator_str = f"  - <b style='color:#D32F2F;'>🚨 [절대 관망령] 데드캣 바운스 경고:</b> 바닥 지표({bottom_score}점) 포착! 허나 5일선 아래 까마득..."
+                elif is_candle_bearish:
+                    sub_indicator_str = f"  - <b style='color:#D32F2F;'>⏳ [진바닥 음봉 대기]:</b> 바닥 지표({bottom_score}점) 포착되었으나 파란색 음봉 압력 중! 양봉 전환 및 지지 확인 전까지 입질 대기"
                 else:
                     _ma5_note = "5일선 근접 하회·바닥 방어" if p < ma5_val else "건전한 5일선 눌림목"
                     sub_indicator_str = f"  - <b style='color:#1976D2;'>✅ [정상 진바닥 동조]:</b> 바닥 지표({bottom_score}점) 포착 완료 ({_ma5_note}) -> <b>[매수 유효]</b> 계획된 1단계 선발대 투입 가동"
