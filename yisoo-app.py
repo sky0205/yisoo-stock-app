@@ -1085,6 +1085,10 @@ if symbol:
             
             pullback_rebound_score = min(3, int(rsi_pullback_val + will_pullback_val + bb_center_val))
 
+            is_bullish = (ma5_val > mid_line and mid_line > ma60_val and ma60_val > ma120_val)
+            is_bearish = (ma5_val < mid_line and mid_line < ma60_val and ma60_val < ma120_val)
+            is_down_trend_structural = is_bearish or (p < mid_line and mid_line <= ma60_val)
+
             # ==================================================================
             # ★ [신규] 3대 시장 국면 자동 분류 (정배열 / 혼조세 / 역배열)
             # ==================================================================
