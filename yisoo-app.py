@@ -1692,6 +1692,15 @@ if symbol:
                         f"20일선({mid_line:{fmt_p}}{currency}, {arrow_20})을 돌파하지 못한 상태에서 20일선 코앞(-{_dist_to_ma20:.1f}%)까지 접근했사옵니다. "
                         f"신규 매수는 보류하시고, 보유자께서는 20일선 부근 반등 시 비중 축소·분할 익절을 우선 고려하시옵소서."
                     )
+                elif bias_ma5 >= 7.0:
+                    final_code = "WAIT_MA5_BOUNCE"
+                    sig = f"🚨 [역배열·이격 과열] 추격 매수 금지! (5일선 이격 +{bias_ma5:.1f}%)"
+                    col = "#D32F2F"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> <b>[단기 급등·추격 매수 금지]</b> 현재가({p:{fmt_p}}{currency})가 5일선 대비 <b>+{bias_ma5:.1f}%</b>나 과열 급등한 상태이오나, "
+                        f"머리 위 20일선({mid_line:{fmt_p}}{currency}) 저항까지 <b>+{_dist_to_ma20:.1f}%</b>밖에 남지 않은 역배열 구간이옵니다. "
+                        f"고점 추격 매수는 엄금하시고, 차익 매물 소화 후 5일선 눌림목 지지 또는 20일선 안착 확인 후 진입하시옵소서."
+                    )
                 else:
                     final_code = "WAIT_MA5_BOUNCE"
                     sig = f"🟡 [단기 반등] 5일선 안착 반격 중 (20일선까지 +{_dist_to_ma20:.1f}% 거리)"
