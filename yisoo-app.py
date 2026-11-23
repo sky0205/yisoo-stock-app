@@ -1410,7 +1410,9 @@ if symbol:
             else: 
                 is_basement = (rsi_val <= 38 or will_val <= -75 or bb_pct_b <= 15.0)
         
-                if vol_strength >= 300:
+                if is_massive_dump:
+                    v_status, v_adv = ("대량 투매 경계", f"🚨 <b>[대량 투매 폭발/칼날 주의]</b> 시간보정 강도 {vol_strength:.1f}점! 지표는 바닥권이나 매도 물량이 쏟아지는 칼날 구간이오. 섣부른 입질을 금하고 투매 진정을 확인하시게.")
+                elif vol_strength >= 300:
                     if is_basement:
                         v_status, v_adv = ("투매 절정 / 패닉셀", f"🚨 <b>[투매 절정/바닥 징후]</b> 시간보정 강도 {vol_strength:.1f}점! 지하실에서 개미들의 패닉셀이 폭발했소! 세력의 손바뀜을 노려보시게.")
                     else:
