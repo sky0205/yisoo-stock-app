@@ -1618,7 +1618,7 @@ if symbol:
                     final_code = "NEW_HIGH_BREAKOUT_WARNING"
                     sig = "🟠 [250일 고점 상단 도지/저항] 힘 빠짐 경계 (신규 매수 금지 · 보유자만 대응)"
                     col = "#FB8C00"
-                    final_adv = f"• <b>[최종 결론]</b> <b>[고점 도달·윗꼬리 저항]</b> 250일 최고점({high_250:{fmt_p}}{currency}) 및 5일선({ma5_val:{fmt_p}}{currency}) 부근이나, 상단 과열(볼린저 {bb_pct_..."
+                    final_adv = f"• <b>[최종 결론]</b> <b>[고점 도달·윗꼬리 저항]</b> 250일 최고점({high_250:{fmt_p}}{currency}) 및 5일선({ma5_val:{fmt_p}}{currency}) 부근이나, 상단 과열을 경계하시게."
                 else:
                     final_code = "NEW_HIGH_PULLBACK_BUY"
                     sig = "🔵 [250일 고점 후 첫 눌림목] 타점 (비중 채운 보유자는 불타기 금지)"
