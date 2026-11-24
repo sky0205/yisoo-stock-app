@@ -1585,8 +1585,8 @@ if symbol:
                     final_adv = f"• <b>[최종 결론]</b> 장중 매도세를 걷어 올린 <b>[잠자리형 도지]</b>가 떴사오나, 아직 20일선({mid_line:{fmt_p}}{currency}) 아래 역배열 저항 구간이옵니다. 성급한 진입을 보류하시고 내일 양봉 안착 및 방향성을 확인하시게."
                 else:
                     final_code = "DOJI_DRAGONFLY"
-                    sig = "🟢 [강력한 하방 경직] 잠자리형 도지 포착! (매수세 방어 완승)"
-                    col = "#2E7D32"
+                    sig = "🟡 [강력한 하방 경직] 잠자리형 도지 포착! (내일 돌파 확인 대기)"
+                    col = "#F57C00"
                     final_adv = f"• <b>[최종 결론]</b> 윗꼬리가 전혀 없는 <b>[잠자리형 도지(Dragonfly)]</b>가 떴소! 장중 투매를 매수세가 바닥에서 싹쓸이하여 시가(최고가)로 마감시킨 '강력한 방어 성공' 신호이니, 내일 긍정적인 반등을 기대해 볼 만하오."
             elif strict_doji_check:
                 final_code = "DOJI_MID_WAIT"
