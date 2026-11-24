@@ -1685,12 +1685,12 @@ if symbol:
                 _dist_to_ma20 = ((mid_line - p) / mid_line * 100.0) if (mid_line and mid_line > 0 and p) else 999.0
                 if _dist_to_ma20 <= 5.0:
                     final_code = "WAIT_MA20_RESIST"
-                    sig = f"🟡 [저항 관망] 20일선 {ma20_fail_days_now}일 연속 미돌파 (20일선 근접 저항)"
+                    sig = f"🟠 [일부 매도·저항 경계] 20일선 {ma20_fail_days_now}일 장기 공방 저항 (이격 {_dist_to_ma20:+.1f}%)"
                     col = "#F57C00"
                     final_adv = (
-                        f"• <b>[최종 결론]</b> <b>[20일선 천장 저항]</b> 최근 <b>{ma20_fail_days_now}거래일 연속</b>으로 "
-                        f"20일선({mid_line:{fmt_p}}{currency}, {arrow_20})을 돌파하지 못한 상태에서 20일선 코앞(-{_dist_to_ma20:.1f}%)까지 접근했사옵니다. "
-                        f"신규 매수는 보류하시고, 보유자께서는 20일선 부근 반등 시 비중 축소·분할 익절을 우선 고려하시옵소서."
+                        f"• <b>[최종 결론]</b> <b>[20일선 10일+ 장기 공방 저항 · 일부 매도 검토]</b> 최근 <b>{ma20_fail_days_now}거래일 연속</b>으로 "
+                        f"20일선({mid_line:{fmt_p}}{currency}, {arrow_20}) 안착에 어려움을 겪으며 매물 저항이 누적된 구간이옵니다. "
+                        f"신규 추격 매수는 보류하시고, <b>보유 물량은 20일선 저항 부근에서 일부 분할 익절·비중 축소로 대응</b>하시옵소서."
                     )
                 elif bias_ma5 >= 7.0:
                     final_code = "WAIT_MA5_BOUNCE"
