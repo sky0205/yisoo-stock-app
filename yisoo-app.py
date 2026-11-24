@@ -2062,6 +2062,8 @@ if symbol:
                 action_command_msg = f"🎯 [최종 실전 행동 강령] 장중 투매를 싹쓸이한 잠자리형 도지로 강력한 하방 경직성이 확인되었소! 내일 시가 위 양봉 출발 및 5일선({ma5_val:{fmt_p}}{currency}) 돌파 확인 시 기민하게 분할 타진하시게!"
             elif final_code in ["RED_SELL_WARNING", "SELL_PROFIT_TAKE", "RED_SELL_TARGET", "DOJI_TOP_WARNING"]:
                 action_command_msg = f"🎯 [최종 실전 행동 강령] 상단 과열 및 차익 매물 출회 경보가 켜졌소! 신규 매수는 절대 엄금하며, 보유자는 욕심을 버리고 즉시 보유 물량의 50% 이상을 선제 익절(수확)하여 현금을 챙기시게!"
+            elif final_code == "WAIT_MA20_RESIST":
+                action_command_msg = f"🎯 [최종 실전 행동 강령] 20일선({mid_line:{fmt_p}}{currency}) {ma20_fail_days_now}일 장기 공방 저항 구간이오! 신규 추격 매수는 보류하시고, 보유자는 20일선 부근 반등 시 일부 물량 분할 익절·비중 축소를 우선 고려하시게."
             elif final_code == "STOP_LOSS_ALERT":
                 action_command_msg = f"🎯 [최종 실전 행동 강령] 최후의 마지노선({stop_loss_price:{fmt_p}}{currency})이 무너진 비상사태이오! 희망 회로를 당장 멈추고 전량 시장가 칼손절로 계좌를 사수하시게!"
             else:
