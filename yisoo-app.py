@@ -1667,8 +1667,8 @@ if symbol:
                         )
                     else:
                         final_code = "BREAKOUT_ATTACK"
-                        sig = f"🟢 [성벽 위 {candle_color_txt}] 기세 유지 랠리 추종"
-                        col = "#2E7D32"
+                        sig = f"🔵 [보유자 전용 · 성벽 위 {candle_color_txt}] 기세 유지 랠리 추종"
+                        col = "#1E5B94"
                         final_adv = f"• <b>[최종 결론]</b> <b>[기세 유지 랠리 추종]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위에서 {candle_color_txt} 기세를 유지하고 있소! 5일선({ma5_val:{fmt_p}}{currency}) 지지 여부를 확인하며 상방 목표선({target_price_100:{fmt_p}}{currency}) 흐름을 추종하시게."
             
                 else:  
@@ -2061,7 +2061,11 @@ if symbol:
             elif final_code == "BAND_RIDING_HARVEST":
                 action_command_msg = f"🎯 [최종 실전 행동 강령] 목표선({target_price_100:{fmt_p}}{currency})을 뚫고 상방 밴드 라이딩 중이오! 고점 신규 추격 매수는 금하되, 기 보유자는 5일선({ma5_val:{fmt_p}}{currency}) 종가 이탈 전까지 수익을 끝까지 극대화하시게!"
             elif final_code == "BREAKOUT_ATTACK":
-                action_command_msg = f"🎯 [최종 실전 행동 강령] 성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 유지하며 순항 중이오! 기 보유자는 5일선({ma5_val:{fmt_p}}{currency})을 생명선 삼아 상단 목표선({target_price_100:{fmt_p}}{currency})까지 추세를 끝까지 추종하시게! (신규 및 소량 보유자는 5일선 부근 눌림 시에만 분할 가담)"
+            if bb_pct_b >= 55.0:
+                _new_guide = "(신규 진입은 상단부 구간이므로 추격 금지·관망)"
+            else:
+                _new_guide = f"(신규 및 소량 보유자는 5일선({ma5_val:{fmt_p}}{currency}) 부근 눌림 지지 시에만 분할 가담)"
+            action_command_msg = f"🎯 [최종 실전 행동 강령] 성벽({defense_line:{fmt_p}}{currency}) 위에서 양봉 기세를 유지하며 순항 중이오! 기 보유자는 5일선({ma5_val:{fmt_p}}{currency})을 생명선 삼아 상단 목표선({target_price_100:{fmt_p}}{currency})까지 추세를 추종하시게! {_new_guide}"
             elif final_code == "DOJI_DRAGONFLY":
                 action_command_msg = f"🎯 [최종 실전 행동 강령] 장중 투매를 싹쓸이한 잠자리형 도지로 강력한 하방 경직성이 확인되었소! 내일 시가 위 양봉 출발 및 5일선({ma5_val:{fmt_p}}{currency}) 돌파 확인 시 기민하게 분할 타진하시게!"
             elif final_code in ["RED_SELL_WARNING", "SELL_PROFIT_TAKE", "RED_SELL_TARGET", "DOJI_TOP_WARNING"]:
