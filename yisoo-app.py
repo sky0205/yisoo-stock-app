@@ -1942,8 +1942,12 @@ if symbol:
                 else:
                     final_code = "ESCAPE_BUY"
                     col = "#2E7D32"
-                    sig = f"🟢 [추가 진격] 2단계 바닥 탈출 (기 2단계 매수자는 추매 금지) ({time_tag_ok})"
-                    final_adv = f"• <b>[최종 결론]</b> <b>[{time_tag_ok}]</b> 밴드 하단부를 벗어나 5일선 안착 성공! 단, 머리 위 성벽 저항이 남았으니 [신규 진입자 및 1단계 소량 매수자]는 총 비중 20~30%까지 정찰대 증원으로 대응하시게. [이미 2단계 비중을 채운 보유자]는 섣부른 불타기를 엄금하고 3단계 눌림목 신호 전까지 관망하시게."
+                    if bias_ma5 >= 1.5:
+                        sig = f"🟢 [5일선 강세 돌파·2단계 탈출] 5일선(+{bias_ma5:.1f}%) 힘찬 안착 ({time_tag_ok})"
+                        final_adv = f"• <b>[최종 결론]</b> <b>[{time_tag_ok}]</b> 5일선을 힘 있게 돌파하며 안착에 성공했사옵니다! 단, 머리 위 성벽 저항이 남았으니 [신규 진입자 및 1단계 정찰병 위주]로 대응하시옵소서."
+                    else:
+                        sig = f"🟢 [추가 진격] 2단계 바닥 탈출 (기 2단계 매수자는 추매 금지) ({time_tag_ok})"
+                        final_adv = f"• <b>[최종 결론]</b> <b>[{time_tag_ok}]</b> 밴드 하단부를 벗어나 5일선 안착 성공! 단, 머리 위 성벽 저항이 남았으니 [신규 진입자 및 1단계 ...]"
             elif is_pullback_buy_signal:
                 if margin_diff < 4.0:
                     final_code = "WAIT_NARROW_MARGIN"
