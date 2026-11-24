@@ -1621,8 +1621,8 @@ if symbol:
                     final_adv = f"• <b>[최종 결론]</b> <b>[고점 도달·윗꼬리 저항]</b> 250일 최고점({high_250:{fmt_p}}{currency}) 및 5일선({ma5_val:{fmt_p}}{currency}) 부근이나, 상단 과열을 경계하시게."
                 else:
                     final_code = "NEW_HIGH_PULLBACK_BUY"
-                    sig = "🔵 [250일 고점 후 첫 눌림목] 타점 (비중 채운 보유자는 불타기 금지)"
-                    col = "#1E88E5"
+                    sig = "🟢 [250일 고점 후 첫 눌림목] 타점 (비중 채운 보유자는 불타기 금지)"
+                    col = "#2E7D32"
                     final_adv = f"• <b>[최종 결론]</b> <b>[250일 고점 5일선 눌림목]</b> 250일 최고점({high_250:{fmt_p}}{currency}) 돌파 후 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency})에 알찬 실체 양봉으..."
             
             elif p >= target_price_100:
@@ -1765,8 +1765,8 @@ if symbol:
 
             elif is_over_extended_5 and (vol_strength >= 300) and (p >= today_open) and (not is_long_upper_tail):
                 final_code = "HIGH_PASS_OVEREXTENDED"
-                sig = f"🔥 [불기둥 하이패스] 대량 거래 폭발! 과다이격({bias_ma5:+.1f}%) 추격 경계"
-                col = "#D84315"
+                sig = f"🟡 [불기둥 과다이격 경계] 대량 거래 폭발! 이격({bias_ma5:+.1f}%) 추격 금지"
+                col = "#F57C00"
                 final_adv = f"• <b>[최종 결론]</b> <b>[과다이격 추격 경계]</b> 대량 거래가 터졌으나 5일선 이격이 +{bias_ma5:.1f}%로 과도하게 벌어졌으니 섣부른 고점 추격 매수는 깊이 참고 자제하시게! <b>단, 20일선이나 5일선 이탈 시 즉각 대응할 수 있도록 보유 비중은 30% 이하로 엄격히 조여두시게.</b>"
 
             elif is_over_extended_5:
@@ -1794,8 +1794,8 @@ if symbol:
 
             elif is_deep_discount_buy:
                 final_code = "DEEP_DISCOUNT_ENTRY"
-                sig = f"🔵 [낙폭 과대 하이패스] 추가 1단계 유효 (직전 매수가 대비 -{drop_ratio:.1f}% 폭탄 세일)"
-                col = "#0277BD"
+                sig = f"🟢 [낙폭 과대 하이패스] 추가 1단계 유효 (직전 매수가 대비 -{drop_ratio:.1f}% 폭탄 세일)"
+                col = "#2E7D32"
                 final_adv = f"• <b>[최종 결론]</b> <b>[가격 메리트 극대화]</b> 직전 1차 매수가({user_last_1st_price:{fmt_p}}{currency}) 대비 <b>-{drop_ratio:.1f}%</b> 하락하여 완벽한 볼린저 하단 할인 구간에 진입했소! 대세 하락장이 아님을 확인했으니 기존의 쿨타임과 추매 금지 제약을 해제하고 평단가를 낮추는 과감한 물타기(추가 진입)가 유효하오."
 
             elif (bottom_score >= 2 or rsi_val <= 30):
@@ -1963,8 +1963,8 @@ if symbol:
                 
                 else:
                     final_code = "PULLBACK_BUY"
-                    sig = "🔵 [정석 눌림목 진격] 20일 중심선 완벽 돌파 (비중 채운 보유자는 불타기 금지)"
-                    col = "#5482F0"
+                    sig = "🟢 [정석 눌림목 진격] 20일 중심선 완벽 돌파 (비중 채운 보유자는 불타기 금지)"
+                    col = "#2E7D32"
                     final_adv = f"• <b>[최종 결론]</b> [눌림목 돌파 완료] 볼린저 20일 중심선({mid_line:{fmt_p}}{currency})을 든든히 밟고 붉은 양봉으로 상방 순항 구역에 진입하였소! <b>[신규 및 1·2단계 소량 보유자]</b>는 총 비중 50%까지 화끈하게 본진을 투입(증원)하고, <b>[이미 비중을 다 채운 기 보유자]</b>는 무리한 불타기 없이 랠리를 즐기시게."
             elif is_ma_tangled:
                 final_code = "MA_TANGLED_WARNING"
