@@ -1562,6 +1562,11 @@ if symbol:
                 sig = "🚨 [비상 손절] 바닥권 전저점 붕괴! 전량 칼손절 후퇴!"
                 col = "#D32F2F"
                 final_adv = f"• <b>[최종 결론]</b> <b>[바닥권 전저점 방어선 붕괴]</b> 최후의 방어선이 무참히 뚫렸소! 미련을 버리고 즉시 전량 칼손절 후퇴하시게."
+            elif is_massive_dump:
+                final_code = "BEARISH_GUARD"
+                sig = "🚨 [대량 투매 경계] 매도 폭탄 출회! (추격·입질 전면 금지)"
+                col = "#D32F2F"
+                final_adv = f"• <b>[최종 결론]</b> <b>[대량 투매 경보]</b> 전일 대비 <b>{p_chg:+.2f}%</b> 급락하며 대량 매도 물량(강도 {vol_strength:.1f}점)이 쏟아지는 칼날 구간이오! 5일선 위치나 지표 점수와 무관하게 절대 입질하지 말고 대피·관망하시게."
             elif is_peak_dumping:
                 final_code = "RED_SELL_WARNING"
                 sig = "🔴 [고점 윗꼬리 투매] 상단 차익 매물 폭발! 즉시 수확(매도)!"
