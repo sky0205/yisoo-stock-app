@@ -1045,7 +1045,7 @@ if symbol:
                 if is_kr and now_local.hour < 9:
                     _try_reasons.append(f"장전 거래량 유입 중(현재 {v_ratio:.1f}%) · 09:00 정규장 개장 후 확인 필요")
                 else:
-                    _try_reasons.append(f"실제 누적 거래량 미달(현재 {v_ratio:.1f}%)")
+                    _try_reasons.append(f"누적 거래량 보강 필요(현재 {v_ratio:.1f}%) · 체결량 유지 확인")
             if not _is_bull_today:
                 _try_reasons.append("음봉(시가 아래)")
             _try_reason_txt = " · ".join(_try_reasons) if _try_reasons else "거래량·양봉 안착 미달"
