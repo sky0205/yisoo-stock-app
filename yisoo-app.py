@@ -1043,7 +1043,7 @@ if symbol:
             _try_reasons = []
             if not _is_vol_ok:
                 if is_kr and now_local.hour < 9:
-                    _try_reasons.append(f"장전 거래량 유입 중(현재 {v_ratio:.1f}%) · 09:00 정규장 확인")
+                    _try_reasons.append(f"장전 거래량 유입 중(현재 {v_ratio:.1f}%) · 09:00 정규장 개장 후 확인 필요")
                 else:
                     _try_reasons.append(f"실제 누적 거래량 미달(현재 {v_ratio:.1f}%)")
             if not _is_bull_today:
