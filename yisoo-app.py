@@ -1049,7 +1049,7 @@ if symbol:
 
             # [보완 4] 장중 실시간 vs 종가 확정 구분
             if is_kr:
-                is_market_closed = (now_local.weekday() >= 5) or (now_local.hour > 15) or (now_local.hour == 15 and now_local.minute >= 30) or (now_local.hour < 9)
+                is_market_closed = (now_local.weekday() >= 5) or (now_local.hour > 15) or (now_local.hour == 15 and now_local.minute >= 30) 
             else:
                 is_market_closed = (not is_pre_market_mode) and ((now_local.weekday() >= 5) or (now_local.hour >= 16) or (now_local.hour < 9) or (now_local.hour == 9 and now_local.minute < 30))
             session_badge = "🔒 [종가 확정]" if is_market_closed else "⏱️ [장중 실시간]"
