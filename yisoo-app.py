@@ -1616,7 +1616,7 @@ if symbol:
                 final_code = "NEW_HIGH_BREAKOUT_WARNING"
                 sig = "🚨 [250일 고점 돌파 첫날] 불기둥 추격 매수 엄금!"
                 col = "#D32F2F"
-                final_adv = f"• <b>[최종 결론]</b> <b>[250일 고점 돌파]</b> 최근 250일 최고점({high_250:{fmt_p}}{currency})을 뚫는 강력한 불기둥이 솟구쳤소! 섣불리 불을 잡지 ..."
+                final_adv = f"• <b>[최종 결론]</b> <b>[250일 고점 돌파]</b> 최근 250일 최고점({high_250:{fmt_p}}{currency})을 뚫는 강력한 불기둥이 솟구쳤소! 섣불리 불을 잡지 마시고 5일선 눌림목 지지 확인 후 대응하시게."
             elif is_new_high_pullback and (p >= high_250 * 0.92) and (bb_pct_b >= 50.0):
                 _c_range = max(today_high - today_low, 1e-9)
                 _body_len = abs(p - today_open)
@@ -1631,7 +1631,7 @@ if symbol:
                     final_code = "NEW_HIGH_PULLBACK_BUY"
                     sig = "🟢 [250일 고점 후 첫 눌림목] 타점 (비중 채운 보유자는 불타기 금지)"
                     col = "#2E7D32"
-                    final_adv = f"• <b>[최종 결론]</b> <b>[250일 고점 5일선 눌림목]</b> 250일 최고점({high_250:{fmt_p}}{currency}) 돌파 후 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency})에 알찬 실체 양봉으..."
+                    final_adv = f"• <b>[최종 결론]</b> <b>[250일 고점 5일선 눌림목]</b> 250일 최고점({high_250:{fmt_p}}{currency}) 돌파 후 단기 생명선인 5일선({ma5_val:{fmt_p}}{currency})에 알찬 실체 양봉으로 안착했소! 신규 및 소량 보유자는 분할 진격을 검토하시게."
             
             elif p >= target_price_100:
                 if bandwidth <= 12.0:
@@ -1970,7 +1970,7 @@ if symbol:
                         final_adv = f"• <b>[최종 결론]</b> <b>[{time_tag_ok}]</b> 5일선을 힘 있게 돌파하며 안착에 성공했사옵니다! 단, 머리 위 성벽 저항이 남았으니 [신규 진입자 및 1단계 정찰병 위주]로 대응하시옵소서."
                     else:
                         sig = f"🟢 [추가 진격] 2단계 바닥 탈출 (기 2단계 매수자는 추매 금지) ({time_tag_ok})"
-                        final_adv = f"• <b>[최종 결론]</b> <b>[{time_tag_ok}]</b> 밴드 하단부를 벗어나 5일선 안착 성공! 단, 머리 위 성벽 저항이 남았으니 [신규 진입자 및 1단계 ...]"
+                        final_adv = f"• <b>[최종 결론]</b> <b>[{time_tag_ok}]</b> 밴드 하단부를 벗어나 5일선 안착 성공! 단, 머리 위 성벽 저항이 남았으니 [신규 진입자 및 1단계 정찰병 위주]로 대응하시옵소서."
             elif is_pullback_buy_signal:
                 if margin_diff < 4.0:
                     final_code = "WAIT_NARROW_MARGIN"
@@ -2120,7 +2120,7 @@ if symbol:
             )
 
             is_overall_cautious_state = final_code in [
-                "WAIT_MA20_RESIST", "WAIT_MA20_BREAK_TRY", "WAIT_MA20_BREAK_OVEREXT",
+                "WAIT_MA20_BREAK_UPPER_WICK", "WAIT_MA20_RESIST", "WAIT_MA20_BREAK_TRY", "WAIT_MA20_BREAK_OVEREXT",
                 "WAIT_GENERAL", "WAIT_INDICATOR", "WAIT_MACD", "WAIT_VOLUME",
                 "WAIT_DOWNTREND_FALL", "WAIT_PULLBACK_CANDLE", "WAIT_PULLBACK",
                 "WAIT_ORDERBOOK", "WAIT_OVER_EXTENDED", "HIGH_PASS_OVEREXTENDED", "NEW_HIGH_BREAKOUT_WARNING",
@@ -2136,7 +2136,7 @@ if symbol:
             elif final_code == "ESCAPE_BUY": sub_indicator_str = f"   - <b>진바닥 탈출 성공:</b> 5일선({ma5_val:{fmt_p}}{currency}) 안착 유지 -> <b>[매수 유효]</b> 2단계 분할 진격 타점 가동"
             elif final_code in ["BOTTOM_ENTRY", "EXTREME_BOTTOM_ENTRY"]:
                 if p < (ma5_val * 0.97):
-                    sub_indicator_str = f"  - <b style='color:#D32F2F;'>🚨 [절대 관망령] 데드캣 바운스 경고:</b> 바닥 지표({bottom_score}점) 포착! 허나 5일선 아래 까마득..."
+                    sub_indicator_str = f"  - <b style='color:#D32F2F;'>🚨 [절대 관망령] 데드캣 바운스 경고:</b> 바닥 지표({bottom_score}점) 포착! 허나 5일선 아래 까마득히 멀어진 수직 하락 구간이므로 절대 진입 금지!"
                 elif is_candle_bearish and not is_extreme_lower_tail:
                     sub_indicator_str = f"  - <b style='color:#D32F2F;'>⏳ [진바닥 음봉 대기]:</b> 바닥 지표({bottom_score}점) 포착되었으나 파란색 음봉 압력 중! 양봉 전환 및 지지 확인 전까지 입질 대기"
                 else:
