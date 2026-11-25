@@ -1724,7 +1724,17 @@ if symbol:
                         f"20일선 공방 단계가 아니므로 5일선 지지 여부를 보며 단기 기술적 반등으로만 가볍게 대응하시옵소서."
                     )
             elif is_ma20_breakout_real:
-                if bias_ma5 >= 7.0:
+                if bb_pct_b >= 80.0 and ("윗꼬리" in _c_short):
+                    final_code = "WAIT_MA20_BREAK_UPPER_WICK"
+                    sig = f"🟠 [상단 윗꼬리·과열 경계] {ma20_fail_days}일 만의 20일선 돌파 속 매물 출회 (5일선 이격 +{bias_ma5:.1f}%)"
+                    col = "#E65100"
+                    final_adv = (
+                        f"• <b>[최종 결론]</b> <b>[상단 윗꼬리 저항·추격 매수 금지]</b> {ma20_fail_days}거래일간 짓누르던 "
+                        f"20일선({mid_line:{fmt_p}}{currency})을 뚫어냈으나, 볼린저 상단권(<b>{bb_pct_b:.1f}%</b>)에서 "
+                        f"윗꼬리 매물 저항과 5일선 이격 과열(<b>+{bias_ma5:.1f}%</b>)이 동반되었사옵니다. "
+                        f"고점 추격 매수는 절대 금하시고, 상단 매물 소화 및 20일선 눌림목 지지 확인 후 진입하시옵소서."
+                    )
+                elif bias_ma5 >= 7.0:
                     final_code = "WAIT_MA20_BREAK_OVEREXT"
                     sig = f"🟡 [돌파 성공·이격 과열] {ma20_fail_days}일 만의 20일선 돌파 (5일선 이격 +{bias_ma5:.1f}%)"
                     col = "#F57C00"
