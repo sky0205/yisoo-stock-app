@@ -1664,7 +1664,16 @@ if symbol:
                     
                 elif p >= ma5_val:
                     _upside_pct = ((target_price_100 - p) / p * 100.0) if (p and p > 0 and target_price_100) else 999.0
-                    if _upside_pct < 5.0:
+                    if bb_pct_b >= 80.0 and ("윗꼬리" in _c_short):
+                        final_code = "WAIT_MA20_BREAK_UPPER_WICK"
+                        sig = f"🟠 [상단 윗꼬리·과열 경계] 성벽 위 매물 출회 (볼린저 {bb_pct_b:.1f}% / 5일선 +{bias_ma5:.1f}%)"
+                        col = "#E65100"
+                        final_adv = (
+                            f"• <b>[최종 결론]</b> <b>[상단 윗꼬리 저항·추격 매수 금지]</b> 현재가({p:{fmt_p}}{currency})가 성벽({defense_line:{fmt_p}}{currency}) 위로 올라섰으나, "
+                            f"볼린저 상단권(<b>{bb_pct_b:.1f}%</b>)에서 윗꼬리 매물 저항과 5일선 이격(<b>+{bias_ma5:.1f}%</b>)이 동반되었사옵니다. "
+                            f"고점 추격 매수는 절대 금하시고, 보유자도 상단 매물 출회에 대비해 분할 익절·리스크 관리를 우선하시옵소서."
+                        )
+                    elif _upside_pct < 5.0:
                         final_code = "BREAKOUT_NEAR_TARGET_WAIT"
                         sig = f"🟡 [상단 근접·여력 {_upside_pct:.1f}%] 신규 추격 금지 / 보유자 관망·추종"
                         col = "#F57C00"
