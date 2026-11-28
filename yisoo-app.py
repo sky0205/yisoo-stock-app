@@ -2108,17 +2108,25 @@ if symbol:
             elif final_code == "STOP_LOSS_ALERT":
                 action_command_msg = f"🎯 [최종 실전 행동 강령] 최후의 마지노선({stop_loss_price:{fmt_p}}{currency})이 무너진 비상사태이오! 희망 회로를 당장 멈추고 전량 시장가 칼손절로 계좌를 사수하시게!"
             else:
-                if not is_ma5_safe:
-                    _next_target_str = f"1차 관문인 단기 생명선 5일선({ma5_val:{fmt_p}}{currency}) 위로 붉은 양봉을 세우며 완전히 안착하는 날"
-                elif is_over_extended_5:
-                    _next_target_str = f"과도하게 벌어진 5일선({ma5_val:{fmt_p}}{currency})과의 이격(+{bias_ma5:.1f}%)이 좁혀지며 건전한 양봉 눌림목 지지가 확인되는 날"
-                elif p < mid_line:
-                    _next_target_str = f"볼린저 20일 중심선({mid_line:{fmt_p}}{currency})을 양봉으로 돌파하여 안전마진을 확보하는 날"
-                elif p < defense_line:
-                    _next_target_str = f"머리 위 역배열 저항 및 최후 성벽({defense_line:{fmt_p}}{currency})을 거래량 실린 양봉으로 돌파하거나 역배열이 해소되는 날"
+                if final_code == "WAIT_MA5_BOUNCE" and is_ma5_safe and not is_over_extended_5:
+                    action_command_msg = (
+                        f"f\"🎯 [최종 실전 행동 강령 · {market_regime}] <b>[소량 진입 허락]</b> "
+                        f"5일선({ma5_val:{fmt_p}}){currency} 위 안착 반격 구간이오! "
+                        f"오후/정규장 5일선 지지 안착 확인 시 정찰병 소량만 허용하오며, "
+                        f"5일선 이탈 시 즉각 끊어내고 20일선 돌파 전까지 본진 투입은 보류하시게.\""
+                    )
                 else:
-                    _next_target_str = f"음봉·윗꼬리 매물 소화 및 양봉 지지·호가창 동조가 완벽히 확인되는 날"
-                action_command_msg = f"🎯 [최종 실전 행동 강령] 신규 진입 및 무리한 추매 전면 금지! 성급한 입질을 멈추고 주가가 {_next_target_str}까지 현금을 100% 사수하며 대기하시게! (기 보유자는 손절 마지노선 {stop_loss_price:{fmt_p}}{currency} 이탈 여부만 철저히 감시할 것)"
+                    if not is_ma5_safe:
+                        _next_target_str = f"1차 관문인 단기 생명선 5일선({ma5_val:{fmt_p}}){currency} 위로 붉은 양봉을 세우며 완전히 안착하는 날"
+                    elif is_over_extended_5:
+                        _next_target_str = f"과도하게 벌어진 5일선({ma5_val:{fmt_p}}){currency}과의 이격(+{bias_ma5:.1f}%)이 좁혀지며 건전한 양봉 눌림목 지지가 확인되는 날"
+                    elif p < mid_line:
+                        _next_target_str = f"볼린저 20일 중심선({mid_line:{fmt_p}}){currency}을 양봉으로 돌파하여 안전마진을 확보하는 날"
+                    elif p < defense_line:
+                        _next_target_str = f"머리 위 역배열 저항 및 최후 성벽({defense_line:{fmt_p}}){currency}을 거래량 실린 양봉으로 돌파하거나 역배열이 해소되는 날"
+                    else:
+                        _next_target_str = f"음봉·윗꼬리 매물 소화 및 양봉 지지·호가창 동조가 완벽히 확인되는 날"
+                    action_command_msg = f"🎯 [최종 실전 행동 강령 · {market_regime}] 신규 진입 및 무리한 추매 전면 금지! 성급한 입질을 멈추고 주가가 {_next_target_str}까지 현금을 100% 사수하며 대기하시게. (기 보유자는 손절 마지노선 {stop_loss_price:{fmt_p}}{currency} 이탈 여부만 철저히 감시할 것)"
 
             st.markdown(
                 f"<div class='signal-box' style='background-color: {col};'>"
