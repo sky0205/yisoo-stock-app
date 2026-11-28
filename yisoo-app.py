@@ -2110,10 +2110,10 @@ if symbol:
             else:
                 if final_code == "WAIT_MA5_BOUNCE" and is_ma5_safe and not is_over_extended_5:
                     action_command_msg = (
-                        f"f\"🎯 [최종 실전 행동 강령 · {market_regime}] <b>[소량 진입 허락]</b> "
+                        f"🎯 [최종 실전 행동 강령 · {market_regime}] <b>[소량 진입 허락]</b> "
                         f"5일선({ma5_val:{fmt_p}}){currency} 위 안착 반격 구간이오! "
                         f"오후/정규장 5일선 지지 안착 확인 시 정찰병 소량만 허용하오며, "
-                        f"5일선 이탈 시 즉각 끊어내고 20일선 돌파 전까지 본진 투입은 보류하시게.\""
+                        f"5일선 이탈 시 즉각 끊어내고 20일선 돌파 전까지 본진 투입은 보류하시게."
                     )
                 else:
                     if not is_ma5_safe:
